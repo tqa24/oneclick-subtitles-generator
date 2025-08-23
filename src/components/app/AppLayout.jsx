@@ -96,6 +96,7 @@ const AppLayout = ({
     showWaveform,
     useOptimizedPreview,
     useCookiesForDownload,
+    enableYoutubeSearch,
     optimizeVideos,
     optimizedResolution,
     retryingSegments,
@@ -291,6 +292,7 @@ const AppLayout = ({
             subtitlesData={subtitlesData}
             setVideoSegments={appState.setVideoSegments}
             setSegmentsStatus={appState.setSegmentsStatus}
+            enableYoutubeSearch={enableYoutubeSearch}
           />
 
           {/* Consistent layout container for buttons and output */}

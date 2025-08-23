@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import StandardSlider from '../../common/StandardSlider';
 import MaterialSwitch from '../../common/MaterialSwitch';
 import { DisplayIcon, VideoAnalysisIcon } from '../icons/TabIcons';
-import { FiCpu } from 'react-icons/fi';
+import { FiCpu, FiDownload } from 'react-icons/fi';
 import CustomGeminiModelsCard from '../components/CustomGeminiModelsCard';
 import '../../../styles/common/material-switch.css';
 import '../../../styles/settings/customGeminiModels.css';
@@ -31,6 +31,8 @@ const VideoProcessingTab = ({
   setThinkingBudgets,
   useCookiesForDownload,
   setUseCookiesForDownload,
+  enableYoutubeSearch,
+  setEnableYoutubeSearch,
   customGeminiModels,
   setCustomGeminiModels
 }) => {
@@ -127,13 +129,13 @@ const VideoProcessingTab = ({
       {/* Grid layout for settings cards */}
       <div className="video-processing-grid">
 
-        {/* Display & Download Settings Card (Merged) */}
-        <div className="settings-card display-download-card">
+        {/* Display Settings Card */}
+        <div className="settings-card display-card">
           <div className="settings-card-header">
             <div className="settings-card-icon">
               <DisplayIcon />
             </div>
-            <h4>{t('settings.displayDownloadSettings', 'Display & Download Settings')}</h4>
+            <h4>{t('settings.displaySettings', 'Display Settings')}</h4>
           </div>
           <div className="settings-card-content">
             {/* Time Format Setting */}
@@ -173,6 +175,38 @@ const VideoProcessingTab = ({
               </div>
               <p className="setting-description">
                 {t('settings.showWaveformDescription', 'Display audio waveform visualization in the timeline. This helps identify silent parts and speech patterns.')}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Download Settings Card */}
+        <div className="settings-card download-card">
+          <div className="settings-card-header">
+            <div className="settings-card-icon">
+              <FiDownload />
+            </div>
+            <h4>{t('settings.downloadSettings', 'Download Settings')}</h4>
+          </div>
+          <div className="settings-card-content">
+            {/* Enable YouTube Search Setting */}
+            <div className="compact-setting">
+              <div className="setting-header">
+                <label htmlFor="enable-youtube-search">
+                  {t('settings.enableYoutubeSearch', 'Enable YouTube Search')}
+                </label>
+                <div className="material-switch-container">
+                  <MaterialSwitch
+                    id="enable-youtube-search"
+                    checked={enableYoutubeSearch}
+                    onChange={(e) => setEnableYoutubeSearch(e.target.checked)}
+                    ariaLabel={t('settings.enableYoutubeSearch', 'Enable YouTube Search')}
+                    icons={true}
+                  />
+                </div>
+              </div>
+              <p className="setting-description">
+                {t('settings.enableYoutubeSearchDescription', 'Show the "Search YouTube" tab in input methods and enable YouTube API authentication settings. Disabling this will hide YouTube search functionality.')}
               </p>
             </div>
 

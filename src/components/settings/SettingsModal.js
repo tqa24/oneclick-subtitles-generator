@@ -142,6 +142,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   });
   const [transcriptionPrompt, setTranscriptionPrompt] = useState(DEFAULT_TRANSCRIPTION_PROMPT); // Custom transcription prompt
   const [useCookiesForDownload, setUseCookiesForDownload] = useState(false); // Default to not using cookies
+  const [enableYoutubeSearch, setEnableYoutubeSearch] = useState(false); // Default to disabling YouTube search
 
   // Custom Gemini models state
   const [customGeminiModels, setCustomGeminiModels] = useState(() => {
@@ -212,6 +213,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       'gemini-2.5-flash-lite': 0
     },
     useCookiesForDownload: false,
+    enableYoutubeSearch: false,
     customGeminiModels: []
   });
 
@@ -252,6 +254,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedOptimizedResolution = localStorage.getItem('optimized_resolution') || '360p';
       const savedUseOptimizedPreview = localStorage.getItem('use_optimized_preview') === 'true'; // Default to false if not set
       const savedUseCookiesForDownload = localStorage.getItem('use_cookies_for_download') === 'true';
+      const savedEnableYoutubeSearch = localStorage.getItem('enable_youtube_search') === 'true'; // Default to false
 
       // Load custom Gemini models
       const savedCustomGeminiModels = (() => {
@@ -307,6 +310,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       setOptimizedResolution(savedOptimizedResolution);
       setUseOptimizedPreview(savedUseOptimizedPreview);
       setUseCookiesForDownload(savedUseCookiesForDownload);
+      setEnableYoutubeSearch(savedEnableYoutubeSearch);
       setThinkingBudgets(savedThinkingBudgets);
       setCustomGeminiModels(savedCustomGeminiModels);
       setHasChanges(false); // Reset changes flag when loading settings
@@ -333,6 +337,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         optimizedResolution: savedOptimizedResolution,
         useOptimizedPreview: savedUseOptimizedPreview,
         useCookiesForDownload: savedUseCookiesForDownload,
+        enableYoutubeSearch: savedEnableYoutubeSearch,
         thinkingBudgets: savedThinkingBudgets,
         customGeminiModels: savedCustomGeminiModels
       });
@@ -428,6 +433,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       optimizedResolution !== originalSettings.optimizedResolution ||
       useOptimizedPreview !== originalSettings.useOptimizedPreview ||
       useCookiesForDownload !== originalSettings.useCookiesForDownload ||
+      enableYoutubeSearch !== originalSettings.enableYoutubeSearch ||
       JSON.stringify(thinkingBudgets) !== JSON.stringify(originalSettings.thinkingBudgets) ||
       JSON.stringify(customGeminiModels) !== JSON.stringify(originalSettings.customGeminiModels);
 
@@ -435,7 +441,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   }, [isSettingsLoaded, geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveform,
       segmentOffsetCorrection, transcriptionPrompt, useOAuth, youtubeClientId,
       youtubeClientSecret, useVideoAnalysis, videoAnalysisModel,
-      optimizeVideos, optimizedResolution, useOptimizedPreview, useCookiesForDownload, thinkingBudgets, customGeminiModels, originalSettings]);
+      optimizeVideos, optimizedResolution, useOptimizedPreview, useCookiesForDownload, enableYoutubeSearch, thinkingBudgets, customGeminiModels, originalSettings]);
 
   // Handle save button click
   const handleSave = async () => {
@@ -456,6 +462,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('optimized_resolution', optimizedResolution);
     localStorage.setItem('use_optimized_preview', useOptimizedPreview.toString());
     localStorage.setItem('use_cookies_for_download', useCookiesForDownload.toString());
+    localStorage.setItem('enable_youtube_search', enableYoutubeSearch.toString());
     localStorage.setItem('thinking_budgets', JSON.stringify(thinkingBudgets));
     localStorage.setItem('custom_gemini_models', JSON.stringify(customGeminiModels));
     // Save the Gemini API key to the key manager
@@ -501,7 +508,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
 
     // Notify parent component about API keys, segment duration, model, time format, video optimization settings, and cookie setting
     // Note: optimizeVideos parameter removed since it's always enabled now
-    onSave(geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveform, optimizedResolution, useOptimizedPreview, useCookiesForDownload);
+    onSave(geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveform, optimizedResolution, useOptimizedPreview, useCookiesForDownload, enableYoutubeSearch);
 
     // Update original settings to match current settings
     setOriginalSettings({
@@ -524,6 +531,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       optimizedResolution,
       useOptimizedPreview,
       useCookiesForDownload,
+      enableYoutubeSearch,
       thinkingBudgets
     });
 
@@ -678,6 +686,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
               setIsAuthenticated={setIsAuthenticated}
               apiKeysSet={apiKeysSet}
               setApiKeysSet={setApiKeysSet}
+              enableYoutubeSearch={enableYoutubeSearch}
             />
           </div>
 
@@ -705,6 +714,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
               setUseOptimizedPreview={setUseOptimizedPreview}
               useCookiesForDownload={useCookiesForDownload}
               setUseCookiesForDownload={setUseCookiesForDownload}
+              enableYoutubeSearch={enableYoutubeSearch}
+              setEnableYoutubeSearch={setEnableYoutubeSearch}
               thinkingBudgets={thinkingBudgets}
               setThinkingBudgets={setThinkingBudgets}
               customGeminiModels={customGeminiModels}

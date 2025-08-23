@@ -983,7 +983,8 @@ export const useAppHandlers = (appState) => {
     showWaveformSetting,
     optimizedResolutionSetting,
     useOptimizedPreviewSetting,
-    useCookiesForDownloadSetting
+    useCookiesForDownloadSetting,
+    enableYoutubeSearchSetting
   ) => {
     // Save to localStorage
     if (geminiKey) {
@@ -1059,6 +1060,14 @@ export const useAppHandlers = (appState) => {
         useCookiesForDownloadSetting.toString()
       );
       appState.setUseCookiesForDownload(useCookiesForDownloadSetting);
+    }
+
+    if (enableYoutubeSearchSetting !== undefined) {
+      localStorage.setItem(
+        "enable_youtube_search",
+        enableYoutubeSearchSetting.toString()
+      );
+      appState.setEnableYoutubeSearch(enableYoutubeSearchSetting);
     }
 
     // Update state based on the selected authentication method

@@ -62,7 +62,8 @@ const ApiKeysTab = ({
   isAuthenticated,
   setIsAuthenticated,
   apiKeysSet,
-  setApiKeysSet
+  setApiKeysSet,
+  enableYoutubeSearch
 }) => {
   const { t } = useTranslation();
 
@@ -536,6 +537,7 @@ const ApiKeysTab = ({
         </div>
 
         {/* YouTube API Key - Right column, second row */}
+        {enableYoutubeSearch && (
         <div className="api-key-input full-width">
           <div className="auth-method-toggle">
             <label className="auth-method-label">{t('settings.youtubeAuthMethod', 'YouTube Authentication Method')}</label>
@@ -818,6 +820,7 @@ const ApiKeysTab = ({
           </>
         )}
         </div>
+        )}
       </div>
     </div>
   );
