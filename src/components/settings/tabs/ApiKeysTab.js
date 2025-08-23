@@ -529,9 +529,10 @@ const ApiKeysTab = ({
             <ol>
               <li>{t('settings.geniusStep1', 'Login to Genius')}</li>
               <li>{t('settings.geniusStep2', 'Go to API Clients page')}</li>
-              <li>{t('settings.geniusStep3', 'Create a new API client')}</li>
-              <li>{t('settings.geniusStep4', 'Copy your Client Access Token')}</li>
-              <li>{t('settings.geniusStep5', 'Paste it into the field above')}</li>
+              <li>{t('settings.geniusStep3', 'Click \'New API Client\'')}</li>
+              <li>{t('settings.geniusStep4', 'Fill in the form: APP NAME: \'OSG\' (or any name), leave other fields empty, click Save')}</li>
+              <li>{t('settings.geniusStep5', 'Copy your Client Access Token from the created client')}</li>
+              <li>{t('settings.geniusStep6', 'Paste it into the field above')}</li>
             </ol>
           </div>
         </div>
