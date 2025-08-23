@@ -75,6 +75,11 @@ export const setTranscriptionRules = async (rules) => {
     localStorage.removeItem(TRANSCRIPTION_RULES_KEY);
 
   }
+
+  // Dispatch event to notify components that transcription rules have been updated
+  window.dispatchEvent(new CustomEvent('transcriptionRulesUpdated', {
+    detail: { rules }
+  }));
 };
 
 /**
@@ -179,5 +184,8 @@ export const clearTranscriptionRules = async () => {
     }
   }
 
-
+  // Dispatch event to notify components that transcription rules have been cleared
+  window.dispatchEvent(new CustomEvent('transcriptionRulesUpdated', {
+    detail: { rules: null }
+  }));
 };

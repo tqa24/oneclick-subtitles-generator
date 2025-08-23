@@ -203,7 +203,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
           localStorage.setItem('translation_include_rules', 'false');
         }
 
-
+        console.log('[TranslationState] Rules availability check:', hasRules ? 'Available' : 'Not available');
       } catch (error) {
         console.error('Error checking transcription rules availability:', error);
         setRulesAvailable(false);
@@ -212,7 +212,32 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
       }
     };
 
+    // Initial check
     checkRulesAvailability();
+
+    // Listen for transcription rules updates
+    const handleRulesUpdate = () => {
+      console.log('[TranslationState] Transcription rules updated, re-checking availability');
+      checkRulesAvailability();
+    };
+
+    // Listen for video analysis completion
+    const handleAnalysisComplete = () => {
+      console.log('[TranslationState] Video analysis completed, re-checking rules availability');
+      checkRulesAvailability();
+    };
+
+    // Add event listeners
+    window.addEventListener('transcriptionRulesUpdated', handleRulesUpdate);
+    window.addEventListener('videoAnalysisComplete', handleAnalysisComplete);
+    window.addEventListener('videoAnalysisUserChoice', handleAnalysisComplete);
+
+    // Cleanup event listeners
+    return () => {
+      window.removeEventListener('transcriptionRulesUpdated', handleRulesUpdate);
+      window.removeEventListener('videoAnalysisComplete', handleAnalysisComplete);
+      window.removeEventListener('videoAnalysisUserChoice', handleAnalysisComplete);
+    };
   }, []);
 
   // Load user-provided subtitles
