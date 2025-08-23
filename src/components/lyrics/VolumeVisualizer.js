@@ -292,7 +292,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
     // Create gradient for professional look
     const gradient = ctx.createLinearGradient(0, 0, 0, height);
     gradient.addColorStop(0, primaryColor);
-    gradient.addColorStop(0.7, gradientColor);
+    gradient.addColorStop(0.85, gradientColor);
     gradient.addColorStop(1, 'transparent');
     
     ctx.fillStyle = gradient;
