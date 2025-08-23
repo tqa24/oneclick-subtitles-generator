@@ -96,5 +96,6 @@
   "segmentReady": "Sẵn sàng để xử lý",
   "videoReady": "Video đã sẵn sàng để chọn phân đoạn...",
   "subtitleUploadSuccess": "Tập tin phụ đề đã được tải lên thành công!",
-  "downloadAndViewWithSrt": "Tải xuống + Xem với SRT đã upload"
+  "downloadAndViewWithSrt": "Tải xuống + Xem với SRT đã upload",
+  "preparingProcessing": "Đang chuẩn bị xử lý video..."
 }

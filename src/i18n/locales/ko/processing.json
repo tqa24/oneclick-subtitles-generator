@@ -26,5 +26,8 @@
   "waitingForUpload": "업로드 대기 중...",
   "startProcessing": "처리 시작",
   "timingGeneration": "타이밍 생성 (자막 추가됨)",
-  "timingGenerationDesc": "제공된 자막에 대한 타이밍 생성"
+  "timingGenerationDesc": "제공된 자막에 대한 타이밍 생성",
+  "recommendedByAnalysis": "(분석에서 추천됨)",
+  "useTranscriptionRules": "분석에서 전사 규칙 사용",
+  "useTranscriptionRulesDesc": "비디오 분석의 컨텍스트, 용어 및 형식 규칙을 프롬프트에 포함"
 }

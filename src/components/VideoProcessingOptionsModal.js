@@ -36,6 +36,12 @@ const VideoProcessingOptionsModal = ({
     return saved || 'gemini-2.5-flash';
   });
   const [selectedPromptPreset, setSelectedPromptPreset] = useState(() => {
+    // Check if there's a recommended preset from analysis
+    const recommendedPresetId = sessionStorage.getItem('current_session_preset_id');
+    if (recommendedPresetId) {
+      return recommendedPresetId;
+    }
+
     const saved = localStorage.getItem('video_processing_prompt_preset');
     return saved || 'settings'; // Default to "Prompt from Settings"
   });
@@ -52,6 +58,10 @@ const VideoProcessingOptionsModal = ({
   const [customLanguage, setCustomLanguage] = useState(() => {
     const saved = localStorage.getItem('video_processing_custom_language');
     return saved || '';
+  });
+  const [useTranscriptionRules, setUseTranscriptionRules] = useState(() => {
+    const saved = localStorage.getItem('video_processing_use_transcription_rules');
+    return saved !== 'false'; // Default to true, only false if explicitly set to 'false'
   });
   const [customGeminiModels, setCustomGeminiModels] = useState([]);
   const [isCountingTokens, setIsCountingTokens] = useState(false);
@@ -152,6 +162,10 @@ const VideoProcessingOptionsModal = ({
     localStorage.setItem('video_processing_custom_language', customLanguage);
   }, [customLanguage]);
 
+  useEffect(() => {
+    localStorage.setItem('video_processing_use_transcription_rules', useTranscriptionRules.toString());
+  }, [useTranscriptionRules]);
+
   // Automatic token counting when modal opens or settings change
   useEffect(() => {
     if (isOpen && videoFile && selectedSegment) {
@@ -169,6 +183,8 @@ const VideoProcessingOptionsModal = ({
   // Get all available prompt presets
   const getPromptPresetOptions = () => {
     const userPresets = getUserPromptPresets();
+    const recommendedPresetId = sessionStorage.getItem('current_session_preset_id');
+
     const options = [
       {
         id: 'settings',
@@ -190,19 +206,28 @@ const VideoProcessingOptionsModal = ({
 
     // Add regular presets
     options.push(
-      ...PROMPT_PRESETS.map(preset => ({
-        id: preset.id,
-        title: preset.id === 'general' ? t('settings.presetGeneralPurpose', 'General purpose') :
-               preset.id === 'extract-text' ? t('settings.presetExtractText', 'Extract text') :
-               preset.id === 'focus-lyrics' ? t('settings.presetFocusLyrics', 'Focus on Lyrics') :
-               preset.id === 'describe-video' ? t('settings.presetDescribeVideo', 'Describe video') :
-               preset.id === 'translate-directly' ? t('settings.presetTranslateDirectly', 'Translate directly') :
-               preset.id === 'chaptering' ? t('settings.presetChaptering', 'Chaptering') :
-               preset.id === 'diarize-speakers' ? t('settings.presetIdentifySpeakers', 'Identify Speakers') :
-               preset.title,
-        description: preset.prompt.substring(0, 80) + '...',
-        needsLanguage: preset.id === 'translate-directly'
-      })),
+      ...PROMPT_PRESETS.map(preset => {
+        const baseTitle = preset.id === 'general' ? t('settings.presetGeneralPurpose', 'General purpose') :
+                         preset.id === 'extract-text' ? t('settings.presetExtractText', 'Extract text') :
+                         preset.id === 'focus-lyrics' ? t('settings.presetFocusLyrics', 'Focus on Lyrics') :
+                         preset.id === 'describe-video' ? t('settings.presetDescribeVideo', 'Describe video') :
+                         preset.id === 'translate-directly' ? t('settings.presetTranslateDirectly', 'Translate directly') :
+                         preset.id === 'chaptering' ? t('settings.presetChaptering', 'Chaptering') :
+                         preset.id === 'diarize-speakers' ? t('settings.presetIdentifySpeakers', 'Identify Speakers') :
+                         preset.title;
+
+        // Add "(Recommended by analysis)" if this is the recommended preset
+        const title = preset.id === recommendedPresetId
+          ? `${baseTitle} ${t('processing.recommendedByAnalysis', '(Recommended by analysis)')}`
+          : baseTitle;
+
+        return {
+          id: preset.id,
+          title,
+          description: preset.prompt.substring(0, 80) + '...',
+          needsLanguage: preset.id === 'translate-directly'
+        };
+      }),
       ...userPresets.map(preset => ({
         id: preset.id,
         title: preset.title,
@@ -401,7 +426,8 @@ const VideoProcessingOptionsModal = ({
       realTokenCount,
       customPrompt: getSelectedPromptText(), // Include the selected prompt
       promptPreset: selectedPromptPreset,
-      customLanguage: selectedPromptPreset === 'translate-directly' ? customLanguage : undefined
+      customLanguage: selectedPromptPreset === 'translate-directly' ? customLanguage : undefined,
+      useTranscriptionRules // Include the transcription rules setting
     };
 
     onProcess(options);
@@ -559,6 +585,27 @@ const VideoProcessingOptionsModal = ({
                 />
               </div>
             )}
+
+            {/* Transcription Rules Toggle */}
+            <div className="option-group" style={{ gridColumn: '1 / -1' }}>
+              <div className="toggle-option">
+                <label className="toggle-label">
+                  <input
+                    type="checkbox"
+                    checked={useTranscriptionRules}
+                    onChange={(e) => setUseTranscriptionRules(e.target.checked)}
+                    className="toggle-checkbox"
+                  />
+                  <span className="toggle-slider"></span>
+                  <span className="toggle-text">
+                    {t('processing.useTranscriptionRules', 'Use transcription rules from analysis')}
+                  </span>
+                </label>
+                <p className="option-description">
+                  {t('processing.useTranscriptionRulesDesc', 'Include context, terminology, and formatting rules from video analysis in the prompt')}
+                </p>
+              </div>
+            </div>
           </div>
 
 

@@ -19,5 +19,14 @@
   "autoSelectRecommendedCountdown": "추천 프리셋을 자동 선택하는 중 (아무 곳이나 클릭하여 취소)",
   "autoSelectDefaultCountdown": "기본 프리셋을 자동 선택하는 중 (아무 곳이나 클릭하여 취소)",
   "seconds": "초",
-  "back": "뒤로"
+  "back": "뒤로",
+  "addAnalysis": "분석 추가",
+  "editRules": "규칙 편집",
+  "analyzing": "분석 중",
+  "analyzeTooltip": "비디오를 분석하여 트랜스크립션 규칙 생성",
+  "editTooltip": "트랜스크립션 규칙 편집",
+  "clearAnalysis": "비디오 분석 지우기",
+  "noVideoFile": "분석할 비디오 파일이 없습니다. 먼저 비디오를 업로드하거나 다운로드하세요.",
+  "disabled": "비디오 분석이 설정에서 비활성화되어 있습니다. 비디오 처리 탭에서 활성화하세요.",
+  "error": "비디오 분석 실패: {{message}}"
 }

@@ -65,7 +65,6 @@
   padding: 4px 8px; /* Padding for content */
   overflow: hidden;
   order: 1; /* Position on the left */
-  margin-top: -8px;
 }
 
 /* First row for zoom controls and sticky toggle */

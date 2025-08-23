@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import SrtUploadButton from '../SrtUploadButton';
 import AddSubtitlesButton from '../AddSubtitlesButton';
+import VideoAnalysisButton from '../VideoAnalysisButton';
 import { abortAllRequests } from '../../services/geminiService';
 import { hasValidDownloadedVideo } from '../../utils/videoUtils';
 
@@ -10,7 +11,6 @@ import { hasValidDownloadedVideo } from '../../utils/videoUtils';
 const ButtonsContainer = ({
   handleSrtUpload,
   handleGenerateSubtitles,
-  handleRetryGeneration,
   handleCancelDownload,
   handleUserSubtitlesAdd,
   handleAbortVideoAnalysis,
@@ -29,6 +29,7 @@ const ButtonsContainer = ({
   userProvidedSubtitles,
   selectedVideo,
   uploadedFile,
+  uploadedFileData,
   isSrtOnlyMode,
   t,
   onGenerateBackground
@@ -173,23 +174,12 @@ const ButtonsContainer = ({
       setSubtitlesData(null);
     }
   };
-  // Determine retry button visibility - show more aggressively for force retry
-  const hasSubtitlesData = subtitlesData && subtitlesData.length > 0;
-  const hasError = status?.type === 'error';
-  const hasAnyVideoSource = selectedVideo || uploadedFile || localStorage.getItem('current_video_url') || localStorage.getItem('current_file_url');
-  const isNotBusy = !isGenerating && !isDownloading;
-
   // Check if we have URL + SRT but no downloaded video yet
   const hasUrlAndSrtOnly = selectedVideo &&
                           !uploadedFile &&
-                          hasSubtitlesData &&
+                          subtitlesData && subtitlesData.length > 0 &&
                           !hasValidDownloadedVideo(uploadedFile) &&
                           !isSrtOnlyMode;
-
-  // Show retry button if:
-  // 1. We have subtitles data OR there's an error OR there's any video source
-  // 2. AND we're not currently busy
-  const retryButtonVisible = (hasSubtitlesData || hasError || hasAnyVideoSource) && isNotBusy;
 
   return (
     <div className="buttons-container">
@@ -280,45 +270,12 @@ const ButtonsContainer = ({
         </button>
       )}
 
-      {retryButtonVisible && (
-        <button
-          className={`retry-gemini-btn ${retryingSegments.length > 0 ? 'processing' : ''}`}
-          onClick={() => {
-            console.log('FORCE RETRY button clicked!');
-            try {
-              handleRetryGeneration();
-              console.log('Force retry initiated successfully');
-            } catch (error) {
-              console.error('Error calling handleRetryGeneration:', error);
-            }
-          }}
-          disabled={isGenerating || isDownloading}
-          title={t('output.retryGeminiTooltip')}
-        >
-          {/* Dynamic Gemini effects container - populated by particle system */}
-          <div className="gemini-icon-container"></div>
-          {retryingSegments.length > 0 ? (
-            <span className="processing-text-container">
-              <span className="processing-gemini-icon">
-                <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14 28C14 26.0633 13.6267 24.2433 12.88 22.54C12.1567 20.8367 11.165 19.355 9.905 18.095C8.645 16.835 7.16333 15.8433 5.46 15.12C3.75667 14.3733 1.93667 14 0 14C1.93667 14 3.75667 13.6383 5.46 12.915C7.16333 12.1683 8.645 11.165 9.905 9.905C11.165 8.645 12.1567 7.16333 12.88 5.46C13.6267 3.75667 14 1.93667 14 0C14 1.93667 14.3617 3.75667 15.085 5.46C15.8317 7.16333 16.835 8.645 18.095 9.905C19.355 11.165 20.8367 12.1683 22.54 12.915C24.2433 13.6383 26.0633 14 28 14C26.0633 14 24.2433 14.3733 22.54 15.12C20.8367 15.8433 19.355 16.835 18.095 18.095C16.835 19.355 15.8317 20.8367 15.085 22.54C14.3617 24.2433 14 26.0633 14 28Z" stroke="currentColor" strokeWidth="1.5"/>
-                </svg>
-              </span>
-              <span className="processing-text">{t('output.processingVideo').split('...')[0]}</span>
-              <span className="processing-dots"></span>
-            </span>
-          ) : (
-            <>
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                <path d="M1 4v6h6"></path>
-                <path d="M23 20v-6h-6"></path>
-                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
-              </svg>
-              {t('output.retryGemini')}
-            </>
-          )}
-        </button>
-      )}
+      {/* Video Analysis Button - always visible like SrtUploadButton */}
+      <VideoAnalysisButton
+        disabled={isGenerating || isDownloading}
+        uploadedFile={uploadedFile}
+        uploadedFileData={uploadedFileData}
+      />
 
       {(isGenerating || retryingSegments.length > 0 || isRetrying) && (
         <button

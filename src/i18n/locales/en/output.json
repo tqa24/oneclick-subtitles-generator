@@ -96,5 +96,6 @@
   "segmentReady": "Ready for processing",
   "videoReady": "Video ready for segment selection...",
   "subtitleUploadSuccess": "Subtitle file uploaded successfully!",
-  "downloadAndViewWithSrt": "Download + View with Uploaded SRT"
+  "downloadAndViewWithSrt": "Download + View with Uploaded SRT",
+  "preparingProcessing": "Preparing video for processing..."
 }

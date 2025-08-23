@@ -298,7 +298,6 @@ const AppLayout = ({
             <ButtonsContainer
               handleSrtUpload={handleSrtUpload}
               handleGenerateSubtitles={handleGenerateSubtitles}
-              handleRetryGeneration={handleRetryGeneration}
               handleCancelDownload={handleCancelDownload}
               handleUserSubtitlesAdd={handleUserSubtitlesAdd}
               handleAbortVideoAnalysis={handleAbortVideoAnalysis}
@@ -317,6 +316,7 @@ const AppLayout = ({
               userProvidedSubtitles={userProvidedSubtitles}
               selectedVideo={selectedVideo}
               uploadedFile={uploadedFile}
+              uploadedFileData={uploadedFileData}
               isSrtOnlyMode={isSrtOnlyMode}
               t={t}
               onGenerateBackground={handleGenerateBackground}

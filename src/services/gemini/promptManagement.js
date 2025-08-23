@@ -3,7 +3,7 @@
  * Handles prompt presets and custom prompts
  */
 
-import { getTranscriptionRules } from '../../utils/transcriptionRulesStore';
+import { getTranscriptionRulesSync } from '../../utils/transcriptionRulesStore';
 
 // Default transcription prompts
 export const PROMPT_PRESETS = [
@@ -113,8 +113,9 @@ const getTranscriptionPromptImpl = (contentType, userProvidedSubtitles = null, o
     // If no session prompt, get custom prompt from localStorage or use default
     const customPrompt = sessionPrompt || localStorage.getItem('transcription_prompt');
 
-    // Get the transcription rules if available
-    const transcriptionRules = getTranscriptionRules();
+    // Get the transcription rules if available and enabled (using sync version)
+    const useTranscriptionRules = localStorage.getItem('video_processing_use_transcription_rules') !== 'false';
+    const transcriptionRules = useTranscriptionRules ? getTranscriptionRulesSync() : null;
 
     // Base prompt (either session-specific, custom, or default)
     let basePrompt;
