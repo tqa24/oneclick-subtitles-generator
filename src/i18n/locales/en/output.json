@@ -97,5 +97,6 @@
   "videoReady": "Video ready for segment selection...",
   "subtitleUploadSuccess": "Subtitle file uploaded successfully!",
   "downloadAndViewWithSrt": "Download + View with Uploaded SRT",
+  "downloadAndGenerate": "Download video + Generate timed subtitles with AI",
   "preparingProcessing": "Preparing video for processing..."
 }

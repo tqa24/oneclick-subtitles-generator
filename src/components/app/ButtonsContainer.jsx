@@ -239,6 +239,7 @@ const ButtonsContainer = ({
             </span>
           ) : isSrtOnlyMode ? t('output.srtOnlyMode', 'Working with SRT only') :
             hasUrlAndSrtOnly ? t('output.downloadAndViewWithSrt', 'Download + View with Uploaded SRT') :
+            selectedVideo && !uploadedFile ? t('output.downloadAndGenerate', 'Download video + Generate timed subtitles with AI') :
             t('header.tagline')}
         </button>
       )}
