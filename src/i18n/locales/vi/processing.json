@@ -30,6 +30,7 @@
   "recommendedByAnalysis": "(Được đề xuất bởi phân tích)",
   "useTranscriptionRules": "Sử dụng quy tắc phiên âm từ phân tích",
   "useTranscriptionRulesDesc": "Bao gồm ngữ cảnh, thuật ngữ và quy tắc định dạng từ phân tích video trong prompt",
+  "noAnalysisAvailable": "Vui lòng tạo phân tích bằng cách nhấn nút \"Thêm phân tích\"",
   "generateForRange": "Tạo/cập nhật phụ đề cho phạm vi:",
   "analysisRules": "Quy tắc phân tích"
 }

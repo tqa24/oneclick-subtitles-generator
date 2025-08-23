@@ -30,6 +30,7 @@
   "recommendedByAnalysis": "(분석에서 추천됨)",
   "useTranscriptionRules": "분석에서 전사 규칙 사용",
   "useTranscriptionRulesDesc": "비디오 분석의 컨텍스트, 용어 및 형식 규칙을 프롬프트에 포함",
+  "noAnalysisAvailable": "\"분석 추가\" 버튼을 눌러 분석을 생성해주세요",
   "generateForRange": "범위에 대한 자막 생성/업데이트:",
   "analysisRules": "분석 규칙"
 }

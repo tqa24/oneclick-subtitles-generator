@@ -65,6 +65,7 @@ const VideoProcessingOptionsModal = ({
     const saved = localStorage.getItem('video_processing_use_transcription_rules');
     return saved !== 'false'; // Default to true, only false if explicitly set to 'false'
   });
+  const [transcriptionRulesAvailable, setTranscriptionRulesAvailable] = useState(false);
   const [customGeminiModels, setCustomGeminiModels] = useState([]);
   const [isCountingTokens, setIsCountingTokens] = useState(false);
   const [realTokenCount, setRealTokenCount] = useState(null);
@@ -172,6 +173,48 @@ const VideoProcessingOptionsModal = ({
 
   useEffect(() => {
     localStorage.setItem('video_processing_use_transcription_rules', useTranscriptionRules.toString());
+  }, [useTranscriptionRules]);
+
+  // Check transcription rules availability
+  useEffect(() => {
+    const checkRulesAvailability = () => {
+      const transcriptionRules = localStorage.getItem('transcription_rules');
+      const hasRules = transcriptionRules && transcriptionRules.trim() !== '' && transcriptionRules !== 'null';
+      setTranscriptionRulesAvailable(hasRules);
+
+      // If rules are not available, disable the switch
+      if (!hasRules && useTranscriptionRules) {
+        setUseTranscriptionRules(false);
+      }
+
+      console.log('[VideoProcessingModal] Transcription rules availability:', hasRules ? 'Available' : 'Not available');
+    };
+
+    // Initial check
+    checkRulesAvailability();
+
+    // Listen for transcription rules changes
+    const handleRulesUpdate = () => {
+      console.log('[VideoProcessingModal] Transcription rules updated, re-checking availability');
+      checkRulesAvailability();
+    };
+
+    // Listen for storage changes (when rules are cleared from other components)
+    const handleStorageChange = (event) => {
+      if (event.key === 'transcription_rules') {
+        console.log('[VideoProcessingModal] Transcription rules changed in localStorage');
+        checkRulesAvailability();
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener('transcriptionRulesUpdated', handleRulesUpdate);
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('transcriptionRulesUpdated', handleRulesUpdate);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [useTranscriptionRules]);
 
   // Automatic token counting when modal opens or settings change
@@ -674,7 +717,10 @@ const VideoProcessingOptionsModal = ({
                         <label>{t('processing.analysisRules', 'Analysis Rules')}</label>
                         <div
                           className="help-icon-container"
-                          title={t('processing.useTranscriptionRulesDesc', 'Include context, terminology, and formatting rules from video analysis in the prompt')}
+                          title={transcriptionRulesAvailable
+                            ? t('processing.useTranscriptionRulesDesc', 'Include context, terminology, and formatting rules from video analysis in the prompt')
+                            : t('processing.noAnalysisAvailable', 'Please create analysis by pressing "Add analysis" button')
+                          }
                         >
                           <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
                             <circle cx="12" cy="12" r="10"></circle>
@@ -686,8 +732,9 @@ const VideoProcessingOptionsModal = ({
                       <div className="material-switch-container">
                         <MaterialSwitch
                           id="use-transcription-rules"
-                          checked={useTranscriptionRules}
+                          checked={useTranscriptionRules && transcriptionRulesAvailable}
                           onChange={(e) => setUseTranscriptionRules(e.target.checked)}
+                          disabled={!transcriptionRulesAvailable}
                           ariaLabel={t('processing.useTranscriptionRules', 'Use transcription rules from analysis')}
                           icons={true}
                         />
