@@ -84,6 +84,7 @@
   "processingAudio": "Processing audio...",
   "optimizationFailed": "Video optimization failed, using original video.",
   "processingOptimizedVideo": "Processing optimized video...",
+  "uploading": "Uploading video...",
   "uploadingVideoToServer": "Uploading video to server...",
   "uploadingAudioToServer": "Uploading audio to server...",
   "videoUploaded": "Video uploaded, processing segments...",
@@ -93,6 +94,7 @@
   "retrying": "Retrying...",
   "ready": "Ready",
   "segmentReady": "Ready for processing",
+  "videoReady": "Video ready for segment selection...",
   "subtitleUploadSuccess": "Subtitle file uploaded successfully!",
   "downloadAndViewWithSrt": "Download + View with Uploaded SRT"
 }

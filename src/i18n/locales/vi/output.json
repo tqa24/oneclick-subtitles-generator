@@ -84,6 +84,7 @@
   "processingAudio": "Đang xử lý âm thanh...",
   "optimizationFailed": "Tối ưu hóa video thất bại, sử dụng video gốc.",
   "processingOptimizedVideo": "Đang xử lý video đã tối ưu hóa...",
+  "uploading": "Đang tải video lên...",
   "uploadingVideoToServer": "Đang tải video lên máy chủ...",
   "uploadingAudioToServer": "Đang tải âm thanh lên máy chủ...",
   "videoUploaded": "Đã tải video lên, đang xử lý các phần...",
@@ -93,6 +94,7 @@
   "retrying": "Đang thử lại...",
   "ready": "Sẵn sàng",
   "segmentReady": "Sẵn sàng để xử lý",
+  "videoReady": "Video đã sẵn sàng để chọn phân đoạn...",
   "subtitleUploadSuccess": "Tập tin phụ đề đã được tải lên thành công!",
   "downloadAndViewWithSrt": "Tải xuống + Xem với SRT đã upload"
 }
