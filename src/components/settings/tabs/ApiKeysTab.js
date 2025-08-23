@@ -463,11 +463,11 @@ const ApiKeysTab = ({
               <li>{t('settings.geminiStep4', 'Copy your API key')}</li>
               <li>{t('settings.geminiStep5', 'Paste it into the field above')}</li>
             </ol>
-            <div className="multiple-keys-info">
+            {/* <div className="multiple-keys-info">
               <h4>{t('settings.multipleKeysInfo', 'About Multiple API Keys')}</h4>
               <p>{t('settings.multipleKeysDescription', 'Adding multiple Gemini API keys enables automatic failover. If one key encounters an error, the system will automatically try another key.')}</p>
               <p>{t('settings.activeKeyDescription', 'The active key is used first. If it fails, other keys will be tried in sequence.')}</p>
-            </div>
+            </div> */}
           </div>
         </div>
 
