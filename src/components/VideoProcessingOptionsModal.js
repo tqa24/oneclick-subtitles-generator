@@ -186,7 +186,7 @@ const VideoProcessingOptionsModal = ({
       };
       performTokenCount();
     }
-  }, [isOpen, videoFile, selectedSegment, fps, mediaResolution, selectedModel, selectedPromptPreset, customLanguage]);
+  }, [isOpen, videoFile, selectedSegment, fps, mediaResolution, selectedModel, selectedPromptPreset, customLanguage, useTranscriptionRules]);
 
   // Get all available prompt presets
   const getPromptPresetOptions = () => {
@@ -249,33 +249,105 @@ const VideoProcessingOptionsModal = ({
 
   // Get the selected prompt text for processing
   const getSelectedPromptText = () => {
+    let basePrompt = '';
+
     if (selectedPromptPreset === 'settings') {
       // Use prompt from settings
-      return localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
-    }
-
-    // Handle timing generation preset (special case for user-provided subtitles)
-    if (selectedPromptPreset === 'timing-generation') {
+      basePrompt = localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
+    } else if (selectedPromptPreset === 'timing-generation') {
+      // Handle timing generation preset (special case for user-provided subtitles)
       // Return a placeholder - the actual prompt will be generated in promptManagement.js
       // when userProvidedSubtitles is detected
-      return DEFAULT_TRANSCRIPTION_PROMPT;
+      basePrompt = DEFAULT_TRANSCRIPTION_PROMPT;
+    } else {
+      // Find the preset
+      const allPresets = [...PROMPT_PRESETS, ...getUserPromptPresets()];
+      const preset = allPresets.find(p => p.id === selectedPromptPreset);
+
+      if (!preset) {
+        // Fallback to settings prompt
+        basePrompt = localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
+      } else {
+        // Handle translate-directly preset with custom language
+        if (preset.id === 'translate-directly' && customLanguage.trim()) {
+          basePrompt = preset.prompt.replace(/TARGET_LANGUAGE/g, customLanguage.trim());
+        } else {
+          basePrompt = preset.prompt;
+        }
+      }
     }
 
-    // Find the preset
-    const allPresets = [...PROMPT_PRESETS, ...getUserPromptPresets()];
-    const preset = allPresets.find(p => p.id === selectedPromptPreset);
+    // Add transcription rules if enabled
+    if (useTranscriptionRules) {
+      const transcriptionRules = localStorage.getItem('transcription_rules');
+      if (transcriptionRules) {
+        try {
+          const rules = JSON.parse(transcriptionRules);
+          let rulesText = '';
 
-    if (!preset) {
-      // Fallback to settings prompt
-      return localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
+          // Add atmosphere if available
+          if (rules.atmosphere) {
+            rulesText += `\n- Atmosphere: ${rules.atmosphere}\n`;
+          }
+
+          // Add terminology if available
+          if (rules.terminology && rules.terminology.length > 0) {
+            rulesText += '\n- Terminology and Proper Nouns:\n';
+            rules.terminology.forEach(term => {
+              rulesText += `  * ${term.term}: ${term.definition}\n`;
+            });
+          }
+
+          // Add speaker identification if available
+          if (rules.speakerIdentification && rules.speakerIdentification.length > 0) {
+            rulesText += '\n- Speaker Identification:\n';
+            rules.speakerIdentification.forEach(speaker => {
+              rulesText += `  * ${speaker.speakerId}: ${speaker.description}\n`;
+            });
+          }
+
+          // Add formatting conventions if available
+          if (rules.formattingConventions && rules.formattingConventions.length > 0) {
+            rulesText += '\n- Formatting and Style Conventions:\n';
+            rules.formattingConventions.forEach(convention => {
+              rulesText += `  * ${convention}\n`;
+            });
+          }
+
+          // Add spelling and grammar rules if available
+          if (rules.spellingAndGrammar && rules.spellingAndGrammar.length > 0) {
+            rulesText += '\n- Spelling, Grammar, and Punctuation:\n';
+            rules.spellingAndGrammar.forEach(rule => {
+              rulesText += `  * ${rule}\n`;
+            });
+          }
+
+          // Add relationships if available
+          if (rules.relationships && rules.relationships.length > 0) {
+            rulesText += '\n- Relationships and Social Hierarchy:\n';
+            rules.relationships.forEach(relationship => {
+              rulesText += `  * ${relationship}\n`;
+            });
+          }
+
+          // Add additional notes if available
+          if (rules.additionalNotes && rules.additionalNotes.length > 0) {
+            rulesText += '\n- Additional Notes:\n';
+            rules.additionalNotes.forEach(note => {
+              rulesText += `  * ${note}\n`;
+            });
+          }
+
+          if (rulesText.trim()) {
+            basePrompt += '\n\nAdditional transcription rules to follow:' + rulesText;
+          }
+        } catch (error) {
+          console.warn('[VideoProcessingModal] Error parsing transcription rules:', error);
+        }
+      }
     }
 
-    // Handle translate-directly preset with custom language
-    if (preset.id === 'translate-directly' && customLanguage.trim()) {
-      return preset.prompt.replace(/TARGET_LANGUAGE/g, customLanguage.trim());
-    }
-
-    return preset.prompt;
+    return basePrompt;
   };
 
   // Real token counting using Gemini API with Files API
@@ -370,20 +442,28 @@ const VideoProcessingOptionsModal = ({
       const data = await response.json();
       console.log('[TokenCounting] Real token count (without media resolution):', data.totalTokens);
 
-      // Note: The countTokens API doesn't support media resolution, so this count
-      // is for the default resolution. We'll adjust it based on the selected resolution.
+      // Note: The countTokens API doesn't support FPS or media resolution parameters,
+      // so this count is for the default settings. We need to adjust it based on our settings.
       const baseTokens = data.totalTokens;
 
-      // Adjust for media resolution based on official token counts
-      let adjustmentFactor = 1;
+      // The API returns tokens for default FPS (likely 1 FPS) and default resolution (likely medium)
+      // We need to adjust for both our FPS and resolution settings
+
+      // First, adjust for FPS - assume API used 1 FPS as baseline
+      const baseFps = 1; // Assumed baseline FPS used by the API
+      const fpsAdjustmentFactor = fps / baseFps;
+
+      // Then adjust for media resolution based on official token counts
+      let resolutionAdjustmentFactor = 1;
       if (mediaResolution === 'low') {
-        adjustmentFactor = 64 / 256; // low vs medium ratio
+        resolutionAdjustmentFactor = 64 / 256; // low vs medium ratio
       } else if (mediaResolution === 'high') {
-        adjustmentFactor = 256 / 256; // high vs medium ratio (same)
+        resolutionAdjustmentFactor = 256 / 256; // high vs medium ratio (same)
       }
 
-      const adjustedTokens = Math.round(baseTokens * adjustmentFactor);
-      console.log('[TokenCounting] Adjusted token count for', mediaResolution, 'resolution:', adjustedTokens);
+      // Apply both adjustments
+      const adjustedTokens = Math.round(baseTokens * fpsAdjustmentFactor * resolutionAdjustmentFactor);
+      console.log('[TokenCounting] Adjusted token count - FPS:', fps, 'Resolution:', mediaResolution, 'Final tokens:', adjustedTokens);
 
       return adjustedTokens;
     } catch (error) {
