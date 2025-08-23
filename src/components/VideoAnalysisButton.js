@@ -33,10 +33,16 @@ const VideoAnalysisButton = ({ disabled = false, uploadedFile = null, uploadedFi
 
     // Listen for openRulesEditor event to skip countdown modal
     const handleOpenRulesEditor = (event) => {
-      const { transcriptionRules } = event.detail;
+      const { transcriptionRules, recommendedPresetId } = event.detail;
       if (transcriptionRules) {
         setTranscriptionRulesState(transcriptionRules);
         setHasAnalysis(true);
+
+        // Ensure the recommended preset is set in session storage
+        if (recommendedPresetId) {
+          sessionStorage.setItem('current_session_preset_id', recommendedPresetId);
+        }
+
         setShowRulesEditor(true);
       }
     };

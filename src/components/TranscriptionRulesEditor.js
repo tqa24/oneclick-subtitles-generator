@@ -20,34 +20,99 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
   const [currentPresetId, setCurrentPresetId] = useState('');
   const [userPromptPresets, setUserPromptPresets] = useState([]);
 
+  // Track initial state for change detection
+  const [initialState, setInitialState] = useState({
+    rules: initialRules || {
+      atmosphere: '',
+      terminology: [],
+      speakerIdentification: [],
+      formattingConventions: [],
+      spellingAndGrammar: [],
+      relationships: [],
+      additionalNotes: []
+    },
+    presetId: 'custom'
+  });
+
   // Get all available presets (built-in + user)
   const allPresets = useMemo(() => [...PROMPT_PRESETS, ...userPromptPresets], [userPromptPresets]);
 
-  // Effect to determine the current preset
+  // Function to check if there are changes
+  const hasChanges = useMemo(() => {
+    // Deep compare rules
+    const rulesChanged = JSON.stringify(rules) !== JSON.stringify(initialState.rules);
+
+    // Check if preset changed
+    const presetChanged = currentPresetId !== initialState.presetId;
+
+    return rulesChanged || presetChanged;
+  }, [rules, currentPresetId, initialState]);
+
+  // Effect to determine the current preset and set initial state - run only once on mount
   useEffect(() => {
-    // First check if there's a session-specific preset
+    // First check if there's a session-specific preset (from analysis)
     const sessionPresetId = sessionStorage.getItem('current_session_preset_id');
+    let detectedPresetId = 'custom';
 
     if (sessionPresetId) {
+      console.log('[TranscriptionRulesEditor] Using analysis-recommended preset:', sessionPresetId);
+      detectedPresetId = sessionPresetId;
       setCurrentPresetId(sessionPresetId);
     } else {
       // If no session preset, try to determine from the stored prompt
       const storedPrompt = localStorage.getItem('transcription_prompt');
 
+      // Get current presets (PROMPT_PRESETS + user presets)
+      const currentPresets = [...PROMPT_PRESETS, ...getUserPromptPresets()];
+
       // Find a preset that matches the stored prompt
-      const matchingPreset = allPresets.find(preset => preset.prompt === storedPrompt);
+      const matchingPreset = currentPresets.find(preset => preset.prompt === storedPrompt);
 
       if (matchingPreset) {
+        console.log('[TranscriptionRulesEditor] Using preset from stored prompt:', matchingPreset.id);
+        detectedPresetId = matchingPreset.id;
         setCurrentPresetId(matchingPreset.id);
       } else {
         // If no matching preset, it's a custom prompt
+        console.log('[TranscriptionRulesEditor] Using custom prompt');
         setCurrentPresetId('custom');
       }
     }
 
+    // Set initial state for change tracking
+    setInitialState({
+      rules: initialRules || {
+        atmosphere: '',
+        terminology: [],
+        speakerIdentification: [],
+        formattingConventions: [],
+        spellingAndGrammar: [],
+        relationships: [],
+        additionalNotes: []
+      },
+      presetId: detectedPresetId
+    });
+
     // Load user presets
     setUserPromptPresets(getUserPromptPresets());
-  }, [allPresets]);
+  }, []); // Empty dependency array - run only once on mount
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && isOpen) {
+        handleCancel();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
 
   // Handle atmosphere change
   const handleAtmosphereChange = (e) => {
@@ -141,7 +206,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
   // Get preset title based on ID
   const getPresetTitle = (presetId) => {
     if (presetId === 'custom') {
-      return t('settings.customPrompt', 'Custom Prompt');
+      return t('settings.promptFromSettings', 'Prompt from settings');
     }
 
     const preset = allPresets.find(p => p.id === presetId);
@@ -187,8 +252,8 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
               onChange={handleChangePrompt}
               className="preset-select"
             >
-              {/* Custom prompt option */}
-              <option value="custom">{t('settings.customPrompt', 'Custom Prompt')}</option>
+              {/* Prompt from settings option */}
+              <option value="custom">{t('settings.promptFromSettings', 'Prompt from settings')}</option>
 
               {/* Built-in presets */}
               <optgroup label={t('settings.builtInPresets', 'Built-in Presets')}>
@@ -429,7 +494,11 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
           <button className="cancel-button" onClick={handleCancel}>
             {t('common.cancel', 'Cancel')}
           </button>
-          <button className="save-button" onClick={handleSave}>
+          <button
+            className={`save-button ${!hasChanges ? 'disabled' : ''}`}
+            onClick={handleSave}
+            disabled={!hasChanges}
+          >
             {t('common.save', 'Save')}
           </button>
         </div>

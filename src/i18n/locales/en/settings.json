@@ -146,6 +146,7 @@
   "presetIdentifySpeakers": "Identify Speakers",
   "useStructuredOutput": "Use Structured Output",
   "customPrompt": "Custom Prompt",
+  "promptFromSettings": "Prompt from settings",
   "builtInPresets": "Built-in Presets",
   "userPresets": "Your Presets",
   "structuredOutputDescription": "Enable structured JSON output from Gemini API for more reliable parsing. This improves accuracy but may increase token usage.",

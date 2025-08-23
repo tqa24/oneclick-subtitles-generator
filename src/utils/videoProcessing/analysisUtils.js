@@ -77,18 +77,33 @@ export const analyzeVideoAndWaitForUserChoice = async (analysisFile, onStatusUpd
       setTranscriptionRules(analysisResult.transcriptionRules);
     }
 
+    // Set the recommended preset in session storage for the rules editor
+    const recommendedPresetId = analysisResult.recommendedPreset?.id || 'settings';
+    sessionStorage.setItem('current_session_preset_id', recommendedPresetId);
+
+    // Also set the prompt if we have the preset
+    if (recommendedPresetId !== 'settings') {
+      // Import PROMPT_PRESETS to get the actual prompt
+      const { PROMPT_PRESETS } = await import('../../services/geminiService');
+      const recommendedPreset = PROMPT_PRESETS.find(p => p.id === recommendedPresetId);
+      if (recommendedPreset) {
+        sessionStorage.setItem('current_session_prompt', recommendedPreset.prompt);
+      }
+    }
+
     // Dispatch event to open the rules editor directly
     const openRulesEditorEvent = new CustomEvent('openRulesEditor', {
       detail: {
         transcriptionRules: analysisResult.transcriptionRules,
-        analysisResult: analysisResult
+        analysisResult: analysisResult,
+        recommendedPresetId: recommendedPresetId
       }
     });
     window.dispatchEvent(openRulesEditorEvent);
 
     // Return the analysis result with a default choice (use recommended preset)
     const userChoice = {
-      presetId: analysisResult.recommendedPreset?.id || 'settings',
+      presetId: recommendedPresetId,
       transcriptionRules: analysisResult.transcriptionRules
     };
 

@@ -146,6 +146,7 @@
   "presetIdentifySpeakers": "Nhận diện người nói",
   "useStructuredOutput": "Sử dụng đầu ra cấu trúc",
   "customPrompt": "Prompt đã ghi trong cài đặt",
+  "promptFromSettings": "Prompt từ cài đặt",
   "builtInPresets": "Mẫu có sẵn",
   "userPresets": "Mẫu của bạn",
   "structuredOutputDescription": "Bật đầu ra JSON cấu trúc từ API Gemini để phân tích đáng tin cậy hơn. Điều này cải thiện độ chính xác nhưng có thể tăng sử dụng token.",

@@ -38,7 +38,7 @@
   align-items: center;
   padding: 1.25rem 1.75rem;
   border-bottom: 1px solid rgba(var(--md-outline-variant-rgb), 0.5);
-  background-color: var(--md-surface-2);
+  background-color: #00000000;
   box-shadow: var(--md-elevation-level1);
 }
 
