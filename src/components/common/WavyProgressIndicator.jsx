@@ -71,15 +71,19 @@ class Animatable {
         const startValue = this.value;
         const startTime = performance.now();
         const duration = animationSpec.duration;
+        const easing = animationSpec?.easing;
 
         return new Promise((resolve) => {
             const animate = (currentTime) => {
                 const elapsed = currentTime - startTime;
                 const progress = Math.min(elapsed / duration, 1);
 
-                // Simple easing (can be enhanced with cubic bezier)
-                const eased = progress * (2 - progress);
-                this.value = startValue + (targetValue - startValue) * eased;
+                // Apply cubic bezier easing if provided (matches web component behavior)
+                const easedProgress = Array.isArray(easing)
+                    ? this.cubicBezier(progress, easing)
+                    : (progress * (2 - progress)); // fallback ease-out
+
+                this.value = startValue + (targetValue - startValue) * easedProgress;
 
                 if (this.onUpdate) this.onUpdate(this.value);
 
@@ -93,6 +97,20 @@ class Animatable {
             };
             this.animationId = requestAnimationFrame(animate);
         });
+    }
+
+    // Simplified cubic-bezier evaluation (kept consistent with Web Component)
+    cubicBezier(t, [x1, y1, x2, y2]) {
+        const cx = 3 * x1;
+        const bx = 3 * (x2 - x1) - cx;
+        const ax = 1 - cx - bx;
+
+        const cy = 3 * y1;
+        const by = 3 * (y2 - y1) - cy;
+        const ay = 1 - cy - by;
+
+        const x = ((ax * t + bx) * t + cx) * t;
+        return ((ay * x + by * x + cy) * x);
     }
 
     stop() {
@@ -305,15 +323,22 @@ const WavyProgressIndicator = forwardRef(({
         setupHighDPICanvas();
     }, [setupHighDPICanvas]);
 
-    // Wave animation with interval instead of requestAnimationFrame
+    // Wave offset animation using rAF for smoothness and continuity
     useEffect(() => {
+        let rafId = null;
+        let lastTime = performance.now();
+        const animate = (now) => {
+            const dt = now - lastTime;
+            lastTime = now;
+            setWaveOffset(prev => (prev + (dt / 1000) * Math.max(0, waveSpeed)) % 1);
+            rafId = requestAnimationFrame(animate);
+        };
         if (waveSpeed > 0) {
-            const interval = setInterval(() => {
-                setWaveOffset(prev => (prev + 0.02 * waveSpeed) % 1);
-            }, 16); // ~60fps
-
-            return () => clearInterval(interval);
+            rafId = requestAnimationFrame(animate);
+        } else {
+            setWaveOffset(0);
         }
+        return () => { if (rafId) cancelAnimationFrame(rafId); };
     }, [waveSpeed]);
 
     // Stable progress animation
@@ -361,23 +386,22 @@ const WavyProgressIndicator = forwardRef(({
         }
     }, [progress, animate]); // Removed animateProgress from deps to prevent loops
 
-    // Amplitude animation system
+    // Amplitude animation system (matches Web Component behavior)
     const updateAmplitudeAnimation = useCallback((targetAmplitudePx) => {
         if (!amplitudeAnimatableRef.current) {
             amplitudeAnimatableRef.current = new Animatable(targetAmplitudePx);
             amplitudeAnimatableRef.current.onUpdate = () => {
-                // Trigger redraw when amplitude changes
-                if (ctxRef.current && drawingCacheRef.current) {
-                    drawProgress();
-                }
+                // Schedule a draw on the next frame using the latest draw function reference
+                const fn = drawRef.current;
+                if (typeof fn === 'function') requestAnimationFrame(() => fn());
             };
         }
 
         const currentAmplitudeAnimatable = amplitudeAnimatableRef.current;
-        if (Math.abs(currentAmplitudeAnimatable.targetValue - targetAmplitudePx) > 0.01) {
-            const animationSpec = targetAmplitudePx > currentAmplitudeAnimatable.value ?
-                AnimationSpecs.increasingAmplitude : AnimationSpecs.decreasingAmplitude;
-
+        if (Math.abs(currentAmplitudeAnimatable.targetValue - targetAmplitudePx) > 0.001 || !currentAmplitudeAnimatable.isRunning) {
+            const animationSpec = currentAmplitudeAnimatable.value < targetAmplitudePx
+                ? AnimationSpecs.increasingAmplitude
+                : AnimationSpecs.decreasingAmplitude;
             currentAmplitudeAnimatable.animateTo(targetAmplitudePx, animationSpec);
         }
     }, []);
@@ -468,15 +492,19 @@ const WavyProgressIndicator = forwardRef(({
             // Progress
             if (validProgress > 0) {
                 const progressWidth = validProgress * (width - strokeCapWidth * 2);
-                const amplitude = WavyProgressDefaults.indicatorAmplitude(validProgress);
-                const waveHeight = amplitude * 3;
+
+                // Smooth amplitude transition like the Web Component
+                const targetAmplitude = WavyProgressDefaults.indicatorAmplitude(validProgress);
+                updateAmplitudeAnimation(targetAmplitude);
+                const animatedAmplitude = amplitudeAnimatableRef.current ? amplitudeAnimatableRef.current.value : 0;
+                const waveHeight = animatedAmplitude * (height * 0.15);
 
                 ctx.strokeStyle = color;
                 ctx.lineWidth = WavyProgressDefaults.strokeWidth;
                 ctx.lineCap = 'round';
                 ctx.beginPath();
 
-                if (amplitude === 0) {
+                if (animatedAmplitude === 0) {
                     ctx.moveTo(strokeCapWidth, 0);
                     ctx.lineTo(strokeCapWidth + progressWidth, 0);
                 } else {
@@ -519,6 +547,11 @@ const WavyProgressIndicator = forwardRef(({
             }
         }
     }, [currentProgress, waveOffset, color, trackColor, wavelength, showStopIndicator, isAnimatingEntrance, isAnimatingDisappearance, hasDisappeared, entranceStartTime, disappearanceStartTime]);
+
+    // Keep latest draw function in a ref to avoid TDZ issues in callbacks above
+    useEffect(() => {
+        drawRef.current = drawProgress;
+    }, [drawProgress]);
 
     // Draw when values change (no continuous loop)
     useEffect(() => {
