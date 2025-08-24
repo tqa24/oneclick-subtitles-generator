@@ -450,8 +450,8 @@ class LinearWavyProgressIndicator extends HTMLElement {
         // Properties matching Android implementation
         this._progress = () => 0;
         this._amplitude = WavyProgressIndicatorDefaults.indicatorAmplitude;
-        this._color = WavyProgressIndicatorDefaults.indicatorColor;
-        this._trackColor = WavyProgressIndicatorDefaults.trackColor;
+        this._color = this.getThemeColor('--figma-progress-color') || WavyProgressIndicatorDefaults.indicatorColor;
+        this._trackColor = this.getThemeColor('--figma-track-color') || WavyProgressIndicatorDefaults.trackColor;
         this._stroke = WavyProgressIndicatorDefaults.linearIndicatorStroke;
         this._trackStroke = WavyProgressIndicatorDefaults.linearTrackStroke;
         this._gapSize = WavyProgressIndicatorDefaults.LinearIndicatorTrackGapSize;
@@ -485,6 +485,19 @@ class LinearWavyProgressIndicator extends HTMLElement {
         this._secondLineTailProgress = () => 0;
 
         this.render();
+    }
+
+    // Method to get current theme colors from CSS variables
+    getThemeColor(cssVariable) {
+        return getComputedStyle(document.documentElement)
+            .getPropertyValue(cssVariable).trim();
+    }
+
+    // Method to update colors based on current theme
+    updateThemeColors() {
+        this._color = this.getThemeColor('--figma-progress-color') || WavyProgressIndicatorDefaults.indicatorColor;
+        this._trackColor = this.getThemeColor('--figma-track-color') || WavyProgressIndicatorDefaults.trackColor;
+        this.invalidateDraw();
     }
 
     static get observedAttributes() {

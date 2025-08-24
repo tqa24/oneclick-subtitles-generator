@@ -6,11 +6,11 @@
     <title>EXACT Wavy Progress Indicator Implementation</title>
     <style>
         :root {
-            /* EXACT Colors from Figma Design */
+            /* EXACT Colors from Figma Design - Light Mode */
             --figma-progress-color: #485E92;  /* stroke_ZBYF2E and fill_WDP657 */
             --figma-track-color: #D9DFF6;    /* fill_RAQXG6 */
 
-            /* Material Design 3 Color Tokens for UI */
+            /* Material Design 3 Color Tokens for UI - Light Mode */
             --md-sys-color-primary: #485E92;  /* Updated to match Figma */
             --md-sys-color-on-primary: #FFFFFF;
             --md-sys-color-primary-container: #D9DFF6;  /* Updated to match Figma */
@@ -20,6 +20,23 @@
             --md-sys-color-on-surface: #1C1B1F;
             --md-sys-color-surface-variant: #E7E0EC;
             --md-sys-color-on-surface-variant: #49454F;
+        }
+
+        [data-theme="dark"] {
+            /* EXACT Colors from Figma Design - Dark Mode (M3 Blue DT) */
+            --figma-progress-color: #B0C6FF !important;  /* M3 Blue DT - exact from Figma */
+            --figma-track-color: #404659 !important;    /* Dark track - exact from Figma */
+
+            /* Material Design 3 Color Tokens for UI - Dark Mode */
+            --md-sys-color-primary: #B0C6FF;
+            --md-sys-color-on-primary: #1C1B1F;
+            --md-sys-color-primary-container: #404659;
+            --md-sys-color-on-primary-container: #B0C6FF;
+            --md-sys-color-outline-variant: #404659;
+            --md-sys-color-surface: #1C1B1F;           /* Dark surface */
+            --md-sys-color-on-surface: #E6E1E5;        /* Light text on dark */
+            --md-sys-color-surface-variant: #2B2930;   /* Dark surface variant */
+            --md-sys-color-on-surface-variant: #CAC4D0; /* Light text on dark variant */
         }
 
         * {
@@ -34,6 +51,7 @@
             color: var(--md-sys-color-on-surface);
             line-height: 1.6;
             padding: 2rem;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .container {
@@ -73,6 +91,7 @@
             padding: 2rem;
             background-color: var(--md-sys-color-surface-variant);
             border-radius: 12px;
+            transition: background-color 0.3s ease;
         }
 
         .section h2 {
@@ -94,6 +113,11 @@
             padding: 2rem;
             border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        [data-theme="dark"] .demo-card {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
 
         .demo-card h3 {
@@ -106,18 +130,19 @@
         .demo-item {
             margin-bottom: 2rem;
             padding: 1.5rem;
-            background-color: #FFFFFF; /* White background so sliders are visible */
-            border: 1px solid #E0E0E0; /* Light border for definition */
+            background-color: var(--md-sys-color-surface);
+            border: 1px solid var(--md-sys-color-outline-variant);
             border-radius: 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 1.5rem;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
         .demo-item label {
             font-weight: 500;
-            color: #1C1B1F; /* Dark text on white background */
+            color: var(--md-sys-color-on-surface);
             text-align: center;
             font-size: 1rem;
         }
@@ -146,11 +171,12 @@
         input[type="range"] {
             width: 140px;
             height: 6px;
-            background: #D9DFF6; /* Exact Figma track color */
+            background: var(--figma-track-color);
             border-radius: 3px;
             outline: none;
             -webkit-appearance: none;
             appearance: none;
+            transition: background-color 0.3s ease;
         }
 
         input[type="range"]::-webkit-slider-thumb {
@@ -158,31 +184,33 @@
             appearance: none;
             width: 24px;
             height: 24px;
-            background: #485E92; /* Exact Figma progress color */
+            background: var(--figma-progress-color);
             border-radius: 50%;
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease;
         }
 
         input[type="range"]::-moz-range-thumb {
             width: 24px;
             height: 24px;
-            background: #485E92; /* Exact Figma progress color */
+            background: var(--figma-progress-color);
             border-radius: 50%;
             cursor: pointer;
             border: none;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease;
         }
 
         input[type="range"]::-webkit-slider-track {
             height: 6px;
-            background: #D9DFF6; /* Exact Figma track color */
+            background: var(--figma-track-color);
             border-radius: 3px;
         }
 
         input[type="range"]::-moz-range-track {
             height: 6px;
-            background: #D9DFF6; /* Exact Figma track color */
+            background: var(--figma-track-color);
             border-radius: 3px;
             border: none;
         }
@@ -211,7 +239,7 @@
         }
         
         button:disabled {
-            background-color: #C0C0C0;
+            background-color: var(--md-sys-color-outline-variant);
             cursor: not-allowed;
         }
 
@@ -283,9 +311,97 @@
                 align-items: center;
             }
         }
+
+        /* Dark Mode Toggle Switch */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--md-sys-color-surface-variant);
+            padding: 8px 12px;
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        [data-theme="dark"] .theme-toggle {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .theme-toggle-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--md-sys-color-on-surface-variant);
+            user-select: none;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background: var(--md-sys-color-outline-variant);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: var(--md-sys-color-primary);
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(20px);
+        }
+
+        .theme-icon {
+            font-size: 16px;
+            transition: opacity 0.3s ease;
+        }
+
+        .theme-icon.sun {
+            opacity: 1;
+        }
+
+        .theme-icon.moon {
+            opacity: 0.5;
+        }
+
+        [data-theme="dark"] .theme-icon.sun {
+            opacity: 0.5;
+        }
+
+        [data-theme="dark"] .theme-icon.moon {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
+    <!-- Dark Mode Toggle -->
+    <div class="theme-toggle">
+        <span class="theme-icon sun">☀️</span>
+        <div class="toggle-switch" id="theme-toggle">
+            <div class="toggle-slider"></div>
+        </div>
+        <span class="theme-icon moon">🌙</span>
+        <span class="theme-toggle-label">Dark Mode</span>
+    </div>
+
     <div class="container">
         <h1>🎯 EXACT Wavy Progress Indicator</h1>
         <div class="exact-badge">
@@ -441,6 +557,56 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Dark Mode Toggle Functionality
+            const themeToggle = document.getElementById('theme-toggle');
+            const body = document.body;
+
+            // Check for saved theme preference or default to light mode
+            const savedTheme = localStorage.getItem('theme') || 'light';
+
+            // Apply saved theme
+            if (savedTheme === 'dark') {
+                body.setAttribute('data-theme', 'dark');
+                themeToggle.classList.add('active');
+                // Force set dark mode CSS variables
+                document.documentElement.style.setProperty('--figma-progress-color', '#B0C6FF');
+                document.documentElement.style.setProperty('--figma-track-color', '#404659');
+            } else {
+                // Force set light mode CSS variables
+                document.documentElement.style.setProperty('--figma-progress-color', '#485E92');
+                document.documentElement.style.setProperty('--figma-track-color', '#D9DFF6');
+            }
+
+            // Toggle theme on click
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = body.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+                if (newTheme === 'dark') {
+                    body.setAttribute('data-theme', 'dark');
+                    themeToggle.classList.add('active');
+                    // Force set dark mode CSS variables
+                    document.documentElement.style.setProperty('--figma-progress-color', '#B0C6FF');
+                    document.documentElement.style.setProperty('--figma-track-color', '#404659');
+                } else {
+                    body.removeAttribute('data-theme');
+                    themeToggle.classList.remove('active');
+                    // Force set light mode CSS variables
+                    document.documentElement.style.setProperty('--figma-progress-color', '#485E92');
+                    document.documentElement.style.setProperty('--figma-track-color', '#D9DFF6');
+                }
+
+                // Save theme preference
+                localStorage.setItem('theme', newTheme);
+
+                // Update all progress indicators with new theme colors
+                document.querySelectorAll('linear-wavy-progress-indicator-exact').forEach(indicator => {
+                    if (indicator.updateThemeColors) {
+                        indicator.updateThemeColors();
+                    }
+                });
+            });
+
             // Exact progress controls
             const exactProgress = document.getElementById('exact-progress');
             const exactProgressValue = document.getElementById('exact-progress-value');
