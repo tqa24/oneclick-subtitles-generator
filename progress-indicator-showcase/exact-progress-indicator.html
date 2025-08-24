@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EXACT Wavy Progress Indicator Implementation</title>
+    <style>
+        :root {
+            /* EXACT Colors from Figma Design */
+            --figma-progress-color: #485E92;  /* stroke_ZBYF2E and fill_WDP657 */
+            --figma-track-color: #D9DFF6;    /* fill_RAQXG6 */
+
+            /* Material Design 3 Color Tokens for UI */
+            --md-sys-color-primary: #485E92;  /* Updated to match Figma */
+            --md-sys-color-on-primary: #FFFFFF;
+            --md-sys-color-primary-container: #D9DFF6;  /* Updated to match Figma */
+            --md-sys-color-on-primary-container: #485E92;  /* Updated to match Figma */
+            --md-sys-color-outline-variant: #D9DFF6;
+            --md-sys-color-surface: #FFFBFE;
+            --md-sys-color-on-surface: #1C1B1F;
+            --md-sys-color-surface-variant: #E7E0EC;
+            --md-sys-color-on-surface-variant: #49454F;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--md-sys-color-surface);
+            color: var(--md-sys-color-on-surface);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: var(--md-sys-color-primary);
+            font-size: 2.5rem;
+            font-weight: 400;
+        }
+
+        .subtitle {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--md-sys-color-on-surface-variant);
+            font-size: 1.1rem;
+        }
+
+        .exact-badge {
+            display: inline-block;
+            background: linear-gradient(45deg, #FF6B35, #F7931E);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+        }
+
+        .section {
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background-color: var(--md-sys-color-surface-variant);
+            border-radius: 12px;
+        }
+
+        .section h2 {
+            margin-bottom: 1.5rem;
+            color: var(--md-sys-color-primary);
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .demo-card {
+            background-color: var(--md-sys-color-surface);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .demo-card h3 {
+            margin-bottom: 1.5rem;
+            color: var(--md-sys-color-on-surface);
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .demo-item {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background-color: #FFFFFF; /* White background so sliders are visible */
+            border: 1px solid #E0E0E0; /* Light border for definition */
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .demo-item label {
+            font-weight: 500;
+            color: #1C1B1F; /* Dark text on white background */
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-top: 1rem;
+            justify-content: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .control-group label {
+            font-size: 0.9rem;
+            color: var(--md-sys-color-on-surface-variant);
+            font-weight: 500;
+        }
+
+        input[type="range"] {
+            width: 140px;
+            height: 6px;
+            background: #D9DFF6; /* Exact Figma track color */
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            background: #485E92; /* Exact Figma progress color */
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            background: #485E92; /* Exact Figma progress color */
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        input[type="range"]::-webkit-slider-track {
+            height: 6px;
+            background: #D9DFF6; /* Exact Figma track color */
+            border-radius: 3px;
+        }
+
+        input[type="range"]::-moz-range-track {
+            height: 6px;
+            background: #D9DFF6; /* Exact Figma track color */
+            border-radius: 3px;
+            border: none;
+        }
+
+        button {
+            background-color: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 24px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background-color: color-mix(in srgb, var(--md-sys-color-primary) 90%, black);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        button:active {
+            background-color: color-mix(in srgb, var(--md-sys-color-primary) 80%, black);
+            transform: translateY(1px);
+        }
+
+        .value-display {
+            font-size: 0.85rem;
+            color: var(--md-sys-color-on-surface-variant);
+            text-align: center;
+            margin-top: 0.5rem;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 0.25rem 0.5rem;
+            border-radius: 8px;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, var(--md-sys-color-primary-container), #E8F5E8);
+            color: var(--md-sys-color-on-primary-container);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            border-left: 6px solid var(--md-sys-color-primary);
+        }
+
+        .info-box h3 {
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-box p {
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .code-reference {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #495057;
+        }
+
+        .algorithm-highlight {
+            background: linear-gradient(45deg, #FFE5D9, #FFCAB0);
+            border-left: 4px solid #FF6B35;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+        }
+
+        .algorithm-highlight h4 {
+            color: #D63031;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 EXACT Wavy Progress Indicator</h1>
+        <div class="exact-badge">
+            ✅ 100% EXACT Android Implementation
+        </div>
+        <p class="subtitle">
+            Pixel-perfect JavaScript port of Android's WavyProgressIndicator.kt with exact algorithms, 
+            drawing logic, and animation specifications
+        </p>
+
+        <div class="info-box">
+            <h3>🔬 Exact Implementation Details</h3>
+            <p>
+                This implementation is a precise line-by-line port of the Android source code. Every algorithm,
+                drawing path, animation timing, and mathematical calculation has been exactly replicated from:
+            </p>
+            <div class="code-reference">
+                • WavyProgressIndicator.kt<br>
+                • LinearWavyProgressModifiers.kt<br>
+                • CircularWavyProgressModifiers.kt<br>
+                • LinearProgressDrawingCache class<br>
+                • All animation specifications from MotionTokens
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📏 Exact Linear Wavy Progress Indicators</h2>
+
+            <div class="algorithm-highlight">
+                <h4>🧮 Exact Algorithms + Material Design 3 Guidelines:</h4>
+                <ul style="margin-left: 1rem; font-size: 0.9rem;">
+                    <li><strong>Wave Path Generation:</strong> Quadratic Bézier curves with exact control points</li>
+                    <li><strong>Amplitude Function:</strong> 0% at 0-10% and 95-100% progress, 100% between 10-95%</li>
+                    <li><strong>Stop Indicator:</strong> 4dp circle for accessibility (3:1 contrast requirement)</li>
+                    <li><strong>Low Progress Dot:</strong> Dot appearance at very low percentages</li>
+                    <li><strong>RTL Support:</strong> Horizontal mirroring for right-to-left languages</li>
+                    <li><strong>Responsive Sizing:</strong> 40dp minimum, dynamic height for wavy shape</li>
+                </ul>
+            </div>
+            
+            <div class="demo-grid">
+                <div class="demo-card">
+                    <h3>🎯 Exact Amplitude Transitions (Flat ↔ Wave)</h3>
+                    <div class="demo-item">
+                        <label>Smooth Amplitude Animation (500ms)</label>
+                        <linear-wavy-progress-indicator-exact id="exact-determinate" progress="0.6"></linear-wavy-progress-indicator-exact>
+                        <div class="controls">
+                            <div class="control-group">
+                                <label>Progress</label>
+                                <input type="range" id="exact-progress" min="0" max="1" step="0.01" value="0.6">
+                                <div class="value-display" id="exact-progress-value">60%</div>
+                            </div>
+                            <div class="control-group">
+                                <label>Current Amplitude</label>
+                                <div class="value-display" id="current-amplitude-value">1.0</div>
+                            </div>
+                            <button onclick="demonstrateAmplitudeTransitions()">Demo All 6 States</button>
+                        </div>
+                        <div class="algorithm-highlight" style="margin-top: 1rem;">
+                            <h4>🎯 Exact Amplitude States:</h4>
+                            <div style="font-size: 0.8rem;">
+                                • <strong>0-10%:</strong> Amplitude = 0 (flat)<br>
+                                • <strong>10-95%:</strong> Amplitude = 1 (full wave)<br>
+                                • <strong>95-100%:</strong> Amplitude = 0 (flat)<br>
+                                • <strong>Transitions:</strong> 500ms with exact Android easing
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="demo-card">
+                    <h3>Indeterminate with Exact Animation Specs</h3>
+                    <div class="demo-item">
+                        <label>4-Line Animation with Exact Timing</label>
+                        <linear-wavy-progress-indicator-exact id="exact-indeterminate" indeterminate></linear-wavy-progress-indicator-exact>
+                        <div class="controls">
+                            <button onclick="toggleExactIndeterminate()">Toggle Animation</button>
+                        </div>
+                        <div class="algorithm-highlight" style="margin-top: 1rem;">
+                            <h4>Animation Specifications:</h4>
+                            <div style="font-size: 0.8rem; font-family: monospace;">
+                                Line 1 Head: 1800ms, cubic-bezier(0.2, 0, 0, 1), delay: 0ms<br>
+                                Line 1 Tail: 1800ms, cubic-bezier(0.4, 0, 1, 1), delay: 333ms<br>
+                                Line 2 Head: 1800ms, cubic-bezier(0, 0, 0.65, 1), delay: 1000ms<br>
+                                Line 2 Tail: 1800ms, cubic-bezier(0.1, 0, 0.45, 1), delay: 1267ms
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Stop Indicator & Low Progress Dot</h2>
+
+            <div class="demo-grid">
+                <div class="demo-card">
+                    <h3>Stop Indicator & Low Progress Dot</h3>
+                    <div class="demo-item">
+                        <label>Accessibility Features</label>
+                        <linear-wavy-progress-indicator-exact id="accessibility-demo" progress="0.02"></linear-wavy-progress-indicator-exact>
+                        <div class="controls">
+                            <div class="control-group">
+                                <label>Progress</label>
+                                <input type="range" id="accessibility-progress" min="0" max="1" step="0.01" value="0.02">
+                                <div class="value-display" id="accessibility-progress-value">2%</div>
+                            </div>
+                            <div class="control-group">
+                                <label>Show Stop Indicator</label>
+                                <input type="checkbox" id="show-stop-indicator" checked>
+                            </div>
+                        </div>
+                        <div class="algorithm-highlight" style="margin-top: 1rem;">
+                            <h4>Features Demonstrated:</h4>
+                            <div style="font-size: 0.8rem;">
+                                • <strong>Low Progress Dot:</strong> Appears as dot at &lt;5% progress<br>
+                                • <strong>Stop Indicator:</strong> 4dp circle at end for accessibility<br>
+                                • <strong>Contrast Compliance:</strong> Meets 3:1 contrast requirement
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load the exact implementation -->
+    <script src="javascript-code/ExactWavyProgressIndicator.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Exact progress controls
+            const exactProgress = document.getElementById('exact-progress');
+            const exactProgressValue = document.getElementById('exact-progress-value');
+            const exactDeterminate = document.getElementById('exact-determinate');
+            
+            exactProgress.addEventListener('input', function() {
+                const value = parseFloat(this.value);
+                exactDeterminate.setProgress(value);
+                exactProgressValue.textContent = Math.round(value * 100) + '%';
+            });
+
+            // Set up amplitude monitoring
+            const currentAmplitudeValue = document.getElementById('current-amplitude-value');
+            const monitorAmplitude = () => {
+                if (exactDeterminate._amplitudeAnimatable) {
+                    const amplitude = exactDeterminate._amplitudeAnimatable.value.toFixed(2);
+                    currentAmplitudeValue.textContent = amplitude;
+                }
+                requestAnimationFrame(monitorAmplitude);
+            };
+            monitorAmplitude();
+        });
+
+        function toggleExactIndeterminate() {
+            const indicator = document.getElementById('exact-indeterminate');
+            const isIndeterminate = indicator.hasAttribute('indeterminate');
+            indicator.setIndeterminate(!isIndeterminate);
+        }
+
+        // Demonstrate the exact 6 amplitude states from Figma design
+        function demonstrateAmplitudeTransitions() {
+            const indicator = document.getElementById('exact-determinate');
+            const progressSlider = document.getElementById('exact-progress');
+            const progressValue = document.getElementById('exact-progress-value');
+
+            // State 1: 0% - Flat (amplitude = 0)
+            setTimeout(() => {
+                indicator.setProgress(0);
+                progressSlider.value = 0;
+                progressValue.textContent = '0%';
+            }, 0);
+
+            // State 2: 10% - Still flat (amplitude = 0)
+            setTimeout(() => {
+                indicator.setProgress(0.1);
+                progressSlider.value = 0.1;
+                progressValue.textContent = '10%';
+            }, 1000);
+
+            // State 3: 20% - Wave starts (amplitude transitions 0→1)
+            setTimeout(() => {
+                indicator.setProgress(0.2);
+                progressSlider.value = 0.2;
+                progressValue.textContent = '20%';
+            }, 2000);
+
+            // State 4: 50% - Full wave (amplitude = 1)
+            setTimeout(() => {
+                indicator.setProgress(0.5);
+                progressSlider.value = 0.5;
+                progressValue.textContent = '50%';
+            }, 3500);
+
+            // State 5: 80% - Still full wave (amplitude = 1)
+            setTimeout(() => {
+                indicator.setProgress(0.8);
+                progressSlider.value = 0.8;
+                progressValue.textContent = '80%';
+            }, 5000);
+
+            // State 6: 100% - Back to flat (amplitude transitions 1→0)
+            setTimeout(() => {
+                indicator.setProgress(1.0);
+                progressSlider.value = 1.0;
+                progressValue.textContent = '100%';
+            }, 6500);
+
+            // Reset to middle state
+            setTimeout(() => {
+                indicator.setProgress(0.6);
+                progressSlider.value = 0.6;
+                progressValue.textContent = '60%';
+            }, 8500);
+        }
+
+        // Stop Indicator & Low Progress Dot demo functions
+        function setupStopIndicatorDemo() {
+            // Accessibility demo controls
+            const accessibilityProgress = document.getElementById('accessibility-progress');
+            const accessibilityProgressValue = document.getElementById('accessibility-progress-value');
+            const accessibilityDemo = document.getElementById('accessibility-demo');
+            const showStopIndicator = document.getElementById('show-stop-indicator');
+
+            accessibilityProgress.addEventListener('input', function() {
+                const value = parseFloat(this.value);
+                accessibilityDemo.setProgress(value);
+                accessibilityProgressValue.textContent = Math.round(value * 100) + '%';
+            });
+
+            showStopIndicator.addEventListener('change', function() {
+                accessibilityDemo.setAttribute('show-stop-indicator', this.checked);
+            });
+        }
+
+        // Initialize Stop Indicator demo
+        document.addEventListener('DOMContentLoaded', function() {
+            setupStopIndicatorDemo();
+        });
+    </script>
+</body>
+</html>

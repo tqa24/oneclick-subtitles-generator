@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wavy Progress Indicator Showcase</title>
+    <style>
+        :root {
+            /* Material Design 3 Color Tokens */
+            --md-sys-color-primary: #6750A4;
+            --md-sys-color-on-primary: #FFFFFF;
+            --md-sys-color-primary-container: #EADDFF;
+            --md-sys-color-on-primary-container: #21005D;
+            --md-sys-color-outline-variant: #CAC4D0;
+            --md-sys-color-surface: #FFFBFE;
+            --md-sys-color-on-surface: #1C1B1F;
+            --md-sys-color-surface-variant: #E7E0EC;
+            --md-sys-color-on-surface-variant: #49454F;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--md-sys-color-surface);
+            color: var(--md-sys-color-on-surface);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--md-sys-color-primary);
+            font-size: 2.5rem;
+            font-weight: 400;
+        }
+
+        .subtitle {
+            text-align: center;
+            margin-bottom: 3rem;
+            color: var(--md-sys-color-on-surface-variant);
+            font-size: 1.1rem;
+        }
+
+        .section {
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background-color: var(--md-sys-color-surface-variant);
+            border-radius: 12px;
+        }
+
+        .section h2 {
+            margin-bottom: 1.5rem;
+            color: var(--md-sys-color-primary);
+            font-size: 1.5rem;
+            font-weight: 500;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .demo-card {
+            background-color: var(--md-sys-color-surface);
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+        }
+
+        .demo-card h3 {
+            margin-bottom: 1rem;
+            color: var(--md-sys-color-on-surface);
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .demo-item {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background-color: var(--md-sys-color-primary-container);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .demo-item label {
+            font-weight: 500;
+            color: var(--md-sys-color-on-primary-container);
+            text-align: center;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+            justify-content: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .control-group label {
+            font-size: 0.9rem;
+            color: var(--md-sys-color-on-surface-variant);
+        }
+
+        input[type="range"] {
+            width: 120px;
+            height: 4px;
+            background: var(--md-sys-color-outline-variant);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--md-sys-color-primary);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: var(--md-sys-color-primary);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        button {
+            background-color: var(--md-sys-color-primary);
+            color: var(--md-sys-color-on-primary);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: color-mix(in srgb, var(--md-sys-color-primary) 90%, black);
+        }
+
+        button:active {
+            background-color: color-mix(in srgb, var(--md-sys-color-primary) 80%, black);
+        }
+
+        .value-display {
+            font-size: 0.8rem;
+            color: var(--md-sys-color-on-surface-variant);
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        .comparison-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .comparison-card {
+            background-color: var(--md-sys-color-surface);
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .comparison-card h4 {
+            margin-bottom: 1rem;
+            color: var(--md-sys-color-on-surface);
+        }
+
+        @media (max-width: 768px) {
+            .comparison-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        .info-box {
+            background-color: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--md-sys-color-primary);
+        }
+
+        .info-box h3 {
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .info-box p {
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌊 Wavy Progress Indicator Showcase</h1>
+        <p class="subtitle">
+            JavaScript Web Components based on Android's Material Design 3 Wavy Progress Indicators
+        </p>
+
+        <div class="info-box">
+            <h3>📋 About This Implementation</h3>
+            <p>
+                This showcase demonstrates JavaScript web components that replicate Android's wavy progress indicators.
+                The components support both determinate and indeterminate states, with customizable wave effects,
+                colors, and animations. Use the controls below to experiment with different settings.
+            </p>
+        </div>
+
+        <div class="section">
+            <h2>📏 Linear Wavy Progress Indicators</h2>
+            
+            <div class="demo-grid">
+                <div class="demo-card">
+                    <h3>Determinate Linear</h3>
+                    <div class="demo-item">
+                        <label>Progress with Wave Effect</label>
+                        <linear-wavy-progress-indicator id="linear-determinate" progress="0.6"></linear-wavy-progress-indicator>
+                        <div class="controls">
+                            <div class="control-group">
+                                <label>Progress</label>
+                                <input type="range" id="linear-progress" min="0" max="1" step="0.01" value="0.6">
+                                <div class="value-display" id="linear-progress-value">60%</div>
+                            </div>
+                            <div class="control-group">
+                                <label>Amplitude</label>
+                                <input type="range" id="linear-amplitude" min="0" max="1" step="0.1" value="1">
+                                <div class="value-display" id="linear-amplitude-value">1.0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="demo-card">
+                    <h3>Indeterminate Linear</h3>
+                    <div class="demo-item">
+                        <label>Continuous Animation</label>
+                        <linear-wavy-progress-indicator id="linear-indeterminate" indeterminate></linear-wavy-progress-indicator>
+                        <div class="controls">
+                            <button onclick="toggleLinearIndeterminate()">Toggle Animation</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>⭕ Circular Wavy Progress Indicators</h2>
+
+            <div class="demo-grid">
+                <div class="demo-card">
+                    <h3>Determinate Circular</h3>
+                    <div class="demo-item">
+                        <label>Progress with Wave Effect</label>
+                        <circular-wavy-progress-indicator id="circular-determinate" progress="0.75"></circular-wavy-progress-indicator>
+                        <div class="controls">
+                            <div class="control-group">
+                                <label>Progress</label>
+                                <input type="range" id="circular-progress" min="0" max="1" step="0.01" value="0.75">
+                                <div class="value-display" id="circular-progress-value">75%</div>
+                            </div>
+                            <div class="control-group">
+                                <label>Amplitude</label>
+                                <input type="range" id="circular-amplitude" min="0" max="1" step="0.1" value="1">
+                                <div class="value-display" id="circular-amplitude-value">1.0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="demo-card">
+                    <h3>Indeterminate Circular</h3>
+                    <div class="demo-item">
+                        <label>Spinning Animation</label>
+                        <circular-wavy-progress-indicator id="circular-indeterminate" indeterminate></circular-wavy-progress-indicator>
+                        <div class="controls">
+                            <button onclick="toggleCircularIndeterminate()">Toggle Animation</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎨 Customization Examples</h2>
+
+            <div class="demo-grid">
+                <div class="demo-card">
+                    <h3>Custom Colors</h3>
+                    <div class="demo-item">
+                        <label>Custom Styled Linear</label>
+                        <linear-wavy-progress-indicator
+                            id="custom-linear"
+                            progress="0.8"
+                            color="#FF6B35"
+                            track-color="#FFE5D9">
+                        </linear-wavy-progress-indicator>
+                        <div class="controls">
+                            <div class="control-group">
+                                <label>Indicator Color</label>
+                                <input type="color" id="custom-color" value="#FF6B35">
+                            </div>
+                            <div class="control-group">
+                                <label>Track Color</label>
+                                <input type="color" id="custom-track-color" value="#FFE5D9">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="demo-card">
+                    <h3>Wave Parameters</h3>
+                    <div class="demo-item">
+                        <label>Adjustable Wave Properties</label>
+                        <linear-wavy-progress-indicator
+                            id="wave-params"
+                            progress="0.7"
+                            wavelength="32"
+                            wave-speed="24">
+                        </linear-wavy-progress-indicator>
+                        <div class="controls">
+                            <div class="control-group">
+                                <label>Wavelength</label>
+                                <input type="range" id="wavelength" min="16" max="64" step="4" value="32">
+                                <div class="value-display" id="wavelength-value">32px</div>
+                            </div>
+                            <div class="control-group">
+                                <label>Wave Speed</label>
+                                <input type="range" id="wave-speed" min="8" max="48" step="4" value="24">
+                                <div class="value-display" id="wave-speed-value">24px/s</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📊 Comparison with Standard Progress Indicators</h2>
+
+            <div class="comparison-section">
+                <div class="comparison-card">
+                    <h4>🌊 Wavy Progress Indicators</h4>
+                    <div style="margin: 1rem 0;">
+                        <linear-wavy-progress-indicator progress="0.6" amplitude="1"></linear-wavy-progress-indicator>
+                    </div>
+                    <div style="margin: 1rem 0;">
+                        <circular-wavy-progress-indicator progress="0.6" amplitude="1"></circular-wavy-progress-indicator>
+                    </div>
+                    <p style="font-size: 0.9rem; color: var(--md-sys-color-on-surface-variant);">
+                        Features wave effects, expressive animations, and dynamic amplitude based on progress.
+                    </p>
+                </div>
+
+                <div class="comparison-card">
+                    <h4>📏 Standard Progress Indicators</h4>
+                    <div style="margin: 1rem 0;">
+                        <div style="width: 240px; height: 4px; background: var(--md-sys-color-outline-variant); border-radius: 2px; position: relative;">
+                            <div style="width: 60%; height: 100%; background: var(--md-sys-color-primary); border-radius: 2px;"></div>
+                        </div>
+                    </div>
+                    <div style="margin: 1rem 0; display: flex; justify-content: center;">
+                        <svg width="48" height="48" style="transform: rotate(-90deg);">
+                            <circle cx="24" cy="24" r="20" fill="none" stroke="var(--md-sys-color-outline-variant)" stroke-width="4"></circle>
+                            <circle cx="24" cy="24" r="20" fill="none" stroke="var(--md-sys-color-primary)" stroke-width="4"
+                                    stroke-dasharray="125.6" stroke-dashoffset="50.24" stroke-linecap="round"></circle>
+                        </svg>
+                    </div>
+                    <p style="font-size: 0.9rem; color: var(--md-sys-color-on-surface-variant);">
+                        Clean, minimal design with consistent linear progression.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load the web components -->
+    <script src="javascript-code/WavyProgressIndicator.js"></script>
+    <script src="javascript-code/CircularWavyProgressIndicator.js"></script>
+    
+    <script>
+        // Interactive controls
+        document.addEventListener('DOMContentLoaded', function() {
+            // Linear progress controls
+            const linearProgress = document.getElementById('linear-progress');
+            const linearProgressValue = document.getElementById('linear-progress-value');
+            const linearDeterminate = document.getElementById('linear-determinate');
+            
+            linearProgress.addEventListener('input', function() {
+                const value = parseFloat(this.value);
+                linearDeterminate.setProgress(value);
+                linearProgressValue.textContent = Math.round(value * 100) + '%';
+            });
+
+            // Linear amplitude controls
+            const linearAmplitude = document.getElementById('linear-amplitude');
+            const linearAmplitudeValue = document.getElementById('linear-amplitude-value');
+            
+            linearAmplitude.addEventListener('input', function() {
+                const value = parseFloat(this.value);
+                linearDeterminate.setAttribute('amplitude', value);
+                linearAmplitudeValue.textContent = value.toFixed(1);
+            });
+
+            // Circular progress controls
+            const circularProgress = document.getElementById('circular-progress');
+            const circularProgressValue = document.getElementById('circular-progress-value');
+            const circularDeterminate = document.getElementById('circular-determinate');
+            
+            circularProgress.addEventListener('input', function() {
+                const value = parseFloat(this.value);
+                circularDeterminate.setProgress(value);
+                circularProgressValue.textContent = Math.round(value * 100) + '%';
+            });
+
+            // Circular amplitude controls
+            const circularAmplitude = document.getElementById('circular-amplitude');
+            const circularAmplitudeValue = document.getElementById('circular-amplitude-value');
+            
+            circularAmplitude.addEventListener('input', function() {
+                const value = parseFloat(this.value);
+                circularDeterminate.setAttribute('amplitude', value);
+                circularAmplitudeValue.textContent = value.toFixed(1);
+            });
+
+            // Custom color controls
+            const customColor = document.getElementById('custom-color');
+            const customTrackColor = document.getElementById('custom-track-color');
+            const customLinear = document.getElementById('custom-linear');
+
+            customColor.addEventListener('input', function() {
+                customLinear.setAttribute('color', this.value);
+            });
+
+            customTrackColor.addEventListener('input', function() {
+                customLinear.setAttribute('track-color', this.value);
+            });
+
+            // Wave parameter controls
+            const wavelength = document.getElementById('wavelength');
+            const wavelengthValue = document.getElementById('wavelength-value');
+            const waveSpeed = document.getElementById('wave-speed');
+            const waveSpeedValue = document.getElementById('wave-speed-value');
+            const waveParams = document.getElementById('wave-params');
+
+            wavelength.addEventListener('input', function() {
+                const value = parseFloat(this.value);
+                waveParams.setAttribute('wavelength', value);
+                wavelengthValue.textContent = value + 'px';
+            });
+
+            waveSpeed.addEventListener('input', function() {
+                const value = parseFloat(this.value);
+                waveParams.setAttribute('wave-speed', value);
+                waveSpeedValue.textContent = value + 'px/s';
+            });
+        });
+
+        // Toggle functions
+        function toggleLinearIndeterminate() {
+            const indicator = document.getElementById('linear-indeterminate');
+            const isIndeterminate = indicator.hasAttribute('indeterminate');
+            indicator.setIndeterminate(!isIndeterminate);
+        }
+
+        function toggleCircularIndeterminate() {
+            const indicator = document.getElementById('circular-indeterminate');
+            const isIndeterminate = indicator.hasAttribute('indeterminate');
+            indicator.setIndeterminate(!isIndeterminate);
+        }
+    </script>
+</body>
+</html>

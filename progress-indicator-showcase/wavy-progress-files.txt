@@ -1,0 +1,24 @@
+# Wavy Progress Indicator Files
+# List of files needed for the wavy progress indicator implementation
+
+# Main wavy progress indicator file
+compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WavyProgressIndicator.kt
+
+# Internal implementation files (these may be in different locations or embedded in other files)
+# compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/ProgressIndicatorImpl.kt
+
+# Token files for styling
+compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/LinearProgressIndicatorTokens.kt
+compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/CircularProgressIndicatorTokens.kt
+compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/ProgressIndicatorTokens.kt
+compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/MotionTokens.kt
+
+# Experimental API annotations
+compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ExperimentalMaterial3ExpressiveApi.kt
+
+# Regular progress indicator for comparison
+compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ProgressIndicator.kt
+
+# Foundation and animation dependencies (if needed)
+# compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/progressSemantics.kt
+# compose/animation/animation-core/src/commonMain/kotlin/androidx/compose/animation/core/InfiniteTransition.kt
