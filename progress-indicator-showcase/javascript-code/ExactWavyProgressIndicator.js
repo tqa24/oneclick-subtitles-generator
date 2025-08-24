@@ -70,14 +70,14 @@ class WavyProgressIndicatorDefaults {
     // Stroke configurations
     static get linearIndicatorStroke() {
         return {
-            width: 4, // ActiveThickness from tokens
+            width: 8, // ActiveThickness from Figma design
             cap: 'round' // StrokeCap.Round
         };
     }
-    
+
     static get linearTrackStroke() {
         return {
-            width: 4, // TrackThickness from tokens
+            width: 8, // TrackThickness from Figma design
             cap: 'round'
         };
     }
@@ -130,8 +130,8 @@ class LinearProgressDrawingCache {
         this.currentProgressFractions = null;
         this.currentIndicatorTrackGapSize = 0;
         this.currentWaveOffset = -1;
-        this.currentStroke = { width: 4, cap: 'round' };
-        this.currentTrackStroke = { width: 4, cap: 'round' };
+        this.currentStroke = { width: 8, cap: 'round' };
+        this.currentTrackStroke = { width: 8, cap: 'round' };
         
         this.progressPathScale = 1;
         this.fullProgressPath = new Path2D();
@@ -189,7 +189,7 @@ class LinearProgressDrawingCache {
             let anchorX = halfWavelengthPx;
             const anchorY = 0;
             let controlX = halfWavelengthPx / 2;
-            let controlY = height - stroke.width;
+            let controlY = (height - stroke.width) * 0.5; // Reduced amplitude for 8px stroke
             
             const widthWithExtraPhase = width + wavelength * 2;
             let wavesCount = 0;
@@ -277,10 +277,10 @@ class LinearProgressDrawingCache {
     createWavySegment(path, startX, endX, centerY, amplitude, waveOffset) {
         const segmentWidth = endX - startX;
         const wavelength = this.currentWavelength;
-        const waveHeight = amplitude * this.currentSize.height * 0.3;
-        
+        const waveHeight = amplitude * this.currentSize.height * 0.15; // Reduced for 8px stroke
+
         path.moveTo(startX, centerY);
-        
+
         const steps = Math.max(Math.floor(segmentWidth / 2), 10);
         for (let i = 1; i <= steps; i++) {
             const x = startX + (i / steps) * segmentWidth;
@@ -787,7 +787,7 @@ class LinearWavyProgressIndicator extends HTMLElement {
         const radius = stopSize / 2;
 
         // Position at the end of track with proper offset
-        const centerX = size.width - 8; // 8px from right edge (container position)
+        const centerX = size.width - 4; // 4px from right edge for better alignment
         const centerY = size.height / 2;
 
         // Don't draw if progress has reached the stop indicator
