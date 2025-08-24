@@ -15,31 +15,6 @@
 
 // Animation specifications from Android MotionTokens
 const AnimationSpecs = {
-    // From linearIndeterminateFirstLineHeadAnimationSpec
-    linearIndeterminateFirstLineHead: {
-        duration: 1800,
-        easing: [0.2, 0, 0, 1], // CubicBezierEasing(0.2f, 0f, 0f, 1f)
-        delay: 0
-    },
-    // From linearIndeterminateFirstLineTailAnimationSpec
-    linearIndeterminateFirstLineTail: {
-        duration: 1800,
-        easing: [0.4, 0, 1, 1], // CubicBezierEasing(0.4f, 0f, 1f, 1f)
-        delay: 333
-    },
-    // From linearIndeterminateSecondLineHeadAnimationSpec
-    linearIndeterminateSecondLineHead: {
-        duration: 1800,
-        easing: [0, 0, 0.65, 1], // CubicBezierEasing(0f, 0f, 0.65f, 1f)
-        delay: 1000
-    },
-    // From linearIndeterminateSecondLineTailAnimationSpec
-    linearIndeterminateSecondLineTail: {
-        duration: 1800,
-        easing: [0.1, 0, 0.45, 1], // CubicBezierEasing(0.1f, 0f, 0.45f, 1f)
-        delay: 1267
-    },
-
     // EXACT Amplitude Animation Specs from Android
     // From IncreasingAmplitudeAnimationSpec (MotionTokens.DurationLong2 = 500ms)
     increasingAmplitude: {
@@ -106,10 +81,6 @@ class WavyProgressIndicatorDefaults {
     // Wavelengths
     static get LinearDeterminateWavelength() {
         return 32; // Optimal wave density - balanced spacing
-    }
-    
-    static get LinearIndeterminateWavelength() {
-        return 32; // IndeterminateActiveWaveWavelength from tokens
     }
     
     // Exact amplitude function from Android
@@ -477,13 +448,6 @@ class LinearWavyProgressIndicator extends HTMLElement {
         // Drawing cache
         this._progressDrawingCache = new LinearProgressDrawingCache();
 
-        // Indeterminate state
-        this._indeterminate = false;
-        this._firstLineHeadProgress = () => 0;
-        this._firstLineTailProgress = () => 0;
-        this._secondLineHeadProgress = () => 0;
-        this._secondLineTailProgress = () => 0;
-
         this.render();
     }
 
@@ -501,18 +465,15 @@ class LinearWavyProgressIndicator extends HTMLElement {
     }
 
     static get observedAttributes() {
-        return ['progress', 'indeterminate', 'color', 'track-color', 'amplitude',
+        return ['progress', 'color', 'track-color', 'amplitude',
                 'wavelength', 'wave-speed', 'gap-size', 'stop-size'];
     }
 
-    attributeChangedCallback(name, oldValue, newValue) {
+    attributeChangedCallback(name, _oldValue, newValue) {
         switch (name) {
             case 'progress':
                 const progressValue = parseFloat(newValue) || 0;
                 this._progress = () => Math.max(0, Math.min(1, progressValue));
-                break;
-            case 'indeterminate':
-                this._indeterminate = newValue !== null;
                 break;
             case 'color':
                 this._color = newValue || WavyProgressIndicatorDefaults.indicatorColor;
@@ -548,11 +509,8 @@ class LinearWavyProgressIndicator extends HTMLElement {
 
     connectedCallback() {
         this.updateOffsetAnimation();
-        if (this._indeterminate) {
-            this.startIndeterminateAnimations();
-        }
         // Start entrance animation if progress is at 0 when connected
-        if (this.getProgress() === 0 && !this._indeterminate) {
+        if (this.getProgress() === 0) {
             this.startEntranceAnimation();
         }
         this.startDrawLoop();
@@ -686,54 +644,11 @@ class LinearWavyProgressIndicator extends HTMLElement {
         }
     }
 
-    // Exact port of indeterminate animations from Android
-    startIndeterminateAnimations() {
-        const startTime = performance.now();
 
-        // Create animation functions matching Android specs
-        const createAnimation = (spec) => {
-            return (currentTime) => {
-                const elapsed = (currentTime - startTime - spec.delay) % spec.duration;
-                if (elapsed < 0) return 0;
-
-                const progress = elapsed / spec.duration;
-                // Apply cubic bezier easing (simplified)
-                return this.cubicBezier(progress, spec.easing);
-            };
-        };
-
-        this._firstLineHeadProgress = createAnimation(AnimationSpecs.linearIndeterminateFirstLineHead);
-        this._firstLineTailProgress = createAnimation(AnimationSpecs.linearIndeterminateFirstLineTail);
-        this._secondLineHeadProgress = createAnimation(AnimationSpecs.linearIndeterminateSecondLineHead);
-        this._secondLineTailProgress = createAnimation(AnimationSpecs.linearIndeterminateSecondLineTail);
-    }
-
-    cubicBezier(t, [x1, y1, x2, y2]) {
-        // Simplified cubic bezier implementation
-        const cx = 3 * x1;
-        const bx = 3 * (x2 - x1) - cx;
-        const ax = 1 - cx - bx;
-
-        const cy = 3 * y1;
-        const by = 3 * (y2 - y1) - cy;
-        const ay = 1 - cy - by;
-
-        return ((ax * t + bx) * t + cx) * t;
-    }
 
     getProgressFractions() {
-        if (this._indeterminate) {
-            // Return 4 values for indeterminate (2 lines)
-            return [
-                this._firstLineTailProgress(performance.now()),
-                this._firstLineHeadProgress(performance.now()),
-                this._secondLineTailProgress(performance.now()),
-                this._secondLineHeadProgress(performance.now())
-            ];
-        } else {
-            // Return 2 values for determinate
-            return [0, this._progress()];
-        }
+        // Return 2 values for determinate progress
+        return [0, this._progress()];
     }
 
     startDrawLoop() {
@@ -791,7 +706,7 @@ class LinearWavyProgressIndicator extends HTMLElement {
 
         // Get current progress and amplitude
         const coercedProgress = Math.max(0, Math.min(1, this._progress()));
-        const targetAmplitudePx = this._indeterminate ? 1 : this._amplitude(coercedProgress);
+        const targetAmplitudePx = this._amplitude(coercedProgress);
         this.updateAmplitudeAnimation(targetAmplitudePx);
         const currentAmplitude = this._amplitudeAnimatable ? this._amplitudeAnimatable.value : 0;
         const progressFractions = this.getProgressFractions();
@@ -837,12 +752,10 @@ class LinearWavyProgressIndicator extends HTMLElement {
         }
 
         // Draw low progress dot if needed (also within scaled context)
-        if (!this._indeterminate) {
-            this.drawLowProgressDot(ctx, coercedProgress, size);
-        }
+        this.drawLowProgressDot(ctx, coercedProgress, size);
 
         // Draw stop indicator for determinate progress (within scaled context)
-        if (!this._indeterminate && this.shouldShowStopIndicator()) {
+        if (this.shouldShowStopIndicator()) {
             this.drawStopIndicator(ctx, progressFractions[1], size, 1);
         }
 
@@ -856,16 +769,10 @@ class LinearWavyProgressIndicator extends HTMLElement {
 
     // Update accessibility attributes
     updateAccessibility(progress) {
-        if (this._indeterminate) {
-            this.removeAttribute('aria-valuenow');
-            this.removeAttribute('aria-valuetext');
-            this.setAttribute('aria-label', 'Loading...');
-        } else {
-            const percentage = Math.round(progress * 100);
-            this.setAttribute('aria-valuenow', percentage);
-            this.setAttribute('aria-valuetext', `${percentage}%`);
-            this.setAttribute('aria-label', `Progress: ${percentage}%`);
-        }
+        const percentage = Math.round(progress * 100);
+        this.setAttribute('aria-valuenow', percentage);
+        this.setAttribute('aria-valuetext', `${percentage}%`);
+        this.setAttribute('aria-label', `Progress: ${percentage}%`);
     }
 
     // [FIXED] Simplified to be drawn within an already-scaled context
@@ -969,19 +876,7 @@ class LinearWavyProgressIndicator extends HTMLElement {
         return this._progress();
     }
 
-    setIndeterminate(indeterminate) {
-        this._indeterminate = indeterminate;
 
-        if (indeterminate) {
-            this.setAttribute('indeterminate', '');
-            this.removeAttribute('aria-valuenow');
-            this.startIndeterminateAnimations();
-        } else {
-            this.removeAttribute('indeterminate');
-            this.setAttribute('aria-valuenow', Math.round(this._progress() * 100));
-        }
-        this.invalidateDraw();
-    }
 
     // NEW: Methods to control entrance and disappearance animations
     startEntranceAnimation() {
