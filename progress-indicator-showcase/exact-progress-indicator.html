@@ -209,6 +209,11 @@
             background-color: color-mix(in srgb, var(--md-sys-color-primary) 80%, black);
             transform: translateY(1px);
         }
+        
+        button:disabled {
+            background-color: #C0C0C0;
+            cursor: not-allowed;
+        }
 
         .value-display {
             font-size: 0.85rem;
@@ -305,6 +310,30 @@
                 • All animation specifications from MotionTokens
             </div>
         </div>
+        
+        <!-- NEW SECTION FOR ENTRANCE/DISAPPEARANCE DEMO -->
+        <div class="section">
+            <h2>🎬 Entrance & Disappearance Animations</h2>
+            <div class="demo-card">
+                <h3>Animation Demo</h3>
+                <div class="demo-item">
+                    <label>Entrance (0%) and Disappearance (100%)</label>
+                    <linear-wavy-progress-indicator-exact id="animation-demo" progress="0"></linear-wavy-progress-indicator-exact>
+                    <div class="controls">
+                         <button id="run-animation-demo">Run Animation</button>
+                    </div>
+                     <div class="algorithm-highlight" style="margin-top: 1rem;">
+                        <h4>Animation Sequence:</h4>
+                        <div style="font-size: 0.8rem;">
+                            • <strong>Entrance:</strong> Track expands vertically, stop indicator scales in.<br>
+                            • <strong>Progress:</strong> Indicator fills from 0% to 100%.<br>
+                            • <strong>Disappearance:</strong> Track collapses vertically to hide.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
 
         <div class="section">
             <h2>📏 Exact Linear Wavy Progress Indicators</h2>
@@ -433,6 +462,53 @@
                 requestAnimationFrame(monitorAmplitude);
             };
             monitorAmplitude();
+
+            // NEW: Event listener for the animation demo
+            const animationDemoIndicator = document.getElementById('animation-demo');
+            const runAnimationDemoBtn = document.getElementById('run-animation-demo');
+
+            runAnimationDemoBtn.addEventListener('click', () => {
+                runAnimationDemoBtn.disabled = true;
+
+                // Wait a bit to ensure the custom element is fully initialized
+                setTimeout(() => {
+                    // Reset the indicator to its initial state
+                    if (typeof animationDemoIndicator.resetAnimationState === 'function') {
+                        animationDemoIndicator.resetAnimationState();
+                        animationDemoIndicator.setProgress(0);
+                    } else {
+                        console.error('resetAnimationState method not found on element');
+                        runAnimationDemoBtn.disabled = false;
+                        return;
+                    }
+
+                    // Manually start the entrance animation
+                    animationDemoIndicator.startEntranceAnimation();
+
+                    // Start progress animation slightly before entrance completes to avoid blinking
+                    setTimeout(() => {
+                        let progress = 0;
+                        const interval = setInterval(() => {
+                            progress += 0.01;
+                            if (progress > 1) progress = 1;
+                            animationDemoIndicator.setProgress(progress);
+
+                            // When it reaches 100%, the component's setProgress method will
+                            // automatically trigger the disappearance animation.
+                            if (progress >= 1) {
+                                clearInterval(interval);
+                                // Re-enable the button after the disappearance animation is complete
+                                setTimeout(() => {
+                                    runAnimationDemoBtn.disabled = false;
+                                }, animationDemoIndicator.ENTRANCE_DISAPPEARANCE_DURATION + 200)
+                            }
+                        }, 20);
+                    }, animationDemoIndicator.ENTRANCE_DISAPPEARANCE_DURATION - 50); // Start 50ms before entrance completes
+                }, 100); // Wait 100ms for element initialization
+            });
+
+
+            setupStopIndicatorDemo();
         });
 
         function toggleExactIndeterminate() {
@@ -447,54 +523,25 @@
             const progressSlider = document.getElementById('exact-progress');
             const progressValue = document.getElementById('exact-progress-value');
 
-            // State 1: 0% - Flat (amplitude = 0)
-            setTimeout(() => {
-                indicator.setProgress(0);
-                progressSlider.value = 0;
-                progressValue.textContent = '0%';
-            }, 0);
+            const steps = [
+                { progress: 0.0, delay: 0 },
+                { progress: 0.1, delay: 1000 },
+                { progress: 0.2, delay: 1000 },
+                { progress: 0.5, delay: 1500 },
+                { progress: 0.8, delay: 1500 },
+                { progress: 1.0, delay: 1500 },
+                { progress: 0.6, delay: 2000 } // Reset
+            ];
 
-            // State 2: 10% - Still flat (amplitude = 0)
-            setTimeout(() => {
-                indicator.setProgress(0.1);
-                progressSlider.value = 0.1;
-                progressValue.textContent = '10%';
-            }, 1000);
-
-            // State 3: 20% - Wave starts (amplitude transitions 0→1)
-            setTimeout(() => {
-                indicator.setProgress(0.2);
-                progressSlider.value = 0.2;
-                progressValue.textContent = '20%';
-            }, 2000);
-
-            // State 4: 50% - Full wave (amplitude = 1)
-            setTimeout(() => {
-                indicator.setProgress(0.5);
-                progressSlider.value = 0.5;
-                progressValue.textContent = '50%';
-            }, 3500);
-
-            // State 5: 80% - Still full wave (amplitude = 1)
-            setTimeout(() => {
-                indicator.setProgress(0.8);
-                progressSlider.value = 0.8;
-                progressValue.textContent = '80%';
-            }, 5000);
-
-            // State 6: 100% - Back to flat (amplitude transitions 1→0)
-            setTimeout(() => {
-                indicator.setProgress(1.0);
-                progressSlider.value = 1.0;
-                progressValue.textContent = '100%';
-            }, 6500);
-
-            // Reset to middle state
-            setTimeout(() => {
-                indicator.setProgress(0.6);
-                progressSlider.value = 0.6;
-                progressValue.textContent = '60%';
-            }, 8500);
+            let cumulativeDelay = 0;
+            steps.forEach(step => {
+                cumulativeDelay += step.delay;
+                setTimeout(() => {
+                    indicator.setProgress(step.progress);
+                    progressSlider.value = step.progress;
+                    progressValue.textContent = `${Math.round(step.progress * 100)}%`;
+                }, cumulativeDelay);
+            });
         }
 
         // Stop Indicator & Low Progress Dot demo functions
@@ -512,14 +559,10 @@
             });
 
             showStopIndicator.addEventListener('change', function() {
-                accessibilityDemo.setAttribute('show-stop-indicator', this.checked);
+                accessibilityDemo.setAttribute('show-stop-indicator', this.checked ? 'true' : 'false');
+                accessibilityDemo.invalidateDraw(); // Force a redraw to show/hide indicator
             });
         }
-
-        // Initialize Stop Indicator demo
-        document.addEventListener('DOMContentLoaded', function() {
-            setupStopIndicatorDemo();
-        });
     </script>
 </body>
 </html>

@@ -8,6 +8,8 @@
  * 
  * All algorithms, drawing logic, and animation specifications are exactly
  * replicated from the Android implementation.
+ * 
+ * MODIFIED to include entrance and disappearance animations.
  */
 
 // Animation specifications from Android MotionTokens
@@ -461,6 +463,15 @@ class LinearWavyProgressIndicator extends HTMLElement {
         this._amplitudeAnimatable = null; // Will be created on first use
         this._offsetAnimationId = null;
         this._amplitudeAnimationJob = null;
+        
+        // NEW: Entrance and Disappearance Animation State
+        this._isAnimatingEntrance = false;
+        this._entranceStartTime = 0;
+        this._isAnimatingDisappearance = false;
+        this._disappearanceStartTime = 0;
+        this._hasDisappeared = false; // Track if element has completed disappearance
+        this.ENTRANCE_DISAPPEARANCE_DURATION = 400; // in milliseconds
+
 
         // Drawing cache
         this._progressDrawingCache = new LinearProgressDrawingCache();
@@ -525,6 +536,10 @@ class LinearWavyProgressIndicator extends HTMLElement {
         this.updateOffsetAnimation();
         if (this._indeterminate) {
             this.startIndeterminateAnimations();
+        }
+        // Start entrance animation if progress is at 0 when connected
+        if (this.getProgress() === 0 && !this._indeterminate) {
+            this.startEntranceAnimation();
         }
         this.startDrawLoop();
     }
@@ -715,20 +730,58 @@ class LinearWavyProgressIndicator extends HTMLElement {
         requestAnimationFrame(draw);
     }
 
-    // Exact port of drawing logic from Android with Material Design 3 enhancements
+    // Exact port of drawing logic with NEW entrance/disappearance animations
     drawProgress() {
         if (!this.ctx) return;
 
         const canvas = this.canvas;
         const ctx = this.ctx;
-        // Use logical size (CSS pixels) for consistent rendering across DPI
         const size = {
             width: parseInt(canvas.style.width) || canvas.width / (this.devicePixelRatio || 1),
             height: parseInt(canvas.style.height) || canvas.height / (this.devicePixelRatio || 1)
         };
 
-        // Clear canvas
         ctx.clearRect(0, 0, size.width, size.height);
+
+        // --- NEW: Entrance and Disappearance Animation Logic ---
+        let entranceProgress = 1;
+        if (this._isAnimatingEntrance) {
+            const elapsed = performance.now() - this._entranceStartTime;
+            entranceProgress = Math.min(elapsed / this.ENTRANCE_DISAPPEARANCE_DURATION, 1);
+            if (entranceProgress >= 1) {
+                this._isAnimatingEntrance = false;
+            }
+        }
+
+        let disappearanceProgress = 0;
+        if (this._isAnimatingDisappearance) {
+            const elapsed = performance.now() - this._disappearanceStartTime;
+            disappearanceProgress = Math.min(elapsed / this.ENTRANCE_DISAPPEARANCE_DURATION, 1);
+            if (disappearanceProgress >= 1) {
+                this._isAnimatingDisappearance = false;
+                this._hasDisappeared = true; // Mark as disappeared
+            }
+        }
+
+        // Apply easing functions for smoother animations
+        const easedEntranceProgress = this.easeOutCubic(entranceProgress);
+        const easedDisappearanceProgress = this.easeInCubic(disappearanceProgress);
+
+        // Calculate the current scale based on animations (don't change stroke width)
+        let currentScale = easedEntranceProgress * (1 - easedDisappearanceProgress);
+
+        // If element has disappeared, keep it hidden
+        if (this._hasDisappeared) {
+            currentScale = 0;
+        }
+
+        if (currentScale <= 0.01) {
+            return; // Nothing to draw if completely invisible
+        }
+
+        // Keep original stroke width, use scaling for height animation
+        const currentTrackStroke = { ...this._trackStroke };
+
 
         // Get current progress and amplitude (exact Android logic)
         const coercedProgress = Math.max(0, Math.min(1, this._progress()));
@@ -755,13 +808,21 @@ class LinearWavyProgressIndicator extends HTMLElement {
                 currentAmplitude,
                 currentAmplitude > 0 ? this._waveOffset : 0,
                 this._gapSize,
-                this._stroke,
-                this._trackStroke
+                this._stroke, // Use original stroke width for path calculation
+                currentTrackStroke
             );
+            
+            ctx.save();
+
+            // Apply center-based vertical scaling for entrance/exit animation
+            const centerY = size.height / 2;
+            ctx.translate(0, centerY);
+            ctx.scale(1, currentScale);
+            ctx.translate(0, -centerY);
 
             // Draw track segments (exact Android implementation)
             ctx.strokeStyle = this._trackColor;
-            ctx.lineWidth = this._trackStroke.width;
+            ctx.lineWidth = currentTrackStroke.width;
             ctx.lineCap = 'round';
             ctx.stroke(this._progressDrawingCache.trackPathToDraw);
 
@@ -770,7 +831,7 @@ class LinearWavyProgressIndicator extends HTMLElement {
             if (progressPaths) {
                 ctx.strokeStyle = this._color;
                 ctx.lineWidth = this._stroke.width;
-                ctx.lineCap = 'round'; // Rounded caps for proper appearance
+                ctx.lineCap = 'round';
 
                 for (let i = 0; i < progressPaths.length; i++) {
                     if (progressPaths[i]) {
@@ -779,17 +840,25 @@ class LinearWavyProgressIndicator extends HTMLElement {
                 }
             }
 
-            // Draw stop indicator for determinate progress
+            ctx.restore(); // Restore from scaling transformation
+
+            // Draw stop indicator for determinate progress, scaled by entrance animation
             if (!this._indeterminate) {
-                this.drawStopIndicator(ctx, progressFractions[1], size);
+                ctx.save();
+                // Apply same center-based scaling for stop indicator
+                const centerY = size.height / 2;
+                ctx.translate(0, centerY);
+                ctx.scale(1, currentScale);
+                ctx.translate(0, -centerY);
+
+                this.drawStopIndicator(ctx, progressFractions[1], size, 1); // Full opacity, scaling handles visibility
+                ctx.restore();
             }
         }
 
         // Update accessibility attributes
         this.updateAccessibility(coercedProgress);
     }
-
-
 
     // Update accessibility attributes
     updateAccessibility(progress) {
@@ -805,19 +874,20 @@ class LinearWavyProgressIndicator extends HTMLElement {
         }
     }
 
-    // EXACT stop indicator matching Figma design
-    drawStopIndicator(ctx, progressEnd, size) {
+    // MODIFIED to accept a scale parameter for the entrance animation
+    drawStopIndicator(ctx, progressEnd, size, scale = 1) {
         // Stop indicator is required for accessibility if track contrast is below 3:1
-        if (!this.shouldShowStopIndicator()) {
+        if (!this.shouldShowStopIndicator() || scale <= 0) {
             return;
         }
 
-        // Exact dimensions from Figma: 4px circle (from 4x4 inner shape)
-        const stopSize = 4; // From Figma layout_WHM9X0 dimensions
+        // Exact dimensions from Figma: 4px circle, scaled by animation
+        const stopSize = 4 * scale; 
         const radius = stopSize / 2;
+        if(radius <= 0) return;
 
         // Position at the end of track with proper offset
-        const centerX = size.width - 4; // 4px from right edge for better alignment
+        const centerX = size.width - 4; 
         const centerY = size.height / 2;
 
         // Don't draw if progress has reached the stop indicator
@@ -827,7 +897,7 @@ class LinearWavyProgressIndicator extends HTMLElement {
         }
 
         // Draw the stop indicator as a circle
-        ctx.fillStyle = this._color; // #485E92 from Figma fill_WDP657
+        ctx.fillStyle = this._color; 
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
         ctx.fill();
@@ -856,13 +926,20 @@ class LinearWavyProgressIndicator extends HTMLElement {
         return false; // No dot needed
     }
 
+    // NEW: Easing functions for animations
+    easeOutCubic(t) {
+        return (--t) * t * t + 1;
+    }
+
+    easeInCubic(t) {
+        return t * t * t;
+    }
 
 
     invalidateDraw() {
-        // Force redraw on next frame
-        if (this.ctx) {
-            this.drawProgress();
-        }
+        // This is now handled by the continuous draw loop.
+        // Calling it just ensures a draw on the *very next* frame if needed,
+        // but the loop itself keeps it rendering.
     }
 
     stopAllAnimations() {
@@ -878,8 +955,20 @@ class LinearWavyProgressIndicator extends HTMLElement {
 
     // Public API methods
     setProgress(progress) {
-        this._progress = () => Math.max(0, Math.min(1, progress));
-        this.setAttribute('aria-valuenow', Math.round(progress * 100));
+        const newProgress = Math.max(0, Math.min(1, progress));
+        const oldProgress = this._progress();
+        this._progress = () => newProgress;
+        this.setAttribute('aria-valuenow', Math.round(newProgress * 100));
+        
+        // Trigger disappearance animation only when reaching 100%
+        if (newProgress >= 1 && oldProgress < 1) {
+            this.startDisappearanceAnimation();
+        } 
+        // If progress is set to something less than 1 while disappearing, cancel it
+        else if (newProgress < 1 && this._isAnimatingDisappearance) {
+            this.resetAnimationState();
+        }
+        
         this.invalidateDraw();
     }
 
@@ -901,7 +990,27 @@ class LinearWavyProgressIndicator extends HTMLElement {
         this.invalidateDraw();
     }
 
+    // NEW: Methods to control entrance and disappearance animations
+    startEntranceAnimation() {
+        this.resetAnimationState();
+        this._isAnimatingEntrance = true;
+        this._entranceStartTime = performance.now();
+    }
 
+    startDisappearanceAnimation() {
+        this._isAnimatingEntrance = false; // Ensure entrance animation stops
+        this._isAnimatingDisappearance = true;
+        this._disappearanceStartTime = performance.now();
+    }
+    
+    resetAnimationState() {
+        this._isAnimatingEntrance = false;
+        this._isAnimatingDisappearance = false;
+        this._entranceStartTime = 0;
+        this._disappearanceStartTime = 0;
+        this._hasDisappeared = false; // Reset disappeared state
+        this.invalidateDraw();
+    }
 }
 
 // Register the exact implementation
