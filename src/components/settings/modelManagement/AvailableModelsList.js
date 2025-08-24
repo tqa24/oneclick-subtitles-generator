@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import DownloadIcon from '@mui/icons-material/Download';
 import CancelIcon from '@mui/icons-material/Cancel';
 import AddIcon from '@mui/icons-material/Add';
-import LoadingIndicator from '../../common/LoadingIndicator';
+import WavyProgressIndicator from '../../common/WavyProgressIndicator';
 import { addModelFromHuggingFace, cancelModelDownload } from '../../../services/modelService';
 import { invalidateModelsCache } from '../../../services/modelAvailabilityService';
 import { AVAILABLE_MODELS, LANGUAGE_NAMES } from '../ModelList';
@@ -195,29 +195,26 @@ const AvailableModelsList = ({
 
             {isDownloading(model.id, {}, downloads) ? (
               <div>
-                <div className="download-progress">
-                  <div
-                    className="download-progress-bar"
-                    style={{
-                      width: downloads[model.id] && downloads[model.id].progress !== undefined
-                        ? `${downloads[model.id].progress}%`
-                        : '10%' // Default progress when no information is available
-                    }}
-                  ></div>
-                </div>
-                <div className="model-card-actions">
-                  <div className="download-percentage">
-                    <LoadingIndicator
-                      theme="dark"
-                      showContainer={false}
-                      size={16}
-                      className="download-progress-indicator"
+
+                {/* Move progress above the actions border */}
+                <div className="model-card-progress" style={{ padding: '8px 0 0', width: '100%' }}>
+                  <div style={{ width: '100%' }}>
+                    <WavyProgressIndicator
+                      height={12}
+                      progress={Math.max(0, Math.min(1, (getDownloadProgress(model.id, downloads) || 0) / 100))}
+                      animate={true}
+                      showStopIndicator={false}
+                      waveSpeed={1.2}
+                      color={'#485E92'}
+                      trackColor={'#D9DFF6'}
                     />
-                    <span>
-                      {/* Always show percentage format only */}
-                      {getDownloadProgress(model.id, downloads) ? `${getDownloadProgress(model.id, downloads)}%` : ''}
-                    </span>
                   </div>
+                </div>
+
+                <div className="model-card-actions" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <span className="download-percent-label">
+                    {getDownloadProgress(model.id, downloads) ? `${getDownloadProgress(model.id, downloads)}%` : ''}
+                  </span>
                   <button
                     className="cancel-download-btn"
                     onClick={() => handleCancelDownload(model.id)}

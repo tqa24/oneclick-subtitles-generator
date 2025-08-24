@@ -268,16 +268,30 @@ const WavyProgressIndicator = forwardRef(({
     wavelength = WavyProgressDefaults.wavelength,
     waveSpeed = 1,
     showStopIndicator = true,
+    width: widthProp,
+    height: heightProp,
+    minWidth: minWidthProp,
+    maxWidth: maxWidthProp,
     className,
     style
 }, ref) => {
+    const containerRef = useRef(null);
     const canvasRef = useRef(null);
     const ctxRef = useRef(null);
     const drawingCacheRef = useRef(null);
     const amplitudeAnimatableRef = useRef(null);
-    const animationRef = useRef(null);
     const progressAnimationRef = useRef(null);
     const drawRef = useRef(null);
+    const lastWidthRef = useRef(null);
+    const lastHeightRef = useRef(null);
+
+    // Allow variable canvas dimensions via props (fallback to defaults)
+    const hasExplicitWidth = widthProp !== undefined && widthProp !== null && !isNaN(Number(widthProp));
+    const minWidth = Math.max(40, Math.min(600, Number(minWidthProp) || 0));
+    const maxWidth = Math.max(minWidth, Math.min(600, Number(maxWidthProp) || 600));
+    const computedWidth = hasExplicitWidth ? Number(widthProp) : WavyProgressDefaults.containerWidth;
+    const width = Math.max(minWidth, Math.min(maxWidth, computedWidth));
+    const height = Math.max(12, Math.min(48, Number(heightProp) || WavyProgressDefaults.containerHeight));
 
     // State for animations - ensure valid initial progress
     const [currentProgress, setCurrentProgress] = useState(Math.max(0, Math.min(1, progress || 0)));
@@ -291,34 +305,55 @@ const WavyProgressIndicator = forwardRef(({
     // Constants
     const ENTRANCE_DISAPPEARANCE_DURATION = 500;
 
-    // High DPI canvas setup
+    // High DPI canvas setup (responsive to width/height props or parent container)
     const setupHighDPICanvas = useCallback(() => {
         const canvas = canvasRef.current;
+        const container = containerRef.current;
         if (!canvas) return;
 
         const ctx = canvas.getContext('2d');
         const devicePixelRatio = window.devicePixelRatio || 1;
 
-        // Get the display size (CSS pixels)
-        const displayWidth = WavyProgressDefaults.containerWidth;
-        const displayHeight = WavyProgressDefaults.containerHeight;
+        // Prefer this container's width only when width prop is not explicitly provided
+        // Measure CSS pixel size of the canvas itself; let CSS control layout
+        const cssWidth = hasExplicitWidth ? width : Math.max(minWidth, Math.min(maxWidth, canvas.clientWidth || width));
+        const cssHeight = Number(heightProp) || canvas.clientHeight || height;
 
-        // Set the actual size in memory (scaled up for high-DPI)
-        canvas.width = displayWidth * devicePixelRatio;
-        canvas.height = displayHeight * devicePixelRatio;
+        // Avoid thrashing ResizeObserver: only resize drawing buffer if CSS size changed
+        if (lastWidthRef.current !== cssWidth || lastHeightRef.current !== cssHeight) {
+            lastWidthRef.current = cssWidth;
+            lastHeightRef.current = cssHeight;
 
-        // Scale the canvas back down using CSS
-        canvas.style.width = displayWidth + 'px';
-        canvas.style.height = displayHeight + 'px';
+            // Set the drawing buffer size (device pixels). Do NOT set style width/height here.
+            canvas.width = Math.max(1, Math.round(cssWidth * devicePixelRatio));
+            canvas.height = Math.max(1, Math.round(cssHeight * devicePixelRatio));
 
-        // Scale the drawing context so everything draws at the correct size
-        ctx.scale(devicePixelRatio, devicePixelRatio);
+            // Reset and scale the drawing context so everything draws at the correct size
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(devicePixelRatio, devicePixelRatio);
+        }
 
         ctxRef.current = ctx;
         drawingCacheRef.current = new LinearProgressDrawingCache();
-    }, []);
+    }, [width, height]);
 
-    // Initialize canvas on mount
+    // Observe this element for responsiveness only when width is not explicitly provided
+    useEffect(() => {
+        if (hasExplicitWidth) return; // no observation when width is fixed by prop
+        const container = containerRef.current;
+        if (!container) return;
+        const ro = new ResizeObserver(() => {
+            setupHighDPICanvas();
+            const fn = drawRef.current;
+            if (typeof fn === 'function') requestAnimationFrame(() => fn());
+        });
+        ro.observe(container);
+        return () => ro.disconnect();
+    }, [setupHighDPICanvas, hasExplicitWidth]);
+    useEffect(() => {
+        setupHighDPICanvas();
+    }, [setupHighDPICanvas]);
+    // Re-initialize canvas when size props change
     useEffect(() => {
         setupHighDPICanvas();
     }, [setupHighDPICanvas]);
@@ -415,13 +450,15 @@ const WavyProgressIndicator = forwardRef(({
         const canvas = canvasRef.current;
         if (!canvas) return;
 
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+        const canvasEl = canvasRef.current;
+        const ctx = canvasEl ? canvasEl.getContext('2d') : null;
+        if (!canvasEl || !ctx) return;
 
-        const width = WavyProgressDefaults.containerWidth;
-        const height = WavyProgressDefaults.containerHeight;
+        // Use CSS pixel size for drawing (context is DPR-scaled already)
+        const width = (lastWidthRef.current ?? canvasEl.clientWidth ?? 0) || WavyProgressDefaults.containerWidth;
+        const height = (lastHeightRef.current ?? canvasEl.clientHeight ?? 0) || WavyProgressDefaults.containerHeight;
 
-        // Clear canvas
+        // Clear canvas in CSS pixel coordinates
         ctx.clearRect(0, 0, width, height);
 
         // Ensure progress is valid
@@ -618,24 +655,26 @@ const WavyProgressIndicator = forwardRef(({
         getElement: () => canvasRef.current
     }), [currentProgress, animateProgress]);
 
+    const containerWidthStyle = hasExplicitWidth ? `${width}px` : '100%';
+    // Let CSS fully control layout width/height of canvas; we only adjust drawing buffer
     return (
-        <canvas
-            ref={canvasRef}
-            width={WavyProgressDefaults.containerWidth}
-            height={WavyProgressDefaults.containerHeight}
-            className={className}
-            style={{
-                width: `${WavyProgressDefaults.containerWidth}px`,
-                height: `${WavyProgressDefaults.containerHeight}px`,
-                display: 'block',
-                ...style
-            }}
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(currentProgress * 100)}
-            aria-valuetext={`${Math.round(currentProgress * 100)}%`}
-        />
+        <div ref={containerRef} style={{ width: containerWidthStyle }}>
+            <canvas
+                ref={canvasRef}
+                className={className}
+                style={{
+                    width: hasExplicitWidth ? `${width}px` : '100%',
+                    height: `${height}px`,
+                    display: 'block',
+                    ...style
+                }}
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(currentProgress * 100)}
+                aria-valuetext={`${Math.round(currentProgress * 100)}%`}
+            />
+        </div>
     );
 });
 
