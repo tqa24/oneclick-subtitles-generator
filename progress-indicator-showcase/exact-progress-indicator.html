@@ -463,48 +463,56 @@
             };
             monitorAmplitude();
 
-            // NEW: Event listener for the animation demo
+            // Event listener for the animation demo
             const animationDemoIndicator = document.getElementById('animation-demo');
             const runAnimationDemoBtn = document.getElementById('run-animation-demo');
 
             runAnimationDemoBtn.addEventListener('click', () => {
                 runAnimationDemoBtn.disabled = true;
 
-                // Wait a bit to ensure the custom element is fully initialized
-                setTimeout(() => {
-                    // Reset the indicator to its initial state
-                    if (typeof animationDemoIndicator.resetAnimationState === 'function') {
+                // Ensure the custom element is fully upgraded and ready
+                const waitForElementReady = () => {
+                    if (animationDemoIndicator.resetAnimationState &&
+                        animationDemoIndicator.startEntranceAnimation &&
+                        animationDemoIndicator.setProgress) {
+                        // Element is ready, start animation
                         animationDemoIndicator.resetAnimationState();
                         animationDemoIndicator.setProgress(0);
+
+                        // Manually start the entrance animation
+                        animationDemoIndicator.startEntranceAnimation();
+
+                        // Start progress animation slightly before entrance completes.
+                        // With the rendering fix, this timing is now seamless.
+                        setTimeout(() => {
+                            let progress = 0;
+                            const interval = setInterval(() => {
+                                progress += 0.01;
+                                if (progress > 1) progress = 1;
+                                animationDemoIndicator.setProgress(progress);
+
+                                // When it reaches 100%, the component's setProgress method will
+                                // automatically trigger the disappearance animation.
+                                if (progress >= 1) {
+                                    clearInterval(interval);
+                                    // Re-enable the button after the disappearance animation is complete
+                                    setTimeout(() => {
+                                        runAnimationDemoBtn.disabled = false;
+                                    }, animationDemoIndicator.ENTRANCE_DISAPPEARANCE_DURATION + 200)
+                                }
+                            }, 20);
+                        }, animationDemoIndicator.ENTRANCE_DISAPPEARANCE_DURATION - 50); // Start 50ms before entrance completes
                     } else {
-                        console.error('resetAnimationState method not found on element');
-                        runAnimationDemoBtn.disabled = false;
-                        return;
+                        // Element not ready, try again after a short delay
+                        setTimeout(() => {
+                            runAnimationDemoBtn.disabled = false;
+                            console.error('Animation demo element not ready');
+                        }, 100);
                     }
+                };
 
-                    // Manually start the entrance animation
-                    animationDemoIndicator.startEntranceAnimation();
-
-                    // Start progress animation slightly before entrance completes to avoid blinking
-                    setTimeout(() => {
-                        let progress = 0;
-                        const interval = setInterval(() => {
-                            progress += 0.01;
-                            if (progress > 1) progress = 1;
-                            animationDemoIndicator.setProgress(progress);
-
-                            // When it reaches 100%, the component's setProgress method will
-                            // automatically trigger the disappearance animation.
-                            if (progress >= 1) {
-                                clearInterval(interval);
-                                // Re-enable the button after the disappearance animation is complete
-                                setTimeout(() => {
-                                    runAnimationDemoBtn.disabled = false;
-                                }, animationDemoIndicator.ENTRANCE_DISAPPEARANCE_DURATION + 200)
-                            }
-                        }, 20);
-                    }, animationDemoIndicator.ENTRANCE_DISAPPEARANCE_DURATION - 50); // Start 50ms before entrance completes
-                }, 100); // Wait 100ms for element initialization
+                // Wait for element to be ready
+                setTimeout(waitForElementReady, 100);
             });
 
 

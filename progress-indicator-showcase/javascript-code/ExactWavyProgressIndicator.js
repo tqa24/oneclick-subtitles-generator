@@ -10,6 +10,7 @@
  * replicated from the Android implementation.
  * 
  * MODIFIED to include entrance and disappearance animations.
+ * FIXED to resolve blinking issue during entrance-to-progress transition.
  */
 
 // Animation specifications from Android MotionTokens
@@ -730,7 +731,7 @@ class LinearWavyProgressIndicator extends HTMLElement {
         requestAnimationFrame(draw);
     }
 
-    // Exact port of drawing logic with NEW entrance/disappearance animations
+    // [FIXED] Drawing logic with corrected entrance/disappearance animation handling
     drawProgress() {
         if (!this.ctx) return;
 
@@ -743,7 +744,7 @@ class LinearWavyProgressIndicator extends HTMLElement {
 
         ctx.clearRect(0, 0, size.width, size.height);
 
-        // --- NEW: Entrance and Disappearance Animation Logic ---
+        // --- Entrance and Disappearance Animation Logic ---
         let entranceProgress = 1;
         if (this._isAnimatingEntrance) {
             const elapsed = performance.now() - this._entranceStartTime;
@@ -763,14 +764,10 @@ class LinearWavyProgressIndicator extends HTMLElement {
             }
         }
 
-        // Apply easing functions for smoother animations
         const easedEntranceProgress = this.easeOutCubic(entranceProgress);
         const easedDisappearanceProgress = this.easeInCubic(disappearanceProgress);
-
-        // Calculate the current scale based on animations (don't change stroke width)
         let currentScale = easedEntranceProgress * (1 - easedDisappearanceProgress);
 
-        // If element has disappeared, keep it hidden
         if (this._hasDisappeared) {
             currentScale = 0;
         }
@@ -779,82 +776,66 @@ class LinearWavyProgressIndicator extends HTMLElement {
             return; // Nothing to draw if completely invisible
         }
 
-        // Keep original stroke width, use scaling for height animation
-        const currentTrackStroke = { ...this._trackStroke };
-
-
-        // Get current progress and amplitude (exact Android logic)
+        // Get current progress and amplitude
         const coercedProgress = Math.max(0, Math.min(1, this._progress()));
-        const targetAmplitudePx = this._indeterminate
-            ? 1 // Fixed amplitude for indeterminate
-            : this._amplitude(coercedProgress);
-
-        // Update amplitude animation (exact Android updateAmplitudeAnimation call)
+        const targetAmplitudePx = this._indeterminate ? 1 : this._amplitude(coercedProgress);
         this.updateAmplitudeAnimation(targetAmplitudePx);
-
-        // Get current animated amplitude value (exact Android behavior)
         const currentAmplitude = this._amplitudeAnimatable ? this._amplitudeAnimatable.value : 0;
         const progressFractions = this.getProgressFractions();
 
-        // Check for very low progress dot (Material Design 3 guideline)
-        const drewDot = !this._indeterminate && this.drawLowProgressDot(ctx, coercedProgress, size);
+        // --- FIX: Apply consistent scaling transformation to ALL drawing operations ---
+        // This ensures all drawn elements (track, progress, dot, stop indicator) are scaled uniformly
+        ctx.save();
+        const centerY = size.height / 2;
+        ctx.translate(0, centerY);
+        ctx.scale(1, currentScale);
+        ctx.translate(0, -centerY);
 
-        if (!drewDot) {
-            // Update drawing cache - exact port from Android
-            this._progressDrawingCache.updatePaths(
-                size,
-                this._wavelength,
-                progressFractions,
-                currentAmplitude,
-                currentAmplitude > 0 ? this._waveOffset : 0,
-                this._gapSize,
-                this._stroke, // Use original stroke width for path calculation
-                currentTrackStroke
-            );
-            
-            ctx.save();
+        // Always update and draw the main progress paths within scaled context
+        this._progressDrawingCache.updatePaths(
+            size,
+            this._wavelength,
+            progressFractions,
+            currentAmplitude,
+            currentAmplitude > 0 ? this._waveOffset : 0,
+            this._gapSize,
+            this._stroke,
+            this._trackStroke
+        );
 
-            // Apply center-based vertical scaling for entrance/exit animation
-            const centerY = size.height / 2;
-            ctx.translate(0, centerY);
-            ctx.scale(1, currentScale);
-            ctx.translate(0, -centerY);
+        // Draw track segments
+        ctx.strokeStyle = this._trackColor;
+        ctx.lineWidth = this._trackStroke.width;
+        ctx.lineCap = 'round';
+        ctx.stroke(this._progressDrawingCache.trackPathToDraw);
 
-            // Draw track segments (exact Android implementation)
-            ctx.strokeStyle = this._trackColor;
-            ctx.lineWidth = currentTrackStroke.width;
+        // Draw progress paths
+        const progressPaths = this._progressDrawingCache.progressPathsToDraw;
+        if (progressPaths) {
+            ctx.strokeStyle = this._color;
+            ctx.lineWidth = this._stroke.width;
             ctx.lineCap = 'round';
-            ctx.stroke(this._progressDrawingCache.trackPathToDraw);
 
-            // Draw progress paths (stroke-based like Android)
-            const progressPaths = this._progressDrawingCache.progressPathsToDraw;
-            if (progressPaths) {
-                ctx.strokeStyle = this._color;
-                ctx.lineWidth = this._stroke.width;
-                ctx.lineCap = 'round';
-
-                for (let i = 0; i < progressPaths.length; i++) {
-                    if (progressPaths[i]) {
-                        ctx.stroke(progressPaths[i]);
-                    }
+            for (let i = 0; i < progressPaths.length; i++) {
+                if (progressPaths[i]) {
+                    ctx.stroke(progressPaths[i]);
                 }
             }
-
-            ctx.restore(); // Restore from scaling transformation
-
-            // Draw stop indicator for determinate progress, scaled by entrance animation
-            if (!this._indeterminate) {
-                ctx.save();
-                // Apply same center-based scaling for stop indicator
-                const centerY = size.height / 2;
-                ctx.translate(0, centerY);
-                ctx.scale(1, currentScale);
-                ctx.translate(0, -centerY);
-
-                this.drawStopIndicator(ctx, progressFractions[1], size, 1); // Full opacity, scaling handles visibility
-                ctx.restore();
-            }
         }
+
+        // Draw low progress dot if needed (also within scaled context)
+        if (!this._indeterminate) {
+            this.drawLowProgressDot(ctx, coercedProgress, size);
+        }
+
+        // Draw stop indicator for determinate progress (within scaled context)
+        if (!this._indeterminate && this.shouldShowStopIndicator()) {
+            this.drawStopIndicator(ctx, progressFractions[1], size, 1);
+        }
+
+        // Restore context from the scaling transformation
+        ctx.restore();
+        // --- FIX END ---
 
         // Update accessibility attributes
         this.updateAccessibility(coercedProgress);
@@ -874,20 +855,19 @@ class LinearWavyProgressIndicator extends HTMLElement {
         }
     }
 
-    // MODIFIED to accept a scale parameter for the entrance animation
-    drawStopIndicator(ctx, progressEnd, size, scale = 1) {
-        // Stop indicator is required for accessibility if track contrast is below 3:1
-        if (!this.shouldShowStopIndicator() || scale <= 0) {
+    // [FIXED] Simplified to be drawn within an already-scaled context
+    drawStopIndicator(ctx, progressEnd, size) {
+        if (!this.shouldShowStopIndicator()) {
             return;
         }
 
-        // Exact dimensions from Figma: 4px circle, scaled by animation
-        const stopSize = 4 * scale; 
+        // Exact dimensions from Figma: 4px circle. Scaling is now handled by the context.
+        const stopSize = 4;
         const radius = stopSize / 2;
-        if(radius <= 0) return;
+        if (radius <= 0) return;
 
         // Position at the end of track with proper offset
-        const centerX = size.width - 4; 
+        const centerX = size.width - 4;
         const centerY = size.height / 2;
 
         // Don't draw if progress has reached the stop indicator
@@ -897,7 +877,7 @@ class LinearWavyProgressIndicator extends HTMLElement {
         }
 
         // Draw the stop indicator as a circle
-        ctx.fillStyle = this._color; 
+        ctx.fillStyle = this._color;
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
         ctx.fill();
