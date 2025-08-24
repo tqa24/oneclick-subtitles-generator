@@ -403,154 +403,24 @@
     </div>
 
     <div class="container">
-        <h1>🎯 EXACT Wavy Progress Indicator</h1>
-        <div class="exact-badge">
-            ✅ 100% EXACT Android Implementation
-        </div>
-        <p class="subtitle">
-            Pixel-perfect JavaScript port of Android's WavyProgressIndicator.kt with exact algorithms, 
-            drawing logic, and animation specifications
-        </p>
-
-        <div class="info-box">
-            <h3>🔬 Exact Implementation Details</h3>
-            <p>
-                This implementation is a precise line-by-line port of the Android source code. Every algorithm,
-                drawing path, animation timing, and mathematical calculation has been exactly replicated from:
-            </p>
-            <div class="code-reference">
-                • WavyProgressIndicator.kt<br>
-                • LinearWavyProgressModifiers.kt<br>
-                • CircularWavyProgressModifiers.kt<br>
-                • LinearProgressDrawingCache class<br>
-                • All animation specifications from MotionTokens
-            </div>
-        </div>
-        
-        <!-- NEW SECTION FOR ENTRANCE/DISAPPEARANCE DEMO -->
-        <div class="section">
-            <h2>🎬 Entrance & Disappearance Animations</h2>
-            <div class="demo-card">
-                <h3>Animation Demo</h3>
-                <div class="demo-item">
-                    <label>Entrance (0%) and Disappearance (100%)</label>
-                    <linear-wavy-progress-indicator-exact id="animation-demo" progress="0"></linear-wavy-progress-indicator-exact>
-                    <div class="controls">
-                         <button id="run-animation-demo">Run Animation</button>
-                    </div>
-                     <div class="algorithm-highlight" style="margin-top: 1rem;">
-                        <h4>Animation Sequence:</h4>
-                        <div style="font-size: 0.8rem;">
-                            • <strong>Entrance:</strong> Track expands vertically, stop indicator scales in.<br>
-                            • <strong>Progress:</strong> Indicator fills from 0% to 100%.<br>
-                            • <strong>Disappearance:</strong> Track collapses vertically to hide.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-        <div class="section">
-            <h2>📏 Exact Linear Wavy Progress Indicators</h2>
-
-            <div class="algorithm-highlight">
-                <h4>🧮 Exact Algorithms + Material Design 3 Guidelines:</h4>
-                <ul style="margin-left: 1rem; font-size: 0.9rem;">
-                    <li><strong>Wave Path Generation:</strong> Quadratic Bézier curves with exact control points</li>
-                    <li><strong>Amplitude Function:</strong> 0% at 0-10% and 95-100% progress, 100% between 10-95%</li>
-                    <li><strong>Stop Indicator:</strong> 4dp circle for accessibility (3:1 contrast requirement)</li>
-                    <li><strong>Low Progress Dot:</strong> Dot appearance at very low percentages</li>
-                    <li><strong>RTL Support:</strong> Horizontal mirroring for right-to-left languages</li>
-                    <li><strong>Responsive Sizing:</strong> 40dp minimum, dynamic height for wavy shape</li>
-                </ul>
-            </div>
-            
-            <div class="demo-grid">
-                <div class="demo-card">
-                    <h3>🎯 Exact Amplitude Transitions (Flat ↔ Wave)</h3>
-                    <div class="demo-item">
-                        <label>Smooth Amplitude Animation (500ms)</label>
-                        <linear-wavy-progress-indicator-exact id="exact-determinate" progress="0.6"></linear-wavy-progress-indicator-exact>
-                        <div class="controls">
-                            <div class="control-group">
-                                <label>Progress</label>
-                                <input type="range" id="exact-progress" min="0" max="1" step="0.01" value="0.6">
-                                <div class="value-display" id="exact-progress-value">60%</div>
-                            </div>
-                            <div class="control-group">
-                                <label>Current Amplitude</label>
-                                <div class="value-display" id="current-amplitude-value">1.0</div>
-                            </div>
-                            <button onclick="demonstrateAmplitudeTransitions()">Demo All 6 States</button>
-                        </div>
-                        <div class="algorithm-highlight" style="margin-top: 1rem;">
-                            <h4>🎯 Exact Amplitude States:</h4>
-                            <div style="font-size: 0.8rem;">
-                                • <strong>0-10%:</strong> Amplitude = 0 (flat)<br>
-                                • <strong>10-95%:</strong> Amplitude = 1 (full wave)<br>
-                                • <strong>95-100%:</strong> Amplitude = 0 (flat)<br>
-                                • <strong>Transitions:</strong> 500ms with exact Android easing
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="demo-card">
-                    <h3>Indeterminate with Exact Animation Specs</h3>
-                    <div class="demo-item">
-                        <label>4-Line Animation with Exact Timing</label>
-                        <linear-wavy-progress-indicator-exact id="exact-indeterminate" indeterminate></linear-wavy-progress-indicator-exact>
-                        <div class="controls">
-                            <button onclick="toggleExactIndeterminate()">Toggle Animation</button>
-                        </div>
-                        <div class="algorithm-highlight" style="margin-top: 1rem;">
-                            <h4>Animation Specifications:</h4>
-                            <div style="font-size: 0.8rem; font-family: monospace;">
-                                Line 1 Head: 1800ms, cubic-bezier(0.2, 0, 0, 1), delay: 0ms<br>
-                                Line 1 Tail: 1800ms, cubic-bezier(0.4, 0, 1, 1), delay: 333ms<br>
-                                Line 2 Head: 1800ms, cubic-bezier(0, 0, 0.65, 1), delay: 1000ms<br>
-                                Line 2 Tail: 1800ms, cubic-bezier(0.1, 0, 0.45, 1), delay: 1267ms
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>🎯 Stop Indicator & Low Progress Dot</h2>
-
-            <div class="demo-grid">
-                <div class="demo-card">
-                    <h3>Stop Indicator & Low Progress Dot</h3>
-                    <div class="demo-item">
-                        <label>Accessibility Features</label>
-                        <linear-wavy-progress-indicator-exact id="accessibility-demo" progress="0.02"></linear-wavy-progress-indicator-exact>
-                        <div class="controls">
-                            <div class="control-group">
-                                <label>Progress</label>
-                                <input type="range" id="accessibility-progress" min="0" max="1" step="0.01" value="0.02">
-                                <div class="value-display" id="accessibility-progress-value">2%</div>
-                            </div>
-                            <div class="control-group">
-                                <label>Show Stop Indicator</label>
-                                <input type="checkbox" id="show-stop-indicator" checked>
-                            </div>
-                        </div>
-                        <div class="algorithm-highlight" style="margin-top: 1rem;">
-                            <h4>Features Demonstrated:</h4>
-                            <div style="font-size: 0.8rem;">
-                                • <strong>Low Progress Dot:</strong> Appears as dot at &lt;5% progress<br>
-                                • <strong>Stop Indicator:</strong> 4dp circle at end for accessibility<br>
-                                • <strong>Contrast Compliance:</strong> Meets 3:1 contrast requirement
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <div class="demo-card">
+            <div class="demo-item">
+                <linear-wavy-progress-indicator-exact
+                    id="animation-demo"
+                    progress="0"
+                    role="progressbar"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                    aria-valuenow="0"
+                    aria-valuetext="0%"
+                    aria-label="Progress: 0%">
+                </linear-wavy-progress-indicator-exact>
+                <button id="run-animation-demo">Run Animation</button>
             </div>
         </div>
     </div>
+
+
 
     <!-- Load the exact implementation -->
     <script src="javascript-code/ExactWavyProgressIndicator.js"></script>
@@ -607,27 +477,7 @@
                 });
             });
 
-            // Exact progress controls
-            const exactProgress = document.getElementById('exact-progress');
-            const exactProgressValue = document.getElementById('exact-progress-value');
-            const exactDeterminate = document.getElementById('exact-determinate');
-            
-            exactProgress.addEventListener('input', function() {
-                const value = parseFloat(this.value);
-                exactDeterminate.setProgress(value);
-                exactProgressValue.textContent = Math.round(value * 100) + '%';
-            });
 
-            // Set up amplitude monitoring
-            const currentAmplitudeValue = document.getElementById('current-amplitude-value');
-            const monitorAmplitude = () => {
-                if (exactDeterminate._amplitudeAnimatable) {
-                    const amplitude = exactDeterminate._amplitudeAnimatable.value.toFixed(2);
-                    currentAmplitudeValue.textContent = amplitude;
-                }
-                requestAnimationFrame(monitorAmplitude);
-            };
-            monitorAmplitude();
 
             // Event listener for the animation demo
             const animationDemoIndicator = document.getElementById('animation-demo');
@@ -681,62 +531,7 @@
                 setTimeout(waitForElementReady, 100);
             });
 
-
-            setupStopIndicatorDemo();
         });
-
-        function toggleExactIndeterminate() {
-            const indicator = document.getElementById('exact-indeterminate');
-            const isIndeterminate = indicator.hasAttribute('indeterminate');
-            indicator.setIndeterminate(!isIndeterminate);
-        }
-
-        // Demonstrate the exact 6 amplitude states from Figma design
-        function demonstrateAmplitudeTransitions() {
-            const indicator = document.getElementById('exact-determinate');
-            const progressSlider = document.getElementById('exact-progress');
-            const progressValue = document.getElementById('exact-progress-value');
-
-            const steps = [
-                { progress: 0.0, delay: 0 },
-                { progress: 0.1, delay: 1000 },
-                { progress: 0.2, delay: 1000 },
-                { progress: 0.5, delay: 1500 },
-                { progress: 0.8, delay: 1500 },
-                { progress: 1.0, delay: 1500 },
-                { progress: 0.6, delay: 2000 } // Reset
-            ];
-
-            let cumulativeDelay = 0;
-            steps.forEach(step => {
-                cumulativeDelay += step.delay;
-                setTimeout(() => {
-                    indicator.setProgress(step.progress);
-                    progressSlider.value = step.progress;
-                    progressValue.textContent = `${Math.round(step.progress * 100)}%`;
-                }, cumulativeDelay);
-            });
-        }
-
-        // Stop Indicator & Low Progress Dot demo functions
-        function setupStopIndicatorDemo() {
-            // Accessibility demo controls
-            const accessibilityProgress = document.getElementById('accessibility-progress');
-            const accessibilityProgressValue = document.getElementById('accessibility-progress-value');
-            const accessibilityDemo = document.getElementById('accessibility-demo');
-            const showStopIndicator = document.getElementById('show-stop-indicator');
-
-            accessibilityProgress.addEventListener('input', function() {
-                const value = parseFloat(this.value);
-                accessibilityDemo.setProgress(value);
-                accessibilityProgressValue.textContent = Math.round(value * 100) + '%';
-            });
-
-            showStopIndicator.addEventListener('change', function() {
-                accessibilityDemo.setAttribute('show-stop-indicator', this.checked ? 'true' : 'false');
-                accessibilityDemo.invalidateDraw(); // Force a redraw to show/hide indicator
-            });
-        }
     </script>
 </body>
 </html>
