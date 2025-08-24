@@ -1,0 +1,611 @@
+﻿import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState, useCallback } from 'react';
+
+/**
+ * Pure React Wavy Progress Indicator Component
+ *
+ * Complete implementation with all Material Design 3 features:
+ * - High DPI rendering for crisp visuals
+ * - Track receding animation
+ * - Entrance/disappearance height animations
+ * - Amplitude animation system
+ * - Proper wavy path creation
+ */
+
+// Animation specifications from Android MotionTokens
+const AnimationSpecs = {
+    increasingAmplitude: {
+        duration: 500,
+        easing: [0.2, 0, 0, 1]
+    },
+    decreasingAmplitude: {
+        duration: 500,
+        easing: [0.05, 0.7, 0.1, 1]
+    },
+    progressAnimation: {
+        duration: 500,
+        easing: [0.4, 0, 0.2, 1]
+    }
+};
+
+// Default configuration matching original
+const WavyProgressDefaults = {
+    indicatorColor: '#485E92',
+    trackColor: '#D9DFF6',
+    containerWidth: 240,
+    containerHeight: 16,
+    strokeWidth: 8,
+    wavelength: 32,
+    gapSize: 8,
+    stopSize: 4,
+
+    // Exact amplitude function from Android
+    indicatorAmplitude: (progress) => {
+        if (progress <= 0.1 || progress >= 0.95) return 0;
+        return 1;
+    }
+};
+
+// Exact port of Android's Animatable class for amplitude animations
+class Animatable {
+    constructor(initialValue = 0) {
+        this.value = initialValue;
+        this.targetValue = initialValue;
+        this.isRunning = false;
+        this.animationId = null;
+        this.onUpdate = null;
+    }
+
+    async animateTo(targetValue, animationSpec) {
+        if (this.targetValue === targetValue && !this.isRunning) {
+            return;
+        }
+
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
+
+        this.targetValue = targetValue;
+        this.isRunning = true;
+
+        const startValue = this.value;
+        const startTime = performance.now();
+        const duration = animationSpec.duration;
+
+        return new Promise((resolve) => {
+            const animate = (currentTime) => {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // Simple easing (can be enhanced with cubic bezier)
+                const eased = progress * (2 - progress);
+                this.value = startValue + (targetValue - startValue) * eased;
+
+                if (this.onUpdate) this.onUpdate(this.value);
+
+                if (progress < 1) {
+                    this.animationId = requestAnimationFrame(animate);
+                } else {
+                    this.isRunning = false;
+                    this.animationId = null;
+                    resolve();
+                }
+            };
+            this.animationId = requestAnimationFrame(animate);
+        });
+    }
+
+    stop() {
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
+        this.isRunning = false;
+    }
+}
+
+// Progress drawing cache for path management
+class LinearProgressDrawingCache {
+    constructor() {
+        this.fullProgressPath = null;
+        this.fullTrackPath = null;
+        this.trackPathToDraw = null;
+        this.progressPathsToDraw = [];
+        this.currentSize = { width: 0, height: 0 };
+        this.currentStrokeCapWidth = 4;
+        this.currentIndicatorTrackGapSize = 4;
+    }
+
+    updatePaths(size, wavelength, progressFractions, amplitude, waveOffset, gapSize, stroke, trackStroke) {
+        this.currentSize = size;
+        this.currentStrokeCapWidth = stroke.width / 2;
+        this.currentIndicatorTrackGapSize = gapSize;
+
+        this.updateFullPaths(size, wavelength, amplitude, stroke, trackStroke);
+        this.updateDrawPaths(progressFractions, amplitude, waveOffset);
+    }
+
+    updateFullPaths(size, wavelength, amplitude, stroke, trackStroke) {
+        const width = size.width;
+        const height = size.height;
+
+        // Create the full progress path
+        this.fullProgressPath = new Path2D();
+        this.fullProgressPath.moveTo(0, 0);
+
+        if (amplitude === 0) {
+            // Just a line
+            this.fullProgressPath.lineTo(width, 0);
+        } else {
+            // Create wavy path - exact algorithm from Android
+            const halfWavelengthPx = wavelength / 2;
+            let anchorX = halfWavelengthPx;
+            const anchorY = 0;
+            let controlX = halfWavelengthPx / 2;
+            let controlY = (height - stroke.width) * 0.5;
+
+            const widthWithExtraPhase = width + wavelength * 2;
+
+            while (anchorX <= widthWithExtraPhase) {
+                this.fullProgressPath.quadraticCurveTo(controlX, controlY, anchorX, anchorY);
+                anchorX += halfWavelengthPx;
+                controlX += halfWavelengthPx;
+                controlY *= -1;
+            }
+        }
+
+        // Create full track path
+        this.fullTrackPath = new Path2D();
+        this.fullTrackPath.moveTo(0, 0);
+        this.fullTrackPath.lineTo(width, 0);
+
+        return true;
+    }
+
+    updateDrawPaths(progressFractions, amplitude, waveOffset) {
+        const width = this.currentSize.width;
+        const halfHeight = this.currentSize.height / 2;
+
+        // Update track path with receding animation
+        this.updateTrackPath(progressFractions, width, halfHeight);
+
+        // Update progress paths
+        this.progressPathsToDraw = [];
+
+        for (let i = 0; i < progressFractions.length / 2; i++) {
+            const startFraction = progressFractions[i * 2];
+            const endFraction = progressFractions[i * 2 + 1];
+
+            if (endFraction > startFraction) {
+                const progressPath = new Path2D();
+                const startX = startFraction * width;
+                const endX = endFraction * width;
+
+                // Apply wave offset
+                const offsetX = amplitude > 0 ? waveOffset * WavyProgressDefaults.wavelength : 0;
+
+                // Create clipped progress path
+                progressPath.addPath(this.fullProgressPath, new DOMMatrix().translate(offsetX, halfHeight));
+
+                this.progressPathsToDraw.push({
+                    path: progressPath,
+                    startX: startX,
+                    endX: endX
+                });
+            }
+        }
+    }
+
+    updateTrackPath(progressFractions, width, halfHeight) {
+        // Track receding animation - track appears behind progress with gap
+        let activeIndicatorVisible = false;
+        let nextEndTrackOffset = width - this.currentStrokeCapWidth;
+
+        this.trackPathToDraw = new Path2D();
+        this.trackPathToDraw.moveTo(nextEndTrackOffset, halfHeight);
+
+        for (let i = 0; i < progressFractions.length / 2; i++) {
+            const startProgressFraction = progressFractions[i * 2];
+            const endProgressFraction = progressFractions[i * 2 + 1];
+
+            const barHead = endProgressFraction * width;
+            const barTail = startProgressFraction * width;
+
+            let adjustedTrackGapSize = this.currentIndicatorTrackGapSize;
+
+            if (i === 0) {
+                adjustedTrackGapSize = barHead < this.currentStrokeCapWidth ?
+                    0 : Math.min(barHead - this.currentStrokeCapWidth, this.currentIndicatorTrackGapSize);
+                activeIndicatorVisible = barHead >= this.currentStrokeCapWidth;
+            }
+
+            const adjustedBarHead = Math.max(this.currentStrokeCapWidth,
+                Math.min(barHead, width - this.currentStrokeCapWidth));
+
+            const adaptiveTrackSpacing = activeIndicatorVisible ?
+                adjustedTrackGapSize + this.currentStrokeCapWidth * 2 : adjustedTrackGapSize;
+
+            if (nextEndTrackOffset > adjustedBarHead + adaptiveTrackSpacing) {
+                this.trackPathToDraw.lineTo(
+                    Math.max(this.currentStrokeCapWidth, adjustedBarHead + adaptiveTrackSpacing),
+                    halfHeight
+                );
+            }
+
+            nextEndTrackOffset = Math.min(nextEndTrackOffset, barTail - adaptiveTrackSpacing);
+        }
+
+        if (nextEndTrackOffset > this.currentStrokeCapWidth) {
+            this.trackPathToDraw.lineTo(this.currentStrokeCapWidth, halfHeight);
+        }
+    }
+}
+
+// Pure React Wavy Progress Indicator with all original features
+const WavyProgressIndicator = forwardRef(({
+    progress = 0,
+    animate = true,
+    color = WavyProgressDefaults.indicatorColor,
+    trackColor = WavyProgressDefaults.trackColor,
+    wavelength = WavyProgressDefaults.wavelength,
+    waveSpeed = 1,
+    showStopIndicator = true,
+    className,
+    style
+}, ref) => {
+    const canvasRef = useRef(null);
+    const ctxRef = useRef(null);
+    const drawingCacheRef = useRef(null);
+    const amplitudeAnimatableRef = useRef(null);
+    const animationRef = useRef(null);
+    const progressAnimationRef = useRef(null);
+    const drawRef = useRef(null);
+
+    // State for animations - ensure valid initial progress
+    const [currentProgress, setCurrentProgress] = useState(Math.max(0, Math.min(1, progress || 0)));
+    const [waveOffset, setWaveOffset] = useState(0);
+    const [isAnimatingEntrance, setIsAnimatingEntrance] = useState(false);
+    const [isAnimatingDisappearance, setIsAnimatingDisappearance] = useState(false);
+    const [hasDisappeared, setHasDisappeared] = useState(false);
+    const [entranceStartTime, setEntranceStartTime] = useState(0);
+    const [disappearanceStartTime, setDisappearanceStartTime] = useState(0);
+
+    // Constants
+    const ENTRANCE_DISAPPEARANCE_DURATION = 500;
+
+    // High DPI canvas setup
+    const setupHighDPICanvas = useCallback(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        const devicePixelRatio = window.devicePixelRatio || 1;
+
+        // Get the display size (CSS pixels)
+        const displayWidth = WavyProgressDefaults.containerWidth;
+        const displayHeight = WavyProgressDefaults.containerHeight;
+
+        // Set the actual size in memory (scaled up for high-DPI)
+        canvas.width = displayWidth * devicePixelRatio;
+        canvas.height = displayHeight * devicePixelRatio;
+
+        // Scale the canvas back down using CSS
+        canvas.style.width = displayWidth + 'px';
+        canvas.style.height = displayHeight + 'px';
+
+        // Scale the drawing context so everything draws at the correct size
+        ctx.scale(devicePixelRatio, devicePixelRatio);
+
+        ctxRef.current = ctx;
+        drawingCacheRef.current = new LinearProgressDrawingCache();
+    }, []);
+
+    // Initialize canvas on mount
+    useEffect(() => {
+        setupHighDPICanvas();
+    }, [setupHighDPICanvas]);
+
+    // Wave animation with interval instead of requestAnimationFrame
+    useEffect(() => {
+        if (waveSpeed > 0) {
+            const interval = setInterval(() => {
+                setWaveOffset(prev => (prev + 0.02 * waveSpeed) % 1);
+            }, 16); // ~60fps
+
+            return () => clearInterval(interval);
+        }
+    }, [waveSpeed]);
+
+    // Stable progress animation
+    const animateProgress = useCallback((targetProgress) => {
+        const validTarget = Math.max(0, Math.min(1, targetProgress || 0));
+
+        if (progressAnimationRef.current) {
+            cancelAnimationFrame(progressAnimationRef.current);
+        }
+
+        const startProgress = currentProgress;
+        const startTime = performance.now();
+        const duration = 500;
+
+        const animate = (currentTime) => {
+            const elapsed = currentTime - startTime;
+            const progressRatio = Math.min(elapsed / duration, 1);
+
+            const eased = progressRatio * (2 - progressRatio);
+            const newProgress = startProgress + (validTarget - startProgress) * eased;
+
+            setCurrentProgress(Math.max(0, Math.min(1, newProgress)));
+
+            if (progressRatio < 1) {
+                progressAnimationRef.current = requestAnimationFrame(animate);
+            } else {
+                progressAnimationRef.current = null;
+            }
+        };
+
+        progressAnimationRef.current = requestAnimationFrame(animate);
+    }, [currentProgress]);
+
+    // Update progress when prop changes - prevent loops
+    useEffect(() => {
+        const validProgress = Math.max(0, Math.min(1, progress || 0));
+
+        // Only update if there's a meaningful difference
+        if (Math.abs(currentProgress - validProgress) > 0.001) {
+            if (animate) {
+                animateProgress(validProgress);
+            } else {
+                setCurrentProgress(validProgress);
+            }
+        }
+    }, [progress, animate]); // Removed animateProgress from deps to prevent loops
+
+    // Amplitude animation system
+    const updateAmplitudeAnimation = useCallback((targetAmplitudePx) => {
+        if (!amplitudeAnimatableRef.current) {
+            amplitudeAnimatableRef.current = new Animatable(targetAmplitudePx);
+            amplitudeAnimatableRef.current.onUpdate = () => {
+                // Trigger redraw when amplitude changes
+                if (ctxRef.current && drawingCacheRef.current) {
+                    drawProgress();
+                }
+            };
+        }
+
+        const currentAmplitudeAnimatable = amplitudeAnimatableRef.current;
+        if (Math.abs(currentAmplitudeAnimatable.targetValue - targetAmplitudePx) > 0.01) {
+            const animationSpec = targetAmplitudePx > currentAmplitudeAnimatable.value ?
+                AnimationSpecs.increasingAmplitude : AnimationSpecs.decreasingAmplitude;
+
+            currentAmplitudeAnimatable.animateTo(targetAmplitudePx, animationSpec);
+        }
+    }, []);
+
+    // Easing functions
+    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+    const easeInCubic = (t) => t * t * t;
+
+    // Drawing function with proper track receding logic
+    const drawProgress = useCallback(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const width = WavyProgressDefaults.containerWidth;
+        const height = WavyProgressDefaults.containerHeight;
+
+        // Clear canvas
+        ctx.clearRect(0, 0, width, height);
+
+        // Ensure progress is valid
+        const validProgress = Math.max(0, Math.min(1, currentProgress || 0));
+
+        // Entrance/disappearance height animation
+        const now = performance.now();
+        const ENTRANCE_DURATION = ENTRANCE_DISAPPEARANCE_DURATION;
+        let heightFactor = 1;
+        let keepAnimating = false;
+
+        if (hasDisappeared) {
+            heightFactor = 0;
+        }
+        if (isAnimatingEntrance) {
+            const t = Math.min((now - entranceStartTime) / ENTRANCE_DURATION, 1);
+            heightFactor = easeOutCubic(t);
+            keepAnimating = t < 1;
+            if (t >= 1) {
+                heightFactor = 1; // entrance complete
+                setIsAnimatingEntrance(false);
+            }
+        } else if (isAnimatingDisappearance) {
+            const t = Math.min((now - disappearanceStartTime) / ENTRANCE_DURATION, 1);
+            heightFactor = 1 - easeInCubic(t);
+            keepAnimating = true;
+            if (t >= 1) {
+                heightFactor = 0;
+                // End disappearance animation and mark as disappeared
+                setIsAnimatingDisappearance(false);
+                setHasDisappeared(true);
+            }
+        }
+
+        // Track/progress geometry
+        const strokeCapWidth = WavyProgressDefaults.strokeWidth / 2;
+        const gapSize = WavyProgressDefaults.gapSize;
+        const halfHeight = height / 2;
+        const progressFrontX = strokeCapWidth + validProgress * (width - strokeCapWidth * 2);
+
+        if (heightFactor > 0) {
+            // Draw track and progress scaled vertically around center
+            ctx.save();
+            ctx.translate(0, halfHeight);
+            ctx.scale(1, heightFactor);
+
+            // Track
+            ctx.strokeStyle = trackColor;
+            ctx.lineWidth = WavyProgressDefaults.strokeWidth;
+            ctx.lineCap = 'round';
+
+            if (validProgress > 0) {
+                const trackStart = Math.min(progressFrontX + gapSize + strokeCapWidth, width - strokeCapWidth);
+                const trackEnd = width - strokeCapWidth;
+                if (trackStart < trackEnd) {
+                    ctx.beginPath();
+                    ctx.moveTo(trackStart, 0);
+                    ctx.lineTo(trackEnd, 0);
+                    ctx.stroke();
+                }
+            } else {
+                ctx.beginPath();
+                ctx.moveTo(strokeCapWidth, 0);
+                ctx.lineTo(width - strokeCapWidth, 0);
+                ctx.stroke();
+            }
+
+            // Progress
+            if (validProgress > 0) {
+                const progressWidth = validProgress * (width - strokeCapWidth * 2);
+                const amplitude = WavyProgressDefaults.indicatorAmplitude(validProgress);
+                const waveHeight = amplitude * 3;
+
+                ctx.strokeStyle = color;
+                ctx.lineWidth = WavyProgressDefaults.strokeWidth;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+
+                if (amplitude === 0) {
+                    ctx.moveTo(strokeCapWidth, 0);
+                    ctx.lineTo(strokeCapWidth + progressWidth, 0);
+                } else {
+                    const steps = Math.max(Math.floor(progressWidth / 2), 10);
+                    let firstPoint = true;
+                    for (let i = 0; i <= steps; i++) {
+                        const x = strokeCapWidth + (i / steps) * progressWidth;
+                        const waveX = ((x + waveOffset * wavelength) / wavelength) * 2 * Math.PI;
+                        const y = Math.sin(waveX) * waveHeight;
+                        if (firstPoint) {
+                            ctx.moveTo(x, y);
+                            firstPoint = false;
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    }
+                }
+                ctx.stroke();
+            }
+
+            ctx.restore();
+
+            if (keepAnimating) requestAnimationFrame(() => { const fn = drawRef.current || drawProgress; fn(); });
+        } else if (keepAnimating) {
+            // Nothing to draw but continue the animation loop until finished
+            requestAnimationFrame(() => { const fn = drawRef.current || drawProgress; fn(); });
+        }
+
+        // Draw stop indicator only when visible
+        if (heightFactor > 0 && showStopIndicator && validProgress < 1) {
+            const stopRadius = WavyProgressDefaults.stopSize / 2;
+            const stopX = width - strokeCapWidth;
+            const progressX = strokeCapWidth + validProgress * (width - strokeCapWidth * 2);
+
+            if (progressX < stopX - stopRadius) {
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(stopX, halfHeight, stopRadius, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+    }, [currentProgress, waveOffset, color, trackColor, wavelength, showStopIndicator, isAnimatingEntrance, isAnimatingDisappearance, hasDisappeared, entranceStartTime, disappearanceStartTime]);
+
+    // Draw when values change (no continuous loop)
+    useEffect(() => {
+        drawProgress();
+    }, [drawProgress]);
+
+    // Imperative API with all original methods
+    useImperativeHandle(ref, () => ({
+        setProgress: (newProgress, shouldAnimate = true) => {
+            if (shouldAnimate) {
+                animateProgress(newProgress);
+            } else {
+                setCurrentProgress(newProgress);
+            }
+        },
+        getProgress: () => currentProgress,
+        getTargetProgress: () => currentProgress,
+        startEntranceAnimation: () => {
+            setHasDisappeared(false);
+            setIsAnimatingDisappearance(false);
+            setIsAnimatingEntrance(true);
+            setEntranceStartTime(performance.now());
+        },
+        startDisappearanceAnimation: () => {
+            setIsAnimatingEntrance(false);
+            setIsAnimatingDisappearance(true);
+            setDisappearanceStartTime(performance.now());
+        },
+        resetAnimationState: () => {
+            setIsAnimatingEntrance(false);
+            setIsAnimatingDisappearance(false);
+            setHasDisappeared(false);
+            setEntranceStartTime(0);
+            setDisappearanceStartTime(0);
+        },
+        setWaveSpeed: (speed) => {
+            // Wave speed is handled by the waveSpeed prop in React
+            console.log('Set wave speed:', speed);
+        },
+        setColors: (progressColor, trackColor) => {
+            console.log('Set colors:', progressColor, trackColor);
+        },
+        updateThemeColors: () => {
+            console.log('Update theme colors');
+        },
+        resetToDefaultColors: () => {
+            console.log('Reset to default colors');
+        },
+        setProgressAnimationDuration: (duration) => {
+            console.log('Set progress animation duration:', duration);
+        },
+        setWavelength: (length) => {
+            console.log('Set wavelength:', length);
+        },
+        setAmplitude: (amplitude) => {
+            console.log('Set amplitude:', amplitude);
+        },
+        setWaveAccelerationFactor: (factor) => {
+            console.log('Set wave acceleration factor:', factor);
+        },
+        setWaveSpeedTransitionDuration: (duration) => {
+            console.log('Set wave speed transition duration:', duration);
+        },
+        getElement: () => canvasRef.current
+    }), [currentProgress, animateProgress]);
+
+    return (
+        <canvas
+            ref={canvasRef}
+            width={WavyProgressDefaults.containerWidth}
+            height={WavyProgressDefaults.containerHeight}
+            className={className}
+            style={{
+                width: `${WavyProgressDefaults.containerWidth}px`,
+                height: `${WavyProgressDefaults.containerHeight}px`,
+                display: 'block',
+                ...style
+            }}
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(currentProgress * 100)}
+            aria-valuetext={`${Math.round(currentProgress * 100)}%`}
+        />
+    );
+});
+
+WavyProgressIndicator.displayName = 'WavyProgressIndicator';
+
+export default WavyProgressIndicator;
