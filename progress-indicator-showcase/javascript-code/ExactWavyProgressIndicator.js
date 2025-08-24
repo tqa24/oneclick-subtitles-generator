@@ -102,7 +102,7 @@ class WavyProgressIndicatorDefaults {
     
     // Wavelengths
     static get LinearDeterminateWavelength() {
-        return 24; // ActiveWaveWavelength from tokens
+        return 32; // Optimal wave density - balanced spacing
     }
     
     static get LinearIndeterminateWavelength() {
@@ -561,13 +561,39 @@ class LinearWavyProgressIndicator extends HTMLElement {
         this.canvas = this.shadowRoot.querySelector('canvas');
         this.ctx = this.canvas.getContext('2d');
 
+        // Set up high-DPI rendering for crisp visuals
+        this.setupHighDPICanvas();
+
         // Set up accessibility
         this.setAttribute('role', 'progressbar');
         this.setAttribute('aria-valuemin', '0');
         this.setAttribute('aria-valuemax', '100');
     }
 
+    // Set up high-DPI canvas rendering for crisp visuals
+    setupHighDPICanvas() {
+        const canvas = this.canvas;
+        const ctx = this.ctx;
+        const devicePixelRatio = window.devicePixelRatio || 1;
 
+        // Get the display size (CSS pixels)
+        const displayWidth = canvas.width;
+        const displayHeight = canvas.height;
+
+        // Set the actual size in memory (scaled up for high-DPI)
+        canvas.width = displayWidth * devicePixelRatio;
+        canvas.height = displayHeight * devicePixelRatio;
+
+        // Scale the canvas back down using CSS
+        canvas.style.width = displayWidth + 'px';
+        canvas.style.height = displayHeight + 'px';
+
+        // Scale the drawing context so everything draws at the correct size
+        ctx.scale(devicePixelRatio, devicePixelRatio);
+
+        // Store the device pixel ratio for later use
+        this.devicePixelRatio = devicePixelRatio;
+    }
 
     // Exact port of updateOffsetAnimation from Android
     updateOffsetAnimation() {
@@ -695,7 +721,11 @@ class LinearWavyProgressIndicator extends HTMLElement {
 
         const canvas = this.canvas;
         const ctx = this.ctx;
-        const size = { width: canvas.width, height: canvas.height };
+        // Use logical size (CSS pixels) for consistent rendering across DPI
+        const size = {
+            width: parseInt(canvas.style.width) || canvas.width / (this.devicePixelRatio || 1),
+            height: parseInt(canvas.style.height) || canvas.height / (this.devicePixelRatio || 1)
+        };
 
         // Clear canvas
         ctx.clearRect(0, 0, size.width, size.height);
