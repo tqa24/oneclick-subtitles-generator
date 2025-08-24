@@ -11,13 +11,17 @@ import './LoadingIndicator.css';
  * @param {number} props.size - Size in pixels (default: 48)
  * @param {string} props.className - Additional CSS classes
  * @param {Object} props.style - Additional inline styles
+ * @param {string} [props.color] - Optional override for the shape color (fills). If provided, supersedes theme-based color.
+ * @param {string} [props.containerColor] - Optional override for the container color when showContainer is true.
  */
-const LoadingIndicator = ({ 
-  theme = 'dark', 
-  showContainer = true, 
-  size = 48, 
-  className = '', 
-  style = {} 
+const LoadingIndicator = ({
+  theme = 'dark',
+  showContainer = true,
+  size = 48,
+  className = '',
+  style = {},
+  color,
+  containerColor
 }) => {
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
@@ -52,15 +56,16 @@ const LoadingIndicator = ({
     shapeOrder: []
   });
 
-  // Get the appropriate shape color based on theme and container
+  // Get the appropriate shape color based on theme and container (with override)
   const getShapeColor = useCallback(() => {
+    if (color) return color;
     const isDarkMode = theme === 'dark';
     if (isDarkMode) {
       return showContainer ? COLORS.shapeDarkWithContainer : COLORS.shapeDarkNoContainer;
     } else {
       return showContainer ? COLORS.shapeLightWithContainer : COLORS.shapeLightNoContainer;
     }
-  }, [theme, showContainer, COLORS]);
+  }, [theme, showContainer, COLORS, color]);
 
 
 
@@ -80,9 +85,9 @@ const LoadingIndicator = ({
     ctx.beginPath();
     ctx.arc(0, 0, radius, 0, 2 * Math.PI);
 
-    // Use correct container color based on theme (like original)
-    const containerColor = theme === 'dark' ? COLORS.containerDark : COLORS.containerLight;
-    ctx.fillStyle = containerColor;
+    // Use container override if provided, otherwise based on theme
+    const contColor = containerColor || (theme === 'dark' ? COLORS.containerDark : COLORS.containerLight);
+    ctx.fillStyle = contColor;
     ctx.fill();
 
     ctx.restore();

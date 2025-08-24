@@ -182,6 +182,9 @@ const ButtonsContainer = ({
                           subtitlesData && subtitlesData.length > 0 &&
                           !hasValidDownloadedVideo(uploadedFile) &&
                           !isSrtOnlyMode;
+  // Detect current theme from data-theme attribute (light/dark)
+  const isDarkTheme = (typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark');
+
 
   return (
     <div className="buttons-container">
@@ -225,11 +228,13 @@ const ButtonsContainer = ({
           </div>
           {isGenerating || isDownloading ? (
             <span className="processing-text-container">
+              {/* Use opposite theme for better contrast; also override shape color directly */}
               <LoadingIndicator
-                theme="dark"
+                theme={isDarkTheme ? 'light' : 'dark'}
                 showContainer={false}
                 size={16}
                 className="buttons-processing-loading"
+                color={isDarkTheme ? '#324574' : '#FFFFFF'}
               />
               {/* Replace percentage text with plain downloading text + WavyProgressIndicator */}
               {isDownloading ? (
@@ -239,6 +244,8 @@ const ButtonsContainer = ({
                     animate={true}
                     showStopIndicator={true}
                     waveSpeed={1.2}
+                    color={isDarkTheme ? '#FFFFFF' : '#FFFFFF'}
+                    trackColor={isDarkTheme ? '#404659' : 'rgba(255,255,255,0.35)'}
                   />
                   <span className="processing-text">
                     {t('output.downloadingVideo', 'Downloading video...')}
