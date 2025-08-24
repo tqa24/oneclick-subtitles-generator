@@ -3,6 +3,7 @@ import SrtUploadButton from '../SrtUploadButton';
 import AddSubtitlesButton from '../AddSubtitlesButton';
 import VideoAnalysisButton from '../VideoAnalysisButton';
 import LoadingIndicator from '../common/LoadingIndicator';
+import WavyProgressIndicator from '../common/WavyProgressIndicator';
 import { abortAllRequests } from '../../services/geminiService';
 import { hasValidDownloadedVideo } from '../../utils/videoUtils';
 
@@ -230,12 +231,24 @@ const ButtonsContainer = ({
                 size={16}
                 className="buttons-processing-loading"
               />
-              <span className="processing-text">
-                {isDownloading
-                  ? t('output.downloadingVideoProgress', 'Downloading video: {{progress}}%', { progress: downloadProgress })
-                  : t('output.processingVideo').split('...')[0]
-                }
-              </span>
+              {/* Replace percentage text with plain downloading text + WavyProgressIndicator */}
+              {isDownloading ? (
+                <div className="processing-wavy" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <WavyProgressIndicator
+                    progress={Math.max(0, Math.min(1, (downloadProgress || 0) / 100))}
+                    animate={true}
+                    showStopIndicator={true}
+                    waveSpeed={1.2}
+                  />
+                  <span className="processing-text">
+                    {t('output.downloadingVideo', 'Downloading video...')}
+                  </span>
+                </div>
+              ) : (
+                <span className="processing-text">
+                  {t('output.processingVideo').split('...')[0]}
+                </span>
+              )}
             </span>
           ) : isSrtOnlyMode ? t('output.srtOnlyMode', 'Working with SRT only') :
             hasUrlAndSrtOnly ? t('output.downloadAndViewWithSrt', 'Download + View with Uploaded SRT') :
