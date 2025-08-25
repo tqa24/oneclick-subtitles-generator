@@ -121,10 +121,11 @@ const AddSubtitlesButton = ({
           {isProcessing ? (
             <span className="processing-text-container">
               <LoadingIndicator
-                theme="dark"
+                theme="light"
                 showContainer={false}
                 size={16}
                 className="subtitles-processing-loading"
+                color="#FFFFFF"
               />
               <span className="processing-text">
                 {t('subtitlesInput.processing', 'Processing...')}

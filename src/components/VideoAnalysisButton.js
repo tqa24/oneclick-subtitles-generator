@@ -158,10 +158,11 @@ const VideoAnalysisButton = ({ disabled = false, uploadedFile = null, uploadedFi
             {isAnalyzing ? (
               <span className="processing-text-container">
                 <LoadingIndicator
-                  theme="dark"
+                  theme="light"
                   showContainer={false}
                   size={16}
                   className="analysis-processing-loading"
+                  color="#FFFFFF"
                 />
                 <span className="processing-text">
                   {t('videoAnalysis.analyzing', 'Analyzing...')}

@@ -113,10 +113,11 @@ const SrtUploadButton = ({
             {isProcessing ? (
               <span className="processing-text-container">
                 <LoadingIndicator
-                  theme="dark"
+                  theme="light"
                   showContainer={false}
                   size={16}
                   className="srt-processing-loading"
+                  color="#FFFFFF"
                 />
                 <span className="processing-text">
                   {t('srtUpload.processing', 'Processing...')}

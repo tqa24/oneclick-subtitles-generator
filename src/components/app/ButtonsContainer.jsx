@@ -248,7 +248,7 @@ const ButtonsContainer = ({
                     animate={true}
                     showStopIndicator={true}
                     waveSpeed={1.2}
-                    width={200}
+                    width={140}
                     color={isDarkTheme ? '#FFFFFF' : '#FFFFFF'}
                     trackColor={isDarkTheme ? '#404659' : 'rgba(255,255,255,0.35)'}
                   />
