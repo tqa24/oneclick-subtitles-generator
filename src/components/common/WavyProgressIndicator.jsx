@@ -273,7 +273,6 @@ const WavyProgressIndicator = forwardRef(({
     height: heightProp,
     minWidth: minWidthProp,
     maxWidth: maxWidthProp,
-    autoAnimateEntrance = true, // New prop to enable automatic entrance/disappear animations
     className,
     style
 }, ref) => {
@@ -474,52 +473,6 @@ const WavyProgressIndicator = forwardRef(({
             }
         }
     }, [progress, animate]); // Removed animateProgress from deps to prevent loops
-
-    // Automatic entrance/disappear animations based on progress changes
-    const [previousProgress, setPreviousProgress] = useState(null); // Start with null to detect first real progress
-    const [hasInitialized, setHasInitialized] = useState(false);
-
-    useEffect(() => {
-        if (!autoAnimateEntrance) return;
-
-        const currentProgress = progress;
-
-        // Handle initial mount - trigger entrance if progress > 0
-        if (!hasInitialized && currentProgress > 0) {
-            setHasInitialized(true);
-            setHasDisappeared(false);
-            setIsAnimatingDisappearance(false);
-            setIsAnimatingEntrance(true);
-            setEntranceStartTime(performance.now());
-            setPreviousProgress(currentProgress);
-            return;
-        }
-
-        // Handle subsequent progress changes
-        if (hasInitialized && previousProgress !== null) {
-            const prevProgress = previousProgress;
-
-            // Trigger entrance animation when progress goes from 0 to > 0
-            if (prevProgress === 0 && currentProgress > 0 && !isAnimatingEntrance && !isAnimatingDisappearance) {
-                setHasDisappeared(false);
-                setIsAnimatingDisappearance(false);
-                setIsAnimatingEntrance(true);
-                setEntranceStartTime(performance.now());
-            }
-            // Trigger disappear animation when progress goes from > 0 to 0
-            else if (prevProgress > 0 && currentProgress === 0 && !isAnimatingDisappearance && !hasDisappeared) {
-                setIsAnimatingEntrance(false);
-                setIsAnimatingDisappearance(true);
-                setDisappearanceStartTime(performance.now());
-            }
-        }
-
-        if (!hasInitialized && currentProgress === 0) {
-            setHasInitialized(true);
-        }
-
-        setPreviousProgress(currentProgress);
-    }, [progress, previousProgress, hasInitialized, autoAnimateEntrance, isAnimatingEntrance, isAnimatingDisappearance, hasDisappeared]);
 
     // Amplitude animation system (matches Web Component behavior)
     const updateAmplitudeAnimation = useCallback((targetAmplitudePx) => {

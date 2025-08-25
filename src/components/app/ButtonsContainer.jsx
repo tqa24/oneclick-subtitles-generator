@@ -54,7 +54,7 @@ const ButtonsContainer = ({
     }
   });
 
-  // Ref for WavyProgressIndicator manual animations
+  // Ref for WavyProgressIndicator animations
   const wavyProgressRef = useRef(null);
 
   // Persist uploadedSrtInfo to localStorage whenever it changes
@@ -66,7 +66,7 @@ const ButtonsContainer = ({
     }
   }, [uploadedSrtInfo]);
 
-  // Manual entrance/disappear animations based on isDownloading state (more reliable than progress-based)
+  // Handle entrance/disappear animations for WavyProgressIndicator
   useEffect(() => {
     if (isDownloading && wavyProgressRef.current) {
       // Start entrance animation when downloading begins
@@ -259,16 +259,11 @@ const ButtonsContainer = ({
                 <div className="processing-wavy" style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
                   <WavyProgressIndicator
                     ref={wavyProgressRef}
-                    progress={(() => {
-                      const calculatedProgress = Math.max(0, Math.min(1, (downloadProgress || 0) / 100));
-                      console.log('WavyProgress ButtonsContainer:', { downloadProgress, calculatedProgress, isDownloading });
-                      return calculatedProgress;
-                    })()}
+                    progress={Math.max(0, Math.min(1, (downloadProgress || 0) / 100))}
                     animate={true}
                     showStopIndicator={true}
                     waveSpeed={1.2}
                     width={140}
-                    autoAnimateEntrance={false}
                     color={isDarkTheme ? '#FFFFFF' : '#FFFFFF'}
                     trackColor={isDarkTheme ? '#404659' : 'rgba(255,255,255,0.35)'}
                   />
