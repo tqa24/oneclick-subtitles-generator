@@ -43,6 +43,12 @@ const TimelineVisualization = ({
   const dragStartRef = useRef(null);
   const dragCurrentRef = useRef(null);
   const isDraggingRef = useRef(false);
+
+  // Track if dragging has been done in this session
+  const [hasDraggedInSession, setHasDraggedInSession] = useState(false);
+  const [showDragHint, setShowDragHint] = useState(false);
+  const dragHintAnimationRef = useRef(null);
+  const [dragHintAnimationTime, setDragHintAnimationTime] = useState(0);
   
   // Animation state for processing
   const [animationTime, setAnimationTime] = useState(0);
@@ -58,15 +64,15 @@ const TimelineVisualization = ({
   useEffect(() => {
     if (isProcessingSegment) {
       const startTime = performance.now();
-      
+
       const animate = () => {
         const elapsed = performance.now() - startTime;
         setAnimationTime(elapsed);
         processingAnimationRef.current = requestAnimationFrame(animate);
       };
-      
+
       processingAnimationRef.current = requestAnimationFrame(animate);
-      
+
       return () => {
         if (processingAnimationRef.current) {
           cancelAnimationFrame(processingAnimationRef.current);
@@ -80,6 +86,38 @@ const TimelineVisualization = ({
       }
     }
   }, [isProcessingSegment]);
+
+  // Handle drag hint animation - show when segment selection is enabled but no dragging has been done
+  useEffect(() => {
+    if (onSegmentSelect && !hasDraggedInSession) {
+      // Start showing the hint after a short delay
+      const showTimer = setTimeout(() => {
+        setShowDragHint(true);
+
+        const startTime = performance.now();
+        const animate = () => {
+          const elapsed = performance.now() - startTime;
+          setDragHintAnimationTime(elapsed);
+          dragHintAnimationRef.current = requestAnimationFrame(animate);
+        };
+
+        dragHintAnimationRef.current = requestAnimationFrame(animate);
+      }, 2000); // Show hint after 2 seconds
+
+      return () => {
+        clearTimeout(showTimer);
+        if (dragHintAnimationRef.current) {
+          cancelAnimationFrame(dragHintAnimationRef.current);
+        }
+      };
+    } else {
+      // Hide hint and stop animation
+      setShowDragHint(false);
+      if (dragHintAnimationRef.current) {
+        cancelAnimationFrame(dragHintAnimationRef.current);
+      }
+    }
+  }, [onSegmentSelect, hasDraggedInSession]);
   
   // Listen for streaming events
   useEffect(() => {
@@ -424,11 +462,17 @@ const TimelineVisualization = ({
   useEffect(() => {
     // Store the ref value in a variable that won't change
     const animationFrameRef2 = animationFrameRef;
+    const dragHintAnimationRef2 = dragHintAnimationRef;
 
     return () => {
       const animationFrame = animationFrameRef2.current;
       if (animationFrame) {
         cancelAnimationFrame(animationFrame);
+      }
+
+      const dragHintAnimation = dragHintAnimationRef2.current;
+      if (dragHintAnimation) {
+        cancelAnimationFrame(dragHintAnimation);
       }
     };
   }, []);
@@ -693,6 +737,10 @@ const TimelineVisualization = ({
       if (hasMoved && onSegmentSelect && isDraggingRef.current) {
         // This was a drag - handle segment selection
         console.log('[Timeline] Drag detected - creating segment');
+
+        // Mark that dragging has been done in this session
+        setHasDraggedInSession(true);
+
         if (dragStartRef.current !== null && dragCurrentRef.current !== null) {
           const start = Math.min(dragStartRef.current, dragCurrentRef.current);
           const end = Math.max(dragStartRef.current, dragCurrentRef.current);
@@ -741,7 +789,7 @@ const TimelineVisualization = ({
   // to support both click-to-seek and drag-to-select functionality
 
   return (
-    <div className="timeline-container">
+    <div className="timeline-container" style={{ position: 'relative' }}>
       <canvas
         ref={timelineRef}
         onMouseDown={handleMouseDown}
@@ -755,6 +803,56 @@ const TimelineVisualization = ({
               : 'pointer'
         }}
       />
+
+      {/* Drag hint animation */}
+      {showDragHint && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '40px',
+            transform: 'translateY(-50%)',
+            pointerEvents: 'none',
+            zIndex: 5,
+            opacity: (() => {
+              const cycleTime = 4000; // 4 seconds per cycle
+              const progress = (dragHintAnimationTime % cycleTime) / cycleTime;
+              const maxOpacity = 0.9;
+              // Smooth fade in at start and fade out at end
+              return Math.sin(progress * Math.PI) * maxOpacity;
+            })()
+          }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            height="48px"
+            viewBox="0 -960 960 960"
+            width="48px"
+            fill="currentColor"
+            style={{
+              color: 'var(--md-on-surface-variant)',
+              transform: `translateX(${(() => {
+                // Smooth continuous left-to-right only motion over full cycle
+                const cycleTime = 4000; // 4 seconds per cycle
+                const progress = (dragHintAnimationTime % cycleTime) / cycleTime;
+
+                // Ease in/out for the entire cycle
+                const easeInOutCubic = progress < 0.5
+                  ? 4 * progress * progress * progress
+                  : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+                // Move a long distance for clarity
+                return easeInOutCubic * 500; // 500px horizontal movement
+              })()}px)`,
+
+              transition: 'none',
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
+            }}
+          >
+            <path d="M445-80q-29 0-56-12t-45-35L143-383q-7-9-7-20t8-19l4-4q14-15 34.5-18.5T221-438l99 53v-365q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v415q0 17-14.5 25.5t-29.5.5l-100-53 156 198q10 12 23.76 18 13.76 6 29.24 6h205q38 0 64-26t26-64v-170q0-25.5-17.25-42.75T680-460H490q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5h190q50 0 85 35t35 85v170q0 63-43.5 106.5T650-80H445Zm43-250Zm-16.7-320q-13.3 0-21.8-8.63-8.5-8.62-8.5-21.37 0-1.5 4-15 7-12 11-26t4-29.48Q460-796 427.88-828q-32.12-32-78-32T272-827.92q-32 32.09-32 77.92 0 15 4 29t11 26q2 3 3 6.5t1 8.5q0 12.75-8.58 21.37-8.58 8.63-21.84 8.63-8.58 0-15.58-4t-11.17-11.84Q191-685 185.5-706.25q-5.5-21.25-5.5-44.2 0-70.55 49.73-120.05Q279.45-920 350-920t120.27 49.5Q520-821 520-750.31q0 22.99-5.7 44.28-5.71 21.29-16.3 40.03-4 8-11.04 12-7.05 4-15.66 4Z"/>
+          </svg>
+        </div>
+      )}
 
       {/* Liquid Glass zoom controls in top right corner */}
       {setZoom && (
