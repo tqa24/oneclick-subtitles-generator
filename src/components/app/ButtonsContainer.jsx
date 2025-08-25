@@ -188,23 +188,27 @@ const ButtonsContainer = ({
 
   return (
     <div className="buttons-container">
-      <SrtUploadButton
-        onSrtUpload={handleSrtUploadWithState}
-        onSrtClear={handleSrtClear}
-        disabled={isGenerating || isDownloading}
-        hasSrtUploaded={uploadedSrtInfo.hasUploaded}
-        uploadedFileName={uploadedSrtInfo.fileName}
-      />
+      <div style={{ flexShrink: 0 }}>
+        <SrtUploadButton
+          onSrtUpload={handleSrtUploadWithState}
+          onSrtClear={handleSrtClear}
+          disabled={isGenerating || isDownloading}
+          hasSrtUploaded={uploadedSrtInfo.hasUploaded}
+          uploadedFileName={uploadedSrtInfo.fileName}
+        />
+      </div>
 
       {/* Add Subtitles Button - always visible like SrtUploadButton */}
 
-      <AddSubtitlesButton
-        onSubtitlesAdd={handleUserSubtitlesAdd}
-        hasSubtitles={userProvidedSubtitles.trim() !== ''}
-        subtitlesText={userProvidedSubtitles}
-        disabled={isGenerating || isDownloading}
-        onGenerateBackground={onGenerateBackground}
-      />
+      <div style={{ flexShrink: 0 }}>
+        <AddSubtitlesButton
+          onSubtitlesAdd={handleUserSubtitlesAdd}
+          hasSubtitles={userProvidedSubtitles.trim() !== ''}
+          subtitlesText={userProvidedSubtitles}
+          disabled={isGenerating || isDownloading}
+          onGenerateBackground={onGenerateBackground}
+        />
+      </div>
 
       {/* Hide generate button when retrying segments, when isRetrying is true, or when any segment is being retried */}
       {validateInput() && retryingSegments.length === 0 && !isRetrying && !segmentsStatus.some(segment => segment.status === 'retrying') && (
@@ -238,16 +242,17 @@ const ButtonsContainer = ({
               />
               {/* Replace percentage text with plain downloading text + WavyProgressIndicator */}
               {isDownloading ? (
-                <div className="processing-wavy" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div className="processing-wavy" style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
                   <WavyProgressIndicator
                     progress={Math.max(0, Math.min(1, (downloadProgress || 0) / 100))}
                     animate={true}
                     showStopIndicator={true}
                     waveSpeed={1.2}
+                    width={200}
                     color={isDarkTheme ? '#FFFFFF' : '#FFFFFF'}
                     trackColor={isDarkTheme ? '#404659' : 'rgba(255,255,255,0.35)'}
                   />
-                  <span className="processing-text">
+                  <span className="processing-text" style={{ flexShrink: 0, whiteSpace: 'nowrap', marginLeft: '8px' }}>
                     {t('output.downloadingVideo', 'Downloading video...')}
                   </span>
                 </div>

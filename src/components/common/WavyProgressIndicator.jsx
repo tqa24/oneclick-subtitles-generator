@@ -289,8 +289,14 @@ const WavyProgressIndicator = forwardRef(({
     const hasExplicitWidth = widthProp !== undefined && widthProp !== null && !isNaN(Number(widthProp));
     const minWidth = Math.max(40, Math.min(600, Number(minWidthProp) || 0));
     const maxWidth = Math.max(minWidth, Math.min(600, Number(maxWidthProp) || 600));
+
+    // When minWidth or maxWidth are provided without explicit width, we want dynamic behavior
+    const isDynamicWidth = !hasExplicitWidth && (minWidthProp !== undefined || maxWidthProp !== undefined);
     const computedWidth = hasExplicitWidth ? Number(widthProp) : WavyProgressDefaults.containerWidth;
     const width = Math.max(minWidth, Math.min(maxWidth, computedWidth));
+
+    // Use explicit width styling only when width is explicitly set
+    const shouldUseExplicitWidth = hasExplicitWidth;
     const height = Math.max(12, Math.min(48, Number(heightProp) || WavyProgressDefaults.containerHeight));
 
     // State for animations - ensure valid initial progress
@@ -316,7 +322,33 @@ const WavyProgressIndicator = forwardRef(({
 
         // Prefer this container's width only when width prop is not explicitly provided
         // Measure CSS pixel size of the canvas itself; let CSS control layout
-        const cssWidth = hasExplicitWidth ? width : Math.max(minWidth, Math.min(maxWidth, canvas.clientWidth || width));
+        let containerWidth = canvas.clientWidth;
+
+        // If canvas.clientWidth is not available, try the parent container
+        if (!containerWidth && container) {
+            containerWidth = container.clientWidth;
+        }
+
+        // If still no width, try the parent's parent (for nested flex containers)
+        if (!containerWidth && container && container.parentElement) {
+            containerWidth = container.parentElement.clientWidth;
+        }
+
+
+
+        // For dynamic width (when minWidth/maxWidth are set), be more aggressive about using container space
+        let cssWidth;
+        if (hasExplicitWidth) {
+            cssWidth = width;
+        } else {
+            // Always try to use container width first
+            if (containerWidth > 0) {
+                cssWidth = Math.max(minWidth, Math.min(maxWidth, containerWidth));
+            } else {
+                // If no container width, use maxWidth for dynamic width, default width otherwise
+                cssWidth = isDynamicWidth ? maxWidth : width;
+            }
+        }
         const cssHeight = Number(heightProp) || canvas.clientHeight || height;
 
         // Avoid thrashing ResizeObserver: only resize drawing buffer if CSS size changed
@@ -342,13 +374,33 @@ const WavyProgressIndicator = forwardRef(({
         if (hasExplicitWidth) return; // no observation when width is fixed by prop
         const container = containerRef.current;
         if (!container) return;
+
+        // Initial measurement after a short delay to ensure layout is complete
+        const initialTimeout = setTimeout(() => {
+            setupHighDPICanvas();
+            const fn = drawRef.current;
+            if (typeof fn === 'function') requestAnimationFrame(() => fn());
+        }, 10);
+
+        // Additional measurement after longer delay for complex layouts
+        const secondTimeout = setTimeout(() => {
+            setupHighDPICanvas();
+            const fn = drawRef.current;
+            if (typeof fn === 'function') requestAnimationFrame(() => fn());
+        }, 100);
+
         const ro = new ResizeObserver(() => {
             setupHighDPICanvas();
             const fn = drawRef.current;
             if (typeof fn === 'function') requestAnimationFrame(() => fn());
         });
         ro.observe(container);
-        return () => ro.disconnect();
+
+        return () => {
+            clearTimeout(initialTimeout);
+            clearTimeout(secondTimeout);
+            ro.disconnect();
+        };
     }, [setupHighDPICanvas, hasExplicitWidth]);
     useEffect(() => {
         setupHighDPICanvas();
@@ -655,15 +707,19 @@ const WavyProgressIndicator = forwardRef(({
         getElement: () => canvasRef.current
     }), [currentProgress, animateProgress]);
 
-    const containerWidthStyle = hasExplicitWidth ? `${width}px` : '100%';
+    const containerWidthStyle = shouldUseExplicitWidth ? `${width}px` : '100%';
     // Let CSS fully control layout width/height of canvas; we only adjust drawing buffer
     return (
-        <div ref={containerRef} style={{ width: containerWidthStyle }}>
+        <div ref={containerRef} style={{
+            width: containerWidthStyle,
+            minWidth: minWidthProp ? `${minWidth}px` : undefined,
+            maxWidth: maxWidthProp ? `${maxWidth}px` : undefined
+        }}>
             <canvas
                 ref={canvasRef}
                 className={className}
                 style={{
-                    width: hasExplicitWidth ? `${width}px` : '100%',
+                    width: shouldUseExplicitWidth ? `${width}px` : '100%',
                     height: `${height}px`,
                     display: 'block',
                     ...style
