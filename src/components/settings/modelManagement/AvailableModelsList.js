@@ -168,26 +168,33 @@ const AvailableModelsList = ({
   // Handle cancelling a model download
   const handleCancelDownload = async (modelId) => {
     try {
+      // Trigger disappear animation first
+      const ref = wavyProgressRefs.current[modelId];
+      if (ref) {
+        ref.startDisappearanceAnimation();
+      }
+
       // Call API to cancel download
       const response = await cancelModelDownload(modelId);
 
       if (response.success) {
+        // Wait for disappear animation to complete (400ms) before removing from state
+        setTimeout(() => {
+          // Remove from downloads state
+          setDownloads(prev => {
+            const newDownloads = { ...prev };
+            delete newDownloads[modelId];
+            return newDownloads;
+          });
 
-        
-        // Remove from downloads state
-        setDownloads(prev => {
-          const newDownloads = { ...prev };
-          delete newDownloads[modelId];
-          return newDownloads;
-        });
+          // Invalidate the models cache to notify other components
+          invalidateModelsCache();
 
-        // Invalidate the models cache to notify other components
-        invalidateModelsCache();
-
-        // Notify parent component to refresh the model list
-        if (onModelAdded) {
-          onModelAdded();
-        }
+          // Notify parent component to refresh the model list
+          if (onModelAdded) {
+            onModelAdded();
+          }
+        }, 450); // Slightly longer than animation duration (400ms)
       }
     } catch (error) {
       console.error('Error cancelling model download:', error);

@@ -264,6 +264,7 @@ const ButtonsContainer = ({
                     showStopIndicator={true}
                     waveSpeed={1.2}
                     width={140}
+                    autoAnimateEntrance={false}
                     color={isDarkTheme ? '#FFFFFF' : '#FFFFFF'}
                     trackColor={isDarkTheme ? '#404659' : 'rgba(255,255,255,0.35)'}
                   />
