@@ -6,10 +6,11 @@
   pointer-events: auto;
   user-select: none;
   
-  /* Default transitions */
+  /* Default transitions - including opacity for video controls */
   transition: transform var(--md-duration-medium2, 0.3s) var(--md-easing-standard, ease),
               box-shadow var(--md-duration-medium2, 0.3s) var(--md-easing-standard, ease),
               border-color var(--md-duration-medium2, 0.3s) var(--md-easing-standard, ease),
+              opacity 0.6s ease-in-out,
               height 1.2s cubic-bezier(0.4, 0, 0.2, 1),
               width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -161,7 +162,12 @@
 /* Interactive states */
 .liquid-glass.interactive {
   cursor: pointer;
-  transition: all var(--md-duration-medium2, 0.3s) var(--md-easing-standard, ease);
+  transition: transform var(--md-duration-medium2, 0.3s) var(--md-easing-standard, ease),
+              box-shadow var(--md-duration-medium2, 0.3s) var(--md-easing-standard, ease),
+              border-color var(--md-duration-medium2, 0.3s) var(--md-easing-standard, ease),
+              opacity 0.6s ease-in-out,
+              height 1.2s cubic-bezier(0.4, 0, 0.2, 1),
+              width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .liquid-glass.interactive:hover {
@@ -187,13 +193,19 @@
   }
 }
 
-/* Reduced motion support */
+/* Reduced motion support - but preserve video control opacity transitions */
 @media (prefers-reduced-motion: reduce) {
   .liquid-glass,
   .liquid-glass * {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  /* Exception: preserve opacity transitions for video controls for better UX */
+  .liquid-glass.video-control,
+  .liquid-glass.volume-pill-slow {
+    transition: opacity 0.6s ease-in-out !important;
   }
 }
 
@@ -248,6 +260,18 @@
 /* Volume pill animation - including opacity for consistent fade */
 .liquid-glass.volume-pill-slow {
   transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1), width 0.6s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s ease-in-out !important;
+}
+
+/* Video controls specific opacity transitions - maximum specificity to override everything */
+.custom-video-controls .liquid-glass.interactive.video-control,
+.liquid-glass.interactive.video-control,
+.liquid-glass.video-control {
+  transition: transform 0.3s ease,
+              box-shadow 0.3s ease,
+              border-color 0.3s ease,
+              opacity 0.6s ease-in-out !important,
+              height 1.2s cubic-bezier(0.4, 0, 0.2, 1),
+              width 1.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 /* Ensure buttons don't interfere with video controls */
