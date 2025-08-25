@@ -145,7 +145,7 @@ GOTO %MENU_LABEL%
 REM ==============================================================================
 :InstallNoNarration
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77 + [char]0x2557) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                   [SETUP] Install OSG Lite (Standard)                      ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkBlue; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77 + [char]0x255D) -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77 + [char]0x2557) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                    [SETUP] Install OSG Lite (Standard)                      ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkBlue; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77 + [char]0x255D) -ForegroundColor Cyan"
 ECHO.
 
 CALL :InstallPrerequisites
@@ -374,13 +374,33 @@ SET "NEEDS_RESTART=0"
 SET "MISSING_TOOLS="
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[?] Checking for Git (Kiem tra Git)...' -ForegroundColor Yellow"
+REM Primary detection via PATH
 WHERE git >nul 2>nul
-IF %ERRORLEVEL% NEQ 0 (
-    SET "NEEDS_RESTART=1"
-    SET "MISSING_TOOLS=%MISSING_TOOLS% Git"
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[MISSING] Git not found - will be installed (Git khong tim thay - se duoc cai dat).' -ForegroundColor Yellow"
-) ELSE (
+IF %ERRORLEVEL% EQU 0 (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Git already installed (Git da duoc cai dat).' -ForegroundColor Green"
+) ELSE (
+    REM Fallback: check registry InstallPath and common locations
+    SET "GIT_INSTALL_DIR="
+    FOR /F "usebackq delims=" %%i IN (`powershell -NoProfile -ExecutionPolicy Bypass -Command "try { (Get-ItemProperty -Path 'HKLM:\SOFTWARE\GitForWindows').InstallPath } catch { '' }"`) DO SET "GIT_INSTALL_DIR=%%i"
+    IF DEFINED GIT_INSTALL_DIR (
+        IF EXIST "!GIT_INSTALL_DIR!\cmd\git.exe" (
+            SET "PATH=%PATH%;!GIT_INSTALL_DIR!\cmd"
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Git installed (detected via registry) (Git da duoc cai dat (phat hien qua registry)).' -ForegroundColor Green"
+        ) ELSE (
+            SET "NEEDS_RESTART=1"
+            SET "MISSING_TOOLS=%MISSING_TOOLS% Git"
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[MISSING] Git not found - will be installed (Git khong tim thay - se duoc cai dat).' -ForegroundColor Yellow"
+        )
+    ) ELSE (
+        IF EXIST "%ProgramFiles%\Git\cmd\git.exe" (
+            SET "PATH=%PATH%;%ProgramFiles%\Git\cmd"
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Git installed (found in Program Files) (Git da duoc cai dat (tim thay trong Program Files)).' -ForegroundColor Green"
+        ) ELSE (
+            SET "NEEDS_RESTART=1"
+            SET "MISSING_TOOLS=%MISSING_TOOLS% Git"
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[MISSING] Git not found - will be installed (Git khong tim thay - se duoc cai dat).' -ForegroundColor Yellow"
+        )
+    )
 )
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[?] Checking for Node.js (Kiem tra Node.js)...' -ForegroundColor Yellow"
@@ -434,10 +454,23 @@ IF "%NEEDS_RESTART%"=="1" (
     IF "!MISSING_TOOLS!" NEQ "!MISSING_TOOLS: Git=!" (
         powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Installing Git version control (Cai dat kiem soat phien ban Git)...' -ForegroundColor Cyan"
         winget install --id Git.Git -e --source winget
-        IF !ERRORLEVEL! NEQ 0 (
-            powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Git installation failed (Cai dat Git that bai).' -ForegroundColor Red"
+        SET "GIT_WINGET_EXIT=!ERRORLEVEL!"
+        REM Regardless of winget exit code, verify availability
+        WHERE git >nul 2>nul
+        IF !ERRORLEVEL! EQU 0 (
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Git installed and available on PATH (Git da duoc cai dat va san sang tren PATH).' -ForegroundColor Green"
         ) ELSE (
-            powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Git installed successfully (Cai dat Git thanh cong).' -ForegroundColor Green"
+            SET "GIT_INSTALL_DIR="
+            FOR /F "usebackq delims=" %%i IN (`powershell -NoProfile -ExecutionPolicy Bypass -Command "try { (Get-ItemProperty -Path 'HKLM:\SOFTWARE\GitForWindows').InstallPath } catch { '' }"`) DO SET "GIT_INSTALL_DIR=%%i"
+            IF DEFINED GIT_INSTALL_DIR IF EXIST "!GIT_INSTALL_DIR!\cmd\git.exe" (
+                SET "PATH=%PATH%;!GIT_INSTALL_DIR!\cmd"
+                powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Git installed (accessed via registry path) (Git da duoc cai dat, su dung duong dan tu registry).' -ForegroundColor Green"
+            ) ELSE IF EXIST "%ProgramFiles%\Git\cmd\git.exe" (
+                SET "PATH=%PATH%;%ProgramFiles%\Git\cmd"
+                powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Git installed (found in Program Files) (Git da duoc cai dat (tim thay trong Program Files)).' -ForegroundColor Green"
+            ) ELSE (
+                powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Git installation failed and git not found (Cai dat Git that bai va khong tim thay git).' -ForegroundColor Red"
+            )
         )
     )
 
@@ -486,7 +519,17 @@ IF "%NEEDS_RESTART%"=="1" (
         IF !ERRORLEVEL! EQU 0 (
             powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[VERIFY] Git installation confirmed (Xac nhan cai dat Git).' -ForegroundColor Green"
         ) ELSE (
-            powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[WARN] Git may need environment refresh (Git co the can cap nhat moi truong).' -ForegroundColor Yellow"
+            SET "GIT_INSTALL_DIR="
+            FOR /F "usebackq delims=" %%i IN (`powershell -NoProfile -ExecutionPolicy Bypass -Command "try { (Get-ItemProperty -Path 'HKLM:\SOFTWARE\GitForWindows').InstallPath } catch { '' }"`) DO SET "GIT_INSTALL_DIR=%%i"
+            IF DEFINED GIT_INSTALL_DIR IF EXIST "!GIT_INSTALL_DIR!\cmd\git.exe" (
+                SET "PATH=%PATH%;!GIT_INSTALL_DIR!\cmd"
+                powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[VERIFY] Git installation confirmed via registry; PATH updated for this session (Xac nhan cai dat Git qua registry; cap nhat PATH tam thoi).' -ForegroundColor Green"
+            ) ELSE IF EXIST "%ProgramFiles%\Git\cmd\git.exe" (
+                SET "PATH=%PATH%;%ProgramFiles%\Git\cmd"
+                powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[VERIFY] Git installation confirmed in Program Files; PATH updated for this session (Xac nhan cai dat Git trong Program Files; cap nhat PATH tam thoi).' -ForegroundColor Green"
+            ) ELSE (
+                powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[WARN] Git may need environment refresh (Git co the can cap nhat moi truong).' -ForegroundColor Yellow"
+            )
         )
     )
 
