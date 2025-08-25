@@ -273,6 +273,7 @@ const WavyProgressIndicator = forwardRef(({
     height: heightProp,
     minWidth: minWidthProp,
     maxWidth: maxWidthProp,
+    forceFlat = false, // New prop to force flat appearance (no waves)
     className,
     style
 }, ref) => {
@@ -584,7 +585,7 @@ const WavyProgressIndicator = forwardRef(({
                 const progressWidth = validProgress * (width - strokeCapWidth * 2);
 
                 // Smooth amplitude transition like the Web Component
-                const targetAmplitude = WavyProgressDefaults.indicatorAmplitude(validProgress);
+                const targetAmplitude = forceFlat ? 0 : WavyProgressDefaults.indicatorAmplitude(validProgress);
                 updateAmplitudeAnimation(targetAmplitude);
                 const animatedAmplitude = amplitudeAnimatableRef.current ? amplitudeAnimatableRef.current.value : 0;
                 const waveHeight = animatedAmplitude * (height * 0.15);

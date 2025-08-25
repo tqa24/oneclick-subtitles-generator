@@ -1,5 +1,6 @@
-﻿import React from 'react';
+﻿import React, { useRef } from 'react';
 import LiquidGlass from '../common/LiquidGlass';
+import WavyProgressIndicator from '../common/WavyProgressIndicator';
 
 const VideoBottomControls = ({
   showCustomControls,
@@ -37,6 +38,8 @@ const VideoBottomControls = ({
   setIsVideoHovered,
   hideControlsTimeoutRef
 }) => {
+  // Ref for WavyProgressIndicator
+  const wavyProgressRef = useRef(null);
   return (
     <>
                 {/* Custom Liquid Glass Video Controls */}
@@ -117,68 +120,58 @@ const VideoBottomControls = ({
                       </div>
                     </LiquidGlass>
 
-                    {/* Timeline/Progress Bar */}
+                    {/* WavyProgressIndicator Timeline/Progress Bar */}
                     <div
-                      className="timeline-container"
                       style={{
                         flex: 1,
-                        height: '8px',
-                        minHeight: '8px',
-                        maxHeight: '8px',
-                        background: 'rgba(255, 255, 255, 0.16)',
-                        borderRadius: '4px',
-                        border: '1px solid rgba(0, 0, 0, 0.35)',
-                        position: 'relative',
-                        cursor: 'pointer',
                         marginRight: '15px',
-                        touchAction: 'none',
                         alignSelf: 'center',
-                        overflow: 'visible',
-                        margin: '0', // Reset any default margins
                         opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
                         transition: 'opacity 0.6s ease-in-out',
-                        pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
+                        cursor: 'pointer',
+                        touchAction: 'none',
+                        position: 'relative',
+                        height: '20px', // Taller to accommodate wavy animation without clipping
+                        display: 'flex',
+                        alignItems: 'center'
                       }}
                       onMouseDown={handleTimelineMouseDown}
                       onTouchStart={handleTimelineTouchStart}
                     >
-                      {/* Buffered progress (background) */}
-                      <div style={{
-                        position: 'absolute',
-                        left: 0,
-                        top: 0,
-                        height: '100%',
-                        width: `${bufferedProgress}%`,
-                        background: 'rgba(255, 255, 255, 0.19)',
-                        borderRadius: '4px',
-                        transition: 'width 0.3s ease'
-                      }} />
+                      <WavyProgressIndicator
+                        ref={wavyProgressRef}
+                        progress={videoDuration > 0 ? ((isDragging ? dragTime : currentTime) / videoDuration) : 0}
+                        animate={isPlaying} // Only animate when video is playing
+                        forceFlat={!isPlaying} // Force flat when video is paused
+                        showStopIndicator={true} // Show the dot indicator
+                        waveSpeed={playbackSpeed * 1.2} // Adaptive wave speed based on playback speed
+                        height={12}
+                        autoAnimateEntrance={false}
+                        color="#FFFFFF"
+                        trackColor="rgba(255, 255, 255, 0.3)"
+                        stopIndicatorColor="#FFFFFF" // White dot to match the progress
+                        style={{
+                          width: '100%',
+                          position: 'relative'
+                        }}
+                      />
 
-                      {/* Progress fill */}
-                      <div style={{
-                        position: 'absolute',
-                        left: 0,
-                        top: 0,
-                        height: '100%',
-                        width: videoDuration > 0 ? `${((isDragging ? dragTime : currentTime) / videoDuration) * 100}%` : '0%',
-                        background: '#ffffffff',
-                        borderRadius: '4px',
-                        transition: isDragging ? 'none' : 'width 0.1s ease'
-                      }} />
-
-                      {/* Progress handle */}
+                      {/* Seeker Handle - draggable circle for user interaction */}
                       <div style={{
                         position: 'absolute',
                         left: videoDuration > 0 ? `${((isDragging ? dragTime : currentTime) / videoDuration) * 100}%` : '0%',
                         top: '50%',
                         transform: 'translate(-50%, -50%)',
-                        width: isDragging ? '38px' : '18px',
-                        height: isDragging ? '24px' : '18px',
-                        background: isDragging ? '#6d84c7ff' : 'white',
-                        borderRadius: '12px',
-                        boxShadow: isDragging ? '0 4px 8px rgba(0,0,0,0.5)' : '0 2px 4px rgba(0,0,0,0.3)',
+                        width: isDragging ? '20px' : '16px',
+                        height: isDragging ? '20px' : '16px',
+                        background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,1), rgba(255,255,255,0.95))',
+                        borderRadius: '50%',
+                        boxShadow: isDragging ? '0 4px 12px rgba(0,0,0,0.4)' : '0 2px 6px rgba(0,0,0,0.3)',
                         transition: isDragging ? 'none' : 'left 0.1s ease, width 0.2s ease, height 0.2s ease',
-                        cursor: 'pointer'
+                        cursor: 'pointer',
+                        zIndex: 10,
+                        border: '2px solid rgba(255,255,255,0.8)',
+                        pointerEvents: 'auto'
                       }} />
                     </div>
 
