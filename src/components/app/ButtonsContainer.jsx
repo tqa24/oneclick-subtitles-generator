@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import SrtUploadButton from '../SrtUploadButton';
 import AddSubtitlesButton from '../AddSubtitlesButton';
 import VideoAnalysisButton from '../VideoAnalysisButton';
@@ -54,6 +54,9 @@ const ButtonsContainer = ({
     }
   });
 
+  // Ref for WavyProgressIndicator manual animations
+  const wavyProgressRef = useRef(null);
+
   // Persist uploadedSrtInfo to localStorage whenever it changes
   useEffect(() => {
     try {
@@ -62,6 +65,17 @@ const ButtonsContainer = ({
       console.error('Error saving uploaded SRT info to localStorage:', error);
     }
   }, [uploadedSrtInfo]);
+
+  // Manual entrance/disappear animations based on isDownloading state (more reliable than progress-based)
+  useEffect(() => {
+    if (isDownloading && wavyProgressRef.current) {
+      // Start entrance animation when downloading begins
+      wavyProgressRef.current.startEntranceAnimation();
+    } else if (!isDownloading && wavyProgressRef.current) {
+      // Start disappear animation when downloading ends
+      wavyProgressRef.current.startDisappearanceAnimation();
+    }
+  }, [isDownloading]);
 
   // Initialize SRT upload detection on component mount
   useEffect(() => {
@@ -244,11 +258,17 @@ const ButtonsContainer = ({
               {isDownloading ? (
                 <div className="processing-wavy" style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
                   <WavyProgressIndicator
-                    progress={Math.max(0, Math.min(1, (downloadProgress || 0) / 100))}
+                    ref={wavyProgressRef}
+                    progress={(() => {
+                      const calculatedProgress = Math.max(0, Math.min(1, (downloadProgress || 0) / 100));
+                      console.log('WavyProgress ButtonsContainer:', { downloadProgress, calculatedProgress, isDownloading });
+                      return calculatedProgress;
+                    })()}
                     animate={true}
                     showStopIndicator={true}
                     waveSpeed={1.2}
                     width={140}
+                    autoAnimateEntrance={false}
                     color={isDarkTheme ? '#FFFFFF' : '#FFFFFF'}
                     trackColor={isDarkTheme ? '#404659' : 'rgba(255,255,255,0.35)'}
                   />

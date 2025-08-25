@@ -64,6 +64,8 @@ const AvailableModelsList = ({
     };
   }, []);
 
+
+
   // Create a list of installed model IDs for filtering
   const installedModelIds = React.useMemo(() => {
     return installedModels.map(model => model.id);
@@ -134,22 +136,24 @@ const AvailableModelsList = ({
       const response = await cancelModelDownload(modelId);
 
       if (response.success) {
+        // Wait for disappear animation to complete (400ms) before removing from state
+        // The automatic animation will trigger when progress goes to 0
+        setTimeout(() => {
+          // Remove from downloads state
+          setDownloads(prev => {
+            const newDownloads = { ...prev };
+            delete newDownloads[modelId];
+            return newDownloads;
+          });
 
-        
-        // Remove from downloads state
-        setDownloads(prev => {
-          const newDownloads = { ...prev };
-          delete newDownloads[modelId];
-          return newDownloads;
-        });
+          // Invalidate the models cache to notify other components
+          invalidateModelsCache();
 
-        // Invalidate the models cache to notify other components
-        invalidateModelsCache();
-
-        // Notify parent component to refresh the model list
-        if (onModelAdded) {
-          onModelAdded();
-        }
+          // Notify parent component to refresh the model list
+          if (onModelAdded) {
+            onModelAdded();
+          }
+        }, 450); // Slightly longer than animation duration (400ms)
       }
     } catch (error) {
       console.error('Error cancelling model download:', error);
@@ -235,10 +239,11 @@ const AvailableModelsList = ({
                   <div style={{ width: '100%' }}>
                     <WavyProgressIndicator
                       height={12}
-                      progress={Math.max(0, Math.min(1, (getDownloadProgress(model.id, downloads) || 0) / 100))}
+                      progress={isDownloading(model.id, downloads) ? Math.max(0, Math.min(1, (getDownloadProgress(model.id, downloads) || 0) / 100)) : 0}
                       animate={true}
                       showStopIndicator={true}
                       waveSpeed={1.2}
+                      autoAnimateEntrance={true}
                       color={theme === 'dark' ? '#FFFFFF' : '#485E92'}
                       trackColor={theme === 'dark' ? 'rgba(255,255,255,0.3)' : '#D9DFF6'}
                     />
