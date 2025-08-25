@@ -265,6 +265,7 @@ const WavyProgressIndicator = forwardRef(({
     animate = true,
     color = WavyProgressDefaults.indicatorColor,
     trackColor = WavyProgressDefaults.trackColor,
+    stopIndicatorColor,
     wavelength = WavyProgressDefaults.wavelength,
     waveSpeed = 1,
     showStopIndicator = true,
@@ -624,18 +625,20 @@ const WavyProgressIndicator = forwardRef(({
 
         // Draw stop indicator only when visible
         if (heightFactor > 0 && showStopIndicator && validProgress < 1) {
-            const stopRadius = WavyProgressDefaults.stopSize / 2;
+            // Make stop indicator size proportional to height for better visibility
+            const stopRadius = Math.max(2, Math.min(height * 0.3, WavyProgressDefaults.stopSize / 2));
             const stopX = width - strokeCapWidth;
             const progressX = strokeCapWidth + validProgress * (width - strokeCapWidth * 2);
 
             if (progressX < stopX - stopRadius) {
-                ctx.fillStyle = color;
+                // Stop indicator should match the progress bar color
+                ctx.fillStyle = stopIndicatorColor || color;
                 ctx.beginPath();
                 ctx.arc(stopX, halfHeight, stopRadius, 0, 2 * Math.PI);
                 ctx.fill();
             }
         }
-    }, [currentProgress, waveOffset, color, trackColor, wavelength, showStopIndicator, isAnimatingEntrance, isAnimatingDisappearance, hasDisappeared, entranceStartTime, disappearanceStartTime]);
+    }, [currentProgress, waveOffset, color, trackColor, stopIndicatorColor, wavelength, showStopIndicator, isAnimatingEntrance, isAnimatingDisappearance, hasDisappeared, entranceStartTime, disappearanceStartTime]);
 
     // Keep latest draw function in a ref to avoid TDZ issues in callbacks above
     useEffect(() => {

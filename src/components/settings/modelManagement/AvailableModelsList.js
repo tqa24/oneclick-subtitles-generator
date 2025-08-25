@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import DownloadIcon from '@mui/icons-material/Download';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -29,6 +29,40 @@ const AvailableModelsList = ({
   setCustomModels
 }) => {
   const { t } = useTranslation();
+
+  // Theme detection for WavyProgressIndicator colors
+  const [theme, setTheme] = useState(() => {
+    return document.documentElement.getAttribute('data-theme') || 'dark';
+  });
+
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+          const newTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+          setTheme(newTheme);
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    });
+
+    // Also listen for storage events (theme changes from other tabs)
+    const handleStorageChange = () => {
+      const newTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+      setTheme(newTheme);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   // Create a list of installed model IDs for filtering
   const installedModelIds = React.useMemo(() => {
@@ -203,10 +237,10 @@ const AvailableModelsList = ({
                       height={12}
                       progress={Math.max(0, Math.min(1, (getDownloadProgress(model.id, downloads) || 0) / 100))}
                       animate={true}
-                      showStopIndicator={false}
+                      showStopIndicator={true}
                       waveSpeed={1.2}
-                      color={'#485E92'}
-                      trackColor={'#D9DFF6'}
+                      color={theme === 'dark' ? '#FFFFFF' : '#485E92'}
+                      trackColor={theme === 'dark' ? 'rgba(255,255,255,0.3)' : '#D9DFF6'}
                     />
                   </div>
                 </div>
