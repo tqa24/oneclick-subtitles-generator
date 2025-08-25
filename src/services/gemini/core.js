@@ -202,10 +202,12 @@ export const callGeminiApiWithFilesApi = async (file, options = {}, retryCount =
 
     console.log(`[GeminiAPI] Using Files API with model: ${MODEL}`);
 
+    let fileKey; // <-- Moved declaration to the function's scope
+
     try {
         // Check if we already have an uploaded file URI for this file
         // Use different caching strategies for uploaded vs downloaded videos
-        let fileKey;
+        // let fileKey; // <-- Removed original declaration from here
         const currentVideoUrl = localStorage.getItem('current_video_url');
 
         if (currentVideoUrl) {
@@ -381,8 +383,8 @@ export const callGeminiApiWithFilesApi = async (file, options = {}, retryCount =
             console.warn('[GeminiAPI] Detected permission error in outer catch, clearing cache and retrying...');
             
             // Clear the invalid cached URI
-            if (fileKey) {
-                localStorage.removeItem(fileKey);
+            if (fileKey) { // <-- Now accessible here
+                localStorage.removeItem(fileKey); // <-- And here
             }
             
             // Retry the entire operation with fresh upload
