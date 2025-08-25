@@ -286,11 +286,15 @@ const WavyProgressIndicator = forwardRef(({
     const drawRef = useRef(null);
     const lastWidthRef = useRef(null);
     const lastHeightRef = useRef(null);
+    const lastDPRRef = useRef(typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1);
 
     // Allow variable canvas dimensions via props (fallback to defaults)
     const hasExplicitWidth = widthProp !== undefined && widthProp !== null && !isNaN(Number(widthProp));
-    const minWidth = Math.max(40, Math.min(600, Number(minWidthProp) || 0));
-    const maxWidth = Math.max(minWidth, Math.min(600, Number(maxWidthProp) || 600));
+    // Remove hard 600px clamp so canvas can grow to fullscreen widths without stretching
+    const parsedMinWidth = Number(minWidthProp);
+    const parsedMaxWidth = Number(maxWidthProp);
+    const minWidth = Number.isFinite(parsedMinWidth) ? Math.max(0, parsedMinWidth) : 40;
+    const maxWidth = Number.isFinite(parsedMaxWidth) ? Math.max(minWidth, parsedMaxWidth) : Number.POSITIVE_INFINITY;
 
     // When minWidth or maxWidth are provided without explicit width, we want dynamic behavior
     const isDynamicWidth = !hasExplicitWidth && (minWidthProp !== undefined || maxWidthProp !== undefined);
@@ -324,19 +328,19 @@ const WavyProgressIndicator = forwardRef(({
 
         // Prefer this container's width only when width prop is not explicitly provided
         // Measure CSS pixel size of the canvas itself; let CSS control layout
-        let containerWidth = canvas.clientWidth;
+        let containerWidth = (canvas.getBoundingClientRect?.().width) || canvas.clientWidth;
 
-        // If canvas.clientWidth is not available, try the parent container
-        if (!containerWidth && container) {
-            containerWidth = container.clientWidth;
+        // If canvas size is not available, try the parent container
+        if ((!containerWidth || containerWidth === 0) && container) {
+            const rect = container.getBoundingClientRect?.();
+            containerWidth = (rect && rect.width) || container.clientWidth;
         }
 
         // If still no width, try the parent's parent (for nested flex containers)
-        if (!containerWidth && container && container.parentElement) {
-            containerWidth = container.parentElement.clientWidth;
+        if ((!containerWidth || containerWidth === 0) && container && container.parentElement) {
+            const rect = container.parentElement.getBoundingClientRect?.();
+            containerWidth = (rect && rect.width) || container.parentElement.clientWidth;
         }
-
-
 
         // For dynamic width (when minWidth/maxWidth are set), be more aggressive about using container space
         let cssWidth;
@@ -344,19 +348,21 @@ const WavyProgressIndicator = forwardRef(({
             cssWidth = width;
         } else {
             // Always try to use container width first
-            if (containerWidth > 0) {
+            if (containerWidth > 0 && Number.isFinite(containerWidth)) {
                 cssWidth = Math.max(minWidth, Math.min(maxWidth, containerWidth));
             } else {
                 // If no container width, use maxWidth for dynamic width, default width otherwise
                 cssWidth = isDynamicWidth ? maxWidth : width;
             }
         }
-        const cssHeight = Number(heightProp) || canvas.clientHeight || height;
+        const cssHeight = Number(heightProp) || (canvas.getBoundingClientRect?.().height) || canvas.clientHeight || height;
 
-        // Avoid thrashing ResizeObserver: only resize drawing buffer if CSS size changed
-        if (lastWidthRef.current !== cssWidth || lastHeightRef.current !== cssHeight) {
+        // Avoid thrashing ResizeObserver: only resize drawing buffer if CSS size or DPR changed
+        const needResize = (lastWidthRef.current !== cssWidth) || (lastHeightRef.current !== cssHeight) || (lastDPRRef.current !== devicePixelRatio);
+        if (needResize) {
             lastWidthRef.current = cssWidth;
             lastHeightRef.current = cssHeight;
+            lastDPRRef.current = devicePixelRatio;
 
             // Set the drawing buffer size (device pixels). Do NOT set style width/height here.
             canvas.width = Math.max(1, Math.round(cssWidth * devicePixelRatio));
@@ -397,6 +403,41 @@ const WavyProgressIndicator = forwardRef(({
             if (typeof fn === 'function') requestAnimationFrame(() => fn());
         });
         ro.observe(container);
+
+        // Also observe the canvas element directly for CSS size changes (e.g., during fullscreen)
+        const canvas = canvasRef.current;
+        if (canvas) {
+            const roCanvas = new ResizeObserver(() => {
+                setupHighDPICanvas();
+                const fn = drawRef.current;
+                if (typeof fn === 'function') requestAnimationFrame(() => fn());
+            });
+            roCanvas.observe(canvas);
+
+            // Handle window resize and fullscreen change events to avoid stretched frames during transitions
+            const handleViewportChange = () => {
+                setupHighDPICanvas();
+                const fn = drawRef.current;
+                if (typeof fn === 'function') requestAnimationFrame(() => fn());
+                setTimeout(() => {
+                    setupHighDPICanvas();
+                    const fn2 = drawRef.current;
+                    if (typeof fn2 === 'function') requestAnimationFrame(() => fn2());
+                }, 50);
+            };
+            window.addEventListener('resize', handleViewportChange);
+            const fscEvents = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+            fscEvents.forEach((ev) => document.addEventListener(ev, handleViewportChange));
+
+            return () => {
+                window.removeEventListener('resize', handleViewportChange);
+                fscEvents.forEach((ev) => document.removeEventListener(ev, handleViewportChange));
+                roCanvas.disconnect();
+                clearTimeout(initialTimeout);
+                clearTimeout(secondTimeout);
+                ro.disconnect();
+            };
+        }
 
         return () => {
             clearTimeout(initialTimeout);
