@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import WavyProgressIndicator from './common/WavyProgressIndicator';
 import '../styles/QueueManagerPanel.css';
 
 const QueueManagerPanel = ({
@@ -11,6 +12,29 @@ const QueueManagerPanel = ({
   gridLayout = false
 }) => {
   const { t } = useTranslation();
+
+  // Theme detection for WavyProgressIndicator colors
+  const [theme, setTheme] = useState(() => {
+    return document.documentElement.getAttribute('data-theme') || 'dark';
+  });
+
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+          const newTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+          setTheme(newTheme);
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   const getStatusIcon = (status) => {
     switch (status) {
@@ -258,18 +282,32 @@ const QueueManagerPanel = ({
                   </div>
                 </div>
 
-                {/* Progress Bar for processing items */}
+                {/* Revamped WavyProgressIndicator Section */}
                 {(item.status === 'processing' || item.status === 'pending') && (
-                  <div className="progress-section">
-                    <div className="progress-bar">
-                      <div
-                        className="progress-fill"
-                        style={{
-                          width: `${item.progress || 0}%`,
-                          backgroundColor: getStatusColor(item.status)
-                        }}
-                      ></div>
-                    </div>
+                  <div className="wavy-progress-section">
+                    <WavyProgressIndicator
+                      progress={Math.max(0, Math.min(1, (item.progress || 0) / 100))}
+                      animate={item.status === 'processing'}
+                      showStopIndicator={true}
+                      waveSpeed={1.2}
+                      height={12}
+                      autoAnimateEntrance={true}
+                      color={theme === 'dark'
+                        ? (item.status === 'processing' ? '#4CAF50' : '#FFC107')
+                        : (item.status === 'processing' ? '#2E7D32' : '#F57C00')
+                      }
+                      trackColor={theme === 'dark'
+                        ? 'rgba(255, 255, 255, 0.15)'
+                        : 'rgba(0, 0, 0, 0.15)'
+                      }
+                      stopIndicatorColor={theme === 'dark'
+                        ? (item.status === 'processing' ? '#4CAF50' : '#FFC107')
+                        : (item.status === 'processing' ? '#2E7D32' : '#F57C00')
+                      }
+                      style={{
+                        width: '100%'
+                      }}
+                    />
                     <div className="progress-text">
                       {item.status === 'processing' ? (
                         <>

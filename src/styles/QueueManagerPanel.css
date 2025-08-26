@@ -223,24 +223,34 @@
   color: var(--text-primary);
 }
 
-/* Progress Section */
-.progress-section {
-  margin-bottom: 0.75rem;
+/* Revamped Wavy Progress Section */
+.wavy-progress-section {
+  margin: 12px 0;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  position: relative;
+  overflow: visible; /* Important: Allow wavy animation to show fully */
 }
 
-.progress-bar {
-  width: 100%;
-  height: 6px;
-  background: var(--md-surface-3);
-  border-radius: 24px;
-  overflow: hidden;
-  margin-bottom: 0.5rem;
+/* Dark theme enhancements for wavy progress */
+[data-theme="dark"] .wavy-progress-section {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Light theme enhancements for wavy progress */
+[data-theme="light"] .wavy-progress-section {
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Remove old progress bar styles */
+.progress-bar,
 .progress-fill {
-  height: 100%;
-  transition: width 0.3s ease;
-  border-radius: 24px;
+  display: none; /* Hide any remaining old progress elements */
 }
 
 .progress-text {
