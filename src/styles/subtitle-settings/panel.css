@@ -42,7 +42,6 @@
 
 .settings-content {
   padding: 1.25rem;
-  max-height: 520px;
   overflow-y: auto;
   /* Firefox */
   scrollbar-width: thin;
