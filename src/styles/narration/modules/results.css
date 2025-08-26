@@ -158,35 +158,42 @@
   gap: 0.5rem;
 }
 
-/* Fix for error message alignment in result controls */
-.result-controls .error-message {
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  padding: 0.5rem 1rem !important;
-  height: 36px !important;
-  box-sizing: border-box !important;
+/* Error message styling specifically for narration results */
+.result-controls .error-message,
+.results-section .error-message {
   display: inline-flex !important;
   align-items: center !important;
+  gap: 0.5rem !important;
+  padding: 0.5rem 1rem !important;
+  background-color: var(--md-error-container) !important;
+  color: var(--md-on-error-container) !important;
   border-radius: 18px !important;
   font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  border: 1px solid var(--md-error) !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  height: 36px !important;
+  line-height: 1.2 !important;
 }
 
-/* Error message styling */
-.error-message {
-  color: var(--md-error);
-  font-size: 0.9rem;
-}
-
-.error-details {
-  font-size: 0.8rem;
-  margin-top: 0.25rem;
-  color: var(--md-error-container);
-  font-style: italic;
+/* Error details styling for narration results */
+.results-section .error-details {
+  display: block !important;
+  font-size: 0.75rem !important;
+  margin-top: 0.25rem !important;
+  margin-left: 0 !important;
+  color: var(--md-on-error-container) !important;
+  font-style: italic !important;
+  opacity: 0.8 !important;
+  line-height: 1.2 !important;
 }
 
 /* Style for unprocessed subtitles */
 .result-item.unprocessed .error-message {
+  background-color: var(--md-surface-variant);
   color: var(--md-on-surface-variant);
+  border-color: var(--md-outline);
   font-style: italic;
 }
 
