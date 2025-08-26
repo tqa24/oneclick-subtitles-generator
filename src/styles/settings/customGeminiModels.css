@@ -91,8 +91,7 @@
   margin-top: 16px;
   padding: 16px;
   background-color: var(--md-surface-2);
-  border-radius: 12px;
-  border: 1px solid var(--md-outline-variant);
+  border-radius: 24px;
 }
 
 .form-row {
@@ -144,7 +143,7 @@
 .cancel-model-btn {
   padding: 10px 20px;
   border: none;
-  border-radius: 8px;
+  border-radius: 24px;
   font-size: var(--md-body-medium-size);
   font-weight: var(--md-body-medium-weight);
   cursor: pointer;

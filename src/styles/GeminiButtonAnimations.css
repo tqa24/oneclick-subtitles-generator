@@ -6,6 +6,7 @@
 .force-stop-btn .gemini-icon-container,
 .srt-upload-button .gemini-icon-container,
 .add-subtitles-button .gemini-icon-container,
+.video-analysis-button .gemini-icon-container,
 .lets-go-btn .gemini-icon-container {
   position: absolute;
   top: 0;
@@ -204,7 +205,8 @@
 /* Special processing state - show all particles */
 .generate-btn.processing .gemini-mini-icon,
 .retry-gemini-btn.processing .gemini-mini-icon,
-.add-subtitles-button.processing .gemini-mini-icon {
+.add-subtitles-button.processing .gemini-mini-icon,
+.video-analysis-button.processing .gemini-mini-icon {
   opacity: 0.8 !important;
   transition: opacity 0.3s var(--md-easing-emphasized);
 }
@@ -214,7 +216,8 @@
 .retry-gemini-btn.processing,
 .force-stop-btn.processing,
 .srt-upload-button.processing,
-.add-subtitles-button.processing {
+.add-subtitles-button.processing,
+.video-analysis-button.processing {
   position: relative;
   overflow: hidden;
   background-image: linear-gradient(to right, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
@@ -224,7 +227,8 @@
 .retry-gemini-btn.processing::after,
 .force-stop-btn.processing::after,
 .srt-upload-button.processing::after,
-.add-subtitles-button.processing::after {
+.add-subtitles-button.processing::after,
+.video-analysis-button.processing::after {
   content: '';
   position: absolute;
   top: -50%;
@@ -251,6 +255,7 @@
 .retry-gemini-btn:hover .gemini-icon-container,
 .srt-upload-button:hover .gemini-icon-container,
 .add-subtitles-button:hover .gemini-icon-container,
+.video-analysis-button:hover .gemini-icon-container,
 .lets-go-btn:hover .gemini-icon-container {
   --cursor-x: 50%;
   --cursor-y: 50%;
@@ -262,6 +267,7 @@
 .retry-gemini-btn:hover .gemini-mini-icon svg,
 .srt-upload-button:hover .gemini-mini-icon svg,
 .add-subtitles-button:hover .gemini-mini-icon svg,
+.video-analysis-button:hover .gemini-mini-icon svg,
 .lets-go-btn:hover .gemini-mini-icon svg {
   transform: scale(1.2);
   transition: transform 0.3s ease-out;
@@ -323,7 +329,8 @@
 .retry-gemini-btn .gemini-mini-icon svg path,
 .force-stop-btn .gemini-mini-icon svg path,
 .srt-upload-button .gemini-mini-icon svg path,
-.add-subtitles-button .gemini-mini-icon svg path {
+.add-subtitles-button .gemini-mini-icon svg path,
+.video-analysis-button .gemini-mini-icon svg path {
   /* Removed stroke-dasharray and stroke-dashoffset */
   transition: opacity 0.3s var(--md-easing-emphasized);
 }
@@ -331,7 +338,8 @@
 .generate-btn:hover .gemini-mini-icon svg path,
 .retry-gemini-btn:hover .gemini-mini-icon svg path,
 .force-stop-btn:hover .gemini-mini-icon svg path,
-.add-subtitles-button:hover .gemini-mini-icon svg path {
+.add-subtitles-button:hover .gemini-mini-icon svg path,
+.video-analysis-button:hover .gemini-mini-icon svg path {
   /* Removed stroke-dashoffset animation */
   opacity: 1;
 }
@@ -340,7 +348,8 @@
 .generate-btn.processing .gemini-mini-icon svg path,
 .retry-gemini-btn.processing .gemini-mini-icon svg path,
 .force-stop-btn.processing .gemini-mini-icon svg path,
-.add-subtitles-button.processing .gemini-mini-icon svg path {
+.add-subtitles-button.processing .gemini-mini-icon svg path,
+.video-analysis-button.processing .gemini-mini-icon svg path {
   /* Removed dash animation */
   opacity: 0.9;
 }
@@ -350,14 +359,16 @@
 /* Disabled state - only show animations when processing */
 .generate-btn:disabled:not(.processing) .gemini-icon-container,
 .retry-gemini-btn:disabled:not(.processing) .gemini-icon-container,
-.add-subtitles-button:disabled:not(.processing) .gemini-icon-container {
+.add-subtitles-button:disabled:not(.processing) .gemini-icon-container,
+.video-analysis-button:disabled:not(.processing) .gemini-icon-container {
   display: none;
 }
 
 /* Ensure animations work even when button is disabled but processing */
 .generate-btn:disabled.processing .gemini-icon-container,
 .retry-gemini-btn:disabled.processing .gemini-icon-container,
-.add-subtitles-button:disabled.processing .gemini-icon-container {
+.add-subtitles-button:disabled.processing .gemini-icon-container,
+.video-analysis-button:disabled.processing .gemini-icon-container {
   display: block;
   opacity: 0.8; /* Slightly dimmed to indicate disabled state */
 }
