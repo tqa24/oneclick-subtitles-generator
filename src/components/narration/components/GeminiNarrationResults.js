@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import StandardSlider from '../../common/StandardSlider';
 import LoadingIndicator from '../../common/LoadingIndicator';
-import '../../../styles/narration/geminiNarrationResults.css';
 import '../../../styles/narration/speedControlSlider.css';
 import { VariableSizeList as List } from 'react-window';
 
@@ -46,14 +45,14 @@ const GeminiResultRow = ({ index, style, data }) => {
   return (
     <div
       style={style}
-      className={`gemini-result-item
+      className={`result-item
         ${item.success ? 'success' : 'failed'}
         ${item.pending ? 'pending' : ''}
         ${currentlyPlaying === subtitle_id ? 'playing' : ''}
         ${retryingSubtitleId === subtitle_id ? 'retrying' : ''}`}
     >
-      <div className="gemini-result-text">
-        <span className="gemini-result-id">{subtitle_id}.</span>
+      <div className="result-text">
+        <span className="result-id">{subtitle_id}.</span>
         {text}
       </div>
 
@@ -125,7 +124,7 @@ const GeminiResultRow = ({ index, style, data }) => {
         ) : item.pending ? (
           // Pending generation - show generate button
           <>
-            <span className="gemini-status-message pending">
+            <span className="status-message pending">
               {t('narration.pending', 'Pending generation...')}
             </span>
             <button
@@ -159,7 +158,7 @@ const GeminiResultRow = ({ index, style, data }) => {
         ) : (
           // Failed generation
           <>
-            <span className="gemini-error-message">
+            <span className="error-message">
               {t('narration.failed', 'Generation failed')}
               {/* Add a debug message to help diagnose the issue */}
               {item.error && <div className="error-details">{item.error}</div>}
@@ -773,9 +772,27 @@ const GeminiNarrationResults = ({
 
 
   return (
-    <div className="gemini-narration-results">
+    <div className="results-section">
       <div className="results-header">
-        <h4>{t('narration.geminiResults', 'Generated Narration (Gemini)')}</h4>
+        <h4>{t('narration.results', 'Generated Narration')}</h4>
+
+        {/* Retry Failed Narrations button */}
+        {hasFailedNarrations && onRetryFailed && (
+          <button
+            className="pill-button secondary retry-failed-button"
+            onClick={onRetryFailed}
+            disabled={retryingSubtitleId !== null || !subtitleSource}
+            title={!subtitleSource
+              ? t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)')
+              : t('narration.retryFailedTooltip', 'Retry all failed narrations')}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M1 4v6h6" />
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+            </svg>
+            {t('narration.retryFailed', 'Retry Failed Narrations')}
+          </button>
+        )}
 
         {/* Speed Control Slider */}
         {generationResults && generationResults.length > 0 && (
@@ -824,27 +841,9 @@ const GeminiNarrationResults = ({
             )}
           </div>
         )}
-
-        {/* Retry Failed Narrations button */}
-        {hasFailedNarrations && onRetryFailed && (
-          <button
-            className="pill-button secondary retry-failed-button"
-            onClick={onRetryFailed}
-            disabled={retryingSubtitleId !== null || !subtitleSource}
-            title={!subtitleSource
-              ? t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)')
-              : t('narration.retryFailedTooltip', 'Retry all failed narrations')}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M1 4v6h6" />
-              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
-            </svg>
-            {t('narration.retryFailed', 'Retry Failed Narrations')}
-          </button>
-        )}
       </div>
 
-      <div className="gemini-results-list">
+      <div className="results-list">
         {(!generationResults || generationResults.length === 0) && !hasGenerationError ? (
           loadedFromCache ? (
             // Show loading indicator when loading from cache
@@ -867,7 +866,7 @@ const GeminiNarrationResults = ({
           // Use virtualized list for better performance with large datasets
           <List
             ref={listRef}
-            className="gemini-results-virtualized-list"
+            className="results-virtualized-list"
             height={350} // Reduced height for the Gemini virtualized container to avoid empty space
             width="100%"
             itemCount={generationResults ? generationResults.length : 0}

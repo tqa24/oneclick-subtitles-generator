@@ -118,6 +118,29 @@
   border-left-color: var(--md-error);
 }
 
+.result-item.retrying {
+  opacity: 0.7;
+  background-color: var(--md-surface-1);
+  border-left-color: var(--md-tertiary);
+  pointer-events: none;
+}
+
+.result-item.unprocessed {
+  border-left-color: var(--md-outline);
+  background-color: var(--md-surface-1);
+  opacity: 0.9;
+}
+
+.result-item.pending {
+  border-left-color: var(--md-tertiary);
+  background-color: var(--md-surface-1);
+  opacity: 0.9;
+}
+
+.result-item.success {
+  border-left-color: var(--md-primary);
+}
+
 .result-text {
   flex: 1;
   margin-right: 1rem;
@@ -148,6 +171,25 @@
   font-size: 0.85rem !important;
 }
 
+/* Error message styling */
+.error-message {
+  color: var(--md-error);
+  font-size: 0.9rem;
+}
+
+.error-details {
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+  color: var(--md-error-container);
+  font-style: italic;
+}
+
+/* Style for unprocessed subtitles */
+.result-item.unprocessed .error-message {
+  color: var(--md-on-surface-variant);
+  font-style: italic;
+}
+
 /* No results message styling */
 .no-results-message {
   padding: 1rem;
@@ -158,4 +200,46 @@
   font-style: italic;
   border: 1px dashed var(--md-outline-variant);
   animation: pulse 2s infinite ease-in-out;
+}
+
+/* Status message styling */
+.status-message.pending {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--md-tertiary);
+  font-size: 0.9rem;
+  animation: pulse 2s infinite ease-in-out;
+}
+
+/* Virtualized list container */
+.results-virtualized-list {
+  border-radius: 8px;
+  background-color: var(--md-surface-1);
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin-bottom: 20px;
+
+  /* Firefox scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--md-outline-variant) var(--md-surface-1);
+}
+
+/* Webkit (Chrome, Safari, Edge) scrollbar styling */
+.results-virtualized-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.results-virtualized-list::-webkit-scrollbar-track {
+  background: var(--md-surface-1);
+  border-radius: 4px;
+}
+
+.results-virtualized-list::-webkit-scrollbar-thumb {
+  background: var(--md-outline-variant);
+  border-radius: 4px;
+}
+
+.results-virtualized-list::-webkit-scrollbar-thumb:hover {
+  background: var(--md-outline);
 }
