@@ -13,7 +13,6 @@ import VideoQualityModal from '../VideoQualityModal';
 import FloatingScrollbar from '../FloatingScrollbar';
 import OnboardingBanner from '../OnboardingBanner';
 import VideoProcessingOptionsModal from '../VideoProcessingOptionsModal';
-import WavyProgressTest from '../common/WavyProgressTest';
 import { useVideoInfo } from '../../hooks/useVideoInfo';
 import { hasValidDownloadedVideo } from '../../utils/videoUtils';
 
@@ -484,9 +483,6 @@ const AppLayout = ({
 
       {/* Floating scrollbar component */}
       <FloatingScrollbar />
-
-      {/* Wavy Progress Test Component */}
-      <WavyProgressTest />
     </>
   );
 };
