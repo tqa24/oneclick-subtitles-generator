@@ -8,12 +8,8 @@
   position: relative;
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
   min-height: 80px; /* Increased from 60px to 80px */
-
-  /* Ensure proper containment for the canvas */
-  overflow: hidden; /* Prevent canvas from extending beyond header bounds */
-
-  /* Create a proper stacking context for the canvas */
-  isolation: isolate;
+  /* Note: Do not set overflow hidden or isolation here, to allow the floating-settings button
+     to layer above other page content as intended. */
 }
 
 .header-title-container {
