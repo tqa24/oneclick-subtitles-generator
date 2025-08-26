@@ -825,7 +825,7 @@ const GeminiNarrationResults = ({
                   <span>{processingProgress.current}/{processingProgress.total}</span>
                   {currentFile && (
                     <span className="speed-control-filename" title={currentFile}>
-                      {currentFile.length > 10 ? currentFile.substring(0, 10) + '...' : currentFile}
+                      {currentFile}
                     </span>
                   )}
                 </div>
