@@ -348,11 +348,11 @@
 }
 
 .split-duration-slider-container .slider-value-display {
-  min-width: 80px; /* Adequate space for "No Split" text */
+  min-width: 55px; /* Adequate space for "No Split" text */
   font-size: var(--md-body-medium-size);
   color: var(--md-primary);
   font-weight: 500;
-  text-align: right;
+  text-align: center;
   flex-shrink: 0; /* Don't allow shrinking */
   white-space: nowrap; /* Prevent text wrapping */
 }

@@ -248,7 +248,7 @@
 /* Material Switch container for processing modal */
 .material-switch-container {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
 }
 
@@ -439,10 +439,18 @@
   }
 }
 
-/* Slider control styles - vertical layout */
+/* Slider control styles - default horizontal layout */
 .slider-control {
   display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Video processing modal specific - vertical layout for FPS slider */
+.video-processing-modal .slider-control {
   flex-direction: column;
+  align-items: stretch;
   gap: 8px;
 }
 
