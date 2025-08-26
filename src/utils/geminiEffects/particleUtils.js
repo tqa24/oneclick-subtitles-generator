@@ -47,6 +47,7 @@ export const createParticles = (buttonElement, container, limit) => {
   // Determine button type to create different effects
   const isGenerateButton = buttonElement.classList.contains('generate-btn');
   const isForceStopButton = buttonElement.classList.contains('force-stop-btn');
+  const isVideoAnalysisButton = buttonElement.classList.contains('video-analysis-button');
 
   // Set particle count based on button type and limit parameter
   let particleCount;
@@ -87,21 +88,11 @@ export const createParticles = (buttonElement, container, limit) => {
     // Assign random size with weighted distribution based on button type
     let sizeClasses;
 
-    if (isGenerateButton) {
-      // For generate button - only extra small and small stars
-      sizeClasses = [
-        { class: 'size-xs', weight: 0.70 }, // Mostly extra small stars for generate button
-        { class: 'size-sm', weight: 0.30 }, // Some small stars
-        // No medium stars at all for generate button
-      ];
-    } else {
-      // For other buttons - standard distribution
-      sizeClasses = [
-        { class: 'size-xs', weight: 0.50 }, // Mostly extra small stars
-        { class: 'size-sm', weight: 0.35 }, // Some small stars
-        { class: 'size-md', weight: 0.15 }, // Few medium stars
-      ];
-    }
+    // Unified distribution for all buttons: small variety, no big stars
+    sizeClasses = [
+      { class: 'size-xs', weight: 0.70 },
+      { class: 'size-sm', weight: 0.30 },
+    ];
 
     // Weighted random selection
     let randomWeight = Math.random();

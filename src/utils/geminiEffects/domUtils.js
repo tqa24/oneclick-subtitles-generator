@@ -119,7 +119,7 @@ export const initializeButton = (button, initializedButtons, particles) => {
   const initialCount = button.classList.contains('generate-btn') ? 10 :
                       button.classList.contains('cancel-download-btn') ? 8 :
                       button.classList.contains('add-subtitles-button') ? 6 :
-                      button.classList.contains('video-analysis-button') ? 6 : 4;
+                      button.classList.contains('video-analysis-button') ? 8 : 4;
   const buttonParticles = createParticles(button, iconContainer, initialCount);
 
   // Make sure they're initially inactive/invisible

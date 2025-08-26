@@ -274,6 +274,11 @@
   animation: hover-star-twinkle 1.5s infinite alternate ease-in-out !important;
 }
 
+/* Keep generate button stars small but allow XS/SM variations via size classes */
+.generate-btn .gemini-mini-icon.size-xs { width: 8px !important; height: 8px !important; }
+.generate-btn .gemini-mini-icon.size-sm { width: 12px !important; height: 12px !important; }
+.generate-btn:hover .gemini-mini-icon svg { transform: none !important; }
+
 @keyframes hover-star-twinkle {
   0% { opacity: 0.9; }
   50% { opacity: 1; }
