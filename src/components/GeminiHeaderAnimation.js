@@ -10,6 +10,7 @@ const GeminiHeaderAnimation = () => {
   const particlesRef = useRef([]);
   const connectionsRef = useRef([]);
   const mouseRef = useRef({ x: null, y: null, radius: 100, isClicked: false });
+  const dprRef = useRef(1);
 
   // Generate realistic star colors based on temperature (like real stars)
   const getStarColor = (temperature, intensity, isDark) => {
@@ -74,26 +75,53 @@ const GeminiHeaderAnimation = () => {
     let particles = [];
     let connections = [];
 
-    // Set canvas dimensions with proper pixel density
+    // Set canvas dimensions with proper pixel density and zoom level handling
     const resizeCanvas = () => {
       const header = canvas.parentElement;
       const rect = header.getBoundingClientRect();
+
+      // Get the actual device pixel ratio
       const dpr = window.devicePixelRatio || 1;
 
-      // Set actual canvas size in memory (scaled for high DPI)
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
+      // Detect browser zoom level more reliably
+      // Method 1: Compare screen width to window width (works in most cases)
+      let zoomLevel = 1;
+      try {
+        if (window.screen && window.screen.width && window.innerWidth) {
+          // This is a rough approximation - browser zoom affects innerWidth
+          const screenRatio = window.screen.width / window.innerWidth;
+          if (screenRatio > 0.5 && screenRatio < 3) { // Sanity check
+            zoomLevel = Math.max(0.5, Math.min(2, screenRatio / dpr));
+          }
+        }
+      } catch (e) {
+        // Fallback to default zoom level if detection fails
+        zoomLevel = 1;
+      }
 
-      // Scale the canvas back down using CSS
-      canvas.style.width = rect.width + 'px';
-      canvas.style.height = rect.height + 'px';
+      // Calculate effective DPR that accounts for zoom, but clamp to >= 1
+      // Many browsers report fractional DPR under zoom; we avoid sub-1 blurriness
+      const effectiveDpr = Math.max(1, Math.round((dpr || 1) * 100) / 100);
+      dprRef.current = effectiveDpr;
 
-      // Scale the drawing context so everything draws at the correct size
-      ctx.scale(dpr, dpr);
+      // Ensure we have valid dimensions (CSS pixels)
+      const canvasWidth = Math.max(1, Math.round(rect.width));
+      const canvasHeight = Math.max(1, Math.round(rect.height));
+
+      // Set actual canvas size in backing store
+      canvas.width = canvasWidth * effectiveDpr;
+      canvas.height = canvasHeight * effectiveDpr;
+
+      // Force CSS size to match CSS pixels exactly
+      canvas.style.width = canvasWidth + 'px';
+      canvas.style.height = canvasHeight + 'px';
+
+      // Always reset transform before scaling to prevent cumulative scale
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(effectiveDpr, effectiveDpr);
 
       // Recreate particles when canvas is resized to ensure valid positions
-      // This prevents particles from having coordinates outside the new canvas bounds
-      if (rect.width > 0 && rect.height > 0) {
+      if (canvasWidth > 0 && canvasHeight > 0) {
         createParticles();
         updateConnections();
       }
