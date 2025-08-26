@@ -217,7 +217,9 @@ const Header = ({ onSettingsClick }) => {
   return (
     <header className="app-header">
       {/* Gemini constellation animation */}
-      <GeminiHeaderAnimation />
+      {localStorage.getItem('enable_gemini_effects') !== 'false' && (
+        <GeminiHeaderAnimation />
+      )}
 
       <div className="header-title-container">
         <h1 className="header-title">

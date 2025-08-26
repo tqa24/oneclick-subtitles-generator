@@ -1,6 +1,8 @@
 {
   "title": "Cài đặt",
   "appearance": "Giao diện",
+  "showGeminiEffects": "Hiển thị hiệu ứng sao Gemini",
+  "showGeminiEffectsDescription": "Sử dụng hiệu ứng bầu trời sao và hiệu ứng ngôi sao Gemini trên nút. Có thể tắt trên máy cấu hình yếu, không ảnh hưởng chức năng.",
   "apiKeys": "Khóa API",
   "gemini25ProPaused": "Gemini 2.5 Pro hiện đã có sẵn trở lại trên API free tier! Bạn có thể sử dụng nó cho tất cả các tính năng.",
   "closeMessage": "Đóng",

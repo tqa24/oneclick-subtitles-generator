@@ -109,6 +109,8 @@
   "videoProcessing": "Processing",
   "displaySettings": "Display Settings",
   "downloadSettings": "Download Settings",
+  "showGeminiEffects": "Show Gemini star effects",
+  "showGeminiEffectsDescription": "Use Gemini starry sky effect and Gemini stars button effect. This can be turned off for low end devices and no functionalities will be affected",
   "displayDownloadSettings": "Display & Download Settings",
   "modelSettings": "AI Model",
   "segmentSettings": "Segment Settings",

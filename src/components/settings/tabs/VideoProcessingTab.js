@@ -34,7 +34,10 @@ const VideoProcessingTab = ({
   enableYoutubeSearch,
   setEnableYoutubeSearch,
   customGeminiModels,
-  setCustomGeminiModels
+  setCustomGeminiModels,
+  // New prop for gemini effects toggle
+  enableGeminiEffects,
+  setEnableGeminiEffects
 }) => {
   const { t } = useTranslation();
 
@@ -175,6 +178,27 @@ const VideoProcessingTab = ({
               </div>
               <p className="setting-description">
                 {t('settings.showWaveformDescription', 'Display audio waveform visualization in the timeline. This helps identify silent parts and speech patterns.')}
+              </p>
+            </div>
+
+            {/* Show Gemini star effects Setting */}
+            <div className="compact-setting">
+              <div className="setting-header">
+                <label htmlFor="enable-gemini-effects">
+                  {t('settings.showGeminiEffects', 'Show Gemini star effects')}
+                </label>
+                <div className="material-switch-container">
+                  <MaterialSwitch
+                    id="enable-gemini-effects"
+                    checked={enableGeminiEffects}
+                    onChange={(e) => setEnableGeminiEffects(e.target.checked)}
+                    ariaLabel={t('settings.showGeminiEffects', 'Show Gemini star effects')}
+                    icons={true}
+                  />
+                </div>
+              </div>
+              <p className="setting-description">
+                {t('settings.showGeminiEffectsDescription', 'Use Gemini starry sky effect and Gemini stars button effect. This can be turned off for low end devices and no functionalities will be affected')}
               </p>
             </div>
           </div>

@@ -109,6 +109,8 @@
   "videoProcessing": "처리",
   "displaySettings": "디스플레이 설정",
   "downloadSettings": "다운로드 설정",
+  "showGeminiEffects": "Gemini 별 효과 보기",
+  "showGeminiEffectsDescription": "헤더의 별밤 효과와 버튼의 Gemini 별 효과를 사용합니다. 저사양 기기에서는 꺼도 기능에는 영향을 주지 않습니다.",
   "displayDownloadSettings": "디스플레이 및 다운로드 설정",
   "modelSettings": "AI 모델",
   "segmentSettings": "세그먼트 설정",

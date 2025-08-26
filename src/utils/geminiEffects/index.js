@@ -26,6 +26,17 @@ const isHovering = { value: false };
  * Initialize Gemini button effects
  */
 export const initGeminiButtonEffects = () => {
+  // Respect user setting to disable Gemini effects entirely
+  const effectsEnabled = localStorage.getItem('enable_gemini_effects') !== 'false';
+  if (!effectsEnabled) {
+    // If disabled, make sure any previous animation loop is stopped
+    if (window.geminiAnimationFrameId) {
+      cancelAnimationFrame(window.geminiAnimationFrameId);
+      window.geminiAnimationFrameId = null;
+    }
+    return;
+  }
+
   // Set up the MutationObserver to detect new buttons
   observerInitialized = setupButtonObserver(initGeminiButtonEffects, observerInitialized);
 
@@ -116,3 +127,20 @@ const animateParticles = () => {
 
 // Export the initialization function
 export default initGeminiButtonEffects;
+
+/**
+ * Disable all Gemini button effects immediately and clean up
+ */
+export const disableGeminiButtonEffects = () => {
+  // Stop animation frame
+  if (window.geminiAnimationFrameId) {
+    cancelAnimationFrame(window.geminiAnimationFrameId);
+    window.geminiAnimationFrameId = null;
+  }
+  // Remove all particle elements
+  const particleEls = document.querySelectorAll('.gemini-mini-icon');
+  particleEls.forEach(el => el.remove());
+  // Remove icon containers
+  const containers = document.querySelectorAll('.gemini-icon-container');
+  containers.forEach(c => c.remove());
+};

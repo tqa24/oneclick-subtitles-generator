@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { hasValidTokens } from '../../services/youtubeApiService';
-import { initGeminiButtonEffects, resetAllGeminiButtonEffects } from '../../utils/geminiEffects';
+import { initGeminiButtonEffects, resetAllGeminiButtonEffects, disableGeminiButtonEffects } from '../../utils/geminiEffects';
 import { syncLocalStorageToServer } from '../../services/localStorageService';
 import initTabPillAnimation from '../../utils/tabPillAnimation';
 import { getThemeWithFallback } from '../../utils/systemDetection';
@@ -33,8 +33,14 @@ export const useAppEffects = (props) => {
   useEffect(() => {
     // Small delay to ensure DOM is fully rendered
     const timer = setTimeout(() => {
-      // Initialize Gemini button effects
-      initGeminiButtonEffects();
+      const effectsEnabled = localStorage.getItem('enable_gemini_effects') !== 'false';
+      if (effectsEnabled) {
+        // Initialize Gemini button effects
+        initGeminiButtonEffects();
+      } else {
+        // Ensure any residual effects are disabled
+        disableGeminiButtonEffects();
+      }
 
       // Initialize tab pill sliding animation
       initTabPillAnimation();
@@ -56,7 +62,8 @@ export const useAppEffects = (props) => {
     if (subtitlesData && subtitlesData.length > 0) {
       // Use a small delay to ensure the DOM is updated
       const timer = setTimeout(() => {
-        initGeminiButtonEffects();
+        const effectsEnabled = localStorage.getItem('enable_gemini_effects') !== 'false';
+        if (effectsEnabled) initGeminiButtonEffects();
       }, 500);
 
       return () => clearTimeout(timer);
@@ -172,6 +179,16 @@ export const useAppEffects = (props) => {
       if (event.key === 'time_format' || !event.key) {
         const newTimeFormat = localStorage.getItem('time_format') || 'hms';
         setTimeFormat(newTimeFormat);
+      }
+
+      // Respond to Gemini effects setting changes
+      if (event.key === 'enable_gemini_effects') {
+        const enabled = localStorage.getItem('enable_gemini_effects') !== 'false';
+        if (enabled) {
+          initGeminiButtonEffects();
+        } else {
+          disableGeminiButtonEffects();
+        }
       }
 
       if (event.key === 'optimize_videos' || !event.key) {
