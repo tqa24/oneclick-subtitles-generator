@@ -15,8 +15,8 @@ const VideoProcessingTab = ({
   setGeminiModel,
   timeFormat,
   setTimeFormat,
-  showWaveform,
-  setShowWaveform,
+  showWaveformLongVideos,
+  setShowWaveformLongVideos,
   useVideoAnalysis,
   setUseVideoAnalysis,
   videoAnalysisModel,
@@ -160,24 +160,24 @@ const VideoProcessingTab = ({
               </select>
             </div>
 
-            {/* Audio Waveform Setting */}
+            {/* Audio Waveform for Long Videos Setting */}
             <div className="compact-setting">
               <div className="setting-header">
-                <label htmlFor="show-waveform">
-                  {t('settings.showWaveform', 'Show Audio Waveform')}
+                <label htmlFor="show-waveform-long-videos">
+                  {t('settings.showWaveformLongVideos', 'Show Waveform for Videos Longer than 30 Minutes')}
                 </label>
                 <div className="material-switch-container">
                   <MaterialSwitch
-                    id="show-waveform"
-                    checked={showWaveform}
-                    onChange={(e) => setShowWaveform(e.target.checked)}
-                    ariaLabel={t('settings.showWaveform', 'Show Audio Waveform')}
+                    id="show-waveform-long-videos"
+                    checked={showWaveformLongVideos}
+                    onChange={(e) => setShowWaveformLongVideos(e.target.checked)}
+                    ariaLabel={t('settings.showWaveformLongVideos', 'Show Waveform for Videos Longer than 30 Minutes')}
                     icons={true}
                   />
                 </div>
               </div>
               <p className="setting-description">
-                {t('settings.showWaveformDescription', 'Display audio waveform visualization in the timeline. This helps identify silent parts and speech patterns.')}
+                {t('settings.showWaveformLongVideosDescription', 'Enable waveform visualization for videos longer than 30 minutes. This may impact performance on very long videos.')}
               </p>
             </div>
 

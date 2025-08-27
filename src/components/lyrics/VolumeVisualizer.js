@@ -90,10 +90,13 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
   const lastRenderParamsRef = useRef(null);
   const animationFrameRef = useRef(null);
   const resizeObserverRef = useRef(null);
+  const abortControllerRef = useRef(null);
 
   // Process audio data once when the component mounts or audioSource changes
   useEffect(() => {
     if (!audioSource || isProcessed || isProcessing) return;
+
+    let isActive = true;
 
     // Reset states when audioSource changes
     setHasAudio(true);
@@ -133,8 +136,11 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
           audioContextRef.current = new AudioContext();
         }
 
-        // Fetch the audio data
-        const response = await fetch(audioSource);
+        // Setup abort controller for fetch and decoding
+        abortControllerRef.current = new AbortController();
+
+        // Fetch the audio data with abort support
+        const response = await fetch(audioSource, { signal: abortControllerRef.current.signal });
         const arrayBuffer = await response.arrayBuffer();
 
         // Decode the audio data
@@ -229,6 +235,12 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
         setWaveformLOD(waveformLOD);
         setIsProcessed(true);
       } catch (error) {
+        // Swallow expected AbortError when unmounting or toggling off
+        if (error && (error.name === 'AbortError' || error.message?.includes('aborted'))) {
+          // Do not log or set errors for expected aborts
+          return;
+        }
+
         console.error('Error processing audio for visualization:', error);
 
         // Check if this is an audio decoding error (no audio track)
@@ -253,9 +265,15 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
 
     // Cleanup function
     return () => {
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close();
+      // Abort any in-flight fetch/processing
+      if (abortControllerRef.current) {
+        try { abortControllerRef.current.abort(); } catch {}
       }
+      try {
+        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+          audioContextRef.current.close();
+        }
+      } catch {}
     };
   }, [audioSource, isProcessed, isProcessing, duration]);
 
@@ -549,24 +567,29 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
     <div 
       ref={containerRef}
       className="volume-visualizer" 
-      style={{ 
+      style={{
         height: `${height}px`,
         position: 'relative',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        zIndex: 5
       }}
     >
       <canvas
         ref={setupCanvas}
-        style={{ 
-          width: '100%', 
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
           height: '100%',
           display: 'block',
           // Ensure crisp rendering
-          imageRendering: 'pixelated'
+          imageRendering: 'pixelated',
+          zIndex: 1
         }}
       />
-      {isProcessing && (
-        <div 
+      {((!waveformLOD) || isProcessing || (!isProcessed && !audioError)) && (
+        <div
           className="volume-visualizer-loading"
           style={{
             position: 'absolute',
@@ -575,12 +598,15 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
             transform: 'translate(-50%, -50%)',
             display: 'flex',
             alignItems: 'center',
+            gap: '6px',
             fontSize: '12px',
-            color: 'var(--md-outline)',
+            color: 'var(--md-on-surface)',
             backgroundColor: 'var(--md-surface)',
             padding: '4px 8px',
             borderRadius: '4px',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            zIndex: 10,
+            pointerEvents: 'none'
           }}
         >
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" style={{ marginRight: '6px' }}>
@@ -599,7 +625,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
         </div>
       )}
       {!hasAudio && isProcessed && audioError && (
-        <div 
+        <div
           className="volume-visualizer-no-audio"
           style={{
             position: 'absolute',
@@ -608,7 +634,9 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
             transform: 'translate(-50%, -50%)',
             fontSize: '12px',
             color: 'var(--md-outline)',
-            opacity: 0.7
+            opacity: 0.7,
+            zIndex: 2,
+            pointerEvents: 'none'
           }}
         >
           No audio track

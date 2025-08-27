@@ -124,7 +124,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [segmentDuration, setSegmentDuration] = useState(5); // Default to 5 minutes
   const [geminiModel, setGeminiModel] = useState('gemini-2.0-flash'); // Default model
   const [timeFormat, setTimeFormat] = useState('hms'); // Default to HH:MM:SS format
-  const [showWaveform, setShowWaveform] = useState(true); // Default to showing waveform
+
+  const [showWaveformLongVideos, setShowWaveformLongVideos] = useState(false); // Default to NOT showing waveform for long videos
   const [segmentOffsetCorrection, setSegmentOffsetCorrection] = useState(-3.0); // Default offset correction for second segment
   const [useVideoAnalysis, setUseVideoAnalysis] = useState(true); // Default to using video analysis
   const [videoAnalysisModel, setVideoAnalysisModel] = useState('gemini-2.0-flash'); // Default to Gemini 2.0 Flash
@@ -199,6 +200,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     geminiModel: 'gemini-2.5-flash',
     timeFormat: 'hms',
     showWaveform: true,
+    showWaveformLongVideos: false,
     segmentOffsetCorrection: -3.0,
     transcriptionPrompt: DEFAULT_TRANSCRIPTION_PROMPT,
     useOAuth: false,
@@ -246,7 +248,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '5');
       const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.5-flash';
       const savedTimeFormat = localStorage.getItem('time_format') || 'hms';
-      const savedShowWaveform = localStorage.getItem('show_waveform') !== 'false'; // Default to true if not set
+
+      const savedShowWaveformLongVideos = localStorage.getItem('show_waveform_long_videos') === 'true'; // Default to false if not set
       const savedOffsetCorrection = parseFloat(localStorage.getItem('segment_offset_correction') || '-3.0');
       const savedEnableGeminiEffects = localStorage.getItem('enable_gemini_effects') !== 'false';
       const savedUseVideoAnalysis = true; // Video analysis is always enabled
@@ -301,7 +304,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       setSegmentDuration(savedSegmentDuration);
       setGeminiModel(savedGeminiModel);
       setTimeFormat(savedTimeFormat);
-      setShowWaveform(savedShowWaveform);
+      setShowWaveformLongVideos(savedShowWaveformLongVideos);
       setSegmentOffsetCorrection(savedOffsetCorrection);
       setUseVideoAnalysis(savedUseVideoAnalysis);
       setVideoAnalysisModel(savedVideoAnalysisModel);
@@ -329,7 +332,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         segmentDuration: savedSegmentDuration,
         geminiModel: savedGeminiModel,
         timeFormat: savedTimeFormat,
-        showWaveform: savedShowWaveform,
+
         segmentOffsetCorrection: savedOffsetCorrection,
         transcriptionPrompt: savedTranscriptionPrompt,
         useOAuth: savedUseOAuth,
@@ -427,7 +430,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       segmentDuration !== originalSettings.segmentDuration ||
       geminiModel !== originalSettings.geminiModel ||
       timeFormat !== originalSettings.timeFormat ||
-      showWaveform !== originalSettings.showWaveform ||
+      showWaveformLongVideos !== originalSettings.showWaveformLongVideos ||
       segmentOffsetCorrection !== originalSettings.segmentOffsetCorrection ||
       transcriptionPrompt !== originalSettings.transcriptionPrompt ||
       useOAuth !== originalSettings.useOAuth ||
@@ -446,7 +449,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       JSON.stringify(customGeminiModels) !== JSON.stringify(originalSettings.customGeminiModels);
 
     setHasChanges(settingsChanged);
-  }, [isSettingsLoaded, geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveform,
+  }, [isSettingsLoaded, geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveformLongVideos,
       segmentOffsetCorrection, transcriptionPrompt, useOAuth, youtubeClientId,
       youtubeClientSecret, useVideoAnalysis, videoAnalysisModel, enableGeminiEffects,
       optimizeVideos, optimizedResolution, useOptimizedPreview, useCookiesForDownload, enableYoutubeSearch, thinkingBudgets, customGeminiModels, originalSettings]);
@@ -458,7 +461,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('gemini_model', geminiModel);
     localStorage.setItem('genius_token', geniusApiKey);
     localStorage.setItem('time_format', timeFormat);
-    localStorage.setItem('show_waveform', showWaveform.toString());
+
+    localStorage.setItem('show_waveform_long_videos', showWaveformLongVideos.toString());
     localStorage.setItem('segment_offset_correction', segmentOffsetCorrection.toString());
     localStorage.setItem('transcription_prompt', transcriptionPrompt);
     localStorage.setItem('use_youtube_oauth', useOAuth.toString());
@@ -519,7 +523,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
 
     // Notify parent component about API keys, segment duration, model, time format, video optimization settings, and cookie setting
     // Note: optimizeVideos parameter removed since it's always enabled now
-    onSave(geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveform, optimizedResolution, useOptimizedPreview, useCookiesForDownload, enableYoutubeSearch);
+    onSave(geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, undefined, optimizedResolution, useOptimizedPreview, useCookiesForDownload, enableYoutubeSearch, showWaveformLongVideos);
 
     // Update original settings to match current settings
     setOriginalSettings({
@@ -529,7 +533,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       segmentDuration,
       geminiModel,
       timeFormat,
-      showWaveform,
+      showWaveformLongVideos,
       segmentOffsetCorrection,
       transcriptionPrompt,
       useOAuth,
@@ -711,8 +715,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
               setGeminiModel={setGeminiModel}
               timeFormat={timeFormat}
               setTimeFormat={setTimeFormat}
-              showWaveform={showWaveform}
-              setShowWaveform={setShowWaveform}
+              showWaveformLongVideos={showWaveformLongVideos}
+              setShowWaveformLongVideos={setShowWaveformLongVideos}
               useVideoAnalysis={useVideoAnalysis}
               setUseVideoAnalysis={setUseVideoAnalysis}
               videoAnalysisModel={videoAnalysisModel}

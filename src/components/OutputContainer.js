@@ -25,7 +25,6 @@ const OutputContainer = ({
   videoSegments = [],
   retryingSegments = [],
   timeFormat = 'seconds',
-  showWaveform = true,
   useOptimizedPreview = false,
   useCookiesForDownload = true,
   isSrtOnlyMode = false,

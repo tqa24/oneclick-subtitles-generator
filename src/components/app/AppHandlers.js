@@ -980,11 +980,12 @@ export const useAppHandlers = (appState) => {
     segmentDuration = 5,
     geminiModel,
     timeFormat,
-    showWaveformSetting,
+    undefined,
     optimizedResolutionSetting,
     useOptimizedPreviewSetting,
     useCookiesForDownloadSetting,
-    enableYoutubeSearchSetting
+    enableYoutubeSearchSetting,
+    showWaveformLongVideosSetting
   ) => {
     // Save to localStorage
     if (geminiKey) {
@@ -1016,10 +1017,17 @@ export const useAppHandlers = (appState) => {
       appState.setTimeFormat(timeFormat);
     }
 
-    // Save waveform setting
-    if (showWaveformSetting !== undefined) {
-      localStorage.setItem("show_waveform", showWaveformSetting.toString());
-      appState.setShowWaveform(showWaveformSetting);
+    // Save waveform for long videos setting
+    if (showWaveformLongVideosSetting !== undefined) {
+      localStorage.setItem("show_waveform_long_videos", showWaveformLongVideosSetting.toString());
+      appState.setShowWaveformLongVideos(showWaveformLongVideosSetting);
+
+      // Dispatch custom event for immediate effect
+      window.dispatchEvent(
+        new CustomEvent("waveformLongVideosChanged", {
+          detail: { value: showWaveformLongVideosSetting },
+        })
+      );
     }
 
     // Save Gemini model

@@ -26,7 +26,7 @@ export const useAppState = () => {
   const [activeTab, setActiveTab] = useState(localStorage.getItem('userPreferredTab') || 'unified-url');
   const [theme, setTheme] = useState(() => getThemeWithFallback());
   const [timeFormat, setTimeFormat] = useState(localStorage.getItem('time_format') || 'hms');
-  const [showWaveform, setShowWaveform] = useState(localStorage.getItem('show_waveform') !== 'false');
+  const [showWaveformLongVideos, setShowWaveformLongVideos] = useState(localStorage.getItem('show_waveform_long_videos') === 'true');
 
   // Video processing state
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -267,7 +267,7 @@ export const useAppState = () => {
     activeTab, setActiveTab,
     theme, setTheme,
     timeFormat, setTimeFormat,
-    showWaveform, setShowWaveform,
+    showWaveformLongVideos, setShowWaveformLongVideos,
     selectedVideo, setSelectedVideo,
     uploadedFile, setUploadedFile,
     optimizeVideos, setOptimizeVideos,

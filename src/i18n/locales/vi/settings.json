@@ -75,6 +75,8 @@
   "timeFormat": "Định dạng thời gian",
   "showWaveform": "Hiển thị dạng sóng âm thanh",
   "showWaveformDescription": "Hiển thị trực quan dạng sóng âm thanh trên dòng thời gian. Điều này giúp xác định các phần im lặng và mẫu giọng nói.",
+  "showWaveformLongVideos": "Hiển thị dạng sóng cho video dài hơn 30 phút",
+  "showWaveformLongVideosDescription": "Bật trực quan dạng sóng cho video dài hơn 30 phút. Điều này có thể ảnh hưởng đến hiệu suất trên video rất dài.",
   "timeFormatDescription": "Chọn cách hiển thị thời gian trong dòng thời gian và lời bài hát.",
   "timeFormatSeconds": "Giây (ví dụ: 75.40s)",
   "timeFormatHMS": "GIỜ:PHÚT:GIÂY (ví dụ: 1:15.40)",

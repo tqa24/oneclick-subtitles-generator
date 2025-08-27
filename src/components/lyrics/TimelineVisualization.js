@@ -28,7 +28,7 @@ const TimelineVisualization = ({
   centerOnTime, // Prop to center the view on a specific time
   timeFormat = 'seconds', // Prop to control time display format
   videoSource, // Video source URL for audio analysis
-  showWaveform = true, // Whether to show the waveform visualization
+  showWaveformLongVideos = false, // Whether to show waveform for videos longer than 30 minutes
   onSegmentSelect, // Callback for when a segment is selected via drag
   selectedSegment = null, // Currently selected segment { start, end }
   isProcessingSegment = false, // New prop to indicate if processing is active
@@ -40,7 +40,7 @@ const TimelineVisualization = ({
   onCancelMoveRange = null // Cancel live move preview
 }) => {
   const { t } = useTranslation();
-  const [showWaveformDisabledNotice, setShowWaveformDisabledNotice] = useState(false);
+
   const durationRef = useRef(0);
 
   // Segment selection state
@@ -250,21 +250,8 @@ const TimelineVisualization = ({
     }
   }, []);
 
-  // Check if waveform should be disabled due to long video
-  useEffect(() => {
-    if (showWaveform && duration > 1800) {
-      setShowWaveformDisabledNotice(true);
 
-      // Hide the notice after 10 seconds
-      const timer = setTimeout(() => {
-        setShowWaveformDisabledNotice(false);
-      }, 10000);
 
-      return () => clearTimeout(timer);
-    } else {
-      setShowWaveformDisabledNotice(false);
-    }
-  }, [showWaveform, duration]);
   const timelineRef = useRef(null);
   const lastTimeRef = useRef(0);
   const animationFrameRef = useRef(null);
@@ -448,6 +435,21 @@ const TimelineVisualization = ({
       };
     }
   }, [newSegments, renderTimeline]);
+
+  // Listen for immediate waveform setting changes - must be after renderTimeline definition
+  useEffect(() => {
+    const handleWaveformLongVideosChange = () => {
+      // Force re-render when the setting changes
+      if (timelineRef.current) {
+        renderTimeline();
+      }
+    };
+
+    window.addEventListener('waveformLongVideosChanged', handleWaveformLongVideosChange);
+    return () => {
+      window.removeEventListener('waveformLongVideosChanged', handleWaveformLongVideosChange);
+    };
+  }, [renderTimeline]);
 
   // Simplified zoom animation function - just set zoom and let getTimeRange handle panOffset
   const animateZoom = useCallback((targetZoom) => {
@@ -1092,10 +1094,22 @@ const TimelineVisualization = ({
         </LiquidGlass>
       )}
 
-      {videoSource && showWaveform && duration <= 1800 && ( // Only show waveform for videos <= 30 minutes (1800 seconds)
+      {(() => {
+        const hasKnownDuration = typeof duration === 'number' && duration > 0;
+        const effDuration = hasKnownDuration ? duration : (durationRef.current || 0);
+        // Mount visualizer when:
+        // - duration is known and <= 30min; or
+        // - duration is known and > 30min but user enabled; or
+        // - duration unknown, but user enabled (so they opted in intentionally)
+        const shouldMount = videoSource && (
+          (hasKnownDuration && (effDuration <= 1800 || showWaveformLongVideos)) ||
+          (!hasKnownDuration && showWaveformLongVideos)
+        );
+        return shouldMount;
+      })() && (
         <VolumeVisualizer
           audioSource={videoSource}
-          duration={duration}
+          duration={(typeof duration === 'number' && duration > 0 ? duration : (durationRef.current || 0))}
           visibleTimeRange={getTimeRange()}
           height={30}
         />
@@ -1105,11 +1119,7 @@ const TimelineVisualization = ({
           <span>{t('timeline.srtOnlyMode', 'SRT Only Mode - Timeline visualization based on subtitle timing')}</span>
         </div>
       )}
-      {showWaveformDisabledNotice && (
-        <div className="waveform-disabled-notice">
-          {t('timeline.waveformDisabled', 'Waveform visualization has been automatically disabled for videos longer than 30 minutes to improve performance.')}
-        </div>
-      )}
+
     </div>
   );
 };

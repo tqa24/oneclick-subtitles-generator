@@ -157,9 +157,10 @@ const LyricsDisplay = ({
     };
   };
   const [consolidationStatus, setConsolidationStatus] = useState('');
-  const [showWaveform, setShowWaveform] = useState(() => {
-    // Load from localStorage, default to true if not set
-    return localStorage.getItem('show_waveform') !== 'false';
+
+  const [showWaveformLongVideos, setShowWaveformLongVideos] = useState(() => {
+    // Load from localStorage, default to false if not set
+    return localStorage.getItem('show_waveform_long_videos') === 'true';
   });
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(() => {
     // Load from localStorage, default to true (auto-scroll enabled) if not set
@@ -201,18 +202,25 @@ const LyricsDisplay = ({
   // No longer need to enforce minimum zoom when duration changes
   // Users can freely zoom to any level
 
-  // Listen for changes to the show_waveform setting in localStorage
+  // Listen for changes to the waveform settings in localStorage
   useEffect(() => {
     const handleStorageChange = (event) => {
-      if (event.key === 'show_waveform') {
-        setShowWaveform(event.newValue !== 'false');
+      if (event.key === 'show_waveform_long_videos') {
+        setShowWaveformLongVideos(event.newValue === 'true');
       }
     };
 
+    // Also listen for custom events for immediate updates
+    const handleWaveformLongVideosChange = (event) => {
+      setShowWaveformLongVideos(event.detail.value);
+    };
+
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('waveformLongVideosChanged', handleWaveformLongVideosChange);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('waveformLongVideosChanged', handleWaveformLongVideosChange);
     };
   }, []);
 
@@ -829,7 +837,7 @@ const LyricsDisplay = ({
           centerOnTime={centerTimelineAt}
           timeFormat={timeFormat}
           videoSource={videoSource}
-          showWaveform={showWaveform}
+          showWaveformLongVideos={showWaveformLongVideos}
           onSegmentSelect={onSegmentSelect}
           selectedSegment={selectedSegment}
           isProcessingSegment={isProcessingSegment}

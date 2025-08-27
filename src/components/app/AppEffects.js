@@ -17,7 +17,7 @@ export const useAppEffects = (props) => {
     setApiKeysSet,
     setStatus,
     setTheme,
-    setShowWaveform,
+    setShowWaveformLongVideos,
     setTimeFormat,
     setOptimizeVideos,
     setOptimizedResolution,
@@ -171,9 +171,9 @@ export const useAppEffects = (props) => {
         setTheme(newTheme);
       }
 
-      if (event.key === 'show_waveform' || !event.key) {
-        const newShowWaveform = localStorage.getItem('show_waveform') !== 'false';
-        setShowWaveform(newShowWaveform);
+      if (event.key === 'show_waveform_long_videos' || !event.key) {
+        const newShowWaveformLongVideos = localStorage.getItem('show_waveform_long_videos') === 'true';
+        setShowWaveformLongVideos(newShowWaveformLongVideos);
       }
 
       if (event.key === 'time_format' || !event.key) {
@@ -262,7 +262,7 @@ export const useAppEffects = (props) => {
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [setTheme, setShowWaveform, setTimeFormat, setOptimizeVideos, setOptimizedResolution, setUseOptimizedPreview, setShowVideoAnalysis, setVideoAnalysisResult]);
+  }, [setTheme, setShowWaveformLongVideos, setTimeFormat, setOptimizeVideos, setOptimizedResolution, setUseOptimizedPreview, setShowVideoAnalysis, setVideoAnalysisResult]);
 
   // Check for OAuth authentication success
   useEffect(() => {

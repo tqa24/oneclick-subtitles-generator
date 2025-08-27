@@ -73,6 +73,8 @@
   "timeFormat": "Time Format",
   "showWaveform": "Show Audio Waveform",
   "showWaveformDescription": "Display audio waveform visualization in the timeline. This helps identify silent parts and speech patterns.",
+  "showWaveformLongVideos": "Show Waveform for Videos Longer than 30 Minutes",
+  "showWaveformLongVideosDescription": "Enable waveform visualization for videos longer than 30 minutes. This may impact performance on very long videos.",
   "timeFormatDescription": "Choose how time is displayed in the timeline and lyrics.",
   "timeFormatSeconds": "Seconds (e.g., 75.40s)",
   "timeFormatHMS": "HH:MM:SS (e.g., 1:15.40)",

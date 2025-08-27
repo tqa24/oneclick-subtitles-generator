@@ -93,7 +93,7 @@ const AppLayout = ({
     subtitlesData, setSubtitlesData,
     status, setStatus,
     timeFormat,
-    showWaveform,
+    showWaveformLongVideos,
     useOptimizedPreview,
     useCookiesForDownload,
     enableYoutubeSearch,
@@ -339,7 +339,7 @@ const AppLayout = ({
               videoSegments={videoSegments}
               retryingSegments={retryingSegments}
               timeFormat={timeFormat}
-              showWaveform={showWaveform}
+              showWaveformLongVideos={showWaveformLongVideos}
               useOptimizedPreview={useOptimizedPreview}
               useCookiesForDownload={useCookiesForDownload}
               isSrtOnlyMode={isSrtOnlyMode}
