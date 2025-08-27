@@ -36,6 +36,7 @@ import warnings from './warnings.json';
 import subtitleSplit from './subtitleSplit.json';
 import consolidation from './consolidation.json';
 import processing from './processing.json';
+import waveform from './waveform.json';
 
 const vi = {
   common,
@@ -75,7 +76,8 @@ const vi = {
   warnings,
   subtitleSplit,
   consolidation,
-  processing
+  processing,
+  waveform
 };
 
 export default vi;

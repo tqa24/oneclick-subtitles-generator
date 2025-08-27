@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+
 
 // Global cache for audio data to avoid reprocessing the same audio
 const audioDataCache = new Map();
@@ -87,6 +89,7 @@ function decodeWithTimeout(audioContext, arrayBuffer, timeoutMs = 12000) {
  * @returns {React.Component} - Volume visualizer component
  */
 const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26 }) => {
+  const { t } = useTranslation();
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const [waveformLOD, setWaveformLOD] = useState(null);
@@ -645,7 +648,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
               />
             </path>
           </svg>
-          Processing audio waveform...
+          {t('waveform.processing', 'Processing audio waveform...')}
         </div>
       )}
       {!hasAudio && isProcessed && audioError && (
