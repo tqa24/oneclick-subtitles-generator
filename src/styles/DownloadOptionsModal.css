@@ -179,6 +179,44 @@
 
 /* Radio option styles moved to centralized system */
 
+
+/* Scoped layout corrections for radio groups inside DownloadOptionsModal */
+.download-options-modal .radio-group-base {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.download-options-modal .radio-group-horizontal {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.download-options-modal .radio-group-two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Prevent global `.option-group label` rules from breaking radio labels */
+.download-options-modal .option-group label.radio-option-base {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0; /* Cancel global margin that tightens stacking */
+}
+
+/* Slightly more breathing room for groups in this modal */
+.download-options-modal .option-group {
+  gap: 8px; /* override local 4px to avoid cramped layout */
+}
+
+/* Ensure card variant padding isn’t stripped by global rules */
+.download-options-modal .radio-option-card {
+  padding: 8px 12px;
+}
+
 /* Tabs */
 .tabs {
   display: flex;
