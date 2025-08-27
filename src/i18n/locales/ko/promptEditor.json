@@ -1,6 +1,8 @@
 {
   "editPrompt": "프롬프트 편집",
   "editPromptTooltip": "Gemini 프롬프트 편집",
+  "editPromptAndModel": "프롬프트 & 모델 편집",
+  "editPromptAndModelTooltip": "프롬프트와 모델 편집",
   "enterPrompt": "여기에 사용자 정의 프롬프트를 입력하세요...",
   "availableVariables": "사용 가능한 변수:",
   "variablesInstruction": "다음 변수들은 텍스트 영역에서 아이콘으로 표시됩니다:",
@@ -24,11 +26,14 @@
   "examplePreserveDetails": "중요한 세부사항 보존",
   "templateNote": "참고: 시스템이 자동으로 출력의 형식과 구조를 처리합니다. 사용자 정의 지침만 추가하면 됩니다.",
   "editBackgroundPrompts": "배경 생성 프롬프트 편집",
+  "customizeBackgroundPromptDesc": "Gemini가 가사와 앨범 아트로부터 배경 이미지를 생성하는 방식을 사용자 정의하세요.",
   "promptOne": "이미지 설명 생성용 프롬프트",
   "promptOneDescription": "이 프롬프트는 가사에서 설명을 생성하는 데 사용됩니다.",
   "promptTwo": "배경 이미지 생성용 프롬프트",
   "promptTwoDescription": "이 프롬프트는 앨범 아트와 생성된 설명을 사용하여 배경 이미지를 생성하는 데 사용됩니다.",
   "lyricsVarDesc": "노래 가사 (필수, 제거할 수 없음)",
   "songNameVarDesc": "노래 제목 (필수, 제거할 수 없음)",
-  "promptVarDesc": "생성된 설명 (필수, 제거할 수 없음)"
+  "promptVarDesc": "생성된 설명 (필수, 제거할 수 없음)",
+  "promptModelLabel": "\"프롬프트 생성\"용 모델",
+  "imageModelLabel": "이미지 생성용 모델"
 }

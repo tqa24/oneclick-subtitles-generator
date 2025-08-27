@@ -45,13 +45,11 @@ const generatePrompt = async (req, res) => {
 
 
     // Prepare the content
-    const content = `
-song title: ${songName || 'Unknown Song'}
+    const content = `song title: ${songName || 'Unknown Song'}
 
 ${lyrics}
 
-generate one prompt to put in a image generator to describe the atmosphere/object of this song, should be simple but abstract because I will use this image as youtube video background for a lyrics video, return the prompt only, no extra texts
-`;
+generate one prompt to put in a image generator to describe the atmosphere/object of this song, should be simple but abstract because I will use this image as youtube video background for a lyrics video, return the prompt only, no extra texts`;
 
     // Set generation config
     const generationConfig = {
@@ -231,7 +229,7 @@ const generateImage = async (req, res) => {
 
       // Set both generationConfig and config with responseModalities as shown in the example
       const response = await genAI.models.generateContent({
-        model: 'gemini-2.0-flash-preview-image-generation',
+        model: 'gemini-2.5-flash-image-preview',
         contents: contents,
         generationConfig: {
           responseModalities: ["TEXT", "IMAGE"],
@@ -312,21 +310,34 @@ const generateImage = async (req, res) => {
 };
 
 /**
- * Get the current prompts used for image generation
+ * Get the current prompts and models used for background generation
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
-const getPrompts = (req, res) => {
+const getPrompts = async (req, res) => {
   try {
-    // Return the current prompts
-    res.json({
-      promptOne: `song title: \${songName || 'Unknown Song'}
+    const filePath = path.join(process.cwd(), 'server', 'controllers', 'geminiImageController.js');
+    const fileContent = await fs.readFile(filePath, 'utf-8');
 
-\${lyrics}
+    // Extract promptOne (const content = `...`)
+    const promptOneMatch = fileContent.match(/const\s+content\s*=\s*`([\s\S]*?)`;/);
+    const promptOne = promptOneMatch ? promptOneMatch[1] : `song title: \${songName || 'Unknown Song'}\n\n\${lyrics}\n\ngenerate one prompt to put in a image generator to describe the atmosphere/object of this song, should be simple but abstract because I will use this image as youtube video background for a lyrics video, return the prompt only, no extra texts`;
 
-generate one prompt to put in a image generator to describe the atmosphere/object of this song, should be simple but abstract because I will use this image as youtube video background for a lyrics video, return the prompt only, no extra texts`,
-      promptTwo: `Expand the image into 16:9 ratio (landscape ratio). Then decorate my given image with \${prompt}`
-    });
+    // Extract promptTwo (const finalPrompt = `...`)
+    const promptTwoMatch = fileContent.match(/const\s+finalPrompt\s*=\s*`([\s\S]*?)`;/);
+    const promptTwo = promptTwoMatch ? promptTwoMatch[1] : `Expand the image into 16:9 ratio (landscape ratio). Then decorate my given image with \${prompt}`;
+
+    // Extract models: assume first occurrence is prompt model, second is image model
+    const modelRegex = /model:\s*'([^']+)'/g;
+    const models = [];
+    let m;
+    while ((m = modelRegex.exec(fileContent)) !== null) {
+      models.push(m[1]);
+    }
+    const promptModel = models[0] || 'gemini-2.5-flash-lite';
+    const imageModel = models[1] || 'gemini-2.5-flash-image-preview';
+
+    res.json({ promptOne, promptTwo, promptModel, imageModel });
   } catch (error) {
     console.error('Error getting prompts:', error);
     res.status(500).json({ error: error.message });
