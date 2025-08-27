@@ -445,6 +445,10 @@ export const useAppHandlers = (appState) => {
           // Create a new blob URL for the video and store it
           blobUrl = URL.createObjectURL(processedFile);
           localStorage.setItem("current_file_url", blobUrl);
+          try {
+            if (!window.__videoBlobMap) window.__videoBlobMap = {};
+            window.__videoBlobMap[blobUrl] = processedFile;
+          } catch {}
         }
         localStorage.setItem("current_file_name", processedFile.name);
 

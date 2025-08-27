@@ -9,19 +9,19 @@ const getDevicePixelRatio = () => window.devicePixelRatio || 1;
 const setupHighDPICanvas = (canvas, width, height) => {
   const dpr = getDevicePixelRatio();
   const rect = canvas.getBoundingClientRect();
-  
+
   // Set actual canvas size in memory (scaled up for high-DPI)
   canvas.width = width * dpr;
   canvas.height = height * dpr;
-  
+
   // Scale the canvas back down using CSS
   canvas.style.width = width + 'px';
   canvas.style.height = height + 'px';
-  
+
   // Scale the drawing context so everything draws at the correct size
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
-  
+
   return ctx;
 };
 
@@ -32,21 +32,21 @@ class WaveformLOD {
     this.maxLevels = maxLevels;
     this.buildLODLevels(audioData);
   }
-  
+
   buildLODLevels(audioData) {
     // Level 0: Original data
     this.levels[0] = audioData;
-    
+
     // Build progressively lower resolution levels
     for (let level = 1; level < this.maxLevels; level++) {
       const prevLevel = this.levels[level - 1];
       const newLength = Math.max(Math.floor(prevLevel.length / 2), 1);
       const newLevel = new Float32Array(newLength);
-      
+
       for (let i = 0; i < newLength; i++) {
         const start = i * 2;
         const end = Math.min(start + 2, prevLevel.length);
-        
+
         // Use RMS for downsampling to preserve peaks
         let sum = 0;
         for (let j = start; j < end; j++) {
@@ -54,11 +54,11 @@ class WaveformLOD {
         }
         newLevel[i] = Math.sqrt(sum / (end - start));
       }
-      
+
       this.levels[level] = newLevel;
     }
   }
-  
+
   // Get the appropriate LOD level based on zoom and available pixels
   getLODLevel(samplesPerPixel) {
     // Choose LOD level based on how many samples we're trying to fit per pixel
@@ -68,6 +68,14 @@ class WaveformLOD {
     }
     return this.levels[level];
   }
+}
+
+// Decode with timeout to avoid hanging on problematic sources
+function decodeWithTimeout(audioContext, arrayBuffer, timeoutMs = 12000) {
+  return Promise.race([
+    audioContext.decodeAudioData(arrayBuffer),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Audio decode timed out')), timeoutMs))
+  ]);
 }
 
 /**
@@ -158,8 +166,8 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
         }
         const arrayBuffer = await response.arrayBuffer();
 
-        // Decode the audio data
-        const audioBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer);
+        // Decode the audio data with timeout to avoid hanging
+        const audioBuffer = await decodeWithTimeout(audioContextRef.current, arrayBuffer, isLongVideo ? 15000 : 10000);
 
         // Check if the audio buffer has any channels (i.e., if there's actually audio)
         if (!audioBuffer || audioBuffer.numberOfChannels === 0) {
@@ -242,7 +250,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
 
         // Create LOD structure for efficient multi-resolution rendering
         const waveformLOD = new WaveformLOD(volumeData);
-        
+
         // Store the processed audio data in cache for future use
         audioDataCache.set(audioSource, waveformLOD);
 
@@ -298,40 +306,40 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
 
     const ctx = setupHighDPICanvas(canvas, containerWidth, height);
     const { start: visibleStart, end: visibleEnd } = visibleTimeRange;
-    
+
     // Calculate rendering parameters
     const visibleDuration = visibleEnd - visibleStart;
     const pixelsPerSecond = containerWidth / visibleDuration;
     const samplesPerSecond = waveformLOD.levels[0].length / duration;
     const samplesPerPixel = samplesPerSecond / pixelsPerSecond;
-    
+
     // Get appropriate LOD level for current zoom
     const lodData = waveformLOD.getLODLevel(samplesPerPixel);
     const lodSamplesPerSecond = lodData.length / duration;
-    
+
     // Calculate visible sample range in LOD data
     const startSample = Math.floor(visibleStart * lodSamplesPerSecond);
     const endSample = Math.ceil(visibleEnd * lodSamplesPerSecond);
     const visibleSamples = endSample - startSample;
-    
+
     // Clear canvas
     ctx.clearRect(0, 0, containerWidth, height);
-    
+
     // Get theme colors
     const theme = document.documentElement.getAttribute('data-theme') || 'light';
     const primaryColor = theme === 'dark' ? 'rgb(80, 200, 255)' : 'rgb(93, 95, 239)';
     const gradientColor = theme === 'dark' ? 'rgba(80, 200, 255, 0.3)' : 'rgba(93, 95, 239, 0.3)';
-    
+
     // Create gradient for professional look
     const gradient = ctx.createLinearGradient(0, 0, 0, height);
     gradient.addColorStop(0, primaryColor);
     gradient.addColorStop(0.85, gradientColor);
     gradient.addColorStop(1, 'transparent');
-    
+
     ctx.fillStyle = gradient;
     ctx.strokeStyle = primaryColor;
     ctx.lineWidth = 0.5;
-    
+
     // Render based on zoom level
     if (samplesPerPixel < 1) {
       // High zoom: Draw individual samples with interpolation
@@ -343,25 +351,25 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
       // Low zoom: Draw with efficient batching
       renderLowZoom(ctx, lodData, startSample, endSample, containerWidth, height);
     }
-    
+
   }, [waveformLOD, visibleTimeRange, duration, height]);
 
   // High zoom rendering with smooth interpolation
   const renderHighZoom = (ctx, data, startSample, endSample, width, height) => {
     const samplesCount = endSample - startSample;
     const pixelsPerSample = width / samplesCount;
-    
+
     ctx.beginPath();
-    
+
     for (let i = 0; i < samplesCount; i++) {
       const sampleIndex = startSample + i;
       if (sampleIndex >= data.length) break;
-      
+
       const x = i * pixelsPerSample;
       const amplitude = data[sampleIndex];
       const barHeight = amplitude * height * 0.9; // Leave 10% margin
       const y = height - barHeight;
-      
+
       if (i === 0) {
         ctx.moveTo(x, height);
         ctx.lineTo(x, y);
@@ -370,12 +378,12 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
         const prevX = (i - 1) * pixelsPerSample;
         const prevAmplitude = data[Math.max(0, startSample + i - 1)];
         const prevY = height - (prevAmplitude * height * 0.9);
-        
+
         const cpX = (prevX + x) / 2;
         ctx.quadraticCurveTo(cpX, prevY, x, y);
       }
     }
-    
+
     ctx.lineTo(width, height);
     ctx.closePath();
     ctx.fill();
@@ -385,27 +393,27 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
   const renderMediumZoom = (ctx, data, startSample, endSample, width, height) => {
     const pixelCount = Math.min(width, 2000); // Limit for performance
     const samplesPerPixel = (endSample - startSample) / pixelCount;
-    
+
     ctx.beginPath();
     ctx.moveTo(0, height);
-    
+
     for (let pixel = 0; pixel < pixelCount; pixel++) {
       const sampleStart = startSample + Math.floor(pixel * samplesPerPixel);
       const sampleEnd = startSample + Math.floor((pixel + 1) * samplesPerPixel);
-      
+
       // Find peak in this pixel range
       let peak = 0;
       for (let s = sampleStart; s < Math.min(sampleEnd, data.length); s++) {
         peak = Math.max(peak, data[s]);
       }
-      
+
       const x = (pixel / pixelCount) * width;
       const barHeight = peak * height * 0.9;
       const y = height - barHeight;
-      
+
       ctx.lineTo(x, y);
     }
-    
+
     ctx.lineTo(width, height);
     ctx.closePath();
     ctx.fill();
@@ -415,14 +423,14 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
   const renderLowZoom = (ctx, data, startSample, endSample, width, height) => {
     const batchSize = Math.max(1, Math.floor((endSample - startSample) / width));
     const batches = Math.ceil((endSample - startSample) / batchSize);
-    
+
     ctx.beginPath();
     ctx.moveTo(0, height);
-    
+
     for (let batch = 0; batch < batches; batch++) {
       const batchStart = startSample + batch * batchSize;
       const batchEnd = Math.min(batchStart + batchSize, endSample, data.length);
-      
+
       // RMS calculation for this batch
       let sum = 0;
       let count = 0;
@@ -430,15 +438,15 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
         sum += data[s] * data[s];
         count++;
       }
-      
+
       const rms = count > 0 ? Math.sqrt(sum / count) : 0;
       const x = (batch / batches) * width;
       const barHeight = rms * height * 0.9;
       const y = height - barHeight;
-      
+
       ctx.lineTo(x, y);
     }
-    
+
     ctx.lineTo(width, height);
     ctx.closePath();
     ctx.fill();
@@ -451,7 +459,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
     const canvas = canvasRef.current;
     const container = containerRef.current;
     const containerWidth = container.clientWidth;
-    
+
     // Create render signature for caching
     const renderParams = {
       width: containerWidth,
@@ -460,15 +468,15 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
       end: visibleTimeRange.end,
       theme: document.documentElement.getAttribute('data-theme') || 'light'
     };
-    
+
     // Skip render if nothing changed (intelligent caching)
-    if (lastRenderParamsRef.current && 
+    if (lastRenderParamsRef.current &&
         JSON.stringify(lastRenderParamsRef.current) === JSON.stringify(renderParams)) {
       return;
     }
-    
+
     lastRenderParamsRef.current = renderParams;
-    
+
     // Render with appropriate technique based on container size
     if (containerWidth > 0) {
       renderWaveform(canvas, containerWidth);
@@ -486,7 +494,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
 
     // Listen for storage events (theme changes)
     window.addEventListener('storage', handleThemeChange);
-    
+
     // Also listen for direct theme attribute changes
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
@@ -495,7 +503,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
         }
       });
     });
-    
+
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-theme']
@@ -540,7 +548,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
-    
+
     animationFrameRef.current = requestAnimationFrame(() => {
       updateVisualization();
     });
@@ -555,19 +563,19 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
   // Professional canvas setup with high-DPI support
   const setupCanvas = useCallback((canvas) => {
     if (!canvas) return;
-    
+
     canvasRef.current = canvas;
-    
+
     // Enable high-DPI rendering
     const ctx = canvas.getContext('2d');
-    
+
     // Set rendering optimizations
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    
+
     // Enable hardware acceleration hints
     ctx.globalCompositeOperation = 'source-over';
-    
+
     // Initial render
     if (waveformLOD && containerRef.current) {
       updateVisualization();
@@ -580,9 +588,9 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
   }
 
   return (
-    <div 
+    <div
       ref={containerRef}
-      className="volume-visualizer" 
+      className="volume-visualizer"
       style={{
         height: `${height}px`,
         position: 'relative',

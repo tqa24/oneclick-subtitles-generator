@@ -194,6 +194,10 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
         // Create a new object URL for the processed file
         const objectUrl = URL.createObjectURL(processedFile);
         localStorage.setItem('current_file_url', objectUrl);
+        try {
+          if (!window.__videoBlobMap) window.__videoBlobMap = {};
+          window.__videoBlobMap[objectUrl] = processedFile;
+        } catch {}
 
         // Clear any selected YouTube video state via parent callback
         if (onVideoSelect) {

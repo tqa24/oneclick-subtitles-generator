@@ -332,7 +332,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         segmentDuration: savedSegmentDuration,
         geminiModel: savedGeminiModel,
         timeFormat: savedTimeFormat,
-
+        showWaveformLongVideos: savedShowWaveformLongVideos,
         segmentOffsetCorrection: savedOffsetCorrection,
         transcriptionPrompt: savedTranscriptionPrompt,
         useOAuth: savedUseOAuth,
