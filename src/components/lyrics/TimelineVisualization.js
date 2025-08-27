@@ -928,9 +928,8 @@ const TimelineVisualization = ({
                 }}
                 style={{ width: 36, height: 36, minWidth: 36, padding: 0, borderRadius: '50%' }}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden
-                     style={{ color: 'var(--md-on-primary)' }}>
-                  <path fill="currentColor" d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1z"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 -960 960 960" aria-hidden style={{ color: 'var(--md-on-primary)' }}>
+                  <path fill="currentColor" d="M320-160q-33 0-56.5-23.5T240-240v-520h-80v-80h200v-40h240v40h200v80h-80v520q0 33-23.5 56.5T640-160H320Zm80-160h80v-360h-80v360Zm160 0h80v-360h-80v360Z"/>
                 </svg>
               </button>
               <button
@@ -939,9 +938,8 @@ const TimelineVisualization = ({
                 onMouseDown={handleMoveMouseDown}
                 style={{ width: 36, height: 36, minWidth: 36, padding: 0, borderRadius: '50%', cursor: 'grab' }}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden
-                     style={{ color: 'var(--md-on-primary)' }}>
-                  <path fill="currentColor" d="M10 9V5h4v4h4v4h-4v4h-4v-4H6V9h4z"/>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 -960 960 960" aria-hidden style={{ color: 'var(--md-on-primary)' }}>
+                  <path fill="currentColor" d="m294-415 33 34q20 19 19 44.5T326-292q-18 18-44.18 18T238-292L96-433q-9-9.4-14.5-21.2-5.5-11.8-5.5-25 0-12.2 5.5-24.5T96-524l140-141q17.64-18 43.82-18T325-665q19 18 19 44.67 0 26.66-19 45.33l-30 31h370l-33-33q-20-18-18.5-44t21.5-44q18-18 44.18-18T723-665l141 141q9 9.4 14.5 21.2 5.5 11.8 5.5 24 0 13.2-5.5 25T864-433L723-292q-17.64 18-43.32 18T635-292q-20-19-20.5-45.17Q614-363.33 633-382l32-33H294Z"/>
                 </svg>
               </button>
             </div>
