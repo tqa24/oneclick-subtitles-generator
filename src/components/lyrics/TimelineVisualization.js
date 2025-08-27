@@ -900,9 +900,7 @@ const TimelineVisualization = ({
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: '4px 6px',
-                background: 'var(--md-surface-2, rgba(0,0,0,0.5))',
                 borderRadius: 12,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
                 zIndex: 2147483647,
                 color: 'var(--md-on-surface)',
                 pointerEvents: 'auto'
@@ -916,32 +914,32 @@ const TimelineVisualization = ({
                   setActionBarRange(null);
                 }}
               >
-                {t('timeline.generateReplace', 'Generate/replace subtitles')}
+                {t('timeline.generateReplace', 'Regenerate subtitles')}
               </button>
               <button
-                className="icon-btn"
+                className="btn-base btn-primary btn-small"
                 title={t('timeline.clearInRange', 'Clear subtitles in range')}
                 onClick={(e) => {
                   e.stopPropagation();
                   onClearRange && onClearRange(actionBarRange.start, actionBarRange.end);
                   setActionBarRange(null);
                 }}
-                style={{ width: 32, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                         borderRadius: 8, background: 'var(--md-surface-3, rgba(0,0,0,0.35))', border: '1px solid rgba(255,255,255,0.12)' }}
+                style={{ width: 36, height: 36, minWidth: 36, padding: 0, borderRadius: '50%' }}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                  <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1z"/>
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden
+                     style={{ color: 'var(--md-on-primary)' }}>
+                  <path fill="currentColor" d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1z"/>
                 </svg>
               </button>
               <button
-                className="icon-btn"
+                className="btn-base btn-primary btn-small"
                 title={t('timeline.moveRange', 'Drag to move subtitles in range')}
                 onMouseDown={handleMoveMouseDown}
-                style={{ width: 32, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                         borderRadius: 8, background: 'var(--md-surface-3, rgba(0,0,0,0.35))', border: '1px solid rgba(255,255,255,0.12)', cursor: 'grab' }}
+                style={{ width: 36, height: 36, minWidth: 36, padding: 0, borderRadius: '50%', cursor: 'grab' }}
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                  <path d="M10 9V5h4v4h4v4h-4v4h-4v-4H6V9h4z"/>
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden
+                     style={{ color: 'var(--md-on-primary)' }}>
+                  <path fill="currentColor" d="M10 9V5h4v4h4v4h-4v4h-4v-4H6V9h4z"/>
                 </svg>
               </button>
             </div>
