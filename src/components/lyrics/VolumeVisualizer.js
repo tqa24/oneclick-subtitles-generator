@@ -86,6 +86,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
   const [isProcessed, setIsProcessed] = useState(false);
   const [hasAudio, setHasAudio] = useState(true);
   const [audioError, setAudioError] = useState(null);
+  const [hasDrawn, setHasDrawn] = useState(false);
   const audioContextRef = useRef(null);
   const lastRenderParamsRef = useRef(null);
   const animationFrameRef = useRef(null);
@@ -101,6 +102,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
     // Reset states when audioSource changes
     setHasAudio(true);
     setAudioError(null);
+    setHasDrawn(false);
 
     // Skip YouTube URLs as they can't be directly processed due to CORS
     if (audioSource.includes('youtube.com') || audioSource.includes('youtu.be')) {
@@ -140,7 +142,20 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
         abortControllerRef.current = new AbortController();
 
         // Fetch the audio data with abort support
-        const response = await fetch(audioSource, { signal: abortControllerRef.current.signal });
+        let response;
+        const isBlob = audioSource.startsWith('blob:');
+        try {
+          if (isBlob && window.__videoBlobMap && window.__videoBlobMap[audioSource]) {
+            // Directly use stored blob for faster access
+            const blob = window.__videoBlobMap[audioSource];
+            response = new Response(blob);
+          } else {
+            response = await fetch(audioSource, { signal: abortControllerRef.current.signal, cache: 'no-cache', mode: isBlob ? 'no-cors' : 'cors' });
+          }
+        } catch (e) {
+          // Retry once without mode override
+          response = await fetch(audioSource, { signal: abortControllerRef.current.signal, cache: 'no-cache' });
+        }
         const arrayBuffer = await response.arrayBuffer();
 
         // Decode the audio data
@@ -457,6 +472,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
     // Render with appropriate technique based on container size
     if (containerWidth > 0) {
       renderWaveform(canvas, containerWidth);
+      setHasDrawn(true);
     }
   }, [waveformLOD, visibleTimeRange, height, renderWaveform]);
 
@@ -499,7 +515,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
     updateVisualization();
 
     // Set up resize observer for responsive rendering
-    const resizeObserver = new ResizeObserver((entries) => {
+    const resizeObserver = new ResizeObserver(() => {
       // Debounce resize events
       clearTimeout(animationFrameRef.current);
       animationFrameRef.current = setTimeout(() => {
@@ -588,7 +604,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
           zIndex: 1
         }}
       />
-      {((!waveformLOD) || isProcessing || (!isProcessed && !audioError)) && (
+      {((!waveformLOD && !hasDrawn) || isProcessing || (!isProcessed && !audioError)) && (
         <div
           className="volume-visualizer-loading"
           style={{
