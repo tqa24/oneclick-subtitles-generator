@@ -21,7 +21,6 @@
   "exceedsLimit": "경고: 토큰 수가 모델 제한을 초과합니다. FPS를 줄이거나 더 높은 용량의 모델을 사용하세요.",
   "lowRes": "낮음 (64 토큰/프레임)",
   "mediumRes": "중간 (256 토큰/프레임)",
-  "highRes": "높음 (256 토큰/프레임)",
   "uploading": "비디오 업로드 중...",
   "waitingForUpload": "업로드 대기 중...",
   "startProcessing": "처리 시작",

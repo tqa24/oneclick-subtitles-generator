@@ -94,7 +94,6 @@ const VideoProcessingOptionsModal = ({
   const resolutionOptions = [
     { value: 'low', label: t('processing.lowRes', 'Low (64 tokens/frame)'), tokens: 64 },
     { value: 'medium', label: t('processing.mediumRes', 'Medium (256 tokens/frame)'), tokens: 256 },
-    { value: 'high', label: t('processing.highRes', 'High (256 tokens/frame)'), tokens: 256 }
   ];
 
   // Helper function to get FPS label for slider

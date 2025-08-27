@@ -21,7 +21,6 @@
   "exceedsLimit": "Cảnh báo: Số lượng token vượt quá giới hạn mô hình. Hãy xem xét giảm FPS hoặc sử dụng mô hình có dung lượng cao hơn.",
   "lowRes": "Thấp (64 token/khung hình)",
   "mediumRes": "Trung bình (256 token/khung hình)",
-  "highRes": "Cao (256 token/khung hình)",
   "uploading": "Đang tải video lên...",
   "waitingForUpload": "Đang chờ tải lên...",
   "startProcessing": "Bắt đầu xử lý",

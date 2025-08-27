@@ -67,8 +67,7 @@ export const processLongMedia = processLongVideo;
 const mapMediaResolution = (resolution) => {
   const resolutionMap = {
     'low': 'MEDIA_RESOLUTION_LOW',
-    'medium': 'MEDIA_RESOLUTION_MEDIUM',
-    'high': 'MEDIA_RESOLUTION_HIGH'
+    'medium': 'MEDIA_RESOLUTION_MEDIUM'
   };
   return resolutionMap[resolution] || 'MEDIA_RESOLUTION_MEDIUM';
 };
