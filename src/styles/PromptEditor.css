@@ -98,6 +98,7 @@
   position: relative;
   margin-top: 0.5rem;
   border: 1px solid var(--md-outline-variant);
+  border-bottom: none; /* Hide bottom line under textarea */
   border-radius: var(--md-shape-medium);
   overflow: hidden; /* Ensures inner scrollbar is visually contained */
   background-color: var(--md-surface);
@@ -169,6 +170,11 @@
   scrollbar-color: var(--md-primary) var(--md-surface-2);
   box-sizing: border-box;
 /* Ensure the textarea occupies the container fully without exposing edges */
+/* Remove any default bottom border or shadow effects */
+.prompt-editor-textarea {
+  box-shadow: none;
+}
+
 .prompt-editor-container .prompt-editor-textarea {
   display: block;
   width: 100%;
@@ -490,6 +496,12 @@
 }
 
 .prompt-editor-examples ul {
+
+/* Remove bottom border so no line appears under the textarea area */
+.prompt-editor-container {
+  border-bottom: none;
+}
+
   margin: 0;
   padding-left: 24px;
 }
