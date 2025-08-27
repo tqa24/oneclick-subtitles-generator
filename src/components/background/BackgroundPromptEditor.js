@@ -277,11 +277,13 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          <div className="prompt-editor-actions">
-            <button className="secondary-button" onClick={handleReset} disabled={isSaving}>
+        </div>
+        <div className="prompt-editor-footer">
+          <div className="right-buttons">
+            <button className="reset-button" onClick={handleReset} disabled={isSaving}>
               {t('promptEditor.reset', 'Reset to Default')}
             </button>
-            <button className="primary-button" onClick={handleSave} disabled={isSaving || !hasChanges}>
+            <button className="save-button" onClick={handleSave} disabled={isSaving || !hasChanges}>
               {t('common.save', 'Save')}
             </button>
           </div>

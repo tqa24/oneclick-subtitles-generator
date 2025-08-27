@@ -241,11 +241,10 @@
   align-items: center;
   padding: 16px 24px;
   border-top: 1px solid var(--md-outline-variant);
-  background-color: var(--md-surface-2);
 }
 
 .right-buttons {
-  display: flex;
+  display: contents;
   gap: 12px;
 }
 
@@ -287,6 +286,16 @@
 .save-button:hover {
   background-color: color-mix(in srgb, var(--md-primary), black 10%);
 }
+
+/* Disabled state for footer buttons */
+.reset-button:disabled,
+.cancel-button:disabled,
+.save-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 
 /* Edit prompt button */
 .edit-prompt-button {
