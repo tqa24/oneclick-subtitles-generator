@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
 // Import utility modules
@@ -30,7 +31,13 @@ const TimelineVisualization = ({
   showWaveform = true, // Whether to show the waveform visualization
   onSegmentSelect, // Callback for when a segment is selected via drag
   selectedSegment = null, // Currently selected segment { start, end }
-  isProcessingSegment = false // New prop to indicate if processing is active
+  isProcessingSegment = false, // New prop to indicate if processing is active
+  onClearRange = null, // Clear subtitles inside selected range
+  onMoveRange = null, // Move subtitles inside selected range by delta (legacy, optional)
+  onBeginMoveRange = null, // Start live move preview
+  onPreviewMoveRange = null, // Update live move preview with delta seconds
+  onCommitMoveRange = null, // Commit the live move on mouse up
+  onCancelMoveRange = null // Cancel live move preview
 }) => {
   const { t } = useTranslation();
   const [showWaveformDisabledNotice, setShowWaveformDisabledNotice] = useState(false);
@@ -368,8 +375,11 @@ const TimelineVisualization = ({
       : getTimeRange();
 
     // Prepare segment data for drawing
+    const effectiveSelected = actionBarRange
+      ? { start: actionBarRange.start + (rangePreviewDeltaRef.current || 0), end: actionBarRange.end + (rangePreviewDeltaRef.current || 0) }
+      : selectedSegment;
     const segmentData = {
-      selectedSegment,
+      selectedSegment: effectiveSelected,
       isDraggingSegment,
       dragStartTime,
       dragCurrentTime,
@@ -384,7 +394,11 @@ const TimelineVisualization = ({
       effectiveDuration,
       lyrics,
       currentTime,
-      visibleTimeRange,
+      {
+        ...visibleTimeRange,
+        // Keep a slight top padding (time markers), do not cover segments
+        topPadding: 25
+      },
       effectivePanOffset,
       tempPanOffset !== null, // isActivePanning
       timeFormat,
@@ -688,6 +702,19 @@ const TimelineVisualization = ({
     }
   };
   
+  // Store the last selected range to show action bar when it includes existing subtitles
+  const [actionBarRange, setActionBarRange] = useState(null); // { start, end }
+  const [moveDragOffsetPx, setMoveDragOffsetPx] = useState(0);
+  const rangePreviewDeltaRef = useRef(0); // seconds delta during move drag
+
+  const hasSubtitlesInRange = useCallback((start, end) => {
+    if (!lyrics || lyrics.length === 0) return false;
+    // Only consider subtitles fully contained within the range
+    return lyrics.some(l => l.start >= start && l.end <= end);
+  }, [lyrics]);
+
+
+
   // Handle mouse down - supports both click and drag
   const handleMouseDown = (e) => {
     e.preventDefault();
@@ -706,6 +733,9 @@ const TimelineVisualization = ({
       setDragCurrentTime(startTime);
       dragStartRef.current = startTime;
       dragCurrentRef.current = startTime;
+      // Reset any previous action bar until selection decision
+      setActionBarRange(null);
+      setMoveDragOffsetPx(0);
     }
 
     const handleMouseMove = (moveEvent) => {
@@ -747,8 +777,13 @@ const TimelineVisualization = ({
 
           // Only create segment if there's a meaningful duration (at least 1 second)
           if (end - start >= 1) {
-            console.log('[Timeline] Creating segment:', start.toFixed(2), '-', end.toFixed(2), 's');
-            onSegmentSelect({ start, end });
+            console.log('[Timeline] Selection:', start.toFixed(2), '-', end.toFixed(2), 's');
+            if (hasSubtitlesInRange(start, end)) {
+              // Show action bar instead of opening modal
+              setActionBarRange({ start, end });
+            } else {
+              onSegmentSelect({ start, end });
+            }
           } else {
             console.log('[Timeline] Segment too short, ignoring');
           }
@@ -765,6 +800,8 @@ const TimelineVisualization = ({
           getTimeRange(),
           lastManualPanTime
         );
+        // Hide action bar on simple click outside
+        setActionBarRange(null);
       }
 
       // Clean up drag state
@@ -790,6 +827,139 @@ const TimelineVisualization = ({
 
   return (
     <div className="timeline-container" style={{ position: 'relative' }}>
+      {/* Range action header placed vertically above the timeline canvas */}
+      {actionBarRange && (() => {
+        const canvas = timelineRef.current;
+        const { start: visStart, end: visEnd } = getTimeRange();
+        const width = canvas?.clientWidth || 1;
+        const toPx = (t) => ((t - visStart) / Math.max(0.0001, (visEnd - visStart))) * width;
+        const leftPx = Math.max(0, Math.min(width, toPx(actionBarRange.start)));
+        const rightPx = Math.max(0, Math.min(width, toPx(actionBarRange.end)));
+        const barLeft = Math.min(leftPx, rightPx) + moveDragOffsetPx;
+        const barWidth = Math.max(24, Math.abs(rightPx - leftPx));
+        const timePerPx = (visEnd - visStart) / Math.max(1, width);
+
+        const handleMoveMouseDown = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const startX = e.clientX;
+          const startOffset = moveDragOffsetPx;
+          const startRange = actionBarRange;
+          if (onBeginMoveRange && startRange) onBeginMoveRange(startRange.start, startRange.end);
+          const onMove = (me) => {
+            const px = startOffset + (me.clientX - startX);
+            setMoveDragOffsetPx(px);
+            const deltaSeconds = px * timePerPx;
+            rangePreviewDeltaRef.current = deltaSeconds;
+            onPreviewMoveRange && onPreviewMoveRange(deltaSeconds);
+          };
+          const onUp = () => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+            const deltaSeconds = moveDragOffsetPx * timePerPx;
+            if (onCommitMoveRange) onCommitMoveRange();
+            else if (onMoveRange && Math.abs(deltaSeconds) > 0.001)
+              onMoveRange(actionBarRange.start, actionBarRange.end, deltaSeconds);
+            setMoveDragOffsetPx(0);
+            rangePreviewDeltaRef.current = 0;
+            setActionBarRange(null);
+          };
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+        };
+
+        const overlayRoot = document.getElementById('timeline-header-overlays-root');
+        const actionBarRef = { current: null };
+        let rafId;
+
+        const updatePosition = () => {
+          const canvasBounds = canvas?.getBoundingClientRect();
+          if (actionBarRef.current && canvasBounds) {
+            actionBarRef.current.style.top = `${(canvasBounds.top || 0) - 36}px`;
+            actionBarRef.current.style.left = `${(canvasBounds.left || 0) + barLeft}px`;
+            actionBarRef.current.style.width = `${barWidth}px`;
+          }
+          rafId = requestAnimationFrame(updatePosition);
+        };
+        // Start continuous updates while the bar is visible
+        rafId = requestAnimationFrame(updatePosition);
+
+        const overlay = (
+          <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
+            <div
+              ref={(el) => (actionBarRef.current = el)}
+              className="range-action-bar"
+              style={{
+                position: 'absolute',
+                top: '0px',
+                left: '0px',
+                width: `${barWidth}px`,
+                transform: 'translateX(0)',
+                display: 'flex',
+                gap: 8,
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '4px 6px',
+                background: 'var(--md-surface-2, rgba(0,0,0,0.5))',
+                borderRadius: 12,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+                zIndex: 2147483647,
+                color: 'var(--md-on-surface)',
+                pointerEvents: 'auto'
+              }}
+            >
+              <button
+                className="btn-base btn-primary btn-small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSegmentSelect && onSegmentSelect(actionBarRange);
+                  setActionBarRange(null);
+                }}
+              >
+                {t('timeline.generateReplace', 'Generate/replace subtitles')}
+              </button>
+              <button
+                className="icon-btn"
+                title={t('timeline.clearInRange', 'Clear subtitles in range')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClearRange && onClearRange(actionBarRange.start, actionBarRange.end);
+                  setActionBarRange(null);
+                }}
+                style={{ width: 32, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                         borderRadius: 8, background: 'var(--md-surface-3, rgba(0,0,0,0.35))', border: '1px solid rgba(255,255,255,0.12)' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1z"/>
+                </svg>
+              </button>
+              <button
+                className="icon-btn"
+                title={t('timeline.moveRange', 'Drag to move subtitles in range')}
+                onMouseDown={handleMoveMouseDown}
+                style={{ width: 32, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                         borderRadius: 8, background: 'var(--md-surface-3, rgba(0,0,0,0.35))', border: '1px solid rgba(255,255,255,0.12)', cursor: 'grab' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="M10 9V5h4v4h4v4h-4v4h-4v-4H6V9h4z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        );
+
+        // Cleanup RAF when unmounting the overlay
+        setTimeout(() => {
+          const cleanup = () => rafId && cancelAnimationFrame(rafId);
+          // Schedule after portal mount; parent hides overlay by setting actionBarRange to null
+          cleanup.__keep = true;
+          return cleanup;
+        }, 0);
+
+        return overlayRoot ? createPortal(overlay, overlayRoot) : null;
+
+      })()}
+
       <canvas
         ref={timelineRef}
         onMouseDown={handleMouseDown}

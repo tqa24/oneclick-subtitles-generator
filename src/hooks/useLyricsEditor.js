@@ -531,6 +531,99 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     showTranslationWarning(t('translation.warningSplit', 'You have split subtitles. Translations may be outdated. Please translate again.'));
   };
 
+  // Clear all subtitles fully inside a time range [start, end]
+  const clearSubtitlesInRange = (start, end) => {
+    if (start == null || end == null || end <= start) return;
+    setHistory(prevHistory => [...prevHistory, JSON.parse(JSON.stringify(lyrics))]);
+    setRedoStack([]);
+    // Remove subtitles fully contained within the range
+    const updated = lyrics.filter(l => !(l.start >= start && l.end <= end));
+    setLyrics(updated);
+    onUpdateLyrics && onUpdateLyrics(updated);
+
+    // Notify timing change
+    window.dispatchEvent(new CustomEvent('subtitle-timing-changed', {
+      detail: { action: 'clear-range', start, end, updatedLyrics: updated }
+    }));
+    // Translation warning
+    showTranslationWarning(t('translation.warningDeleted', 'You have deleted a subtitle. Translations may be outdated. Please translate again.'));
+  };
+
+  // Move all subtitles fully inside a time range by delta seconds (apply immediately)
+  const moveSubtitlesInRange = (start, end, delta) => {
+    if (start == null || end == null || end <= start || !delta) return;
+    setHistory(prevHistory => [...prevHistory, JSON.parse(JSON.stringify(lyrics))]);
+    setRedoStack([]);
+    const updated = lyrics.map(l => {
+      if (l.start >= start && l.end <= end) {
+        const newStart = Math.max(0, l.start + delta);
+        const newEnd = Math.max(newStart + 0.1, l.end + delta);
+        return { ...l, start: newStart, end: newEnd };
+      }
+      return l;
+    });
+    setLyrics(updated);
+    onUpdateLyrics && onUpdateLyrics(updated);
+
+    window.dispatchEvent(new CustomEvent('subtitle-timing-changed', {
+      detail: { action: 'move-range', start, end, delta, updatedLyrics: updated }
+    }));
+  };
+
+  // Live range move preview with baseline
+  const movingRangeRef = useRef({ active: false, start: 0, end: 0, baseline: null });
+
+  const beginRangeMove = (start, end) => {
+    if (start == null || end == null || end <= start) return;
+    movingRangeRef.current = {
+      active: true,
+      start,
+      end,
+      baseline: JSON.parse(JSON.stringify(lyrics))
+    };
+  };
+
+  const previewRangeMove = (delta) => {
+    const state = movingRangeRef.current;
+    if (!state.active || state.baseline == null) return;
+    const { start, end, baseline } = state;
+    const updated = baseline.map(l => {
+      if (l.start >= start && l.end <= end) {
+        const newStart = Math.max(0, l.start + delta);
+        const newEnd = Math.max(newStart + 0.1, l.end + delta);
+        return { ...l, start: newStart, end: newEnd };
+      }
+      return l;
+    });
+    setLyrics(updated);
+    onUpdateLyrics && onUpdateLyrics(updated);
+  };
+
+  const commitRangeMove = () => {
+    const state = movingRangeRef.current;
+    if (!state.active) return;
+    // Push baseline to history to allow undo
+    setHistory(prevHistory => [...prevHistory, state.baseline]);
+    setRedoStack([]);
+    movingRangeRef.current = { active: false, start: 0, end: 0, baseline: null };
+
+    // Notify timing change (generic)
+    window.dispatchEvent(new CustomEvent('subtitle-timing-changed', {
+      detail: { action: 'move-range-commit', timestamp: Date.now() }
+    }));
+  };
+
+  const cancelRangeMove = () => {
+    const state = movingRangeRef.current;
+    if (!state.active) return;
+    // Revert to baseline
+    if (state.baseline) {
+      setLyrics(state.baseline);
+      onUpdateLyrics && onUpdateLyrics(state.baseline);
+    }
+    movingRangeRef.current = { active: false, start: 0, end: 0, baseline: null };
+  };
+
   // Add event listener for redo action
   useEffect(() => {
     const handleRedoEvent = () => {
@@ -664,6 +757,12 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     handleInsertLyric,
     handleMergeLyrics,
     handleSplitSubtitles,
+    clearSubtitlesInRange,
+    moveSubtitlesInRange,
+    beginRangeMove,
+    previewRangeMove,
+    commitRangeMove,
+    cancelRangeMove,
     updateSavedLyrics,
     captureStateBeforeMerge,
     createCheckpoint

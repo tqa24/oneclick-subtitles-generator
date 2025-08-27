@@ -120,31 +120,31 @@ export const drawTimeline = (
         // Calculate animation values for processing state
         let opacity = 0.2;
         let borderOpacity = 0.8;
-        
+
         if (isProcessing && animationTime !== undefined) {
           // Create a pulsing effect while processing
           const pulse = Math.sin(animationTime * 0.003) * 0.5 + 0.5; // 0 to 1 oscillation
           opacity = 0.15 + pulse * 0.25; // Oscillate between 0.15 and 0.4
           borderOpacity = 0.6 + pulse * 0.4; // Oscillate between 0.6 and 1.0
-          
+
           // Add seamless shimmer effect
           const segmentWidth = endX - startX;
           const shimmerWidth = 100; // Width of the shimmer gradient
           const totalCycleWidth = segmentWidth + shimmerWidth;
-          
+
           // Create a seamless loop by having the shimmer go beyond the segment and wrap around
           const shimmerProgress = (animationTime * 0.08) % totalCycleWidth;
           const shimmerX = shimmerProgress - shimmerWidth / 2;
-          
+
           // Create two gradients for seamless looping
           const gradient = ctx.createLinearGradient(startX, 0, endX, 0);
-          
+
           // Calculate normalized positions for gradient stops
           const shimmerPos = shimmerX / segmentWidth;
           const shimmerStart = Math.max(0, Math.min(1, shimmerPos - 0.1));
           const shimmerMid = Math.max(0, Math.min(1, shimmerPos));
           const shimmerEnd = Math.max(0, Math.min(1, shimmerPos + 0.1));
-          
+
           // Build gradient with smooth transitions - theme aware
           if (isDark) {
             // Dark theme - use lighter blues for shimmer
@@ -197,11 +197,11 @@ export const drawTimeline = (
             ctx.fillStyle = `rgba(37, 99, 235, ${opacity * 1.2})`; // Stronger blue for light theme
           }
         }
-        
-        // Draw segment background
+
+        // Draw segment background full height (legacy behavior user prefers)
         ctx.fillRect(Math.max(0, startX), 0, Math.min(displayWidth, endX) - Math.max(0, startX), displayHeight);
 
-        // Draw segment borders with animation - theme aware
+        // Draw segment borders full height
         if (isDark) {
           ctx.strokeStyle = `rgba(59, 130, 246, ${borderOpacity})`;
         } else {
@@ -221,7 +221,7 @@ export const drawTimeline = (
       }
     }
 
-    // Draw drag preview
+    // Draw drag preview (full height as requested)
     if (isDraggingSegment && dragStartTime !== null && dragCurrentTime !== null) {
       const start = Math.min(dragStartTime, dragCurrentTime);
       const end = Math.max(dragStartTime, dragCurrentTime);
@@ -229,7 +229,7 @@ export const drawTimeline = (
       const endX = timeToX(end, visibleStart, visibleDuration, displayWidth);
 
       if (startX < displayWidth && endX > 0) {
-        // Draw drag preview background - theme aware
+        // Draw drag preview background - full height
         if (isDark) {
           ctx.fillStyle = 'rgba(59, 130, 246, 0.15)';
         } else {
@@ -237,7 +237,7 @@ export const drawTimeline = (
         }
         ctx.fillRect(Math.max(0, startX), 0, Math.min(displayWidth, endX) - Math.max(0, startX), displayHeight);
 
-        // Draw drag preview borders - theme aware
+        // Draw drag preview borders - full height
         if (isDark) {
           ctx.strokeStyle = 'rgba(59, 130, 246, 0.6)';
         } else {

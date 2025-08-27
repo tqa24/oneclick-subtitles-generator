@@ -271,7 +271,13 @@ const LyricsDisplay = ({
     updateSavedLyrics,
     handleSplitSubtitles,
     captureStateBeforeMerge,
-    createCheckpoint
+    createCheckpoint,
+    clearSubtitlesInRange,
+    moveSubtitlesInRange,
+    beginRangeMove,
+    previewRangeMove,
+    commitRangeMove,
+    cancelRangeMove
   } = useLyricsEditor(matchedLyrics, onUpdateLyrics);
 
   // Find current lyric index based on time
@@ -827,6 +833,12 @@ const LyricsDisplay = ({
           onSegmentSelect={onSegmentSelect}
           selectedSegment={selectedSegment}
           isProcessingSegment={isProcessingSegment}
+          onClearRange={clearSubtitlesInRange}
+          onMoveRange={moveSubtitlesInRange}
+          onBeginMoveRange={beginRangeMove}
+          onPreviewMoveRange={previewRangeMove}
+          onCommitMoveRange={commitRangeMove}
+          onCancelMoveRange={cancelRangeMove}
         />
       </div>
 
