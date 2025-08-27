@@ -216,17 +216,23 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
             await new Promise(resolve => setTimeout(resolve, 0));
           }
         } else {
-          // Standard processing for shorter videos
-          for (let i = 0; i < sampleSize; i++) {
-            const startSample = i * samplesPerSegment;
-            const endSample = Math.min(startSample + samplesPerSegment, channelData.length);
+          // Standard processing for shorter videos, but chunked to avoid blocking UI
+          const chunkSize = 80; // process 80 segments then yield
+          for (let chunkStart = 0; chunkStart < sampleSize; chunkStart += chunkSize) {
+            const chunkEnd = Math.min(chunkStart + chunkSize, sampleSize);
+            for (let i = chunkStart; i < chunkEnd; i++) {
+              const startSample = i * samplesPerSegment;
+              const endSample = Math.min(startSample + samplesPerSegment, channelData.length);
 
-            // Calculate RMS (root mean square) for this segment
-            let sum = 0;
-            for (let j = startSample; j < endSample; j++) {
-              sum += channelData[j] * channelData[j];
+              // Calculate RMS (root mean square) for this segment
+              let sum = 0;
+              for (let j = startSample; j < endSample; j++) {
+                sum += channelData[j] * channelData[j];
+              }
+              volumeData[i] = Math.sqrt(sum / (endSample - startSample));
             }
-            volumeData[i] = Math.sqrt(sum / (endSample - startSample));
+            // Yield to main thread to keep timeline animations smooth
+            await new Promise(resolve => setTimeout(resolve, 0));
           }
         }
 
