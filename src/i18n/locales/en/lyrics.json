@@ -12,5 +12,6 @@
   "insertAbove": "Add above",
   "insertBelow": "Add below",
   "mergeAbove": "Merge with above",
-  "mergeBelow": "Merge with below"
+  "mergeBelow": "Merge with below",
+  "addFirst": "Add first subtitle"
 }

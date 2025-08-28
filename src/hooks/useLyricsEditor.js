@@ -358,6 +358,19 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
   const handleInsertLyric = (index) => {
     setHistory(prevHistory => [...prevHistory, JSON.parse(JSON.stringify(lyrics))]);
 
+    // Handle special case: creating the very first lyric when list is empty
+    if (lyrics.length === 0) {
+      const newLyric = { text: '', start: 0, end: 2.0 };
+      const updatedLyrics = [newLyric];
+      setLyrics(updatedLyrics);
+      if (onUpdateLyrics) {
+        onUpdateLyrics(updatedLyrics);
+      }
+      // Show warning about translations
+      showTranslationWarning(t('translation.warningInserted', 'You have inserted a new subtitle. Translations may be outdated. Please translate again.'));
+      return;
+    }
+
     // Handle special case: inserting at the beginning (before the first lyric)
     if (index < 0 || (index === 0 && lyrics.length > 0)) {
       const firstLyric = lyrics[0];

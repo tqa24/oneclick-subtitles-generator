@@ -851,7 +851,7 @@ const LyricsDisplay = ({
       </div>
 
       <div className="lyrics-container-wrapper">
-        {lyrics.length > 0 && (
+        {lyrics.length > 0 ? (
           <List
             ref={listRef}
             className="lyrics-container"
@@ -887,6 +887,21 @@ const LyricsDisplay = ({
           >
             {VirtualizedLyricRow}
           </List>
+        ) : (
+          <div className="lyrics-empty-state" style={{ height: 300 }}>
+            <div className="empty-add-hotspot" title={t('lyrics.addFirst', 'Add first subtitle')}>
+              <button
+                className="empty-insert-lyric-btn"
+                onClick={() => handleInsertLyric(0)}
+                aria-label={t('lyrics.addFirst', 'Add first subtitle')}
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
         )}
       </div>
 

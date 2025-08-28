@@ -12,5 +12,6 @@
   "insertAbove": "위에 추가",
   "insertBelow": "아래에 추가",
   "mergeAbove": "위 자막과 병합",
-  "mergeBelow": "아래 자막과 병합"
+  "mergeBelow": "아래 자막과 병합",
+  "addFirst": "첫 번째 자막 추가"
 }
