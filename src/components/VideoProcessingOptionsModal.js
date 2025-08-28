@@ -23,7 +23,7 @@ const VideoProcessingOptionsModal = ({
 }) => {
   const { t } = useTranslation();
   const modalRef = useRef(null);
-  
+
   // Processing options state with localStorage persistence
   const [fps, setFps] = useState(() => {
     const saved = localStorage.getItem('video_processing_fps');
@@ -57,6 +57,14 @@ const VideoProcessingOptionsModal = ({
       setSelectedPromptPreset('timing-generation');
     }
   }, [isOpen, hasUserProvidedSubtitles]);
+
+  // If timing-generation is selected but unavailable, fall back to 'settings'
+  useEffect(() => {
+    if (isOpen && !hasUserProvidedSubtitles && selectedPromptPreset === 'timing-generation') {
+      setSelectedPromptPreset('settings');
+    }
+  }, [isOpen, hasUserProvidedSubtitles, selectedPromptPreset]);
+
   const [customLanguage, setCustomLanguage] = useState(() => {
     const saved = localStorage.getItem('video_processing_custom_language');
     return saved || '';
@@ -70,7 +78,7 @@ const VideoProcessingOptionsModal = ({
   const [isCountingTokens, setIsCountingTokens] = useState(false);
   const [realTokenCount, setRealTokenCount] = useState(null);
   const [tokenCountError, setTokenCountError] = useState(null);
-  
+
   // Available options - filter based on selected model
   const getFpsOptions = () => {
     const allOptions = [
@@ -80,15 +88,15 @@ const VideoProcessingOptionsModal = ({
       { value: 2, label: '2 FPS (0.5s intervals)', minModel: null },
       { value: 5, label: '5 FPS (0.2s intervals)', minModel: null }
     ];
-    
+
     // For Gemini 2.5 Pro, filter out options below 1 FPS
     if (selectedModel === 'gemini-2.5-pro') {
       return allOptions.filter(option => option.value >= 1);
     }
-    
+
     return allOptions;
   };
-  
+
   const fpsOptions = getFpsOptions();
 
   const resolutionOptions = [
@@ -244,15 +252,16 @@ const VideoProcessingOptionsModal = ({
       }
     ];
 
-    // Add timing generation option if user has provided subtitles
-    if (hasUserProvidedSubtitles) {
-      options.push({
-        id: 'timing-generation',
-        title: t('processing.timingGeneration', 'Timing generation (Subtitles added)'),
-        description: t('processing.timingGenerationDesc', 'Generate timing for your provided subtitles'),
-        isTimingGeneration: true
-      });
-    }
+    // Add timing generation option (always shown; disabled if no user-provided subtitles)
+    options.push({
+      id: 'timing-generation',
+      title: t('processing.timingGeneration', 'Timing generation (Subtitles added)'),
+      description: hasUserProvidedSubtitles
+        ? t('processing.timingGenerationDesc', 'Generate timing for your provided subtitles')
+        : t('processing.timingGenerationDescDisabled', 'Add subtitles to enable timing generation'),
+      isTimingGeneration: true,
+      disabled: !hasUserProvidedSubtitles
+    });
 
     // Add regular presets
     options.push(
@@ -528,19 +537,19 @@ const VideoProcessingOptionsModal = ({
 
     return Math.round(segmentDuration * (fps * frameTokens + audioTokens));
   };
-  
+
   const estimatedTokens = calculateEstimatedTokens();
   const selectedModelData = modelOptions.find(m => m.value === selectedModel);
   const displayTokens = realTokenCount !== null ? realTokenCount : estimatedTokens;
   const isWithinLimit = displayTokens <= (selectedModelData?.maxTokens || 1048575);
-  
+
   // Format time for display
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
-  
+
 
 
   // Handle form submission
@@ -562,13 +571,13 @@ const VideoProcessingOptionsModal = ({
 
     onProcess(options);
   };
-  
+
   // Handle escape key and outside clicks
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') onClose();
     };
-    
+
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
       return () => document.removeEventListener('keydown', handleEscape);
@@ -576,7 +585,7 @@ const VideoProcessingOptionsModal = ({
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
-  
+
   return ReactDOM.createPortal(
     <div className="video-processing-modal-overlay">
       <div
@@ -680,7 +689,7 @@ const VideoProcessingOptionsModal = ({
                     onChange={(e) => setSelectedPromptPreset(e.target.value)}
                   >
                     {getPromptPresetOptions().map(option => (
-                      <option key={option.id} value={option.id}>
+                      <option key={option.id} value={option.id} disabled={option.disabled}>
                         {option.title}
                       </option>
                     ))}
@@ -758,7 +767,7 @@ const VideoProcessingOptionsModal = ({
             </div>
           )}
         </div>
-        
+
         <div className="modal-footer">
           <div className="footer-content">
             {/* Token Usage Info */}
