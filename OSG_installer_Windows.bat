@@ -414,25 +414,47 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[?] Checking for FFmpeg (Kiem tra FFmpeg)...' -ForegroundColor Yellow"
-:: Try multiple methods to detect FFmpeg
+REM Robust FFmpeg detection across PATH, WindowsApps alias, common install dirs, and winget registry
+SET "FFMPEG_FOUND=0"
+
+REM 1) Check via PATH
 WHERE ffmpeg >nul 2>nul
-IF %ERRORLEVEL% EQU 0 (
+IF %ERRORLEVEL% EQU 0 SET "FFMPEG_FOUND=1"
+
+REM 2) Check by invoking directly (in case alias works even if WHERE fails)
+IF "!FFMPEG_FOUND!"=="0" (
+    ffmpeg -version >nul 2>nul
+    IF !ERRORLEVEL! EQU 0 SET "FFMPEG_FOUND=1"
+)
+
+REM 3) Check WindowsApps execution alias created by winget
+IF "!FFMPEG_FOUND!"=="0" IF EXIST "%LOCALAPPDATA%\Microsoft\WindowsApps\ffmpeg.exe" (
+    SET "PATH=%PATH%;%LOCALAPPDATA%\Microsoft\WindowsApps"
+    ffmpeg -version >nul 2>nul
+    IF !ERRORLEVEL! EQU 0 SET "FFMPEG_FOUND=1"
+)
+
+REM 4) Check common classic install locations and add to PATH for this session
+IF "!FFMPEG_FOUND!"=="0" IF EXIST "C:\Program Files\ffmpeg\bin\ffmpeg.exe" (
+    SET "PATH=%PATH%;C:\Program Files\ffmpeg\bin"
+    SET "FFMPEG_FOUND=1"
+)
+IF "!FFMPEG_FOUND!"=="0" IF EXIST "C:\ProgramData\chocolatey\bin\ffmpeg.exe" (
+    SET "PATH=%PATH%;C:\ProgramData\chocolatey\bin"
+    SET "FFMPEG_FOUND=1"
+)
+
+REM 5) As a last resort, query winget to see if the package is registered as installed
+IF "!FFMPEG_FOUND!"=="0" (
+    FOR /F "usebackq tokens=* delims=" %%i IN (`winget list --id Gyan.FFmpeg 2^>nul ^| findstr /I "Gyan.FFmpeg"`) DO SET "FFMPEG_FOUND=1"
+)
+
+IF "!FFMPEG_FOUND!"=="1" (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] FFmpeg already installed (FFmpeg da duoc cai dat).' -ForegroundColor Green"
 ) ELSE (
-    :: Try alternative detection methods
-    ffmpeg -version >nul 2>nul
-    IF !ERRORLEVEL! EQU 0 (
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] FFmpeg already installed (detected via version check) (FFmpeg da duoc cai dat (phat hien qua kiem tra phien ban)).' -ForegroundColor Green"
-    ) ELSE (
-        :: Check if FFmpeg exists in common installation paths
-        IF EXIST "%LOCALAPPDATA%\Microsoft\WinGet\Packages\Gyan.FFmpeg*\ffmpeg.exe" (
-            powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] FFmpeg already installed (found in WinGet packages) (FFmpeg da duoc cai dat (tim thay trong goi WinGet)).' -ForegroundColor Green"
-        ) ELSE (
-            SET "NEEDS_RESTART=1"
-            SET "MISSING_TOOLS=%MISSING_TOOLS% FFmpeg"
-            powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[MISSING] FFmpeg not found - will be installed (FFmpeg khong tim thay - se duoc cai dat).' -ForegroundColor Yellow"
-        )
-    )
+    SET "NEEDS_RESTART=1"
+    SET "MISSING_TOOLS=%MISSING_TOOLS% FFmpeg"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[MISSING] FFmpeg not found - will be installed (FFmpeg khong tim thay - se duoc cai dat).' -ForegroundColor Yellow"
 )
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[?] Checking for uv Python package manager (Kiem tra trinh quan ly goi uv Python)...' -ForegroundColor Yellow"
