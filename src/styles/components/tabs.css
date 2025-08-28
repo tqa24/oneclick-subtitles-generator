@@ -11,6 +11,8 @@
   -ms-overflow-style: none; /* For Internet Explorer and Edge */
   padding: 0px 24px;
   min-height: 55px; /* Ensure consistent height */
+  -webkit-tap-highlight-color: transparent; /* Kill iOS one-time highlight at container level */
+
 }
 
 .input-tabs::-webkit-scrollbar {
@@ -48,27 +50,6 @@
   opacity: 1;
 }
 
-/* Pressed state layer aligned to the pill for active tab */
-.input-tabs::after {
-  content: '';
-  position: absolute;
-  height: 45px;
-  width: calc(var(--press-pill-width, var(--pill-width)) + 40px);
-  left: calc(var(--press-pill-left, var(--pill-left)) - 20px);
-  top: 50%;
-  transform: translateY(-50%);
-  background-color: var(--md-primary);
-  border-radius: 48px;
-  z-index: 0; /* Above ::before because of painting order, below tab content (z-index:1) */
-  opacity: 0;
-  transition: opacity var(--md-duration-short4) var(--md-easing-emphasized);
-  pointer-events: none;
-}
-
-/* Show pressed overlay exactly where the pill is when pressing the active tab */
-.input-tabs:has(.tab-btn:active)::after {
-  opacity: 0.08;
-}
 
 
 /* Material Design 3 tab buttons */
@@ -117,35 +98,8 @@
   transform: translateY(-1px);
 }
 
-/* Material Design 3 ripple effect */
-.tab-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--md-primary);
-  opacity: 0;
-  transform: scale(0);
-  transition: transform var(--md-duration-medium3) var(--md-easing-emphasized),
-              opacity var(--md-duration-medium3) var(--md-easing-emphasized);
-  border-radius: 20px; /* Match the button's border-radius */
-  pointer-events: none;
-}
 
-.tab-btn:not(.active):active::before {
-  opacity: 0.08;
-  transform: scale(1);
-  transition: transform var(--md-duration-short4) var(--md-easing-emphasized),
-              opacity var(--md-duration-short4) var(--md-easing-emphasized);
-}
 
-/* Disable inner ripple overlay on all presses inside input-tabs; use container ::after instead */
-.input-tabs .tab-btn:active::before {
-  opacity: 0 !important;
-  transform: none !important;
-}
 
 
 .tab-btn svg {

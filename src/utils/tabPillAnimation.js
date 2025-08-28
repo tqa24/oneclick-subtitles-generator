@@ -18,6 +18,8 @@ export const initTabPillAnimation = (tabsSelector = '.input-tabs') => {
     // Initial positioning of the pill
     positionPillForActiveTab(tabContainer);
 
+
+
     // Add event listeners to all tab buttons
     const tabButtons = tabContainer.querySelectorAll('.tab-btn');
     tabButtons.forEach(button => {
