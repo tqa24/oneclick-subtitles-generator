@@ -152,6 +152,9 @@
   scroll-behavior: smooth;
   /* Enhance scroll performance */
   -webkit-overflow-scrolling: touch;
+  /* Hide horizontal scrollbar while keeping vertical scrolling */
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
   /* Add subtle transition for scroll position changes */
   transition: scroll-top var(--md-duration-medium2) var(--md-easing-emphasized);
 }
