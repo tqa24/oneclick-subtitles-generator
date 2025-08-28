@@ -10,5 +10,6 @@
   "note": "Note",
   "recentVideos": "Recent Videos",
   "clearAll": "Clear All",
-  "confirm": "Confirm"
+  "confirm": "Confirm",
+  "jumpToCheckpoint": "Jump to last checkpoint (undo multiple steps)"
 }

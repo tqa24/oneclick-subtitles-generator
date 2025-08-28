@@ -10,5 +10,6 @@
   "recentVideos": "최근 비디오",
   "clearAll": "모두 지우기",
   "confirm": "확인",
-  "done": "완료"
+  "done": "완료",
+  "jumpToCheckpoint": "마지막 체크포인트로 이동 (여러 단계 실행 취소)"
 }
