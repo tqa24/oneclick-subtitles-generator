@@ -31,5 +31,6 @@
   "useTranscriptionRulesDesc": "Include context, terminology, and formatting rules from video analysis in the prompt",
   "noAnalysisAvailable": "Please create analysis by pressing \"Add analysis\" button",
   "generateForRange": "Generate/update subtitles for range:",
-  "analysisRules": "Analysis Rules"
+  "analysisRules": "Analysis Rules",
+  "mediaResolutionHelp": "64 or 256 tokens cannot be mapped to an exact resolution; this reflects Gemini's proprietary video information extraction method."
 }

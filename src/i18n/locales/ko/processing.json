@@ -31,5 +31,6 @@
   "useTranscriptionRulesDesc": "비디오 분석의 컨텍스트, 용어 및 형식 규칙을 프롬프트에 포함",
   "noAnalysisAvailable": "\"분석 추가\" 버튼을 눌러 분석을 생성해주세요",
   "generateForRange": "범위에 대한 자막 생성/업데이트:",
-  "analysisRules": "분석 규칙"
+  "analysisRules": "분석 규칙",
+  "mediaResolutionHelp": "64 또는 256 토큰은 정확한 해상도로 매핑할 수 없습니다. 이는 Gemini의 독자적인 비디오 정보 추출 방식입니다."
 }

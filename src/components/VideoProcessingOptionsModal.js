@@ -654,7 +654,19 @@ const VideoProcessingOptionsModal = ({
 
                 {/* Media Resolution */}
                 <div className="combined-option-half">
-                  <label>{t('processing.mediaResolution', 'Media Resolution')}</label>
+                  <div className="label-with-help">
+                    <label>{t('processing.mediaResolution', 'Media Resolution')}</label>
+                    <div
+                      className="help-icon-container"
+                      title={t('processing.mediaResolutionHelp', "64 or 256 tokens cannot be mapped to an exact resolution; this reflects Gemini's proprietary video information extraction method.")}
+                    >
+                      <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                      </svg>
+                    </div>
+                  </div>
                   <select value={mediaResolution} onChange={(e) => setMediaResolution(e.target.value)}>
                     {resolutionOptions.map(option => (
                       <option key={option.value} value={option.value}>

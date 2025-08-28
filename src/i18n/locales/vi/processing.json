@@ -31,5 +31,6 @@
   "useTranscriptionRulesDesc": "Bao gồm ngữ cảnh, thuật ngữ và quy tắc định dạng từ phân tích video trong prompt",
   "noAnalysisAvailable": "Vui lòng tạo phân tích bằng cách nhấn nút \"Thêm phân tích\"",
   "generateForRange": "Tạo/cập nhật phụ đề cho phạm vi:",
-  "analysisRules": "Quy tắc phân tích"
+  "analysisRules": "Quy tắc phân tích",
+  "mediaResolutionHelp": "64 hay 256 token không thể quy ra độ phân giải chính xác, đây là kỹ thuật trích xuất thông tin video riêng từ phía Gemini"
 }
