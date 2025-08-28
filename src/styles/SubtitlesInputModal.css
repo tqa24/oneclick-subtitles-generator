@@ -80,6 +80,14 @@
   background-color: var(--md-surface-2);
 }
 
+/* Right-aligned header actions container */
+.subtitles-input-modal-header .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+
 /* Light theme header styling */
 [data-theme="light"] .subtitles-input-modal-header {
   background-color: var(--md-surface-1);
@@ -573,11 +581,24 @@
 
 .subtitles-input-modal-footer {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
   padding: 16px 20px;
   border-top: 1px solid var(--md-outline-variant);
   background-color: var(--md-surface-2);
+}
+
+.subtitles-input-modal-footer .footer-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.subtitles-input-modal-footer .footer-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 /* Light theme footer styling */
