@@ -909,10 +909,19 @@ const LyricsDisplay = ({
         {allowEditing && (
           <div className="help-text">
             <p dangerouslySetInnerHTML={{
-              __html: t('lyrics.timingInstructions', 'Hiện có ??? dòng phụ đề. Kéo dấu thời gian để điều chỉnh thời gian cho mỗi phụ đề. Chế độ "Dính" sẽ điều chỉnh tất cả phụ đề theo sau. Chế độ "Cuộn" sẽ giúp tự dời tầm nhìn lên dòng sub đang chạy. 5 nút còn lại: Chia nhỏ sub, Lưu, Đặt lại, Hoàn tác, Làm lại')
-                .replace('??? dòng', `<strong>${lyrics.length} dòng</strong>`)
-                .replace('??? subtitle lines', `<strong>${lyrics.length} subtitle lines</strong>`)
-                .replace('???개의 자막 라인', `<strong>${lyrics.length}개의 자막 라인</strong>`)
+              __html: (lyrics.length === 0
+                ? t(
+                    'lyrics.emptyTimingInstructions',
+                    'Hiện có {{count}} dòng phụ đề. Hãy kéo thả trên vùng chỉnh sửa phụ đề (nơi có hoạt ảnh bàn tay lướt phải) để tạo phụ đề tự động bằng AI. Có thể kéo từ đầu đến cuối để tạo sub toàn video hoặc chỉ 1 đoạn nếu muốn',
+                    { count: lyrics.length }
+                  )
+                : t(
+                    'lyrics.timingInstructions',
+                    'Hiện có ??? dòng phụ đề. Kéo dấu thời gian để điều chỉnh thời gian cho mỗi phụ đề. Chế độ "Dính" sẽ điều chỉnh tất cả phụ đề theo sau. Chế độ "Cuộn" sẽ giúp tự dời tầm nhìn lên dòng sub đang chạy. 5 nút còn lại: Chia nhỏ sub, Lưu, Đặt lại, Hoàn tác, Làm lại'
+                  )
+                    .replace('??? dòng', `<strong>${lyrics.length} dòng</strong>`)
+                    .replace('??? subtitle lines', `<strong>${lyrics.length} subtitle lines</strong>`)
+                    .replace('???개의 자막 라인', `<strong>${lyrics.length}개의 자막 라인</strong>`))
             }} />
           </div>
         )}

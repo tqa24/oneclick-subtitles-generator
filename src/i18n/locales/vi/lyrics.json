@@ -13,5 +13,6 @@
   "insertBelow": "Thêm vào dưới",
   "mergeAbove": "Gộp với phụ đề trên",
   "mergeBelow": "Gộp với phụ đề dưới",
-  "addFirst": "Thêm phụ đề đầu tiên"
+  "addFirst": "Thêm phụ đề đầu tiên",
+  "emptyTimingInstructions": "Hiện có {{count}} dòng phụ đề. Hãy kéo thả trên vùng chỉnh sửa phụ đề (nơi có hoạt ảnh bàn tay lướt phải) để tạo phụ đề tự động bằng AI. Có thể kéo từ đầu đến cuối để tạo sub toàn video hoặc chỉ 1 đoạn nếu muốn"
 }
