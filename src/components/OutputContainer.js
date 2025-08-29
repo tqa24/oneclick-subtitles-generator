@@ -37,7 +37,8 @@ const OutputContainer = ({
   onSegmentSelect = null, // Callback for segment selection
   selectedSegment = null, // Currently selected segment
   isUploading = false, // Whether video is currently uploading
-  isProcessingSegment = false // Whether a segment is being processed
+  isProcessingSegment = false, // Whether a segment is being processed
+  onLiveSubtitlesChange = null // Optional: report live timeline state upstream
 }) => {
   const { t } = useTranslation();
   const [currentTabIndex, setCurrentTabIndex] = useState(0);
@@ -85,6 +86,13 @@ const OutputContainer = ({
       endTime: sub.end
     })) || [];
   };
+  // Whenever editedLyrics changes, report live timeline state
+  useEffect(() => {
+    if (onLiveSubtitlesChange) {
+      onLiveSubtitlesChange(editedLyrics || subtitlesData || []);
+    }
+  }, [editedLyrics, subtitlesData, onLiveSubtitlesChange]);
+
 
   // Background Image Generator functionality moved back to AppLayout
 

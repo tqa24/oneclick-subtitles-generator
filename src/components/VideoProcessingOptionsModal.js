@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import '../styles/VideoProcessingOptionsModal.css';
@@ -19,7 +19,8 @@ const VideoProcessingOptionsModal = ({
   isUploading = false,
   videoFile = null, // Optional video file for real token counting
   userProvidedSubtitles = '', // User-provided subtitles text
-  useUserProvidedSubtitles = false // Whether user-provided subtitles are enabled
+  useUserProvidedSubtitles = false, // Whether user-provided subtitles are enabled
+  subtitlesData = null // Current subtitles on the timeline
 }) => {
   const { t } = useTranslation();
   const modalRef = useRef(null);
@@ -74,10 +75,54 @@ const VideoProcessingOptionsModal = ({
     return saved !== 'false'; // Default to true, only false if explicitly set to 'false'
   });
   const [transcriptionRulesAvailable, setTranscriptionRulesAvailable] = useState(false);
+
+  // New: Outside results context toggle state
+  const [useOutsideResultsContext, setUseOutsideResultsContext] = useState(() => {
+    return localStorage.getItem('video_processing_use_outside_context') === 'true';
+  });
+  const [outsideContextAvailable, setOutsideContextAvailable] = useState(false);
+
   const [customGeminiModels, setCustomGeminiModels] = useState([]);
   const [isCountingTokens, setIsCountingTokens] = useState(false);
   const [realTokenCount, setRealTokenCount] = useState(null);
   const [tokenCountError, setTokenCountError] = useState(null);
+
+  // Compute outside-range subtitles context (limited to nearby lines)
+  const outsideContext = useMemo(() => {
+    if (!Array.isArray(subtitlesData) || !selectedSegment) return { available: false, before: [], after: [] };
+    const { start, end } = selectedSegment;
+
+    const overlapsStart = (s) => (typeof s.start === 'number' && typeof s.end === 'number' && s.start < start && s.end > start);
+    const overlapsEnd = (s) => (typeof s.start === 'number' && typeof s.end === 'number' && s.start < end && s.end > end);
+
+    const beforeAll = subtitlesData.filter(s => {
+      const sStart = (typeof s.start === 'number') ? s.start : 0;
+      const sEnd = (typeof s.end === 'number') ? s.end : sStart;
+      return (sEnd <= start) || overlapsStart(s);
+    });
+
+    const afterAll = subtitlesData.filter(s => {
+      const sStart = (typeof s.start === 'number') ? s.start : 0;
+      return (sStart >= end) || overlapsEnd(s);
+    });
+
+    const before = beforeAll.slice(-5);
+    const after = afterAll.slice(0, 5);
+    const available = before.length > 0 || after.length > 0;
+    return { available, before, after };
+  }, [subtitlesData, selectedSegment]);
+
+  // Keep availability and persisted toggle in sync
+  useEffect(() => {
+    setOutsideContextAvailable(outsideContext.available);
+    if (!outsideContext.available && useOutsideResultsContext) {
+      setUseOutsideResultsContext(false);
+    }
+  }, [outsideContext.available]);
+
+  useEffect(() => {
+    localStorage.setItem('video_processing_use_outside_context', useOutsideResultsContext ? 'true' : 'false');
+  }, [useOutsideResultsContext]);
 
   // Available options - filter based on selected model
   const getFpsOptions = () => {
@@ -298,6 +343,26 @@ const VideoProcessingOptionsModal = ({
     return options;
   };
 
+  // Build outside-range context text (without heading), to reuse for prompt/session
+  const buildOutsideContextText = () => {
+    if (!useOutsideResultsContext || !outsideContext?.available) return '';
+    const fmt = (s) => {
+      const st = typeof s.start === 'number' ? s.start : 0;
+      const en = typeof s.end === 'number' ? s.end : st;
+      return `[${formatTime(st)} - ${formatTime(en)}] ${s.text}`;
+    };
+    let ctxText = '';
+    if (outsideContext.before.length > 0) {
+      ctxText += '\n- Context before selected range:\n';
+      outsideContext.before.forEach(s => { ctxText += `  * ${fmt(s)}\n`; });
+    }
+    if (outsideContext.after.length > 0) {
+      ctxText += '\n- Context after selected range:\n';
+      outsideContext.after.forEach(s => { ctxText += `  * ${fmt(s)}\n`; });
+    }
+    return ctxText.trim() ? ctxText : '';
+  };
+
   // Get the selected prompt text for processing
   const getSelectedPromptText = () => {
     let basePrompt = '';
@@ -398,6 +463,12 @@ const VideoProcessingOptionsModal = ({
       }
     }
 
+    // New: Add outside-range subtitles context if enabled and available
+    const ctxText = buildOutsideContextText();
+    if (ctxText) {
+      basePrompt += '\n\nContextual subtitles outside the selected range (for consistency):' + ctxText;
+    }
+
     return basePrompt;
   };
 
@@ -463,11 +534,17 @@ const VideoProcessingOptionsModal = ({
       // Note: video_metadata should be a sibling to file_data, not nested inside it
       // This matches the structure used in the actual processing
 
+      // If user-provided subtitles mode is active, append outside-context directly to the prompt
+      const ctxText = buildOutsideContextText();
+      const promptWithCtx = ctxText
+        ? `${getSelectedPromptText()}\n\nContextual subtitles outside the selected range (for consistency):${ctxText}`
+        : getSelectedPromptText();
+
       const requestData = {
         contents: [{
           role: "user",
           parts: [
-            { text: getSelectedPromptText() }, // Use the actual selected prompt
+            { text: promptWithCtx },
             filePart
           ]
         }]
@@ -544,6 +621,18 @@ const VideoProcessingOptionsModal = ({
   const isWithinLimit = displayTokens <= (selectedModelData?.maxTokens || 1048575);
 
   // Format time for display
+    // Persist outside context text for user-provided mode (consumed by promptManagement)
+    try {
+      const ctxText = buildOutsideContextText();
+      if (useOutsideResultsContext && ctxText) {
+        localStorage.setItem('video_processing_outside_context_text', ctxText);
+      } else {
+        localStorage.removeItem('video_processing_outside_context_text');
+      }
+    } catch (e) {
+      // ignore localStorage failures
+    }
+
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -555,6 +644,19 @@ const VideoProcessingOptionsModal = ({
   // Handle form submission
   const handleProcess = () => {
     if (!selectedSegment || isUploading) return;
+
+    // Persist outside-context text just before processing (user-provided flow reads it in promptManagement)
+    try {
+      const ctxText = buildOutsideContextText();
+      if (useOutsideResultsContext && ctxText) {
+        localStorage.setItem('video_processing_outside_context_text', ctxText);
+        localStorage.setItem('video_processing_use_outside_context', 'true');
+      } else {
+        localStorage.removeItem('video_processing_outside_context_text');
+        // keep the toggle key accurate
+        localStorage.setItem('video_processing_use_outside_context', 'false');
+      }
+    } catch {}
 
     const options = {
       fps,
@@ -763,6 +865,39 @@ const VideoProcessingOptionsModal = ({
                         </label>
                       </div>
                     </div>
+                      {/* Outside context switch */}
+                      <div className="setting-item">
+                        <div className="label-with-help">
+                          <label>{t('processing.notifyOutsideResults', 'Notify Gemini of outside results')}</label>
+                          <div
+                            className="help-icon-container"
+                            title={outsideContextAvailable
+                              ? t('processing.notifyOutsideResultsDesc', 'Include immediately-before/after subtitles outside the selected range to improve consistency')
+                              : t('processing.noOutsideContext', 'No outside subtitles available (switch disabled)')
+                            }
+                          >
+                            <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                              <circle cx="12" cy="12" r="10"></circle>
+                              <line x1="12" y1="16" x2="12" y2="12"></line>
+                              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                          </div>
+                        </div>
+                        <div className="material-switch-container">
+                          <MaterialSwitch
+                            id="use-outside-context"
+                            checked={useOutsideResultsContext && outsideContextAvailable}
+                            onChange={(e) => setUseOutsideResultsContext(e.target.checked)}
+                            disabled={!outsideContextAvailable}
+                            ariaLabel={t('processing.notifyOutsideResults', 'Notify Gemini of outside results')}
+                            icons={true}
+                          />
+                          <label htmlFor="use-outside-context" className="material-switch-label">
+                            {t('processing.notifyOutsideResults', 'Notify Gemini of outside results')}
+                          </label>
+                        </div>
+                      </div>
+
                   </div>
                 </div>
               </div>

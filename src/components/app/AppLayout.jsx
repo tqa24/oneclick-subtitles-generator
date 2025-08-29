@@ -357,6 +357,7 @@ const AppLayout = ({
               selectedSegment={selectedSegment}
               isUploading={isUploading}
               isProcessingSegment={isProcessingSegment}
+              onLiveSubtitlesChange={(live) => setSubtitlesData(live)}
             />
           </div>
 
@@ -475,6 +476,7 @@ const AppLayout = ({
           videoFile={uploadedFileData || uploadedFile}
           userProvidedSubtitles={userProvidedSubtitles}
           useUserProvidedSubtitles={useUserProvidedSubtitles}
+          subtitlesData={subtitlesData}
         />
       )}
 

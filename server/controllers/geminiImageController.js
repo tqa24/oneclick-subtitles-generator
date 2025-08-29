@@ -229,7 +229,7 @@ const generateImage = async (req, res) => {
 
       // Set both generationConfig and config with responseModalities as shown in the example
       const response = await genAI.models.generateContent({
-        model: 'gemini-2.5-flash-image-preview',
+        model: 'gemini-2.0-flash-preview-image-generation',
         contents: contents,
         generationConfig: {
           responseModalities: ["TEXT", "IMAGE"],

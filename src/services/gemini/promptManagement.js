@@ -147,15 +147,20 @@ const getTranscriptionPromptImpl = (contentType, userProvidedSubtitles = null, o
 
         // Get segment information if available
         const segmentInfo = options?.segmentInfo || {};
-        const isSegment = segmentInfo.isSegment || false;
+        const hasSegmentTimes = typeof segmentInfo.start === 'number' && typeof segmentInfo.duration === 'number';
+        const isSegment = !!segmentInfo.isSegment || hasSegmentTimes;
         const segmentIndex = segmentInfo.segmentIndex !== undefined ? segmentInfo.segmentIndex : null;
-        const segmentStartTime = segmentInfo.startTime !== undefined ? segmentInfo.startTime : 0;
-        const segmentDuration = segmentInfo.duration !== undefined ? segmentInfo.duration : null;
+        const segmentStartTime = hasSegmentTimes ? segmentInfo.start : (segmentInfo.startTime !== undefined ? segmentInfo.startTime : 0);
+        const segmentDuration = hasSegmentTimes ? segmentInfo.duration : (segmentInfo.duration !== undefined ? segmentInfo.duration : null);
         const totalDuration = segmentInfo.totalDuration !== undefined ? segmentInfo.totalDuration : null;
 
         let segmentInfoText = '';
-        if (isSegment && segmentIndex !== null && segmentDuration !== null && totalDuration !== null) {
-            segmentInfoText = `\nSegment info: This is segment ${segmentIndex + 1} starting at ${segmentStartTime.toFixed(2)}s (duration: ${segmentDuration.toFixed(2)}s).\nProvide timestamps relative to this segment's start (beginning at 00m00s000ms).`;
+        if (isSegment && segmentDuration !== null) {
+            if (segmentIndex !== null && totalDuration !== null) {
+                segmentInfoText = `\nSegment info: This is segment ${segmentIndex + 1} starting at ${Number(segmentStartTime).toFixed(2)}s (duration: ${Number(segmentDuration).toFixed(2)}s).\nProvide timestamps relative to this segment's start (beginning at 00m00s000ms).`;
+            } else {
+                segmentInfoText = `\nSegment info: This segment starts at ${Number(segmentStartTime).toFixed(2)}s (duration: ${Number(segmentDuration).toFixed(2)}s).\nProvide timestamps relative to this segment's start (beginning at 00m00s000ms).`;
+            }
         }
 
         // Build a simpler example JSON (just show format, not all lines)
@@ -181,6 +186,17 @@ Rules:
 - Index must match the number in brackets from the list below
 
 Numbered subtitle list:\n${numberedSubtitles}`;
+
+            // Append outside-range context if the modal requested it (persisted in localStorage)
+            try {
+                const useOutside = localStorage.getItem('video_processing_use_outside_context') === 'true';
+                const ocText = localStorage.getItem('video_processing_outside_context_text');
+                if (useOutside && ocText && ocText.trim()) {
+                    simplifiedPrompt += `\n\nContextual subtitles outside the selected range (for consistency):${ocText}`;
+                }
+            } catch (e) {
+                // ignore localStorage access issues
+            }
         } else {
             // For full video processing, use a clean prompt similar to segment processing
             simplifiedPrompt = `Time all ${subtitleCount} provided subtitles for this video. Match each numbered subtitle to when it appears in the video.
@@ -197,6 +213,17 @@ Rules:
 - Index must match: [0] to index 0, [1] to index 1, etc.
 
 Numbered subtitle list (all ${subtitleCount} must be timed):\n${numberedSubtitles}`;
+
+            // Append outside-range context in full-video path as well
+            try {
+                const useOutside = localStorage.getItem('video_processing_use_outside_context') === 'true';
+                const ocText = localStorage.getItem('video_processing_outside_context_text');
+                if (useOutside && ocText && ocText.trim()) {
+                    simplifiedPrompt += `\n\nContextual subtitles outside the selected range (for consistency):${ocText}`;
+                }
+            } catch (e) {
+                // ignore
+            }
         }
 
 
