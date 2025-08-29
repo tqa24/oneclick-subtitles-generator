@@ -19,12 +19,28 @@ const generatePrompt = async (req, res) => {
       return res.status(400).json({ error: 'Missing lyrics' });
     }
 
+
+	    // Selected model (defaults to UI default)
+	    let selectedPromptModel = 'gemini-2.5-flash-lite';
+
     // Get Gemini API key from localStorage
     let geminiApiKey = null;
     try {
       const localStoragePath = path.join(process.cwd(), 'localStorage.json');
       const localStorageData = await fs.readFile(localStoragePath, 'utf-8');
       const localStorage = JSON.parse(localStorageData);
+
+	      try {
+	        const storagePath = path.join(process.cwd(), 'localStorage.json');
+	        const storageRaw = await fs.readFile(storagePath, 'utf-8');
+	        const storage = JSON.parse(storageRaw || '{}');
+	        if (storage.background_prompt_model) {
+	          selectedPromptModel = storage.background_prompt_model;
+	        }
+	      } catch (e) {
+	        // ignore, use default
+	      }
+
       geminiApiKey = localStorage.gemini_token || localStorage.gemini_api_key;
     } catch (localStorageError) {
       console.error('Error reading localStorage file:', localStorageError);
@@ -62,7 +78,7 @@ generate one prompt to put in a image generator to describe the atmosphere/objec
     // Generate the prompt
 
     const response = await genAI.models.generateContent({
-      model: 'gemini-2.0-flash-lite',
+      model: selectedPromptModel,
       contents: [{ text: content }],
       generationConfig,
     });
@@ -93,6 +109,20 @@ const generateImage = async (req, res) => {
     if (!prompt) {
       return res.status(400).json({ error: 'Missing prompt' });
     }
+
+	    // Selected image model (defaults to UI default)
+	    let selectedImageModel = 'gemini-2.5-flash-image-preview';
+	    try {
+	      const storagePath = path.join(process.cwd(), 'localStorage.json');
+	      const storageRaw = await fs.readFile(storagePath, 'utf-8');
+	      const storage = JSON.parse(storageRaw || '{}');
+	      if (storage.background_image_model) {
+	        selectedImageModel = storage.background_image_model;
+	      }
+	    } catch (_) {
+	      // ignore
+	    }
+
 
     if (!albumArtUrl) {
       return res.status(400).json({ error: 'Missing album art URL' });
@@ -229,7 +259,7 @@ const generateImage = async (req, res) => {
 
       // Set both generationConfig and config with responseModalities as shown in the example
       const response = await genAI.models.generateContent({
-        model: 'gemini-2.0-flash-preview-image-generation',
+        model: selectedImageModel,
         contents: contents,
         generationConfig: {
           responseModalities: ["TEXT", "IMAGE"],
@@ -327,15 +357,26 @@ const getPrompts = async (req, res) => {
     const promptTwoMatch = fileContent.match(/const\s+finalPrompt\s*=\s*`([\s\S]*?)`;/);
     const promptTwo = promptTwoMatch ? promptTwoMatch[1] : `Expand the image into 16:9 ratio (landscape ratio). Then decorate my given image with \${prompt}`;
 
-    // Extract models: assume first occurrence is prompt model, second is image model
-    const modelRegex = /model:\s*'([^']+)'/g;
-    const models = [];
-    let m;
-    while ((m = modelRegex.exec(fileContent)) !== null) {
-      models.push(m[1]);
+    // Pull models from persisted storage (preferred) else fallback to code scanning
+    let promptModel = 'gemini-2.5-flash-lite';
+    let imageModel = 'gemini-2.5-flash-image-preview';
+    try {
+      const storagePath = path.join(process.cwd(), 'localStorage.json');
+      const storageRaw = await fs.readFile(storagePath, 'utf-8');
+      const storage = JSON.parse(storageRaw || '{}');
+      promptModel = storage.background_prompt_model || promptModel;
+      imageModel = storage.background_image_model || imageModel;
+    } catch (_) {
+      // fallback to code scanning
+      const modelRegex = /model:\s*'([^']+)'/g;
+      const models = [];
+      let m;
+      while ((m = modelRegex.exec(fileContent)) !== null) {
+        models.push(m[1]);
+      }
+      promptModel = models[0] || promptModel;
+      imageModel = models[1] || imageModel;
     }
-    const promptModel = models[0] || 'gemini-2.5-flash-lite';
-    const imageModel = models[1] || 'gemini-2.5-flash-image-preview';
 
     res.json({ promptOne, promptTwo, promptModel, imageModel });
   } catch (error) {

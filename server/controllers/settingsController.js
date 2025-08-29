@@ -60,6 +60,23 @@ const updatePrompts = async (req, res) => {
     // Write the updated content back to the file
     await fs.writeFile(filePath, content, 'utf-8');
 
+    // Persist selected models to localStorage.json so runtime can use them without restart
+    try {
+      const storagePath = path.join(process.cwd(), 'localStorage.json');
+      let storage = {};
+      try {
+        const storageRaw = await fs.readFile(storagePath, 'utf-8');
+        storage = JSON.parse(storageRaw || '{}');
+      } catch (_) {
+        storage = {};
+      }
+      if (promptModel) storage.background_prompt_model = promptModel;
+      if (imageModel) storage.background_image_model = imageModel;
+      await fs.writeFile(storagePath, JSON.stringify(storage, null, 2), 'utf-8');
+    } catch (persistErr) {
+      console.warn('Warning: failed to persist models to localStorage.json', persistErr);
+    }
+
     res.json({ success: true });
   } catch (error) {
     console.error('Error updating prompts:', error);
