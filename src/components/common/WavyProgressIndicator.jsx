@@ -275,7 +275,7 @@ const WavyProgressIndicator = forwardRef(({
     maxWidth: maxWidthProp,
     forceFlat = false, // New prop to force flat appearance (no waves)
     // Shadows: apply to progress stroke and stop indicator only (not track)
-    progressShadow = true,
+    progressShadow = false,
     progressShadowColor = 'rgba(0, 0, 0, 0.8)',
     progressShadowBlur = 2,
     progressShadowOffsetX = 0,

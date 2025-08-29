@@ -154,6 +154,12 @@ const VideoBottomControls = ({
                           width: '100%',
                           position: 'relative'
                         }}
+                        progressShadow={true}
+                        progressShadowColor={'rgba(0, 0, 0, 0.8)'}
+                        progressShadowBlur={2}
+                        progressShadowOffsetX={0}
+                        progressShadowOffsetY={1}
+                        progressShadowBleed={3}
                       />
 
                       {/* Seeker Handle - draggable circle for user interaction */}
