@@ -32,5 +32,12 @@
   "noAnalysisAvailable": "Please create analysis by pressing \"Add analysis\" button",
   "generateForRange": "Generate/update subtitles for range:",
   "analysisRules": "Analysis Rules",
-  "mediaResolutionHelp": "64 or 256 tokens cannot be mapped to an exact resolution; this reflects Gemini's proprietary video information extraction method."
+  "mediaResolutionHelp": "64 or 256 tokens cannot be mapped to an exact resolution; this reflects Gemini's proprietary video information extraction method.",
+  "notifyOutsideResults": "Surrounding context",
+  "notifyOutsideResultsDesc": "Include immediately-before/after subtitles outside the selected range to improve consistency",
+  "noOutsideContext": "No outside subtitles available (switch disabled)",
+  "outsideContextRange": "Context coverage",
+  "outsideContextRangeDesc": "How many subtitles before/after to include as context. The last value is Unlimited.",
+  "unlimited": "Unlimited",
+  "linesCount": "{{count}} lines"
 }

@@ -76,11 +76,19 @@ const VideoProcessingOptionsModal = ({
   });
   const [transcriptionRulesAvailable, setTranscriptionRulesAvailable] = useState(false);
 
-  // New: Outside results context toggle state
+  // New: Outside results context toggle state (default ON unless explicitly disabled)
   const [useOutsideResultsContext, setUseOutsideResultsContext] = useState(() => {
-    return localStorage.getItem('video_processing_use_outside_context') === 'true';
+    const saved = localStorage.getItem('video_processing_use_outside_context');
+    return saved !== 'false';
   });
   const [outsideContextAvailable, setOutsideContextAvailable] = useState(false);
+
+  // Outside context range (1-20, 21 = Unlimited)
+  const [outsideContextRange, setOutsideContextRange] = useState(() => {
+    const saved = localStorage.getItem('video_processing_outside_context_range');
+    const num = saved ? parseInt(saved, 10) : 5;
+    return Number.isFinite(num) ? num : 5;
+  });
 
   const [customGeminiModels, setCustomGeminiModels] = useState([]);
   const [isCountingTokens, setIsCountingTokens] = useState(false);
@@ -106,11 +114,18 @@ const VideoProcessingOptionsModal = ({
       return (sStart >= end) || overlapsEnd(s);
     });
 
-    const before = beforeAll.slice(-5);
-    const after = afterAll.slice(0, 5);
+    const limit = outsideContextRange === 21 ? Infinity : Math.max(1, Math.min(20, outsideContextRange || 5));
+    const before = beforeAll.slice(-limit);
+    const after = afterAll.slice(0, limit);
     const available = before.length > 0 || after.length > 0;
     return { available, before, after };
-  }, [subtitlesData, selectedSegment]);
+  }, [subtitlesData, selectedSegment, outsideContextRange]);
+  // Persist range changes
+  useEffect(() => {
+    const val = outsideContextRange === 21 ? 21 : Math.max(1, Math.min(20, Number(outsideContextRange) || 5));
+    localStorage.setItem('video_processing_outside_context_range', String(val));
+  }, [outsideContextRange]);
+
 
   // Keep availability and persisted toggle in sync
   useEffect(() => {
@@ -865,45 +880,94 @@ const VideoProcessingOptionsModal = ({
                         </label>
                       </div>
                     </div>
-                      {/* Outside context switch */}
-                      <div className="setting-item">
-                        <div className="label-with-help">
-                          <label>{t('processing.notifyOutsideResults', 'Notify Gemini of outside results')}</label>
-                          <div
-                            className="help-icon-container"
-                            title={outsideContextAvailable
-                              ? t('processing.notifyOutsideResultsDesc', 'Include immediately-before/after subtitles outside the selected range to improve consistency')
-                              : t('processing.noOutsideContext', 'No outside subtitles available (switch disabled)')
-                            }
-                          >
-                            <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                              <circle cx="12" cy="12" r="10"></circle>
-                              <line x1="12" y1="16" x2="12" y2="12"></line>
-                              <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                            </svg>
-                          </div>
-                        </div>
-                        <div className="material-switch-container">
-                          <MaterialSwitch
-                            id="use-outside-context"
-                            checked={useOutsideResultsContext && outsideContextAvailable}
-                            onChange={(e) => setUseOutsideResultsContext(e.target.checked)}
-                            disabled={!outsideContextAvailable}
-                            ariaLabel={t('processing.notifyOutsideResults', 'Notify Gemini of outside results')}
-                            icons={true}
-                          />
-                          <label htmlFor="use-outside-context" className="material-switch-label">
-                            {t('processing.notifyOutsideResults', 'Notify Gemini of outside results')}
-                          </label>
-                        </div>
-                      </div>
 
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
+            {/* Third row: context switch + range slider in a single cell (1st column) */}
+            <div className="option-group" style={{ gridColumn: '1 / 2' }}>
+              <div className="combined-options-row">
+                {/* Left half: Outside context switch */}
+                <div className="combined-option-half">
+                  <div className="label-with-help">
+                    <label>{t('processing.notifyOutsideResults', 'Surrounding context')}</label>
+                    <div
+                      className="help-icon-container"
+                      title={outsideContextAvailable
+                        ? t('processing.notifyOutsideResultsDesc', 'Include immediately-before/after subtitles outside the selected range to improve consistency')
+                        : t('processing.noOutsideContext', 'No outside subtitles available (switch disabled)')
+                      }
+                    >
+                      <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="material-switch-container">
+                    <MaterialSwitch
+                      id="use-outside-context"
+                      checked={useOutsideResultsContext && outsideContextAvailable}
+                      onChange={(e) => setUseOutsideResultsContext(e.target.checked)}
+                      disabled={!outsideContextAvailable}
+                      ariaLabel={t('processing.notifyOutsideResults', 'Include surrounding subtitles as context')}
+                      icons={true}
+                    />
+                    <label htmlFor="use-outside-context" className="material-switch-label">
+                      {t('processing.notifyOutsideResults', 'Include surrounding subtitles as context')}
+                    </label>
+                  </div>
+                </div>
+
+                {/* Right half: Context range slider (1-20, last = Unlimited) */}
+                <div className="combined-option-half">
+                  <div className="label-with-help">
+                    <label>{t('processing.outsideContextRange', 'Context coverage')}</label>
+                    <div
+                      className="help-icon-container"
+                      title={t('processing.outsideContextRangeDesc', 'How many subtitles before/after to include as context. The last value is Unlimited.')}
+                    >
+                      <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="slider-control">
+                    <StandardSlider
+                      value={outsideContextRange}
+                      onChange={(value) => setOutsideContextRange(Number(value))}
+                      min={1}
+                      max={21}
+                      step={1}
+                      orientation="Horizontal"
+                      size="XSmall"
+                      state={outsideContextAvailable && useOutsideResultsContext ? 'Enabled' : 'Disabled'}
+                      showValueIndicator={false}
+                      showIcon={false}
+                      showStops={false}
+                      id="outside-context-range"
+                      ariaLabel={t('processing.outsideContextRange', 'Context coverage')}
+                      disabled={!outsideContextAvailable || !useOutsideResultsContext}
+                      showValueBadge={true}
+                      valueBadgeFormatter={(v) => (Math.round(Number(v)) >= 21 ? t('processing.unlimited', 'Unlimited') : Math.round(Number(v)))}
+                    />
+                    <div className="slider-value-display">
+                      {outsideContextRange === 21
+                        ? t('processing.unlimited', 'Unlimited')
+                        : t('processing.linesCount', '{{count}} lines', { count: outsideContextRange })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+	          </div>
 
 
           {/* Upload Status */}

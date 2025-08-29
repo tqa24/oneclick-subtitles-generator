@@ -32,5 +32,12 @@
   "noAnalysisAvailable": "Vui lòng tạo phân tích bằng cách nhấn nút \"Thêm phân tích\"",
   "generateForRange": "Tạo/cập nhật phụ đề cho phạm vi:",
   "analysisRules": "Quy tắc phân tích",
-  "mediaResolutionHelp": "64 hay 256 token không thể quy ra độ phân giải chính xác, đây là kỹ thuật trích xuất thông tin video riêng từ phía Gemini"
+  "mediaResolutionHelp": "64 hay 256 token không thể quy ra độ phân giải chính xác, đây là kỹ thuật trích xuất thông tin video riêng từ phía Gemini",
+  "notifyOutsideResults": "Ngữ cảnh xung quanh",
+  "notifyOutsideResultsDesc": "Bao gồm các phụ đề ngay trước/sau phạm vi đã chọn để tăng tính nhất quán",
+  "noOutsideContext": "Không có phụ đề xung quanh (không thể bật công tắc)",
+  "outsideContextRange": "Phạm vi ngữ cảnh",
+  "outsideContextRangeDesc": "Số dòng phụ đề trước/sau được thêm vào ngữ cảnh. Giá trị cuối là Không giới hạn.",
+  "unlimited": "Không giới hạn",
+  "linesCount": "{{count}} dòng"
 }

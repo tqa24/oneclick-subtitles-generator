@@ -32,5 +32,12 @@
   "noAnalysisAvailable": "\"분석 추가\" 버튼을 눌러 분석을 생성해주세요",
   "generateForRange": "범위에 대한 자막 생성/업데이트:",
   "analysisRules": "분석 규칙",
-  "mediaResolutionHelp": "64 또는 256 토큰은 정확한 해상도로 매핑할 수 없습니다. 이는 Gemini의 독자적인 비디오 정보 추출 방식입니다."
+  "mediaResolutionHelp": "64 또는 256 토큰은 정확한 해상도로 매핑할 수 없습니다. 이는 Gemini의 독자적인 비디오 정보 추출 방식입니다.",
+  "notifyOutsideResults": "주변 컨텍스트",
+  "notifyOutsideResultsDesc": "선택된 범위 바로 전/후의 자막을 포함하여 일관성을 높입니다",
+  "noOutsideContext": "주변 자막이 없어 스위치를 사용할 수 없습니다",
+  "outsideContextRange": "컨텍스트 범위",
+  "outsideContextRangeDesc": "전/후에 포함할 자막 수. 마지막 값은 무제한입니다.",
+  "unlimited": "무제한",
+  "linesCount": "{{count}}줄"
 }
