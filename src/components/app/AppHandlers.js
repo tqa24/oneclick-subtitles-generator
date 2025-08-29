@@ -592,8 +592,8 @@ export const useAppHandlers = (appState) => {
         );
       }
 
-      // Add user-provided subtitles if available and enabled
-      if (useUserProvidedSubtitles && userProvidedSubtitles) {
+      // Add user-provided subtitles ONLY when the timing-generation preset is selected
+      if (options.promptPreset === 'timing-generation' && useUserProvidedSubtitles && userProvidedSubtitles) {
         subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
       }
 
