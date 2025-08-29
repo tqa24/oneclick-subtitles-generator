@@ -244,12 +244,16 @@ const AppLayout = ({
     // Check if we have an actual downloaded video file (not just a pasted URL)
     const hasDownloadedVideo = hasValidDownloadedVideo(uploadedFile);
 
-    // If we have subtitles data but no video source at all, switch to SRT-only mode
-    if (!selectedVideo && !uploadedFile && !hasDownloadedVideo && subtitlesData) {
+    // Determine availability
+    const hasAnyVideoSource = !!(selectedVideo || uploadedFile || hasDownloadedVideo);
+    const hasAnySubtitles = Array.isArray(subtitlesData) && subtitlesData.length > 0;
+
+    // Only enter SRT-only mode when we truly have subtitles loaded but no video source
+    if (!hasAnyVideoSource && hasAnySubtitles) {
       setIsSrtOnlyMode(true);
     }
-    // If we have any video source (URL, uploaded file, or downloaded video), switch to normal mode
-    else if ((selectedVideo || uploadedFile || hasDownloadedVideo) && subtitlesData && isSrtOnlyMode) {
+    // Exit SRT-only mode when any video source becomes available
+    else if (hasAnyVideoSource && isSrtOnlyMode) {
       setIsSrtOnlyMode(false);
     }
   }, [selectedVideo, uploadedFile, subtitlesData, isSrtOnlyMode, setIsSrtOnlyMode]);

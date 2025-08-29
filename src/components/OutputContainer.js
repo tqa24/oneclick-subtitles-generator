@@ -86,10 +86,12 @@ const OutputContainer = ({
       endTime: sub.end
     })) || [];
   };
-  // Whenever editedLyrics changes, report live timeline state
+  // Whenever editedLyrics changes, report live timeline state (only when non-empty)
   useEffect(() => {
-    if (onLiveSubtitlesChange) {
-      onLiveSubtitlesChange(editedLyrics || subtitlesData || []);
+    if (!onLiveSubtitlesChange) return;
+    const arr = editedLyrics || subtitlesData;
+    if (Array.isArray(arr) && arr.length > 0) {
+      onLiveSubtitlesChange(arr);
     }
   }, [editedLyrics, subtitlesData, onLiveSubtitlesChange]);
 
