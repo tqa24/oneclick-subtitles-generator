@@ -108,6 +108,24 @@
   transform: scale(1.1);
 }
 
+
+/* Small circular badge on tab button */
+.settings-tab .tab-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  box-shadow: 0 0 0 4px rgba(var(--md-primary-rgb), 0.15);
+}
+
+/* Make badge visible on active state as well */
+.settings-tab.active .tab-badge {
+  background: var(--md-primary);
+}
+
 /* State layer for hover effect - Material Design 3 state layer */
 .settings-tab:hover:not(.active) {
   opacity: 1;

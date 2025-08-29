@@ -146,10 +146,10 @@ const AboutTab = ({ backgroundType }) => {
                     {updateAvailable ? (
                       <div className="update-notification">
                         <div className="update-message">
-                          <svg className="update-icon" width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z" fill="currentColor"/>
-                            <path d="M19 15L20.09 18.26L24 19L20.09 19.74L19 23L17.91 19.74L14 19L17.91 18.26L19 15Z" fill="currentColor"/>
-                            <path d="M5 6L5.5 7.5L7 8L5.5 8.5L5 10L4.5 8.5L3 8L4.5 7.5L5 6Z" fill="currentColor"/>
+                          <svg className="update-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                            <circle cx="12" cy="12" r="8.5" stroke="currentColor" strokeWidth="2"/>
+                            <path d="M12 7v7" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                            <path d="M8.5 11.5L12 15l3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                           <span>{t('settings.updateAvailable', 'A new version is available!')}</span>
                         </div>

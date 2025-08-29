@@ -20,6 +20,7 @@ import ModelManagementTab from './ModelManagementTab';
 
 // Import icons
 import { ApiKeyIcon, ProcessingIcon, PromptIcon, CacheIcon, AboutIcon, ModelIcon } from './icons/TabIcons';
+import { getGitVersion, getLatestVersion, compareVersions } from '../../utils/gitVersion';
 
 import initSettingsTabPillAnimation from '../../utils/settingsTabPillAnimation';
 import initSettingsTabsDrag from '../../utils/settingsTabsDrag';
@@ -49,6 +50,29 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     // Initialize from localStorage
     return localStorage.getItem('about_background_type') || 'default';
   });
+
+  // Update availability for About tab badge
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    const check = async () => {
+      try {
+        const current = await getGitVersion();
+        const latest = await getLatestVersion();
+        if (!mounted) return;
+        if (current && latest) {
+          const isNewer = compareVersions(latest.version, current.version);
+          setUpdateAvailable(isNewer > 0);
+        }
+      } catch (e) {
+        // Silent fail for badge; About tab shows detailed error state
+      }
+    };
+    check();
+    return () => { mounted = false; };
+  }, []);
+
 
   // Initialize pill position and drag functionality on component mount
   useEffect(() => {
@@ -662,6 +686,14 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
             >
               <AboutIcon />
               {t('settings.about', 'About')}
+              {updateAvailable && (
+                <span
+                  className="tab-badge"
+                  role="status"
+                  aria-label={t('settings.updateAvailable', 'A new version is available!')}
+                  title={t('settings.updateAvailable', 'A new version is available!')}
+                />
+              )}
             </button>
           </div>
 

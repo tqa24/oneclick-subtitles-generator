@@ -255,12 +255,14 @@
 .update-icon {
   color: var(--md-primary);
   flex-shrink: 0;
-  animation: pulse 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 0 rgba(var(--md-primary-rgb, 33, 150, 243), 0));
+  animation: glow 2.4s ease-in-out infinite;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.8; transform: scale(1.05); }
+@keyframes glow {
+  0%   { transform: none; filter: drop-shadow(0 0 0 rgba(var(--md-primary-rgb, 33, 150, 243), 0)); }
+  50%  { transform: none; filter: drop-shadow(0 0 6px rgba(var(--md-primary-rgb, 33, 150, 243), 0.7)); }
+  100% { transform: none; filter: drop-shadow(0 0 0 rgba(var(--md-primary-rgb, 33, 150, 243), 0)); }
 }
 
 .update-description {

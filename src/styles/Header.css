@@ -336,6 +336,19 @@
   transition: stroke var(--md-duration-medium2) var(--md-easing-standard);
 }
 
+/* Small badge for floating settings button (reuses tab-badge look) */
+.floating-settings .tab-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--md-primary);
+  box-shadow: 0 0 0 4px rgba(var(--md-primary-rgb), 0.15);
+}
+
+
 /* Simple responsive design */
 @media (max-width: 768px) {
   .app-header {
