@@ -8,6 +8,7 @@ A beautiful, reusable textarea component with a custom scrollbar that replaces t
 - ✅ **Beautiful custom scrollbar** - Pill-shaped, animated scrollbar with primary colors
 - ✅ **Real-time dragging** - Smooth, responsive drag functionality
 - ✅ **Auto-hide behavior** - Only appears when content overflows and on hover/focus
+- ✅ **Stable focus animation** - Blue highlight without layout shifts or flickering
 - ✅ **Fully accessible** - Supports all standard textarea functionality
 - ✅ **Responsive design** - Adapts to container size changes
 - ✅ **Theme support** - Works with light and dark themes
@@ -220,7 +221,7 @@ The component uses CSS custom properties that you can override:
 ### Modal Prompt Editor
 ```jsx
 // src/components/PromptEditor.js
-// Note: Uses monospace font and blue focus highlight
+// Note: Uses monospace font, beautiful rounded container, and blue focus highlight (same as reference text)
 <div className="prompt-editor-container">
   <CustomScrollbarTextarea
     id="custom-instructions"

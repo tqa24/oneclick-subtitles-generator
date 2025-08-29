@@ -17,14 +17,14 @@
 
 /* Focus state - apply to container instead of textarea */
 .custom-scrollbar-textarea-container:focus-within {
-  box-shadow: var(--md-elevation-level2);
-  border: 2px solid var(--md-primary);
+  box-shadow: var(--md-elevation-level2), 0 0 0 2px var(--md-primary);
+  border: 1px solid rgba(var(--md-outline-variant-rgb, 121, 116, 126), 0.3); /* Keep same border size */
   background-color: var(--md-surface-2);
-  transform: translateY(-1px);
+  /* Remove transform to prevent layout shift */
 }
 
 .custom-scrollbar-textarea-container:focus-within .custom-scrollbar-textarea {
-  padding: 14px; /* Adjust padding to maintain the same size when border appears */
+  padding: 16px; /* Keep same padding to prevent layout shift */
 }
 
 /* Textarea - hide native scrollbar completely and override all focus styles */
@@ -226,7 +226,8 @@
 
 .custom-scrollbar-textarea-container.minimal:focus-within {
   background-color: var(--md-surface-1);
-  box-shadow: 0 0 0 1px var(--md-primary);
+  border: 1px solid var(--md-outline); /* Keep same border size */
+  box-shadow: 0 0 0 2px var(--md-primary); /* Use box-shadow for focus ring */
 }
 
 /* Specific overrides for components that might have conflicting textarea styles */
@@ -269,26 +270,32 @@
   border-radius: 0 !important;
 }
 
+/* Override PromptEditor.css container styling when using custom scrollbar */
+.prompt-editor-container {
+  border: none !important; /* Remove the container border */
+  background-color: transparent !important; /* Remove container background */
+  overflow: visible !important; /* Allow our custom container to show */
+}
+
 /* Ensure prompt editor container works well with custom scrollbar */
 .prompt-editor-container .custom-scrollbar-textarea-container {
-  border: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  background-color: var(--md-surface) !important;
+  border-radius: 20px !important; /* Match reference text border radius */
+  box-shadow: var(--md-elevation-level1) !important; /* Match reference text shadow */
+  background-color: var(--md-surface-2) !important; /* Match reference text background */
+  border: 1px solid rgba(var(--md-outline-variant-rgb, 121, 116, 126), 0.3) !important; /* Match reference text border */
 }
 
 /* Restore blue highlight focus effect for prompt editors */
 .prompt-editor-container .custom-scrollbar-textarea-container:focus-within {
-  border: 2px solid var(--md-primary) !important;
-  box-shadow: var(--md-elevation-level2) !important;
-  transform: translateY(-1px) !important;
-  background-color: var(--md-surface) !important;
-  border-radius: var(--md-shape-medium) !important;
+  border: 1px solid rgba(var(--md-outline-variant-rgb, 121, 116, 126), 0.3) !important; /* Keep same border size */
+  box-shadow: var(--md-elevation-level2), 0 0 0 2px var(--md-primary) !important;
+  /* Remove transform to prevent layout shift */
+  background-color: var(--md-surface-2) !important; /* Match reference text focus background */
 }
 
-/* Adjust padding when focus border appears */
+/* Keep same padding to prevent layout shift */
 .prompt-editor-container .custom-scrollbar-textarea-container:focus-within .custom-scrollbar-textarea {
-  padding: 10px !important; /* Adjust for 2px border (was 12px) */
+  padding: 12px !important; /* Keep same padding as default */
 }
 
 /* Monospace font for prompt editors */
@@ -309,14 +316,14 @@
 }
 
 .transcription-prompt-setting .custom-scrollbar-textarea-container:focus-within {
-  border: 2px solid var(--md-primary) !important;
-  box-shadow: var(--md-elevation-level2) !important;
-  transform: translateY(-1px) !important;
+  border: 1px solid var(--border-color) !important; /* Keep same border size */
+  box-shadow: var(--md-elevation-level2), 0 0 0 2px var(--md-primary) !important;
+  /* Remove transform to prevent layout shift */
   background-color: var(--background-secondary) !important;
 }
 
 .transcription-prompt-setting .custom-scrollbar-textarea-container:focus-within .custom-scrollbar-textarea {
-  padding: 0.625rem !important; /* Adjust for 2px border (was 0.75rem) */
+  padding: 0.75rem !important; /* Keep same padding to prevent layout shift */
 }
 
 .transcription-prompt-setting .custom-scrollbar-textarea {
