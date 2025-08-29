@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import CloseButton from '../common/CloseButton';
+import CustomScrollbarTextarea from '../common/CustomScrollbarTextarea';
 import '../../styles/PromptEditor.css';
 import '../../styles/background/BackgroundPromptEditor.css';
 
@@ -205,7 +206,7 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
               {t('promptEditor.promptOneDescription', 'This prompt is used to generate a description from the lyrics.')}
             </p>
             <div className="prompt-editor-container">
-              <textarea
+              <CustomScrollbarTextarea
                 className="prompt-editor-textarea"
                 value={promptOne}
                 onChange={handlePromptOneChange}
@@ -244,7 +245,7 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
               {t('promptEditor.promptTwoDescription', 'This prompt is used to generate the background image using the album art and the generated description.')}
             </p>
             <div className="prompt-editor-container">
-              <textarea
+              <CustomScrollbarTextarea
                 className="prompt-editor-textarea"
                 value={promptTwo}
                 onChange={handlePromptTwoChange}

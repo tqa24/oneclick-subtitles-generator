@@ -200,6 +200,40 @@ The component uses CSS custom properties that you can override:
 />
 ```
 
+### Prompt Editor (Settings)
+```jsx
+// src/components/settings/tabs/PromptsTab.js
+// Note: Uses monospace font and special settings styling
+<div className="prompt-editor-container transcription-prompt-setting">
+  <CustomScrollbarTextarea
+    id="transcription-prompt"
+    ref={textareaRef}
+    value={transcriptionPrompt}
+    onChange={(e) => setTranscriptionPrompt(e.target.value)}
+    onKeyDown={handleKeyDown}
+    rows={8}
+    className="transcription-prompt-textarea"
+  />
+</div>
+```
+
+### Modal Prompt Editor
+```jsx
+// src/components/PromptEditor.js
+// Note: Uses monospace font and blue focus highlight
+<div className="prompt-editor-container">
+  <CustomScrollbarTextarea
+    id="custom-instructions"
+    ref={textareaRef}
+    className="prompt-editor-textarea"
+    value={customInstructions}
+    onChange={handleChange}
+    rows={8}
+    placeholder={t('promptEditor.enterPrompt')}
+  />
+</div>
+```
+
 ## Browser Support
 
 - ✅ Chrome/Edge (Chromium)

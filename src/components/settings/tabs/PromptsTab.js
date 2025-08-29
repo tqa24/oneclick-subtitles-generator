@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
+import CustomScrollbarTextarea from '../../common/CustomScrollbarTextarea';
 import { DEFAULT_TRANSCRIPTION_PROMPT, PROMPT_PRESETS, getUserPromptPresets, saveUserPromptPresets } from '../../../services/geminiService';
 
 const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
@@ -288,8 +289,8 @@ const PromptsTab = ({ transcriptionPrompt, setTranscriptionPrompt }) => {
         <p className="setting-description">
           {t('settings.transcriptionPromptDescription', 'Customize the prompt sent to Gemini for transcription. The {contentType} placeholder will be replaced with "video" or "audio" depending on the input type. This placeholder cannot be removed and is required for the transcription to work properly.')}
         </p>
-        <div className="prompt-editor-container">
-          <textarea
+        <div className="prompt-editor-container transcription-prompt-setting">
+          <CustomScrollbarTextarea
             id="transcription-prompt"
             ref={textareaRef}
             value={transcriptionPrompt}
