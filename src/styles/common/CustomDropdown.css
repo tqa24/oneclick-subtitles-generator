@@ -1,0 +1,319 @@
+/* Custom Dropdown Component - Material Design 3 */
+
+.custom-dropdown {
+  position: relative;
+  display: inline-block;
+  width: auto;
+  min-width: 120px;
+}
+
+/* Dropdown button */
+.custom-dropdown-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 16px;
+  background-color: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-pill);
+  color: var(--md-on-surface);
+  font-size: 0.9rem;
+  font-family: var(--font-primary);
+  cursor: pointer;
+  transition: all var(--md-duration-medium2) var(--md-easing-standard);
+  height: 42px;
+  box-sizing: border-box;
+  box-shadow: var(--md-elevation-level1);
+  gap: 8px;
+}
+
+.custom-dropdown-button:hover:not(:disabled) {
+  background-color: var(--md-surface-2);
+  box-shadow: var(--md-elevation-level2);
+  transform: translateY(-1px);
+}
+
+.custom-dropdown-button:focus {
+  outline: none;
+  border-color: var(--md-primary);
+  box-shadow: 0 0 0 3px rgba(var(--md-primary-rgb), 0.12);
+}
+
+.custom-dropdown-button:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.custom-dropdown-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--md-surface-variant);
+  color: var(--md-on-surface-variant);
+  transform: none !important;
+  box-shadow: none;
+}
+
+/* Dropdown value text */
+.dropdown-value {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+/* Dropdown arrow */
+.dropdown-arrow {
+  flex-shrink: 0;
+  transition: transform var(--md-duration-medium2) var(--md-easing-standard);
+  color: var(--md-on-surface-variant);
+}
+
+.dropdown-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+/* Dropdown menu with custom scrollbar */
+.custom-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background-color: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 16px;
+  box-shadow: var(--md-elevation-level3);
+  z-index: 1000;
+  max-height: 200px; /* Smaller to ensure scrollbar appears */
+  overflow: hidden; /* Hide native scrollbar, custom scrollbar will handle scrolling */
+  animation: dropdown-slide-in var(--md-duration-medium3) var(--md-easing-emphasized);
+  transform-origin: top center;
+}
+
+/* Dropdown options list - this is the scrollable container */
+.dropdown-options-list {
+  max-height: 200px; /* Smaller to ensure scrollbar appears */
+  overflow-y: scroll;
+  overflow-x: hidden;
+  /* Hide native scrollbar completely */
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE and Edge */
+  /* No padding - clean dropdown styling */
+  padding: 0;
+  margin: 0;
+}
+
+/* Force hide webkit scrollbar completely */
+.dropdown-options-list::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+  -webkit-appearance: none !important;
+}
+
+.dropdown-options-list::-webkit-scrollbar-track {
+  display: none !important;
+  background: transparent !important;
+}
+
+.dropdown-options-list::-webkit-scrollbar-thumb {
+  display: none !important;
+  background: transparent !important;
+}
+
+.dropdown-options-list::-webkit-scrollbar-corner {
+  display: none !important;
+  background: transparent !important;
+}
+
+/* Custom scrollbar track for dropdown */
+.custom-dropdown-menu::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  right: 5px;
+  bottom: 8px;
+  width: 4px;
+  background: rgba(var(--md-outline-variant-rgb, 121, 116, 126), 0.15);
+  border-radius: 50px; /* Pill shape */
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 9;
+}
+
+/* Custom scrollbar thumb - positioned dynamically by JavaScript */
+.custom-scrollbar-thumb {
+  position: absolute;
+  right: 5px;
+  width: 4px;
+  background: rgba(var(--md-primary-rgb, 103, 80, 164), 0.6);
+  border-radius: 50px; /* Pill shape */
+  opacity: 0;
+  transition: opacity 0.2s ease, width 0.2s ease, right 0.2s ease; /* Only transition visual properties, not position */
+  pointer-events: auto;
+  z-index: 10;
+  cursor: pointer;
+  min-height: 20px;
+}
+
+/* Show scrollbar track only when dropdown has scrollable content */
+.custom-dropdown-menu.has-scrollable-content:hover::before {
+  opacity: 1;
+}
+
+/* Show scrollbar thumb on hover */
+.custom-dropdown-menu:hover .custom-scrollbar-thumb {
+  opacity: 1;
+}
+
+/* Enhanced hover state for thumb */
+.custom-scrollbar-thumb:hover {
+  width: 6px;
+  right: 4px;
+  background: rgba(var(--md-primary-rgb, 103, 80, 164), 0.8);
+}
+
+/* Active state for thumb */
+.custom-scrollbar-thumb:active {
+  background: var(--md-primary);
+  width: 6px;
+  right: 4px;
+}
+
+/* Dragging state */
+.custom-scrollbar-thumb.dragging {
+  background: var(--md-primary) !important;
+  width: 6px !important;
+  right: 4px !important;
+  opacity: 1 !important;
+  transition: none !important; /* Disable transitions while dragging */
+}
+
+@keyframes dropdown-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Dropdown options */
+.dropdown-option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  color: var(--md-on-surface);
+  font-size: 0.9rem;
+  font-family: var(--font-primary);
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  border-radius: 0;
+}
+
+.dropdown-option:first-child {
+  border-radius: 16px 16px 0 0;
+}
+
+.dropdown-option:last-child {
+  border-radius: 0 0 16px 16px;
+}
+
+.dropdown-option:only-child {
+  border-radius: 16px;
+}
+
+.dropdown-option:hover {
+  background-color: var(--md-surface-2);
+}
+
+.dropdown-option:focus {
+  outline: none;
+  background-color: var(--md-surface-2);
+}
+
+.dropdown-option.selected {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  font-weight: 600;
+}
+
+.dropdown-option.selected:hover {
+  background-color: var(--md-primary-container);
+  opacity: 0.9;
+}
+
+/* Disabled state */
+.custom-dropdown.disabled .custom-dropdown-button {
+  pointer-events: none;
+}
+
+/* Open state styling */
+.custom-dropdown.open .custom-dropdown-button {
+  border-color: var(--md-primary);
+  box-shadow: 0 0 0 3px rgba(var(--md-primary-rgb), 0.12);
+}
+
+/* Dark mode scrollbar */
+[data-theme="dark"] .custom-dropdown-menu::before {
+  background: rgba(var(--md-outline-variant-rgb, 200, 196, 206), 0.15);
+}
+
+[data-theme="dark"] .custom-scrollbar-thumb {
+  background: rgba(var(--md-primary-rgb, 208, 188, 255), 0.6);
+}
+
+[data-theme="dark"] .custom-scrollbar-thumb:hover {
+  background: rgba(var(--md-primary-rgb, 208, 188, 255), 0.8);
+}
+
+[data-theme="dark"] .custom-scrollbar-thumb:active {
+  background: var(--md-primary);
+}
+
+/* Fast, responsive scrolling for real-time dragging */
+.dropdown-options-list {
+  scroll-behavior: auto; /* Remove smooth scrolling for real-time response */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .custom-dropdown-menu {
+    max-height: 250px;
+  }
+  
+  .dropdown-option {
+    padding: 14px 16px;
+    font-size: 0.95rem;
+  }
+}
+
+/* Dark theme adjustments */
+@media (prefers-color-scheme: dark) {
+  .custom-dropdown-menu {
+    box-shadow: var(--md-elevation-level3), 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .custom-dropdown-button {
+    border-width: 2px;
+  }
+  
+  .dropdown-option.selected {
+    outline: 2px solid var(--md-primary);
+    outline-offset: -2px;
+  }
+}

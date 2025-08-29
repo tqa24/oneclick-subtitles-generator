@@ -5,6 +5,7 @@ import SubtitleCustomizationPanel, { defaultCustomization } from './SubtitleCust
 import RemotionVideoPreview from './RemotionVideoPreview';
 import QueueManagerPanel from './QueueManagerPanel';
 import LoadingIndicator from './common/LoadingIndicator';
+import CustomDropdown from './common/CustomDropdown';
 import '../styles/VideoRenderingSection.css';
 
 const VideoRenderingSection = ({
@@ -1604,37 +1605,37 @@ const VideoRenderingSection = ({
               <label>{t('videoRendering.resolution', 'Resolution')}</label>
             </div>
             <div className="row-content">
-              <select
+              <CustomDropdown
                 value={renderSettings.resolution}
-                onChange={(e) => setRenderSettings(prev => ({ ...prev, resolution: e.target.value }))}
-                className="setting-select"
+                onChange={(value) => setRenderSettings(prev => ({ ...prev, resolution: value }))}
+                options={[
+                  { value: '360p', label: '360p' },
+                  { value: '480p', label: '480p' },
+                  { value: '720p', label: '720p' },
+                  { value: '1080p', label: '1080p' },
+                  { value: '1440p', label: '1440p' },
+                  { value: '4K', label: '4K' },
+                  { value: '8K', label: '8K' }
+                ]}
                 style={{ marginRight: '1rem' }}
-              >
-                <option value="360p">360p</option>
-                <option value="480p">480p</option>
-                <option value="720p">720p</option>
-                <option value="1080p">1080p</option>
-                <option value="1440p">1440p</option>
-                <option value="4K">4K</option>
-                <option value="8K">8K</option>
-              </select>
+              />
 
               <label style={{ marginRight: '0.5rem', fontWeight: '500', color: 'var(--text-primary)' }}>
                 {t('videoRendering.frameRate', 'Frame Rate')}:
               </label>
-              <select
+              <CustomDropdown
                 value={renderSettings.frameRate}
-                onChange={(e) => setRenderSettings(prev => ({ ...prev, frameRate: parseInt(e.target.value) }))}
-                className="setting-select"
+                onChange={(value) => setRenderSettings(prev => ({ ...prev, frameRate: parseInt(value) }))}
+                options={[
+                  { value: 24, label: '24 FPS (Cinema)' },
+                  { value: 25, label: '25 FPS (PAL)' },
+                  { value: 30, label: '30 FPS (Standard)' },
+                  { value: 50, label: '50 FPS (PAL High)' },
+                  { value: 60, label: '60 FPS (Smooth)' },
+                  { value: 120, label: '120 FPS (High Speed)' }
+                ]}
                 style={{ marginRight: '1rem' }}
-              >
-                <option value={24}>24 FPS (Cinema)</option>
-                <option value={25}>25 FPS (PAL)</option>
-                <option value={30}>30 FPS (Standard)</option>
-                <option value={50}>50 FPS (PAL High)</option>
-                <option value={60}>60 FPS (Smooth)</option>
-                <option value={120}>120 FPS (High Speed)</option>
-              </select>
+              />
 
               <button
                 className="pill-button primary"
