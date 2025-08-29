@@ -199,18 +199,20 @@ class FunctionalScrollbar {
 }
 
 /**
- * Initialize functional scrollbars for all reference text containers
+ * Initialize functional scrollbars for all custom scrollbar containers
  */
 export function initializeFunctionalScrollbars() {
-  const containers = document.querySelectorAll('.reference-text-container');
-  
+  // Support both old reference-text-container and new custom-scrollbar-textarea-container
+  const containers = document.querySelectorAll('.reference-text-container, .custom-scrollbar-textarea-container');
+
   containers.forEach(container => {
     // Skip if already initialized
     if (container._functionalScrollbar) return;
-    
-    const textarea = container.querySelector('.reference-text');
+
+    // Support both old and new textarea class names
+    const textarea = container.querySelector('.reference-text, .custom-scrollbar-textarea');
     if (!textarea) return;
-    
+
     // Create and store scrollbar instance
     container._functionalScrollbar = new FunctionalScrollbar(container, textarea);
   });
@@ -220,8 +222,8 @@ export function initializeFunctionalScrollbars() {
  * Clean up all functional scrollbars
  */
 export function cleanupFunctionalScrollbars() {
-  const containers = document.querySelectorAll('.reference-text-container');
-  
+  const containers = document.querySelectorAll('.reference-text-container, .custom-scrollbar-textarea-container');
+
   containers.forEach(container => {
     if (container._functionalScrollbar) {
       container._functionalScrollbar.destroy();
@@ -246,8 +248,10 @@ if (typeof document !== 'undefined') {
       if (mutation.type === 'childList') {
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType === Node.ELEMENT_NODE) {
-            if (node.classList?.contains('reference-text-container') || 
-                node.querySelector?.('.reference-text-container')) {
+            if (node.classList?.contains('reference-text-container') ||
+                node.classList?.contains('custom-scrollbar-textarea-container') ||
+                node.querySelector?.('.reference-text-container') ||
+                node.querySelector?.('.custom-scrollbar-textarea-container')) {
               shouldReinit = true;
             }
           }

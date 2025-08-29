@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiMusic, FiImage } from 'react-icons/fi';
 import CloseButton from './common/CloseButton';
+import CustomScrollbarTextarea from './common/CustomScrollbarTextarea';
 import '../styles/SubtitlesInputModal.css';
 import LyricsInputSection from './LyricsInputSection';
 import MaterialSwitch from './common/MaterialSwitch';
@@ -195,7 +196,7 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
             </div>
           )}
 
-          <textarea
+          <CustomScrollbarTextarea
             ref={textareaRef}
             value={text}
             onChange={handleTextChange}
@@ -203,6 +204,7 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
             onPaste={handlePaste}
             placeholder={t('subtitlesInput.placeholder', 'Enter your subtitles here...')}
             rows={10}
+            containerClassName="large"
           />
 
           <div className="keyboard-shortcuts">

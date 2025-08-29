@@ -1,4 +1,13 @@
-/* Reference text container with custom scrollbar */
+/* Reference text wrapper - maintains the flex layout */
+.reference-text-wrapper {
+  flex: 1;
+  min-width: 0; /* Prevent flex item from overflowing */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Legacy reference text container (for backward compatibility) */
 .reference-text-container {
   position: relative;
   flex: 1;
