@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import MaterialSwitch from '../../common/MaterialSwitch';
+import { initializeFunctionalScrollbars } from '../../../utils/functionalScrollbar';
 import '../../../styles/common/material-switch.css';
 
 /**
@@ -77,6 +78,15 @@ const ReferenceAudioSection = ({
   isExtractingSegment
 }) => {
   const { t } = useTranslation();
+
+  // Initialize functional scrollbar when component mounts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      initializeFunctionalScrollbars();
+    }, 100); // Small delay to ensure DOM is ready
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Function to handle text changes from the isolated component
   const handleTextChange = (newText) => {

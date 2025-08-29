@@ -406,21 +406,24 @@ const WavyProgressIndicator = forwardRef(({
             if (typeof fn === 'function') requestAnimationFrame(() => fn());
         }, 100);
 
-        const ro = new ResizeObserver(() => {
-            setupHighDPICanvas();
-            const fn = drawRef.current;
-            if (typeof fn === 'function') requestAnimationFrame(() => fn());
-        });
+        // Debounced resize handler to prevent ResizeObserver loop
+        let resizeTimeout;
+        const debouncedResize = () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                setupHighDPICanvas();
+                const fn = drawRef.current;
+                if (typeof fn === 'function') requestAnimationFrame(() => fn());
+            }, 16); // ~60fps
+        };
+
+        const ro = new ResizeObserver(debouncedResize);
         ro.observe(container);
 
         // Also observe the canvas element directly for CSS size changes (e.g., during fullscreen)
         const canvas = canvasRef.current;
         if (canvas) {
-            const roCanvas = new ResizeObserver(() => {
-                setupHighDPICanvas();
-                const fn = drawRef.current;
-                if (typeof fn === 'function') requestAnimationFrame(() => fn());
-            });
+            const roCanvas = new ResizeObserver(debouncedResize);
             roCanvas.observe(canvas);
 
             // Handle window resize and fullscreen change events to avoid stretched frames during transitions
@@ -444,6 +447,7 @@ const WavyProgressIndicator = forwardRef(({
                 roCanvas.disconnect();
                 clearTimeout(initialTimeout);
                 clearTimeout(secondTimeout);
+                clearTimeout(resizeTimeout);
                 ro.disconnect();
             };
         }
@@ -451,6 +455,7 @@ const WavyProgressIndicator = forwardRef(({
         return () => {
             clearTimeout(initialTimeout);
             clearTimeout(secondTimeout);
+            clearTimeout(resizeTimeout);
             ro.disconnect();
         };
     }, [setupHighDPICanvas, hasExplicitWidth]);

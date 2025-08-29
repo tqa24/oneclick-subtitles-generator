@@ -77,8 +77,8 @@
   margin: 0;
 }
 
-/* Ensure all textareas in narration section have rounded corners */
-.narration-section textarea {
+/* Ensure textareas in narration section have rounded corners (excluding reference-text which has its own styles) */
+.narration-section textarea:not(.reference-text) {
   border-radius: 20px !important;
   resize: none !important;
 }

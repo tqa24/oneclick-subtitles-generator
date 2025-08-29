@@ -1,4 +1,4 @@
-/* Reference text container */
+/* Reference text container with custom scrollbar */
 .reference-text-container {
   position: relative;
   flex: 1;
@@ -6,124 +6,181 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  border-radius: 20px;
+  overflow: hidden; /* Contain the scrollbar within rounded corners */
+  background-color: var(--md-surface-2);
+  box-shadow: var(--md-elevation-level1);
+  border: 1px solid rgba(var(--md-outline-variant-rgb, 121, 116, 126), 0.3);
+  transition: all 0.2s ease;
 }
 
-/* Remove animation that might be causing issues */
-
-/* Reference text */
+/* Reference text textarea - hide native scrollbar completely */
 .reference-text {
   width: 100%;
   padding: 16px;
-  border-radius: 20px !important; /* More rounded corners with !important */
-  border: 1px solid transparent;
-  background-color: var(--md-surface-2);
+  border: none;
+  border-radius: 0;
+  background-color: transparent;
   color: var(--md-on-surface);
   font-size: 0.95rem;
-  resize: none !important; /* Explicitly disable resize with !important */
+  resize: none !important;
   min-height: 60px;
+  height: auto !important;
   flex: 1;
   transition: all 0.2s ease;
-  box-shadow: var(--md-elevation-level1);
   font-family: var(--font-primary);
   line-height: 1.5;
-  overflow: auto; /* Add scrollbar when needed */
-  appearance: none; /* Remove browser styling */
-  -webkit-appearance: none; /* Safari and Chrome */
-  -moz-appearance: none; /* Firefox */
-}
-
-.reference-text:focus {
+  overflow-y: scroll;
+  overflow-x: hidden;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  position: relative;
+  z-index: 1;
   outline: none;
-  box-shadow: var(--md-elevation-level2);
-  border: 2px solid var(--primary-color);
-  padding: 15px; /* Adjust padding to maintain the same size */
-  border-radius: 20px; /* Keep the same border radius */
+
+  /* Completely hide ALL native scrollbars */
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE and Edge */
 }
 
-.reference-text:disabled {
-  background-color: var(--md-surface-2);
-  cursor: not-allowed;
-  border-radius: 20px !important;
-}
-
-/* Custom scrollbar for reference text */
-.reference-text {
-  /* Firefox scrollbar styling */
-  scrollbar-width: thin;
-}
-
-/* Webkit (Chrome, Safari, Edge) scrollbar styling */
+/* Force hide webkit scrollbar completely */
 .reference-text::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
 }
 
 .reference-text::-webkit-scrollbar-track {
-  background: transparent;
-  margin: 4px;
-  border-radius: 8px;
-}
-
-.reference-text::-webkit-scrollbar-thumb {
-  background-color: rgba(var(--md-on-surface-rgb, 0, 0, 0), 0.3);
-  border-radius: 8px;
-}
-
-.reference-text::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(var(--md-on-surface-rgb, 0, 0, 0), 0.5);
-}
-
-/* Dark mode specific scrollbar styles */
-[data-theme="dark"] .reference-text::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.3);
-}
-
-[data-theme="dark"] .reference-text::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.5);
-}
-
-/* Style for text area with content */
-.reference-text:not(:placeholder-shown) {
-  border-color: transparent;
-  height: auto !important;
-  min-height: 80px !important; /* Slightly taller when it has content */
-  border-radius: 20px !important;
-}
-
-/* Override any inline styles */
-.reference-text {
-  height: auto !important; /* Override any inline height */
-  min-height: 60px !important; /* Ensure minimum height */
-}
-
-/* Style for empty text area */
-.reference-text:placeholder-shown {
-  height: auto !important;
-  min-height: 60px !important;
-  border-radius: 20px !important;
-}
-
-/* Additional style to completely remove resize handle and ensure rounded corners */
-textarea.reference-text {
-  resize: none !important;
-  border-radius: 20px !important;
-  -webkit-border-radius: 20px !important;
-  -moz-border-radius: 20px !important;
-  /* Ensure the textarea is always on top and can receive input */
-  position: relative;
-  z-index: 5;
-}
-
-/* Hide the resize handle in WebKit browsers */
-textarea.reference-text::-webkit-resizer {
   display: none !important;
 }
 
-/* Simple fix for textarea focus issues */
-.reference-text-container textarea {
-  /* Ensure the textarea is always on top */
-  position: relative;
-  z-index: 5;
+.reference-text::-webkit-scrollbar-thumb {
+  display: none !important;
+}
+
+.reference-text::-webkit-scrollbar-corner {
+  display: none !important;
+}
+
+/* Focus state - apply to container instead of textarea */
+.reference-text-container:focus-within {
+  box-shadow: var(--md-elevation-level2), 0 0 0 1px var(--md-primary);
+  border: 2px solid var(--md-primary);
+  background-color: var(--md-surface-2);
+  transform: translateY(-1px);
+}
+
+.reference-text-container:focus-within .reference-text {
+  padding: 14px; /* Adjust padding to maintain the same size when border appears */
+}
+
+.reference-text:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.reference-text-container:has(.reference-text:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.reference-text:not(:placeholder-shown) {
+  min-height: 80px !important; /* Slightly taller when it has content */
+}
+
+/* Custom scrollbar track */
+.reference-text-container::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  right: 5px;
+  bottom: 8px;
+  width: 4px;
+  background: rgba(var(--md-outline-variant-rgb, 121, 116, 126), 0.15);
+  border-radius: 50px; /* Pill shape */
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 9;
+}
+
+/* Custom scrollbar thumb - positioned dynamically by JavaScript */
+.custom-scrollbar-thumb {
+  position: absolute;
+  right: 5px;
+  width: 4px;
+  background: rgba(var(--md-primary-rgb, 103, 80, 164), 0.6);
+  border-radius: 50px; /* Pill shape */
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: auto;
+  z-index: 10;
+  cursor: pointer;
+  min-height: 20px;
+}
+
+/* Show scrollbar track only when container has scrollable content */
+.reference-text-container.has-scrollable-content:hover::before,
+.reference-text-container.has-scrollable-content:focus-within::before {
+  opacity: 1;
+}
+
+/* Show scrollbar thumb on hover or focus */
+.reference-text-container:hover .custom-scrollbar-thumb,
+.reference-text-container:focus-within .custom-scrollbar-thumb {
+  opacity: 1;
+}
+
+/* Enhanced hover state for thumb */
+.custom-scrollbar-thumb:hover {
+  width: 6px;
+  right: 4px;
+  background: rgba(var(--md-primary-rgb, 103, 80, 164), 0.8);
+}
+
+/* Active state for thumb */
+.custom-scrollbar-thumb:active {
+  background: var(--md-primary);
+  width: 6px;
+  right: 4px;
+}
+
+/* Dark mode scrollbar */
+[data-theme="dark"] .reference-text-container::before {
+  background: rgba(var(--md-outline-variant-rgb, 200, 196, 206), 0.15);
+}
+
+[data-theme="dark"] .custom-scrollbar-thumb {
+  background: rgba(var(--md-primary-rgb, 208, 188, 255), 0.6);
+}
+
+[data-theme="dark"] .custom-scrollbar-thumb:hover {
+  background: rgba(var(--md-primary-rgb, 208, 188, 255), 0.8);
+}
+
+[data-theme="dark"] .custom-scrollbar-thumb:active {
+  background: var(--md-primary);
+}
+
+/* Dragging state */
+.custom-scrollbar-thumb.dragging {
+  background: var(--md-primary) !important;
+  width: 6px !important;
+  right: 4px !important;
+  opacity: 1 !important;
+  transition: none !important; /* Disable transitions while dragging */
+}
+
+/* Smooth scrolling for the textarea */
+.reference-text {
+  scroll-behavior: smooth;
+}
+
+/* Smooth scrolling */
+.reference-text {
+  scroll-behavior: smooth;
 }
 
 /* Switch component */
