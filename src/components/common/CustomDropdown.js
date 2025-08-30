@@ -353,7 +353,7 @@ const CustomDropdown = ({
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
             width: `${dropdownPosition.width}px`,
-            zIndex: 9999
+            zIndex: 999999
           }}
           role="listbox"
           onMouseDown={(e) => {

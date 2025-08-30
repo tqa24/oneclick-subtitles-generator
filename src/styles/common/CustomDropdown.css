@@ -86,7 +86,10 @@
   background-color: var(--md-surface-1);
   border: 1px solid var(--md-outline-variant);
   border-radius: var(--dropdown-radius, 18px);
-  box-shadow: var(--md-elevation-level3);
+  /* Clearer elevation in light mode for better separation */
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18),
+              0 8px 12px rgba(0, 0, 0, 0.12),
+              0 1px 2px rgba(0, 0, 0, 0.08);
   max-height: 200px; /* Smaller to ensure scrollbar appears */
   overflow: hidden; /* Hide native scrollbar, custom scrollbar will handle scrolling */
   transform-origin: center center;
@@ -353,7 +356,10 @@
 /* Dark theme adjustments */
 @media (prefers-color-scheme: dark) {
   .custom-dropdown-menu {
-    box-shadow: var(--md-elevation-level3), 0 8px 24px rgba(0, 0, 0, 0.3);
+    /* Stronger elevation for dark surfaces to improve separation */
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.50),
+                0 6px 16px rgba(0, 0, 0, 0.40),
+                0 1px 3px rgba(0, 0, 0, 0.60);
   }
 }
 

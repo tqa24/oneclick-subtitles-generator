@@ -98,7 +98,7 @@ const DropdownMenu = styled.div<{ $dropUp: boolean }>`
   overflow: hidden;
   animation: ${props => props.$dropUp ? 'dropdown-slide-up' : 'dropdown-slide-down'} 0.2s ease;
   transform-origin: ${props => props.$dropUp ? 'bottom center' : 'top center'};
-  z-index: 9999;
+  z-index: 999999;
   
   @keyframes dropdown-slide-down {
     from {

@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import CloseButton from '../common/CloseButton';
 import CustomScrollbarTextarea from '../common/CustomScrollbarTextarea';
+import CustomDropdown from '../common/CustomDropdown';
 import '../../styles/PromptEditor.css';
 import '../../styles/background/BackgroundPromptEditor.css';
 
@@ -220,14 +221,15 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
               <label className="prompt-model-label">
                 {t('promptEditor.promptModelLabel', 'Model for "Generate the prompt"')}
               </label>
-              <select
-                className="prompt-model-select"
+              <CustomDropdown
                 value={promptModel}
-                onChange={(e) => setPromptModel(e.target.value)}
-              >
-                <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite</option>
-                <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
-              </select>
+                onChange={(value) => setPromptModel(value)}
+                options={[
+                  { value: 'gemini-2.0-flash-lite', label: 'gemini-2.0-flash-lite' },
+                  { value: 'gemini-2.5-flash-lite', label: 'gemini-2.5-flash-lite' }
+                ]}
+                placeholder={t('promptEditor.selectModel', 'Select Model')}
+              />
             </div>
             <div className="variables-info">
               <h5>{t('promptEditor.availableVariables', 'Available Variables:')}</h5>
@@ -259,14 +261,15 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
               <label className="prompt-model-label">
                 {t('promptEditor.imageModelLabel', 'Model for image generation')}
               </label>
-              <select
-                className="prompt-model-select"
+              <CustomDropdown
                 value={imageModel}
-                onChange={(e) => setImageModel(e.target.value)}
-              >
-                <option value="gemini-2.5-flash-image-preview">gemini-2.5-flash-image-preview</option>
-                <option value="gemini-2.0-flash-preview-image-generation">gemini-2.0-flash-preview-image-generation</option>
-              </select>
+                onChange={(value) => setImageModel(value)}
+                options={[
+                  { value: 'gemini-2.5-flash-image-preview', label: 'gemini-2.5-flash-image-preview' },
+                  { value: 'gemini-2.0-flash-preview-image-generation', label: 'gemini-2.0-flash-preview-image-generation' }
+                ]}
+                placeholder={t('promptEditor.selectImageModel', 'Select Image Model')}
+              />
             </div>
             <div className="variables-info">
               <h5>{t('promptEditor.availableVariables', 'Available Variables:')}</h5>

@@ -7,6 +7,7 @@ import { PROMPT_PRESETS, getUserPromptPresets, DEFAULT_TRANSCRIPTION_PROMPT } fr
 import CloseButton from './common/CloseButton';
 import MaterialSwitch from './common/MaterialSwitch';
 import StandardSlider from './common/StandardSlider';
+import CustomDropdown from './common/CustomDropdown';
 
 /**
  * Modal for selecting video processing options after timeline segment selection
@@ -784,13 +785,15 @@ const VideoProcessingOptionsModal = ({
                       </svg>
                     </div>
                   </div>
-                  <select value={mediaResolution} onChange={(e) => setMediaResolution(e.target.value)}>
-                    {resolutionOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                  <CustomDropdown
+                    value={mediaResolution}
+                    onChange={(value) => setMediaResolution(value)}
+                    options={resolutionOptions.map(option => ({
+                      value: option.value,
+                      label: option.label
+                    }))}
+                    placeholder={t('processing.selectResolution', 'Select Resolution')}
+                  />
                 </div>
               </div>
             </div>
@@ -798,13 +801,15 @@ const VideoProcessingOptionsModal = ({
             {/* Model Selection */}
             <div className="option-group">
               <label>{t('processing.model', 'Model')}</label>
-              <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)}>
-                {modelOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <CustomDropdown
+                value={selectedModel}
+                onChange={(value) => setSelectedModel(value)}
+                options={modelOptions.map(option => ({
+                  value: option.value,
+                  label: option.label
+                }))}
+                placeholder={t('processing.selectModel', 'Select Model')}
+              />
             </div>
 
             {/* Prompt Preset and Settings Row */}
@@ -813,16 +818,16 @@ const VideoProcessingOptionsModal = ({
                 {/* Left: Prompt Preset Selection */}
                 <div className="prompt-preset-section">
                   <label>{t('processing.promptPreset', 'Prompt Preset')}</label>
-                  <select
+                  <CustomDropdown
                     value={selectedPromptPreset}
-                    onChange={(e) => setSelectedPromptPreset(e.target.value)}
-                  >
-                    {getPromptPresetOptions().map(option => (
-                      <option key={option.id} value={option.id} disabled={option.disabled}>
-                        {option.title}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) => setSelectedPromptPreset(value)}
+                    options={getPromptPresetOptions().map(option => ({
+                      value: option.id,
+                      label: option.title,
+                      disabled: option.disabled
+                    }))}
+                    placeholder={t('processing.selectPreset', 'Select Preset')}
+                  />
                   <p className="option-description">
                     {(() => {
                       const selectedOption = getPromptPresetOptions().find(opt => opt.id === selectedPromptPreset);
