@@ -153,5 +153,11 @@
   "flip": "Flip",
   "renderCancelled": "Render was cancelled",
   "renderFailedBrowserClosed": "Render failed while browser was closed",
-  "frames": "frames"
+  "frames": "frames",
+  "fps24": "24 FPS (Cinema)",
+  "fps25": "25 FPS (PAL)",
+  "fps30": "30 FPS (Standard)",
+  "fps50": "50 FPS (PAL High)",
+  "fps60": "60 FPS (Smooth)",
+  "fps120": "120 FPS (High Speed)"
 }

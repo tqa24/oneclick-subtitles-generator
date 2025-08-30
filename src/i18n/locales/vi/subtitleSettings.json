@@ -45,5 +45,6 @@
   "backgroundPadding": "Đệm nền",
   "showBackground": "Hiển thị nền",
   "transparentBackground": "Nền trong suốt",
-  "textShadow": "Bóng chữ"
+  "textShadow": "Bóng chữ",
+  "textAlign": "Căn chỉnh văn bản"
 }

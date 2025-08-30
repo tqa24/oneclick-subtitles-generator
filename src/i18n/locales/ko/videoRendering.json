@@ -231,5 +231,11 @@
   "noNarrationGenerated": "내레이션이 아직 생성되지 않음",
   "renderCancelled": "렌더링이 취소되었습니다",
   "renderFailedBrowserClosed": "브라우저가 닫힌 동안 렌더링이 실패했습니다",
-  "frames": "프레임"
+  "frames": "프레임",
+  "fps24": "24 FPS (시네마)",
+  "fps25": "25 FPS (PAL)",
+  "fps30": "30 FPS (표준)",
+  "fps50": "50 FPS (PAL 고주사율)",
+  "fps60": "60 FPS (부드러움)",
+  "fps120": "120 FPS (고속)"
 }

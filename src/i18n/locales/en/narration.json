@@ -136,6 +136,9 @@
   "generatingAligned": "Generating aligned narration...",
   "regenerateAligned": "Regenerate Aligned Audio",
   "videoVolume": "Video Audio Volume",
+  "narrationVolume": "Narration Volume",
+  "playing": "Playing",
+  "noNarrationsAvailable": "No narrations available. Generate narration first.",
 
   "notGenerated": "Not yet generated",
   "generate": "Generate",
