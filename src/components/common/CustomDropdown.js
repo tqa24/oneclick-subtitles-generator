@@ -154,7 +154,7 @@ const CustomDropdown = ({
     if (!dropdownRef.current) return;
 
     const optionHeight = 44; // Fixed per your spec
-    const maxMenuHeight = 200; // Cap to keep UI compact
+    const maxMenuHeight = 400; // Cap to keep UI compact
     const spacing = 4;
 
     const buttonRect = dropdownRef.current.getBoundingClientRect();
