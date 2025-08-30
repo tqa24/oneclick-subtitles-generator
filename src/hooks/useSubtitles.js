@@ -198,7 +198,7 @@ export const useSubtitles = (t) => {
                         // If video is longer than 30 minutes, show warning and use special processing
                         if (durationMinutes > 30) {
                             setStatus({
-                                message: t('output.longVideoWarning', 'You uploaded a {{duration}} minute video. Processing can be longer than usual due to multiple Gemini calls.', { duration: durationMinutes }),
+                                message: t('output.longVideoWarning', 'You are uploading a {{duration}} minute video. Uploading progress can be long depends on network speed.', { duration: durationMinutes }),
                                 type: 'loading'
                             });
                         }

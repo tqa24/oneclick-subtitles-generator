@@ -40,7 +40,7 @@
   "retryGeminiTooltip": "Thử tạo phụ đề lại với một yêu cầu Gemini mới",
   "retryWithModel": "Thử lại với mô hình khác",
   "selectModel": "Chọn mô hình để thử lại",
-  "longVideoWarning": "Bạn đã tải lên video dài {{duration}} phút. Quá trình xử lý có thể lâu hơn bình thường do nhiều cuộc gọi Gemini.",
+  "longVideoWarning": "Bạn đang tải lên video dài {{duration}} phút. Tiến trình tải lên có thể lâu tùy thuộc vào tốc độ mạng.",
   "longVideoProcessing": "Đang xử lý video dài hơn 30 phút. Điều này có thể mất một lúc...",
   "processingDirectly": "Đang xử lý video trực tiếp...",
   "clientSideSegmentation": "Đang xử lý video theo phần trên thiết bị của bạn...",

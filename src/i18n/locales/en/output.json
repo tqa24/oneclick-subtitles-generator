@@ -40,7 +40,7 @@
   "retryGeminiTooltip": "Try generating subtitles again with a new Gemini request",
   "retryWithModel": "Retry with different model",
   "selectModel": "Select model to retry with",
-  "longVideoWarning": "You've uploaded a {{duration}} minute video. Processing may take longer than usual due to multiple Gemini calls.",
+  "longVideoWarning": "You are uploading a {{duration}} minute video. Uploading progress can be long depends on network speed.",
   "longVideoProcessing": "Processing a video longer than 30 minutes. This may take a while...",
   "processingDirectly": "Processing video directly...",
   "clientSideSegmentation": "Processing video segments on your device...",
