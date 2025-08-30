@@ -13,9 +13,10 @@ const CustomDropdown = ({
   style = {}
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, dropUp: false });
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, height: 0, upCount: 0, downCount: 0 });
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
+  const initialScaleRef = useRef(1);
 
   // Close dropdown when clicking outside (account for portal menu)
   useEffect(() => {
@@ -148,62 +149,72 @@ const CustomDropdown = ({
 
   const selectedOption = options.find(option => option.value === value);
 
-  // Calculate dropdown position
+  // Calculate dropdown anchored expansion around selected option (pill center)
   const calculatePosition = () => {
     if (!dropdownRef.current) return;
 
+    const optionHeight = 44; // Fixed per your spec
+    const maxMenuHeight = 200; // Cap to keep UI compact
+    const spacing = 4;
+
     const buttonRect = dropdownRef.current.getBoundingClientRect();
+    const centerY = buttonRect.top + buttonRect.height / 2; // Anchor baseline = pill center
     const viewportHeight = window.innerHeight;
-    const spacing = 4; // Consistent spacing for both directions
 
-    // Calculate actual dropdown content height
-    const optionHeight = 44; // Approximate height per option (padding + text)
-    const dropdownPadding = 16; // Top and bottom padding of dropdown
-    const actualContentHeight = (options.length * optionHeight) + dropdownPadding;
-    const maxDropdownHeight = 200; // Max height from CSS
-    const dropdownHeight = Math.min(actualContentHeight, maxDropdownHeight);
+    const selectedIndex = Math.max(0, options.findIndex(o => o.value === value));
 
-    const spaceBelow = viewportHeight - buttonRect.bottom - spacing;
-    const spaceAbove = buttonRect.top - spacing;
+    // Available space around the anchor baseline
+    const spaceAbove = centerY - spacing;
+    const spaceBelow = viewportHeight - centerY - spacing;
 
-    // Determine if we should drop up or down
-    const shouldDropUp = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
+    // Max items that can fit above/below at 44px each
+    const maxUp = Math.floor(spaceAbove / optionHeight);
+    const maxDown = Math.floor(spaceBelow / optionHeight);
 
-    let topPosition;
-    if (shouldDropUp) {
-      // For drop-up: position dropdown so its bottom edge is just above button's top edge
-      topPosition = buttonRect.top - dropdownHeight - spacing;
+    // Initial allocation limited by items available on each side
+    let upCount = Math.min(selectedIndex, maxUp);
+    let downCount = Math.min(options.length - 1 - selectedIndex, maxDown);
 
-      // Debug logging
-      console.log('Drop-up positioning:', {
-        buttonTop: buttonRect.top,
-        buttonBottom: buttonRect.bottom,
-        actualContentHeight,
-        dropdownHeight,
-        spacing,
-        calculatedTop: topPosition,
-        spaceAbove,
-        spaceBelow,
-        optionsCount: options.length
-      });
-
-      // Safety check: don't go above viewport
-      topPosition = Math.max(spacing, topPosition);
-    } else {
-      // Position dropdown's top edge just below button's bottom edge
-      topPosition = buttonRect.bottom + spacing;
-
-      // Safety check: don't go below viewport
-      const maxTop = viewportHeight - dropdownHeight - spacing;
-      topPosition = Math.min(topPosition, maxTop);
+    // Try to allocate extra space to the side that still has room until we hit max height
+    const totalMaxVisible = Math.floor(maxMenuHeight / optionHeight);
+    const canShow = Math.min(totalMaxVisible, options.length);
+    while (upCount + 1 + downCount < canShow) {
+      const needUp = selectedIndex - upCount > 0 && upCount < maxUp;
+      const needDown = (options.length - 1 - selectedIndex) - downCount > 0 && downCount < maxDown;
+      if (!needUp && !needDown) break;
+      // Prefer allocating to the side with more remaining room; if near an edge, expand mostly one direction
+      if ((maxDown - downCount) >= (maxUp - upCount) && needDown) {
+        downCount++;
+      } else if (needUp) {
+        upCount++;
+      } else if (needDown) {
+        downCount++;
+      } else {
+        break;
+      }
     }
 
+    const visibleCount = upCount + 1 + downCount;
+    const menuHeight = Math.min(maxMenuHeight, visibleCount * optionHeight);
+
+    // Position so the selected option stays anchored at the pill center
+    const topPosition = centerY - (upCount + 0.5) * optionHeight;
+
+    // Compute scrollTop so the first visible item aligns at the top of the viewport
+    const firstVisibleIndex = Math.max(0, selectedIndex - upCount);
+    const scrollTop = firstVisibleIndex * optionHeight;
+
     setDropdownPosition({
-      top: topPosition,
+      top: Math.max(spacing, Math.min(topPosition, viewportHeight - menuHeight - spacing)),
       left: buttonRect.left,
       width: buttonRect.width,
-      dropUp: shouldDropUp
+      height: menuHeight,
+      upCount,
+      downCount
     });
+
+    // After the menu renders, we will set the list scrollTop to keep selected anchored
+    // This is done in the isOpen effect below.
   };
 
   const handleToggle = () => {
@@ -216,51 +227,95 @@ const CustomDropdown = ({
     }
   };
 
-  // Recalculate position after dropdown renders to get actual height
+  // Opening/closing animation control using reveal (clip-path), not scale
+  useEffect(() => {
+    if (!menuRef.current) return;
+    const el = menuRef.current;
+    // Establish initial state when opening
+    if (isOpen) {
+      const targetH = dropdownPosition.height || 200;
+      el.style.setProperty('--menu-height', `${targetH}px`);
+      // Start as pill-height reveal centered: top/bottom insets so visible area equals 42px, centered
+      const inset = Math.max(0, (targetH - 42) / 2);
+      el.style.clipPath = `inset(${inset}px 0 ${inset}px 0 round var(--dropdown-radius, 24px))`;
+      // next frame: animate reveal to full height and smaller radius
+      requestAnimationFrame(() => {
+        el.classList.add('is-open');
+        el.style.clipPath = `inset(0 0 0 0 round var(--dropdown-radius, 12px))`;
+      });
+    } else {
+      // Closing: reveal back to pill-height centered and remove open class
+      const targetH = dropdownPosition.height || 200;
+      const inset = Math.max(0, (targetH - 42) / 2);
+      el.style.clipPath = `inset(${inset}px 0 ${inset}px 0 round var(--dropdown-radius, 24px))`;
+      el.classList.remove('is-open');
+    }
+  }, [isOpen, dropdownPosition.height]);
+
+  // After opening, sync the scroll so the selected item stays anchored at center
   useEffect(() => {
     if (isOpen && menuRef.current) {
-      const timer = setTimeout(() => {
-        const actualDropdownHeight = menuRef.current.offsetHeight;
-        const buttonRect = dropdownRef.current.getBoundingClientRect();
-        const spacing = 4;
-
-        // Recalculate with actual height
-        const spaceBelow = window.innerHeight - buttonRect.bottom - spacing;
-        const spaceAbove = buttonRect.top - spacing;
-        const shouldDropUp = spaceBelow < actualDropdownHeight && spaceAbove > spaceBelow;
-
-        let topPosition;
-        if (shouldDropUp) {
-          topPosition = buttonRect.top - actualDropdownHeight - spacing;
-          topPosition = Math.max(spacing, topPosition);
-        } else {
-          topPosition = buttonRect.bottom + spacing;
-          const maxTop = window.innerHeight - actualDropdownHeight - spacing;
-          topPosition = Math.min(topPosition, maxTop);
+      // Trigger radius animation on next frame
+      requestAnimationFrame(() => {
+        if (menuRef.current) {
+          menuRef.current.classList.add('radius-open');
         }
+      });
 
-        console.log('Refined positioning:', {
-          actualDropdownHeight,
-          shouldDropUp,
-          topPosition,
-          buttonTop: buttonRect.top,
-          buttonBottom: buttonRect.bottom
-        });
-
-        setDropdownPosition(prev => ({
-          ...prev,
-          top: topPosition,
-          dropUp: shouldDropUp
-        }));
-      }, 0); // Next tick after render
-
-      return () => clearTimeout(timer);
+      const optionsList = menuRef.current.querySelector('.dropdown-options-list');
+      if (optionsList) {
+        const optionHeight = 44;
+        const selectedIndex = Math.max(0, options.findIndex(o => o.value === value));
+        const firstVisibleIndex = Math.max(0, selectedIndex - dropdownPosition.upCount);
+        optionsList.scrollTop = firstVisibleIndex * optionHeight;
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, value, dropdownPosition.upCount]);
 
   const handleOptionSelect = (optionValue) => {
+    // Aggressive morph animation: keep menu open briefly, animate items shifting so new selection moves to center
+    if (menuRef.current) {
+      const list = menuRef.current.querySelector('.dropdown-options-list');
+      const buttons = list ? Array.from(list.querySelectorAll('.dropdown-option')) : [];
+      const optionHeight = 44;
+      const newIndex = Math.max(0, options.findIndex(o => o.value === optionValue));
+
+      if (list) {
+        // Freeze height reveal during morph
+        const targetH = dropdownPosition.height || 200;
+        menuRef.current.style.setProperty('--menu-height', `${targetH}px`);
+        // Compute target scrollTop so new selection is centered based on current upCount
+        const newFirstVis = Math.max(0, newIndex - dropdownPosition.upCount);
+        const targetScrollTop = newFirstVis * optionHeight;
+        list.style.scrollBehavior = 'smooth';
+        list.scrollTop = targetScrollTop;
+        setTimeout(() => {
+          if (list) list.style.scrollBehavior = 'auto';
+        }, 220);
+
+        // Nudge non-selected items to visually shift up/down in addition to the smooth scroll
+        buttons.forEach((btn, idx) => {
+          btn.style.transition = 'transform 180ms cubic-bezier(0.2, 0, 0, 1)';
+          if (idx < newIndex) {
+            btn.style.transform = 'translateY(-6px)';
+          } else if (idx > newIndex) {
+            btn.style.transform = 'translateY(6px)';
+          } else {
+            // Selected: slight scale emphasis
+            btn.style.transform = 'translateY(0) scale(1.02)';
+          }
+        });
+        setTimeout(() => {
+          buttons.forEach((btn) => {
+            btn.style.transform = 'translateY(0) scale(1)';
+          });
+        }, 180);
+      }
+    }
+
+    // Fire change and then close after morph
     onChange(optionValue);
-    setIsOpen(false);
+    setTimeout(() => setIsOpen(false), 200);
   };
 
   return (
@@ -277,6 +332,7 @@ const CustomDropdown = ({
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
+        style={isOpen ? { boxShadow: 'none', borderColor: 'transparent' } : undefined}
       >
         <span className="dropdown-value">
           {selectedOption ? selectedOption.label : placeholder}
@@ -291,7 +347,7 @@ const CustomDropdown = ({
       {isOpen && !disabled && createPortal(
         <div
           ref={menuRef}
-          className={`custom-dropdown-menu custom-scrollbar-container ${dropdownPosition.dropUp ? 'drop-up' : 'drop-down'}`}
+          className={`custom-dropdown-menu custom-scrollbar-container anchored-expand`}
           style={{
             position: 'fixed',
             top: `${dropdownPosition.top}px`,
@@ -306,22 +362,29 @@ const CustomDropdown = ({
           }}
         >
           <div className="dropdown-options-list">
-            {options.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={`dropdown-option ${option.value === value ? 'selected' : ''}`}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleOptionSelect(option.value);
-                }}
-                role="option"
-                aria-selected={option.value === value}
-              >
-                {option.label}
-              </button>
-            ))}
+            {options.map((option, idx) => {
+              const isSelected = option.value === value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`dropdown-option ${isSelected ? 'selected' : ''}`}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleOptionSelect(option.value);
+                  }}
+                  role="option"
+                  aria-selected={isSelected}
+                  style={{
+                    opacity: 0.999, // trigger GPU layer
+                    transform: isSelected ? 'translateY(0)' : 'translateY(0)',
+                  }}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
           </div>
         </div>,
         document.body
