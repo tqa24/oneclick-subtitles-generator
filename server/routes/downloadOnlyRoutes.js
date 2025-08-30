@@ -144,7 +144,7 @@ router.post('/download-only', async (req, res) => {
     }
 
     // Start download process asynchronously
-    downloadMediaAsync(url, outputPath, type, quality, videoId, useCookies);
+    downloadMediaAsync(url, outputPath, type, quality, videoId, useCookies, processKey);
 
     res.json({
       success: true,
@@ -319,7 +319,7 @@ router.post('/cancel-download-only/:videoId', (req, res) => {
 /**
  * Async function to download media (video or audio)
  */
-async function downloadMediaAsync(url, outputPath, type, quality, videoId, useCookies = false) {
+async function downloadMediaAsync(url, outputPath, type, quality, videoId, useCookies = false, processKey) {
   return new Promise((resolve, reject) => {
     const ytDlpPath = getYtDlpPath();
     
