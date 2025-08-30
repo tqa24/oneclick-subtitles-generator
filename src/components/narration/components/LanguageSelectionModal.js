@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import CloseButton from '../../common/CloseButton';
+import CustomDropdown from '../../common/CustomDropdown';
 import '../../../styles/narration/VoiceSelectionModal.css'; // Reuse the same CSS
 
 const LanguageSelectionModal = ({ isOpen, onClose, languages, selectedLanguage, onLanguageSelect, detectedLanguage, t }) => {
@@ -153,24 +154,21 @@ const LanguageSelectionModal = ({ isOpen, onClose, languages, selectedLanguage, 
           </div>
 
           <div className="voice-category-filter">
-            <select
+            <CustomDropdown
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="voice-category-select"
-            >
-              {availableCategories.map(category => (
-                <option key={category} value={category}>
-                  {category === 'All'
-                    ? t('narration.allCategories', 'All')
-                    : category === 'Recommended'
-                    ? t('narration.recommendedLanguage', 'Recommended for {{language}}', {
-                        language: detectedLanguage?.languageName || detectedLanguage?.languageCode
-                      })
-                    : category
-                  }
-                </option>
-              ))}
-            </select>
+              onChange={(value) => setSelectedCategory(value)}
+              options={availableCategories.map(category => ({
+                value: category,
+                label: category === 'All'
+                  ? t('narration.allCategories', 'All')
+                  : category === 'Recommended'
+                  ? t('narration.recommendedLanguage', 'Recommended for {{language}}', {
+                      language: detectedLanguage?.languageName || detectedLanguage?.languageCode
+                    })
+                  : category
+              }))}
+              placeholder={t('narration.selectCategory', 'Select Category')}
+            />
           </div>
         </div>
 

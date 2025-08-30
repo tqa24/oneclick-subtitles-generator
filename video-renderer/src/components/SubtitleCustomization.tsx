@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useLanguage } from '../contexts/LanguageContext';
 import { SubtitleCustomization } from '../types';
+import CustomDropdown from './CustomDropdown';
 
 // Default customization settings
 export const defaultCustomization: SubtitleCustomization = {
@@ -138,20 +139,7 @@ const Input = styled.input`
   }
 `;
 
-const Select = styled.select`
-  padding: 8px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--input-background);
-  color: var(--text-color);
-  font-size: 0.9rem;
 
-  &:focus {
-    outline: none;
-    border-color: var(--accent-color);
-    box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb), 0.2);
-  }
-`;
 
 const ColorInput = styled.input`
   width: 50px;
@@ -414,21 +402,23 @@ const SubtitleCustomizationPanel: React.FC<SubtitleCustomizationProps> = ({
           <ControlRow>
             <ControlItem>
               <Label>Font Family</Label>
-              <Select
+              <CustomDropdown
                 value={customization.fontFamily}
-                onChange={(e) => updateCustomization({ fontFamily: e.target.value })}
-              >
-                <option value="Inter">Inter</option>
-                <option value="Roboto">Roboto</option>
-                <option value="Arial">Arial</option>
-                <option value="Helvetica">Helvetica</option>
-                <option value="Times New Roman">Times New Roman</option>
-                <option value="Georgia">Georgia</option>
-                <option value="Impact">Impact</option>
-                <option value="Comic Sans MS">Comic Sans MS</option>
-                <option value="Courier New">Courier New</option>
-                <option value="Verdana">Verdana</option>
-              </Select>
+                onChange={(value) => updateCustomization({ fontFamily: value })}
+                options={[
+                  { value: 'Inter', label: 'Inter' },
+                  { value: 'Roboto', label: 'Roboto' },
+                  { value: 'Arial', label: 'Arial' },
+                  { value: 'Helvetica', label: 'Helvetica' },
+                  { value: 'Times New Roman', label: 'Times New Roman' },
+                  { value: 'Georgia', label: 'Georgia' },
+                  { value: 'Impact', label: 'Impact' },
+                  { value: 'Comic Sans MS', label: 'Comic Sans MS' },
+                  { value: 'Courier New', label: 'Courier New' },
+                  { value: 'Verdana', label: 'Verdana' }
+                ]}
+                placeholder="Select Font"
+              />
             </ControlItem>
             <ControlItem>
               <Label>Font Size: {customization.fontSize}px</Label>
@@ -475,26 +465,30 @@ const SubtitleCustomizationPanel: React.FC<SubtitleCustomizationProps> = ({
           <ControlRow>
             <ControlItem>
               <Label>Text Alignment</Label>
-              <Select
+              <CustomDropdown
                 value={customization.textAlign}
-                onChange={(e) => updateCustomization({ textAlign: e.target.value as 'left' | 'center' | 'right' })}
-              >
-                <option value="left">Left</option>
-                <option value="center">Center</option>
-                <option value="right">Right</option>
-              </Select>
+                onChange={(value) => updateCustomization({ textAlign: value as 'left' | 'center' | 'right' })}
+                options={[
+                  { value: 'left', label: 'Left' },
+                  { value: 'center', label: 'Center' },
+                  { value: 'right', label: 'Right' }
+                ]}
+                placeholder="Select Alignment"
+              />
             </ControlItem>
             <ControlItem>
               <Label>Text Transform</Label>
-              <Select
+              <CustomDropdown
                 value={customization.textTransform}
-                onChange={(e) => updateCustomization({ textTransform: e.target.value as any })}
-              >
-                <option value="none">None</option>
-                <option value="uppercase">UPPERCASE</option>
-                <option value="lowercase">lowercase</option>
-                <option value="capitalize">Capitalize</option>
-              </Select>
+                onChange={(value) => updateCustomization({ textTransform: value as any })}
+                options={[
+                  { value: 'none', label: 'None' },
+                  { value: 'uppercase', label: 'UPPERCASE' },
+                  { value: 'lowercase', label: 'lowercase' },
+                  { value: 'capitalize', label: 'Capitalize' }
+                ]}
+                placeholder="Select Transform"
+              />
             </ControlItem>
           </ControlRow>
 
@@ -603,15 +597,17 @@ const SubtitleCustomizationPanel: React.FC<SubtitleCustomizationProps> = ({
             </ControlItem>
             <ControlItem>
               <Label>Border Style</Label>
-              <Select
+              <CustomDropdown
                 value={customization.borderStyle}
-                onChange={(e) => updateCustomization({ borderStyle: e.target.value as any })}
-              >
-                <option value="none">None</option>
-                <option value="solid">Solid</option>
-                <option value="dashed">Dashed</option>
-                <option value="dotted">Dotted</option>
-              </Select>
+                onChange={(value) => updateCustomization({ borderStyle: value as any })}
+                options={[
+                  { value: 'none', label: 'None' },
+                  { value: 'solid', label: 'Solid' },
+                  { value: 'dashed', label: 'Dashed' },
+                  { value: 'dotted', label: 'Dotted' }
+                ]}
+                placeholder="Select Border Style"
+              />
             </ControlItem>
           </ControlRow>
         </SectionContent>
@@ -746,15 +742,17 @@ const SubtitleCustomizationPanel: React.FC<SubtitleCustomizationProps> = ({
           <ControlRow>
             <ControlItem>
               <Label>Position</Label>
-              <Select
+              <CustomDropdown
                 value={customization.position}
-                onChange={(e) => updateCustomization({ position: e.target.value as any })}
-              >
-                <option value="bottom">Bottom</option>
-                <option value="top">Top</option>
-                <option value="center">Center</option>
-                <option value="custom">Custom</option>
-              </Select>
+                onChange={(value) => updateCustomization({ position: value as any })}
+                options={[
+                  { value: 'bottom', label: 'Bottom' },
+                  { value: 'top', label: 'Top' },
+                  { value: 'center', label: 'Center' },
+                  { value: 'custom', label: 'Custom' }
+                ]}
+                placeholder="Select Position"
+              />
             </ControlItem>
             <ControlItem>
               <Label>Max Width: {customization.maxWidth}%</Label>
@@ -851,29 +849,33 @@ const SubtitleCustomizationPanel: React.FC<SubtitleCustomizationProps> = ({
           <ControlRow>
             <ControlItem>
               <Label>Animation Type</Label>
-              <Select
+              <CustomDropdown
                 value={customization.animationType}
-                onChange={(e) => updateCustomization({ animationType: e.target.value as any })}
-              >
-                <option value="fade">Fade</option>
-                <option value="slide-up">Slide Up</option>
-                <option value="slide-down">Slide Down</option>
-                <option value="scale">Scale</option>
-                <option value="typewriter">Typewriter</option>
-              </Select>
+                onChange={(value) => updateCustomization({ animationType: value as any })}
+                options={[
+                  { value: 'fade', label: 'Fade' },
+                  { value: 'slide-up', label: 'Slide Up' },
+                  { value: 'slide-down', label: 'Slide Down' },
+                  { value: 'scale', label: 'Scale' },
+                  { value: 'typewriter', label: 'Typewriter' }
+                ]}
+                placeholder="Select Animation"
+              />
             </ControlItem>
             <ControlItem>
               <Label>Animation Easing</Label>
-              <Select
+              <CustomDropdown
                 value={customization.animationEasing}
-                onChange={(e) => updateCustomization({ animationEasing: e.target.value as any })}
-              >
-                <option value="linear">Linear</option>
-                <option value="ease">Ease</option>
-                <option value="ease-in">Ease In</option>
-                <option value="ease-out">Ease Out</option>
-                <option value="ease-in-out">Ease In Out</option>
-              </Select>
+                onChange={(value) => updateCustomization({ animationEasing: value as any })}
+                options={[
+                  { value: 'linear', label: 'Linear' },
+                  { value: 'ease', label: 'Ease' },
+                  { value: 'ease-in', label: 'Ease In' },
+                  { value: 'ease-out', label: 'Ease Out' },
+                  { value: 'ease-in-out', label: 'Ease In Out' }
+                ]}
+                placeholder="Select Easing"
+              />
             </ControlItem>
           </ControlRow>
 
@@ -947,13 +949,15 @@ const SubtitleCustomizationPanel: React.FC<SubtitleCustomizationProps> = ({
             </ControlItem>
             <ControlItem>
               <Label>Line Break Behavior</Label>
-              <Select
+              <CustomDropdown
                 value={customization.lineBreakBehavior}
-                onChange={(e) => updateCustomization({ lineBreakBehavior: e.target.value as any })}
-              >
-                <option value="auto">Auto</option>
-                <option value="manual">Manual</option>
-              </Select>
+                onChange={(value) => updateCustomization({ lineBreakBehavior: value as any })}
+                options={[
+                  { value: 'auto', label: 'Auto' },
+                  { value: 'manual', label: 'Manual' }
+                ]}
+                placeholder="Select Behavior"
+              />
             </ControlItem>
           </ControlRow>
         </SectionContent>

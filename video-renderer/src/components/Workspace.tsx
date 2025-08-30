@@ -5,6 +5,7 @@ import UploadForm from './UploadForm/UploadForm.component';
 import SubtitledVideoContent from './SubtitledVideo';
 import { RenderControl } from './RenderControl';
 import VideoPreview from './VideoPreview';
+import CustomDropdown from './CustomDropdown';
 import { LyricEntry, VideoMetadata, AudioFiles, SubtitleCustomization } from '../types';
 import { analyzeAudio } from '../utils/audioAnalyzer';
 import { useTabs } from '../contexts/TabsContext';
@@ -344,18 +345,20 @@ const Workspace: React.FC<WorkspaceProps> = ({ tabId }) => {
                   <SelectLabel>
                     {t('resolution')}
                   </SelectLabel>
-                  <select
+                  <CustomDropdown
                     value={metadata.resolution}
-                    onChange={handleResolutionChange}
-                  >
-                    <option value="360p">360p</option>
-                    <option value="480p">480p</option>
-                    <option value="720p">720p</option>
-                    <option value="1080p">1080p</option>
-                    <option value="1440p">1440p</option>
-                    <option value="4K">4K</option>
-                    <option value="8K">8K</option>
-                  </select>
+                    onChange={(value) => handleResolutionChange({ target: { value } })}
+                    options={[
+                      { value: '360p', label: '360p' },
+                      { value: '480p', label: '480p' },
+                      { value: '720p', label: '720p' },
+                      { value: '1080p', label: '1080p' },
+                      { value: '1440p', label: '1440p' },
+                      { value: '4K', label: '4K' },
+                      { value: '8K', label: '8K' }
+                    ]}
+                    placeholder="Select Resolution"
+                  />
                   <SelectDescription>{t('resolutionDesc')}</SelectDescription>
                 </SelectControl>
 

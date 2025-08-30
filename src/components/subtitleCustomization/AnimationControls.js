@@ -42,17 +42,15 @@ const AnimationControls = ({ customization, onChange }) => {
           <label>{t('videoRendering.animationEasing', 'Animation Easing')}</label>
         </div>
         <div className="row-content">
-          <select
+          <CustomDropdown
             value={customization.animationEasing}
-            onChange={(e) => updateCustomization({ animationEasing: e.target.value })}
-            className="setting-select"
-          >
-            {animationEasing.map(easing => (
-              <option key={easing.value} value={easing.value}>
-                {easing.label}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => updateCustomization({ animationEasing: value })}
+            options={animationEasing.map(easing => ({
+              value: easing.value,
+              label: easing.label
+            }))}
+            placeholder={t('videoRendering.selectEasing', 'Select Easing')}
+          />
         </div>
       </div>
 

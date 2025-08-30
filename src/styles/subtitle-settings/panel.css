@@ -43,6 +43,7 @@
 .settings-content {
   padding: 1.25rem;
   overflow-y: auto;
+  max-height: calc(505px - 80px); /* Panel height minus header height */
   /* Firefox */
   scrollbar-width: thin;
   scrollbar-color: var(--md-outline-variant) var(--md-surface-1);

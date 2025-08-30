@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import MaterialSwitch from '../../common/MaterialSwitch';
 import LoadingIndicator from '../../common/LoadingIndicator';
+import CustomDropdown from '../../common/CustomDropdown';
 import '../../../styles/common/material-switch.css';
 import { detectSubtitleLanguage } from '../../../services/gemini/languageDetectionService';
 import {
@@ -583,20 +584,20 @@ const SubtitleSourceSelection = ({
               <label htmlFor="grouping-intensity" className="grouping-intensity-label">
                 {t('narration.groupingIntensity', 'Grouping Intensity')}:
               </label>
-              <select
-                id="grouping-intensity"
-                className="grouping-intensity-select"
+              <CustomDropdown
                 value={groupingIntensity}
-                onChange={(e) => setGroupingIntensity(e.target.value)}
+                onChange={(value) => setGroupingIntensity(value)}
                 disabled={isGenerating || !subtitleSource || isGroupingSubtitles || !hasSubtitles || useGroupedSubtitles}
-              >
-                <option value="minimal">{t('narration.intensityMinimal', 'Minimal')}</option>
-                <option value="light">{t('narration.intensityLight', 'Light')}</option>
-                <option value="balanced">{t('narration.intensityBalanced', 'Balanced')}</option>
-                <option value="moderate">{t('narration.intensityModerate', 'Moderate')}</option>
-                <option value="enhanced">{t('narration.intensityEnhanced', 'Enhanced')}</option>
-                <option value="aggressive">{t('narration.intensityAggressive', 'Aggressive')}</option>
-              </select>
+                options={[
+                  { value: 'minimal', label: t('narration.intensityMinimal', 'Minimal') },
+                  { value: 'light', label: t('narration.intensityLight', 'Light') },
+                  { value: 'balanced', label: t('narration.intensityBalanced', 'Balanced') },
+                  { value: 'moderate', label: t('narration.intensityModerate', 'Moderate') },
+                  { value: 'enhanced', label: t('narration.intensityEnhanced', 'Enhanced') },
+                  { value: 'aggressive', label: t('narration.intensityAggressive', 'Aggressive') }
+                ]}
+                placeholder={t('narration.selectIntensity', 'Select Intensity')}
+              />
             </div>
 
             {/* Material Web Switch */}

@@ -17,17 +17,24 @@ const CustomDropdown = ({
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside (account for portal menu)
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
+    if (!isOpen) return;
+
+    const handlePointerDown = (event) => {
+      const target = event.target;
+      // If click is inside the trigger/button, ignore
+      if (dropdownRef.current && dropdownRef.current.contains(target)) return;
+      // If click is inside the portal menu, ignore
+      if (menuRef.current && menuRef.current.contains(target)) return;
+      // Otherwise, close
+      setIsOpen(false);
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    // Use mousedown so it feels instantaneous, but respect clicks inside portal
+    document.addEventListener('mousedown', handlePointerDown, true);
+    return () => document.removeEventListener('mousedown', handlePointerDown, true);
+  }, [isOpen]);
 
   // Initialize custom scrollbar when dropdown opens
   useEffect(() => {
@@ -293,6 +300,10 @@ const CustomDropdown = ({
             zIndex: 9999
           }}
           role="listbox"
+          onMouseDown={(e) => {
+            // Prevent outside handler from closing before option handler runs
+            e.stopPropagation();
+          }}
         >
           <div className="dropdown-options-list">
             {options.map((option) => (
@@ -300,7 +311,11 @@ const CustomDropdown = ({
                 key={option.value}
                 type="button"
                 className={`dropdown-option ${option.value === value ? 'selected' : ''}`}
-                onClick={() => handleOptionSelect(option.value)}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleOptionSelect(option.value);
+                }}
                 role="option"
                 aria-selected={option.value === value}
               >
