@@ -43,16 +43,6 @@ const SubtitleSettingsPanel = ({
 
   return (
     <div className="subtitle-settings-panel">
-      <div className="settings-header">
-        <h4>{t('subtitleSettings.title', 'Subtitle Settings')}</h4>
-        <div className="settings-header-actions">
-          <CloseButton
-            onClick={() => setIsOpen(false)}
-            variant="default"
-            size="small"
-          />
-        </div>
-      </div>
 
       <div className="settings-content">
         {/* Subtitle Language Selector - Always shown at the top */}
