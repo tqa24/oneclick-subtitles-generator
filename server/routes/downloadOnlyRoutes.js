@@ -432,9 +432,6 @@ async function downloadMediaAsync(url, outputPath, type, quality, videoId, useCo
       const cleanupKey = `${url}_${type}_${quality || 'default'}`;
       activeDownloads.delete(cleanupKey);
 
-      // Clean up the process tracking
-      activeYtdlpProcesses.delete(processKey);
-
       console.log(`[DOWNLOAD-ONLY] Cleaned up download tracking for: ${cleanupKey}`);
 
       // Clean up the file operation lock
@@ -442,7 +439,6 @@ async function downloadMediaAsync(url, outputPath, type, quality, videoId, useCo
       console.log(`[DOWNLOAD-ONLY] Released file operation lock: ${outputPath}`);
 
       // Clean up the yt-dlp process lock
-      const processKey = `${url}_${type}_${quality || 'default'}`;
       activeYtdlpProcesses.delete(processKey);
       console.log(`[DOWNLOAD-ONLY] Released yt-dlp process lock: ${processKey}`);
 
