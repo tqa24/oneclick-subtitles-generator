@@ -126,8 +126,9 @@
 
 /* Dropdown options list - this is the scrollable container */
 .dropdown-options-list {
-  max-height: 400px; /* Smaller to ensure scrollbar appears */
-  overflow-y: scroll;
+  height: 100%; /* Match menu viewport height for proper scrolling */
+  max-height: none; /* Height controlled by parent via --menu-height */
+  overflow-y: auto;
   overflow-x: hidden;
   /* Hide native scrollbar completely */
   scrollbar-width: none !important; /* Firefox */
