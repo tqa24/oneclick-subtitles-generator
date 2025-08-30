@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import CloseButton from './common/CloseButton';
+import CustomDropdown from './common/CustomDropdown';
 import '../styles/TranscriptionRulesEditor.css';
 import { PROMPT_PRESETS, getUserPromptPresets } from '../services/geminiService';
 
@@ -247,34 +248,27 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
             {t('rulesEditor.currentPrompt', 'Current Prompt Preset')}:
           </div>
           <div className="prompt-preset-dropdown">
-            <select
+            <CustomDropdown
               value={currentPresetId}
-              onChange={handleChangePrompt}
-              className="preset-select"
-            >
-              {/* Prompt from settings option */}
-              <option value="custom">{t('settings.promptFromSettings', 'Prompt from settings')}</option>
+              onChange={(value) => handleChangePrompt({ target: { value } })}
+              options={[
+                // Prompt from settings option
+                { value: 'custom', label: t('settings.promptFromSettings', 'Prompt from settings') },
 
-              {/* Built-in presets */}
-              <optgroup label={t('settings.builtInPresets', 'Built-in Presets')}>
-                {PROMPT_PRESETS.map(preset => (
-                  <option key={preset.id} value={preset.id}>
-                    {getPresetTitle(preset.id)}
-                  </option>
-                ))}
-              </optgroup>
+                // Built-in presets with prefix
+                ...PROMPT_PRESETS.map(preset => ({
+                  value: preset.id,
+                  label: `📋 ${getPresetTitle(preset.id)}`
+                })),
 
-              {/* User presets */}
-              {userPromptPresets.length > 0 && (
-                <optgroup label={t('settings.userPresets', 'Your Presets')}>
-                  {userPromptPresets.map(preset => (
-                    <option key={preset.id} value={preset.id}>
-                      {preset.title}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-            </select>
+                // User presets with prefix
+                ...userPromptPresets.map(preset => ({
+                  value: preset.id,
+                  label: `👤 ${preset.title}`
+                }))
+              ]}
+              placeholder={t('settings.selectPreset', 'Select Preset')}
+            />
           </div>
         </div>
 

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { FiChevronDown } from 'react-icons/fi';
 import '../../styles/common/CustomDropdown.css';
 
@@ -12,6 +13,7 @@ const CustomDropdown = ({
   style = {}
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, dropUp: false });
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
 
@@ -119,13 +121,135 @@ const CustomDropdown = ({
     }
   }, [isOpen]);
 
+  // Recalculate position on window resize or scroll
+  useEffect(() => {
+    const handleResize = () => {
+      if (isOpen) {
+        calculatePosition();
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener('resize', handleResize);
+      window.addEventListener('scroll', handleResize, true);
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        window.removeEventListener('scroll', handleResize, true);
+      };
+    }
+  }, [isOpen]);
+
   const selectedOption = options.find(option => option.value === value);
+
+  // Calculate dropdown position
+  const calculatePosition = () => {
+    if (!dropdownRef.current) return;
+
+    const buttonRect = dropdownRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const spacing = 4; // Consistent spacing for both directions
+
+    // Calculate actual dropdown content height
+    const optionHeight = 44; // Approximate height per option (padding + text)
+    const dropdownPadding = 16; // Top and bottom padding of dropdown
+    const actualContentHeight = (options.length * optionHeight) + dropdownPadding;
+    const maxDropdownHeight = 200; // Max height from CSS
+    const dropdownHeight = Math.min(actualContentHeight, maxDropdownHeight);
+
+    const spaceBelow = viewportHeight - buttonRect.bottom - spacing;
+    const spaceAbove = buttonRect.top - spacing;
+
+    // Determine if we should drop up or down
+    const shouldDropUp = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
+
+    let topPosition;
+    if (shouldDropUp) {
+      // For drop-up: position dropdown so its bottom edge is just above button's top edge
+      topPosition = buttonRect.top - dropdownHeight - spacing;
+
+      // Debug logging
+      console.log('Drop-up positioning:', {
+        buttonTop: buttonRect.top,
+        buttonBottom: buttonRect.bottom,
+        actualContentHeight,
+        dropdownHeight,
+        spacing,
+        calculatedTop: topPosition,
+        spaceAbove,
+        spaceBelow,
+        optionsCount: options.length
+      });
+
+      // Safety check: don't go above viewport
+      topPosition = Math.max(spacing, topPosition);
+    } else {
+      // Position dropdown's top edge just below button's bottom edge
+      topPosition = buttonRect.bottom + spacing;
+
+      // Safety check: don't go below viewport
+      const maxTop = viewportHeight - dropdownHeight - spacing;
+      topPosition = Math.min(topPosition, maxTop);
+    }
+
+    setDropdownPosition({
+      top: topPosition,
+      left: buttonRect.left,
+      width: buttonRect.width,
+      dropUp: shouldDropUp
+    });
+  };
 
   const handleToggle = () => {
     if (!disabled) {
+      if (!isOpen) {
+        // Initial positioning - will be refined after render
+        calculatePosition();
+      }
       setIsOpen(!isOpen);
     }
   };
+
+  // Recalculate position after dropdown renders to get actual height
+  useEffect(() => {
+    if (isOpen && menuRef.current) {
+      const timer = setTimeout(() => {
+        const actualDropdownHeight = menuRef.current.offsetHeight;
+        const buttonRect = dropdownRef.current.getBoundingClientRect();
+        const spacing = 4;
+
+        // Recalculate with actual height
+        const spaceBelow = window.innerHeight - buttonRect.bottom - spacing;
+        const spaceAbove = buttonRect.top - spacing;
+        const shouldDropUp = spaceBelow < actualDropdownHeight && spaceAbove > spaceBelow;
+
+        let topPosition;
+        if (shouldDropUp) {
+          topPosition = buttonRect.top - actualDropdownHeight - spacing;
+          topPosition = Math.max(spacing, topPosition);
+        } else {
+          topPosition = buttonRect.bottom + spacing;
+          const maxTop = window.innerHeight - actualDropdownHeight - spacing;
+          topPosition = Math.min(topPosition, maxTop);
+        }
+
+        console.log('Refined positioning:', {
+          actualDropdownHeight,
+          shouldDropUp,
+          topPosition,
+          buttonTop: buttonRect.top,
+          buttonBottom: buttonRect.bottom
+        });
+
+        setDropdownPosition(prev => ({
+          ...prev,
+          top: topPosition,
+          dropUp: shouldDropUp
+        }));
+      }, 0); // Next tick after render
+
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   const handleOptionSelect = (optionValue) => {
     onChange(optionValue);
@@ -156,28 +280,36 @@ const CustomDropdown = ({
         />
       </button>
 
-      {/* Dropdown menu */}
-      {isOpen && !disabled && (
+      {/* Dropdown menu - rendered as portal to avoid clipping */}
+      {isOpen && !disabled && createPortal(
         <div
           ref={menuRef}
-          className="custom-dropdown-menu custom-scrollbar-container"
+          className={`custom-dropdown-menu custom-scrollbar-container ${dropdownPosition.dropUp ? 'drop-up' : 'drop-down'}`}
+          style={{
+            position: 'fixed',
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`,
+            zIndex: 9999
+          }}
           role="listbox"
         >
           <div className="dropdown-options-list">
-              {options.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={`dropdown-option ${option.value === value ? 'selected' : ''}`}
-                  onClick={() => handleOptionSelect(option.value)}
-                  role="option"
-                  aria-selected={option.value === value}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-        </div>
+            {options.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={`dropdown-option ${option.value === value ? 'selected' : ''}`}
+                onClick={() => handleOptionSelect(option.value)}
+                role="option"
+                aria-selected={option.value === value}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

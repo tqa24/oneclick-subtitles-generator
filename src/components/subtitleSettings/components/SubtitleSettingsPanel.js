@@ -6,6 +6,7 @@ import StyleSettings from './StyleSettings';
 import { fontOptions, fontWeightOptions, textAlignOptions, getTextTransformOptions } from '../constants';
 import { groupFontsByCategory } from '../utils/fontUtils';
 import CloseButton from '../../common/CloseButton';
+import CustomDropdown from '../../common/CustomDropdown';
 
 /**
  * Subtitle Settings Panel component
@@ -57,21 +58,19 @@ const SubtitleSettingsPanel = ({
         {/* Subtitle Language Selector - Always shown at the top */}
         <div className="setting-group subtitle-language-group">
           <label htmlFor="subtitle-language">{t('subtitleSettings.subtitleLanguage', 'Subtitle Language')}</label>
-          <select
-            id="subtitle-language"
+          <CustomDropdown
             value={subtitleLanguage}
-            onChange={handleSubtitleLanguageChange}
-            className="subtitle-language-select"
+            onChange={(value) => handleSubtitleLanguageChange({ target: { value } })}
             disabled={!hasTranslation}
-          >
-            <option value="original">{t('subtitleSettings.original', 'Original')}</option>
-            {hasTranslation && (
-              <option value="translated">
-                {t('subtitleSettings.translated', 'Translated')}
-                {targetLanguage ? ` (${targetLanguage})` : ''}
-              </option>
-            )}
-          </select>
+            options={[
+              { value: 'original', label: t('subtitleSettings.original', 'Original') },
+              ...(hasTranslation ? [{
+                value: 'translated',
+                label: `${t('subtitleSettings.translated', 'Translated')}${targetLanguage ? ` (${targetLanguage})` : ''}`
+              }] : [])
+            ]}
+            placeholder={t('subtitleSettings.selectLanguage', 'Select Language')}
+          />
         </div>
 
         <hr className="settings-divider" />

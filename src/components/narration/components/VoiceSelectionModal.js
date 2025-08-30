@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import CloseButton from '../../common/CloseButton';
+import CustomDropdown from '../../common/CustomDropdown';
 import '../../../styles/narration/VoiceSelectionModal.css';
 
 const VoiceSelectionModal = ({ isOpen, onClose, voices, selectedVoice, onVoiceSelect, detectedLanguage, t }) => {
@@ -191,24 +192,21 @@ const VoiceSelectionModal = ({ isOpen, onClose, voices, selectedVoice, onVoiceSe
           </div>
 
           <div className="voice-category-filter">
-            <select
+            <CustomDropdown
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="voice-category-select"
-            >
-              {availableLanguages.map(language => (
-                <option key={language} value={language}>
-                  {language === 'All'
-                    ? t('narration.allLanguages', 'All Languages')
-                    : language === 'Recommended'
-                    ? t('narration.recommendedVoices', 'Recommended for {{language}}', {
-                        language: detectedLanguage?.languageName || detectedLanguage?.languageCode
-                      })
-                    : getLanguageName(language)
-                  }
-                </option>
-              ))}
-            </select>
+              onChange={(value) => setSelectedCategory(value)}
+              options={availableLanguages.map(language => ({
+                value: language,
+                label: language === 'All'
+                  ? t('narration.allLanguages', 'All Languages')
+                  : language === 'Recommended'
+                  ? t('narration.recommendedVoices', 'Recommended for {{language}}', {
+                      language: detectedLanguage?.languageName || detectedLanguage?.languageCode
+                    })
+                  : getLanguageName(language)
+              }))}
+              placeholder={t('narration.selectCategory', 'Select Category')}
+            />
           </div>
         </div>
 

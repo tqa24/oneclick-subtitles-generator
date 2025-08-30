@@ -77,19 +77,26 @@
 
 /* Dropdown menu with custom scrollbar */
 .custom-dropdown-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
   background-color: var(--md-surface-1);
   border: 1px solid var(--md-outline-variant);
   border-radius: 16px;
   box-shadow: var(--md-elevation-level3);
-  z-index: 1000;
   max-height: 200px; /* Smaller to ensure scrollbar appears */
   overflow: hidden; /* Hide native scrollbar, custom scrollbar will handle scrolling */
   animation: dropdown-slide-in var(--md-duration-medium3) var(--md-easing-emphasized);
   transform-origin: top center;
+}
+
+/* Drop-down animation (default) */
+.custom-dropdown-menu.drop-down {
+  animation: dropdown-slide-in var(--md-duration-medium3) var(--md-easing-emphasized);
+  transform-origin: top center;
+}
+
+/* Drop-up animation */
+.custom-dropdown-menu.drop-up {
+  animation: dropdown-slide-up var(--md-duration-medium3) var(--md-easing-emphasized);
+  transform-origin: bottom center;
 }
 
 /* Dropdown options list - this is the scrollable container */
@@ -197,6 +204,17 @@
   from {
     opacity: 0;
     transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dropdown-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.95);
   }
   to {
     opacity: 1;

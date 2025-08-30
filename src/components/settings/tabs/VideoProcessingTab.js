@@ -5,6 +5,7 @@ import MaterialSwitch from '../../common/MaterialSwitch';
 import { DisplayIcon, VideoAnalysisIcon } from '../icons/TabIcons';
 import { FiCpu, FiDownload } from 'react-icons/fi';
 import CustomGeminiModelsCard from '../components/CustomGeminiModelsCard';
+import CustomDropdown from '../../common/CustomDropdown';
 import '../../../styles/common/material-switch.css';
 import '../../../styles/settings/customGeminiModels.css';
 
@@ -149,15 +150,15 @@ const VideoProcessingTab = ({
               <p className="setting-description">
                 {t('settings.timeFormatDescription', 'Choose how time is displayed in the timeline and lyrics.')}
               </p>
-              <select
-                id="time-format"
+              <CustomDropdown
                 value={timeFormat}
-                onChange={(e) => setTimeFormat(e.target.value)}
-                className="enhanced-select"
-              >
-                <option value="seconds">{t('settings.timeFormatSeconds', 'Seconds (e.g., 75.40s)')}</option>
-                <option value="hms">{t('settings.timeFormatHMS', 'HH:MM:SS (e.g., 1:15.40)')}</option>
-              </select>
+                onChange={(value) => setTimeFormat(value)}
+                options={[
+                  { value: 'seconds', label: t('settings.timeFormatSeconds', 'Seconds (e.g., 75.40s)') },
+                  { value: 'hms', label: t('settings.timeFormatHMS', 'HH:MM:SS (e.g., 1:15.40)') }
+                ]}
+                placeholder={t('settings.selectTimeFormat', 'Select Time Format')}
+              />
             </div>
 
             {/* Audio Waveform for Long Videos Setting */}
@@ -279,18 +280,15 @@ const VideoProcessingTab = ({
               <p className="setting-description">
                 {t('settings.videoAnalysisModel.simplified', 'Select the model to use for video analysis. Flash Lite is faster but less accurate.')}
               </p>
-              <select
-                id="video-analysis-model"
+              <CustomDropdown
                 value={videoAnalysisModel}
-                onChange={(e) => setVideoAnalysisModel(e.target.value)}
-                className="enhanced-select"
-              >
-                {getAnalysisModels().map((model) => (
-                  <option key={model.id} value={model.id}>
-                    {model.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setVideoAnalysisModel(value)}
+                options={getAnalysisModels().map((model) => ({
+                  value: model.id,
+                  label: model.name
+                }))}
+                placeholder={t('settings.selectAnalysisModel', 'Select Analysis Model')}
+              />
             </div>
 
 
@@ -318,15 +316,15 @@ const VideoProcessingTab = ({
               <p className="setting-description">
                 {t('settings.thinkingBudget25ProDesc', 'Cannot disable thinking. Choose dynamic or set custom token budget.')}
               </p>
-              <select
-                id="thinking-mode-25-pro"
+              <CustomDropdown
                 value={getThinkingMode(thinkingBudgets['gemini-2.5-pro'] || -1)}
-                onChange={(e) => handleModeChange('gemini-2.5-pro', e.target.value)}
-                className="enhanced-select"
-              >
-                <option value="dynamic">{t('settings.thinkingDynamic', 'Dynamic (Auto)')}</option>
-                <option value="custom">{t('settings.thinkingCustom', 'Custom')}</option>
-              </select>
+                onChange={(value) => handleModeChange('gemini-2.5-pro', value)}
+                options={[
+                  { value: 'dynamic', label: t('settings.thinkingDynamic', 'Dynamic (Auto)') },
+                  { value: 'custom', label: t('settings.thinkingCustom', 'Custom') }
+                ]}
+                placeholder={t('settings.selectThinkingMode', 'Select Thinking Mode')}
+              />
 
               {getThinkingMode(thinkingBudgets['gemini-2.5-pro'] || -1) === 'custom' && (
                 <div className="thinking-slider-container">
@@ -366,16 +364,16 @@ const VideoProcessingTab = ({
               <p className="setting-description">
                 {t('settings.thinkingBudget25FlashDesc', 'Can be disabled for fastest response, dynamic for auto, or custom token budget.')}
               </p>
-              <select
-                id="thinking-mode-25-flash"
+              <CustomDropdown
                 value={getThinkingMode(thinkingBudgets['gemini-2.5-flash'] || -1)}
-                onChange={(e) => handleModeChange('gemini-2.5-flash', e.target.value)}
-                className="enhanced-select"
-              >
-                <option value="disabled">{t('settings.thinkingDisabled', 'Disabled')}</option>
-                <option value="dynamic">{t('settings.thinkingDynamic', 'Dynamic (Auto)')}</option>
-                <option value="custom">{t('settings.thinkingCustom', 'Custom')}</option>
-              </select>
+                onChange={(value) => handleModeChange('gemini-2.5-flash', value)}
+                options={[
+                  { value: 'disabled', label: t('settings.thinkingDisabled', 'Disabled') },
+                  { value: 'dynamic', label: t('settings.thinkingDynamic', 'Dynamic (Auto)') },
+                  { value: 'custom', label: t('settings.thinkingCustom', 'Custom') }
+                ]}
+                placeholder={t('settings.selectThinkingMode', 'Select Thinking Mode')}
+              />
 
               {getThinkingMode(thinkingBudgets['gemini-2.5-flash'] || -1) === 'custom' && (
                 <div className="thinking-slider-container">
@@ -415,16 +413,16 @@ const VideoProcessingTab = ({
               <p className="setting-description">
                 {t('settings.thinkingBudget25FlashLiteDesc', 'Disabled by default for fastest response. Choose dynamic or custom token budget.')}
               </p>
-              <select
-                id="thinking-mode-25-flash-lite"
+              <CustomDropdown
                 value={getThinkingMode(thinkingBudgets['gemini-2.5-flash-lite'] || 0)}
-                onChange={(e) => handleModeChange('gemini-2.5-flash-lite', e.target.value)}
-                className="enhanced-select"
-              >
-                <option value="disabled">{t('settings.thinkingDisabled', 'Disabled')} ({t('settings.default', 'Default')})</option>
-                <option value="dynamic">{t('settings.thinkingDynamic', 'Dynamic (Auto)')}</option>
-                <option value="custom">{t('settings.thinkingCustom', 'Custom')}</option>
-              </select>
+                onChange={(value) => handleModeChange('gemini-2.5-flash-lite', value)}
+                options={[
+                  { value: 'disabled', label: `${t('settings.thinkingDisabled', 'Disabled')} (${t('settings.default', 'Default')})` },
+                  { value: 'dynamic', label: t('settings.thinkingDynamic', 'Dynamic (Auto)') },
+                  { value: 'custom', label: t('settings.thinkingCustom', 'Custom') }
+                ]}
+                placeholder={t('settings.selectThinkingMode', 'Select Thinking Mode')}
+              />
 
               {getThinkingMode(thinkingBudgets['gemini-2.5-flash-lite'] || 0) === 'custom' && (
                 <div className="thinking-slider-container">
