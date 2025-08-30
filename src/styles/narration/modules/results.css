@@ -207,6 +207,13 @@
   font-style: italic;
   border: 1px dashed var(--md-outline-variant);
   animation: pulse 2s infinite ease-in-out;
+  /* Make slightly more compact to avoid pulse clipping on sides */
+  display: block;
+  max-width: 640px;
+  width: calc(100% - 32px); /* leave 16px breathing room on both sides */
+  margin: 0.5rem auto; /* center the message */
+  overflow: visible; /* ensure the element itself doesn't clip */
+  transform-origin: center; /* scale from center during pulse */
 }
 
 /* Status message styling */
