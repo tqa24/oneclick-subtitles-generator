@@ -488,7 +488,7 @@ const VideoProcessingOptionsModal = ({
     return basePrompt;
   };
 
-  // Real token counting using Gemini API with Files API
+  // Real token counting using Gemini API with Files API (only if file already uploaded)
   const countTokensWithGeminiAPI = async (videoFile) => {
     if (!videoFile || !selectedSegment) return null;
 
@@ -522,19 +522,12 @@ const VideoProcessingOptionsModal = ({
 
       let uploadedFile = JSON.parse(localStorage.getItem(fileKey) || 'null');
 
-      // If no cached file or file doesn't exist, upload it first
+      // Only use real token counting if file is already uploaded, otherwise use estimation
       if (!uploadedFile || !uploadedFile.uri) {
-        console.log('[TokenCounting] No cached file found, uploading for token counting...');
-
-        // Import and use the same upload function as the main processing
-        const { uploadFileToGemini } = await import('../services/gemini');
-        uploadedFile = await uploadFileToGemini(videoFile, `${videoFile.name}_${Date.now()}`);
-
-        // Cache the uploaded file info for reuse
-        localStorage.setItem(fileKey, JSON.stringify(uploadedFile));
-        console.log('[TokenCounting] File uploaded successfully:', uploadedFile.uri);
+        console.log('[TokenCounting] No cached file found, using estimation instead of uploading');
+        return null; // This will cause the UI to show estimation
       } else {
-        console.log('[TokenCounting] Using cached uploaded file:', uploadedFile.uri);
+        console.log('[TokenCounting] Using cached uploaded file for real token counting:', uploadedFile.uri);
       }
 
       // Create the request data using the uploaded file URI (matching countTokens API format)
