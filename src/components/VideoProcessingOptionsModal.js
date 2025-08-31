@@ -538,17 +538,13 @@ const VideoProcessingOptionsModal = ({
       }
 
       // Create the request data using the uploaded file URI (matching countTokens API format)
-      // Note: countTokens API doesn't support media resolution, so we only count basic video metadata
+      // Note: countTokens API doesn't support offset parameters, so we count the whole video
       const filePart = {
         file_data: {
           file_uri: uploadedFile.uri,
           mime_type: uploadedFile.mimeType || videoFile.type || "video/mp4"
         }
       };
-
-      // Add video metadata to the file_data part if this is a video
-      // Note: video_metadata should be a sibling to file_data, not nested inside it
-      // This matches the structure used in the actual processing
 
       // If user-provided subtitles mode is active, append outside-context directly to the prompt
       const ctxText = buildOutsideContextText();
@@ -584,20 +580,51 @@ const VideoProcessingOptionsModal = ({
       }
 
       const data = await response.json();
-      console.log('[TokenCounting] Real token count (without media resolution):', data.totalTokens);
+      console.log('[TokenCounting] Whole video token count:', data.totalTokens);
 
-      // Note: The countTokens API doesn't support FPS or media resolution parameters,
-      // so this count is for the default settings. We need to adjust it based on our settings.
-      const baseTokens = data.totalTokens;
+      // Since countTokens API doesn't support offset, it returns tokens for the entire video.
+      // We need to calculate the proportion for the selected segment.
+      const wholeVideoTokens = data.totalTokens;
 
+      // Calculate segment proportion based on duration
+      const segmentDuration = selectedSegment.end - selectedSegment.start;
+
+      // Try to get total duration from video file or use segment duration as fallback
+      let totalDuration = segmentDuration; // Conservative fallback
+
+      if (videoFile) {
+        try {
+          // Try to get duration from video file metadata
+          const videoDuration = await new Promise((resolve) => {
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            video.onloadedmetadata = () => resolve(video.duration || 0);
+            video.onerror = () => resolve(0);
+            setTimeout(() => resolve(0), 2000); // 2 second timeout
+            video.src = URL.createObjectURL(videoFile);
+          });
+
+          if (videoDuration > 0) {
+            totalDuration = videoDuration;
+          }
+        } catch (error) {
+          console.warn('[TokenCounting] Could not get video duration, using segment duration as fallback');
+        }
+      }
+
+      const segmentProportion = segmentDuration / totalDuration;
+
+      console.log('[TokenCounting] Segment duration:', segmentDuration, 'Total duration:', totalDuration, 'Proportion:', segmentProportion);
+
+      // Calculate base tokens for the selected segment
+      const baseSegmentTokens = Math.round(wholeVideoTokens * segmentProportion);
+
+      // Apply FPS and resolution adjustments to the segment tokens
       // The API returns tokens for default FPS (likely 1 FPS) and default resolution (likely medium)
-      // We need to adjust for both our FPS and resolution settings
-
-      // First, adjust for FPS - assume API used 1 FPS as baseline
       const baseFps = 1; // Assumed baseline FPS used by the API
       const fpsAdjustmentFactor = fps / baseFps;
 
-      // Then adjust for media resolution based on official token counts
+      // Adjust for media resolution based on official token counts
       let resolutionAdjustmentFactor = 1;
       if (mediaResolution === 'low') {
         resolutionAdjustmentFactor = 64 / 256; // low vs medium ratio
@@ -605,11 +632,18 @@ const VideoProcessingOptionsModal = ({
         resolutionAdjustmentFactor = 256 / 256; // high vs medium ratio (same)
       }
 
-      // Apply both adjustments
-      const adjustedTokens = Math.round(baseTokens * fpsAdjustmentFactor * resolutionAdjustmentFactor);
-      console.log('[TokenCounting] Adjusted token count - FPS:', fps, 'Resolution:', mediaResolution, 'Final tokens:', adjustedTokens);
+      // Apply all adjustments to the segment tokens
+      const finalTokens = Math.round(baseSegmentTokens * fpsAdjustmentFactor * resolutionAdjustmentFactor);
 
-      return adjustedTokens;
+      console.log('[TokenCounting] Final calculation:');
+      console.log('  - Whole video tokens:', wholeVideoTokens);
+      console.log('  - Segment proportion:', segmentProportion.toFixed(3));
+      console.log('  - Base segment tokens:', baseSegmentTokens);
+      console.log('  - FPS adjustment (', fps, 'fps):', fpsAdjustmentFactor);
+      console.log('  - Resolution adjustment (', mediaResolution, '):', resolutionAdjustmentFactor);
+      console.log('  - Final tokens:', finalTokens);
+
+      return finalTokens;
     } catch (error) {
       console.error('Error counting tokens with Gemini API:', error);
       setTokenCountError(error.message);
