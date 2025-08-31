@@ -6,6 +6,7 @@
 import i18n from '../../i18n/i18n';
 import { getLanguageCode } from '../../utils/languageUtils';
 import { createConsolidationSchema, addResponseSchema } from '../../utils/schemaUtils';
+import { addThinkingConfig } from '../../utils/thinkingBudgetUtils';
 import { getDefaultConsolidatePrompt } from './promptManagement';
 import { createRequestController, removeRequestController } from './requestManagement';
 import { processStructuredJsonResponse, processTextResponse } from './responseProcessingService';
@@ -118,6 +119,8 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash'
         // Always use structured output
         requestData = addResponseSchema(requestData, createConsolidationSchema());
 
+        // Add thinking configuration if supported by the model
+        requestData = addThinkingConfig(requestData, model);
 
         const response = await fetch(apiUrl, {
             method: 'POST',

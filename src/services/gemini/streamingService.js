@@ -7,6 +7,7 @@ import { getNextAvailableKey } from './keyManager';
 import { getTranscriptionPrompt } from './promptManagement';
 import { parseGeminiResponse } from '../../utils/subtitle';
 import { createSubtitleSchema, addResponseSchema } from '../../utils/schemaUtils';
+import { addThinkingConfig } from '../../utils/thinkingBudgetUtils';
 
 /**
  * Stream content generation from Gemini API
@@ -74,6 +75,9 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
     // Add structured output schema
     const isUserProvided = userProvidedSubtitles && userProvidedSubtitles.trim() !== '';
     requestData = addResponseSchema(requestData, createSubtitleSchema(isUserProvided), isUserProvided);
+
+    // Add thinking configuration if supported by the model
+    requestData = addThinkingConfig(requestData, MODEL);
 
     // Add generation config with media resolution if provided
     if (mediaResolution) {
