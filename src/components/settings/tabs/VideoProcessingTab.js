@@ -317,16 +317,16 @@ const VideoProcessingTab = ({
                 {t('settings.thinkingBudget25ProDesc', 'Cannot disable thinking. Choose dynamic or set custom token budget.')}
               </p>
               <CustomDropdown
-                value={getThinkingMode(thinkingBudgets['gemini-2.5-pro'] || -1)}
+                value={getThinkingMode(thinkingBudgets['gemini-2.5-pro'] || 128)}
                 onChange={(value) => handleModeChange('gemini-2.5-pro', value)}
                 options={[
                   { value: 'dynamic', label: t('settings.thinkingDynamic', 'Dynamic (Auto)') },
-                  { value: 'custom', label: t('settings.thinkingCustom', 'Custom') }
+                  { value: 'custom', label: `${t('settings.thinkingCustom', 'Custom')} (${t('settings.default', 'Default')})` }
                 ]}
                 placeholder={t('settings.selectThinkingMode', 'Select Thinking Mode')}
               />
 
-              {getThinkingMode(thinkingBudgets['gemini-2.5-pro'] || -1) === 'custom' && (
+              {getThinkingMode(thinkingBudgets['gemini-2.5-pro'] || 128) === 'custom' && (
                 <div className="thinking-slider-container">
                   <div className="slider-with-value">
                     <StandardSlider
@@ -365,17 +365,17 @@ const VideoProcessingTab = ({
                 {t('settings.thinkingBudget25FlashDesc', 'Can be disabled for fastest response, dynamic for auto, or custom token budget.')}
               </p>
               <CustomDropdown
-                value={getThinkingMode(thinkingBudgets['gemini-2.5-flash'] || -1)}
+                value={getThinkingMode(thinkingBudgets['gemini-2.5-flash'] || 0)}
                 onChange={(value) => handleModeChange('gemini-2.5-flash', value)}
                 options={[
-                  { value: 'disabled', label: t('settings.thinkingDisabled', 'Disabled') },
+                  { value: 'disabled', label: `${t('settings.thinkingDisabled', 'Disabled')} (${t('settings.default', 'Default')})` },
                   { value: 'dynamic', label: t('settings.thinkingDynamic', 'Dynamic (Auto)') },
                   { value: 'custom', label: t('settings.thinkingCustom', 'Custom') }
                 ]}
                 placeholder={t('settings.selectThinkingMode', 'Select Thinking Mode')}
               />
 
-              {getThinkingMode(thinkingBudgets['gemini-2.5-flash'] || -1) === 'custom' && (
+              {getThinkingMode(thinkingBudgets['gemini-2.5-flash'] || 0) === 'custom' && (
                 <div className="thinking-slider-container">
                   <div className="slider-with-value">
                     <StandardSlider
