@@ -306,7 +306,7 @@ export const useSubtitles = (t) => {
 
                 // Import the streaming segment processing function and subtitle merger
                 const { processSegmentWithStreaming } = await import('../utils/videoProcessing/processingUtils');
-                const { mergeSegmentSubtitles, mergeStreamingSubtitlesProgressively } = await import('../utils/subtitle/subtitleMerger');
+                const { mergeStreamingSubtitlesProgressively } = await import('../utils/subtitle/subtitleMerger');
 
                 // IMPORTANT: Load the saved state from cache AFTER save completes
                 // This ensures we merge with the saved state (including manual edits), not the old React state
@@ -408,21 +408,14 @@ export const useSubtitles = (t) => {
                     segmentRange: `${segment.start}s - ${segment.end}s`
                 });
 
-                // Capture state before final merging for undo/redo
-                window.dispatchEvent(new CustomEvent('capture-before-merge', {
-                    detail: {
-                        type: 'final-merge',
-                        source: 'streaming-complete',
-                        segment: segment
-                    }
-                }));
+                // The streaming process already handled progressive merging correctly
+                // The final result from processSegmentWithStreaming is already properly merged
+                // No need for additional merging - just use the current state from the last progressive merge
+                subtitles = subtitlesData;
 
-                // Final merge with existing subtitles
-                subtitles = mergeSegmentSubtitles(currentSubtitles, segmentSubtitles, segment);
-
-                console.log('[Subtitle Generation] Final merge:', {
-                    totalCount: subtitles.length,
-                    mergedSubtitles: subtitles.map(s => `${s.start}-${s.end}: ${s.text.substring(0, 20)}...`)
+                console.log('[Subtitle Generation] Using final streaming result:', {
+                    totalCount: subtitles?.length || 0,
+                    finalSubtitles: subtitles?.map(s => `${s.start}-${s.end}: ${s.text.substring(0, 20)}...`) || []
                 });
             }
             // Check if this is a long media file (video or audio) that needs special processing
@@ -466,9 +459,8 @@ export const useSubtitles = (t) => {
             // For segment processing, the final result is already set during streaming
             // For non-segment processing, trigger save before updating with new results
             if (segment) {
-                // For segment processing, just update the final result
-                // (the save was already triggered before streaming started)
-                setSubtitlesData(subtitles);
+                // For segment processing, the final result is already set via progressive merging
+                // No need to call setSubtitlesData again since subtitles = subtitlesData (current state)
 
                 // Auto-save after streaming completion to preserve the new results
                 if (subtitles && subtitles.length > 0) {

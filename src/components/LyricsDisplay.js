@@ -677,7 +677,7 @@ const LyricsDisplay = ({
       const isSegmentStart = event.detail?.source === 'segment-processing-start';
       const isProcessingComplete = event.detail?.source === 'video-processing-complete';
 
-      if ((isSegmentStart || isProcessingComplete) && lyrics && lyrics.length > 0) {
+      if (isSegmentStart || isProcessingComplete) {
         const action = isSegmentStart ? 'segment processing' : 'video processing completion';
         console.log(`[LyricsDisplay] Saving current state before ${action}`);
 
