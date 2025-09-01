@@ -139,9 +139,16 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
   let chunkCount = 0;
   
   // Extract segment end offset if provided
-  const segmentEndOffset = options?.segmentInfo?.endOffset || null;
+  // Note: The property is 'end', not 'endOffset'
+  const segmentEndOffset = options?.segmentInfo?.end || options?.segmentInfo?.endOffset || null;
   let shouldTerminate = false;
   let lastValidSubtitleEndTime = 0;
+  
+  console.log(`[StreamingService] Segment processing initialized:`, {
+    segmentStart: options?.segmentInfo?.start || 'not set',
+    segmentEnd: segmentEndOffset || 'not set',
+    duration: options?.segmentInfo?.duration || 'not set'
+  });
 
   try {
     while (true) {
@@ -237,23 +244,71 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                 
                 // Check if we should terminate based on segment end offset
                 if (segmentEndOffset !== null && parsedSubtitles && parsedSubtitles.length > 0) {
+                  console.log(`[StreamingService] Checking segment bounds: end offset = ${segmentEndOffset}s`);
                   // Find the last subtitle that's within the segment bounds
                   let validSubtitles = [];
                   let foundExceeding = false;
+                  let foundHallucination = false;
+                  
+                  // Check for hallucination patterns
+                  let invalidTimingCount = 0;
+                  let repeatedTextCount = 0;
+                  let lastText = null;
+                  let uniformDurationCount = 0;
+                  let lastDuration = null;
                   
                   for (const subtitle of parsedSubtitles) {
-                    if (subtitle.start <= segmentEndOffset) {
-                      validSubtitles.push(subtitle);
-                      lastValidSubtitleEndTime = Math.max(lastValidSubtitleEndTime, subtitle.end || subtitle.start);
+                    // Check for invalid timing (0,0 or both start and end are 0)
+                    if (subtitle.start === 0 && subtitle.end === 0) {
+                      invalidTimingCount++;
+                      if (invalidTimingCount >= 3) {
+                        foundHallucination = true;
+                        console.log(`[StreamingService] Detected hallucination: Multiple subtitles with 0,0 timing`);
+                        break;
+                      }
+                    }
+                    
+                    // Check for repeated text (same text 3+ times in a row)
+                    if (lastText && subtitle.text === lastText) {
+                      repeatedTextCount++;
+                      if (repeatedTextCount >= 3) {
+                        foundHallucination = true;
+                        console.log(`[StreamingService] Detected hallucination: Text "${subtitle.text}" repeated ${repeatedTextCount + 1} times`);
+                        break;
+                      }
                     } else {
+                      repeatedTextCount = 0;
+                      lastText = subtitle.text;
+                    }
+                    
+                    // Check for uniform durations (all subtitles have exact same duration)
+                    const duration = subtitle.end - subtitle.start;
+                    if (lastDuration !== null && Math.abs(duration - lastDuration) < 0.01) {
+                      uniformDurationCount++;
+                      if (uniformDurationCount >= 5) {
+                        foundHallucination = true;
+                        console.log(`[StreamingService] Detected hallucination: ${uniformDurationCount + 1} subtitles with identical duration ${duration.toFixed(2)}s`);
+                        break;
+                      }
+                    } else {
+                      uniformDurationCount = 0;
+                    }
+                    lastDuration = duration;
+                    
+                    // Check if subtitle exceeds segment end
+                    if (subtitle.start > segmentEndOffset) {
                       // Found subtitle that exceeds segment end
                       foundExceeding = true;
                       console.log(`[StreamingService] Found subtitle exceeding segment end (${subtitle.start} > ${segmentEndOffset}), preparing to terminate...`);
+                    } else if (subtitle.start > 0 || subtitle.end > 0) {
+                      // Only add subtitles with valid timing that are within bounds
+                      validSubtitles.push(subtitle);
+                      lastValidSubtitleEndTime = Math.max(lastValidSubtitleEndTime, subtitle.end || subtitle.start);
                     }
                   }
                   
-                  // If we found subtitles exceeding the segment, terminate after this chunk
-                  if (foundExceeding) {
+                  // If we found hallucination or subtitles exceeding the segment, terminate
+                  if (foundHallucination || foundExceeding) {
                     shouldTerminate = true;
                     
                     // Send only valid subtitles
@@ -268,7 +323,11 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                     }
                     
                     // Terminate the stream
-                    console.log(`[StreamingService] Terminating stream - reached segment end offset at ${segmentEndOffset}`);
+                    if (foundHallucination) {
+                      console.log(`[StreamingService] Terminating stream - detected hallucination patterns`);
+                    } else {
+                      console.log(`[StreamingService] Terminating stream - reached segment end offset at ${segmentEndOffset}`);
+                    }
                     reader.cancel(); // Cancel the reader to stop receiving more data
                     onComplete(accumulatedText);
                     return;
