@@ -371,35 +371,103 @@ export const useSubtitles = (t) => {
                         userProvidedSubtitles
                     },
                     setStatus,
-                    (streamingSubtitles, isStreaming) => {
-                        // Real-time subtitle updates during streaming
-                        if (streamingSubtitles && streamingSubtitles.length > 0) {
-                            console.log(`[Subtitle Generation] Streaming update: ${streamingSubtitles.length} subtitles`);
+                    (() => {
+                        // Create a throttled version of the streaming update handler
+                        let lastMergeTime = 0;
+                        let pendingUpdate = null;
+                        let updateTimer = null;
+                        const MERGE_THROTTLE_MS = 500; // Throttle merges to once every 500ms
+                        const CAPTURE_THROTTLE_MS = 2000; // Capture undo state less frequently
+                        let lastCaptureTime = 0;
+                        
+                        return (streamingSubtitles, isStreaming) => {
+                            // Real-time subtitle updates during streaming
+                            if (streamingSubtitles && streamingSubtitles.length > 0) {
+                                console.log(`[Subtitle Generation] Streaming update: ${streamingSubtitles.length} subtitles`);
 
-                            // Capture state before progressive merging for undo/redo
-                            window.dispatchEvent(new CustomEvent('capture-before-merge', {
-                                detail: {
-                                    type: 'progressive-merge',
-                                    source: 'streaming-update',
-                                    segment: segment
+                                const now = Date.now();
+                                const timeSinceMerge = now - lastMergeTime;
+                                const timeSinceCapture = now - lastCaptureTime;
+                                
+                                // Store the pending update
+                                pendingUpdate = { streamingSubtitles, isStreaming };
+                                
+                                // Clear any existing timer
+                                if (updateTimer) {
+                                    clearTimeout(updateTimer);
                                 }
-                            }));
+                                
+                                // Throttle the merge operations
+                                if (timeSinceMerge >= MERGE_THROTTLE_MS) {
+                                    // Enough time has passed, perform the merge immediately
+                                    lastMergeTime = now;
+                                    
+                                    // Only capture state for undo/redo occasionally, not on every merge
+                                    if (timeSinceCapture >= CAPTURE_THROTTLE_MS) {
+                                        lastCaptureTime = now;
+                                        window.dispatchEvent(new CustomEvent('capture-before-merge', {
+                                            detail: {
+                                                type: 'progressive-merge',
+                                                source: 'streaming-update',
+                                                segment: segment
+                                            }
+                                        }));
+                                    }
 
-                            // Use progressive merging for streaming updates (clears left to right)
-                            const mergedStreamingSubtitles = mergeStreamingSubtitlesProgressively(currentSubtitles, streamingSubtitles, segment);
+                                    // Use progressive merging for streaming updates (clears left to right)
+                                    const mergedStreamingSubtitles = mergeStreamingSubtitlesProgressively(currentSubtitles, streamingSubtitles, segment);
 
-                            // Update the UI with streaming results
-                            setSubtitlesData(mergedStreamingSubtitles);
+                                    // Update the UI with streaming results
+                                    setSubtitlesData(mergedStreamingSubtitles);
 
-                            // Update status to show streaming progress
-                            if (isStreaming) {
-                                setStatus({
-                                    message: `Streaming... ${streamingSubtitles.length} subtitles generated for segment`,
-                                    type: 'loading'
-                                });
+                                    // Update status to show streaming progress
+                                    if (isStreaming) {
+                                        setStatus({
+                                            message: `Streaming... ${streamingSubtitles.length} subtitles generated for segment`,
+                                            type: 'loading'
+                                        });
+                                    }
+                                } else {
+                                    // Schedule the update for later
+                                    const delay = MERGE_THROTTLE_MS - timeSinceMerge;
+                                    updateTimer = setTimeout(() => {
+                                        if (pendingUpdate) {
+                                            const { streamingSubtitles: pending, isStreaming: pendingStreaming } = pendingUpdate;
+                                            lastMergeTime = Date.now();
+                                            
+                                            // Check if we should capture state
+                                            if (Date.now() - lastCaptureTime >= CAPTURE_THROTTLE_MS) {
+                                                lastCaptureTime = Date.now();
+                                                window.dispatchEvent(new CustomEvent('capture-before-merge', {
+                                                    detail: {
+                                                        type: 'progressive-merge',
+                                                        source: 'streaming-update',
+                                                        segment: segment
+                                                    }
+                                                }));
+                                            }
+                                            
+                                            // Use progressive merging for streaming updates
+                                            const mergedStreamingSubtitles = mergeStreamingSubtitlesProgressively(currentSubtitles, pending, segment);
+                                            
+                                            // Update the UI with streaming results
+                                            setSubtitlesData(mergedStreamingSubtitles);
+                                            
+                                            // Update status to show streaming progress
+                                            if (pendingStreaming) {
+                                                setStatus({
+                                                    message: `Streaming... ${pending.length} subtitles generated for segment`,
+                                                    type: 'loading'
+                                                });
+                                            }
+                                            
+                                            pendingUpdate = null;
+                                        }
+                                    }, delay);
+                                }
                             }
-                        }
-                    },
+                        };
+                    })(),
                     t
                 );
 
