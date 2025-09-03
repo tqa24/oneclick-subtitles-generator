@@ -187,9 +187,8 @@ const VideoProcessingOptionsModal = ({
     const builtInModels = [
       { value: 'gemini-2.5-pro', label: t('settings.modelBestAccuracy', 'Gemini 2.5 Pro - Nghe lời nhất, dễ ra sub ngắn, dễ bị quá tải'), maxTokens: 2000000 },
       { value: 'gemini-2.5-flash', label: t('settings.modelSmartFast', 'Gemini 2.5 Flash (Độ chính xác thứ hai)'), maxTokens: 1048575 },
-      { value: 'gemini-2.5-flash-lite', label: t('settings.modelFlash25Lite', 'Gemini 2.5 Flash Lite (Mô hình 2.5 nhanh nhất, độ chính xác tốt)'), maxTokens: 1048575 },
-      { value: 'gemini-2.0-flash', label: t('settings.modelThirdBest', 'Gemini 2.0 Flash (Độ chính xác thứ ba, dễ bị sub dài)'), maxTokens: 1048575 },
-      { value: 'gemini-2.0-flash-lite', label: t('settings.modelFastest', 'Gemini 2.0 Flash Lite (Độ chính xác kém nhất, nhanh nhất, dễ bị sub dài)'), maxTokens: 1048575 }
+      { value: 'gemini-2.5-flash-lite', label: t('settings.modelFlash25Lite', 'Gemini 2.5 Flash Lite (Mô hình 2.5 nhanh nhất, độ chính xác tốt)'), maxTokens: 1048575 }
+      // Note: Gemini 2.0 models removed as they don't support offset-style requests for timeline segments
     ];
 
     const customModels = customGeminiModels.map(model => ({
@@ -593,6 +592,9 @@ const VideoProcessingOptionsModal = ({
       // Calculate segment proportion based on duration
       const segmentDuration = selectedSegment.end - selectedSegment.start;
 
+      // Account for parallel processing splitting
+      const numRequests = Math.ceil(segmentDuration / (maxDurationPerRequest * 60));
+      
       // Try to get total duration from video file or use segment duration as fallback
       let totalDuration = segmentDuration; // Conservative fallback
 
@@ -637,7 +639,12 @@ const VideoProcessingOptionsModal = ({
       }
 
       // Apply all adjustments to the segment tokens
-      const finalTokens = Math.round(baseSegmentTokens * fpsAdjustmentFactor * resolutionAdjustmentFactor);
+      const segmentTokensAdjusted = Math.round(baseSegmentTokens * fpsAdjustmentFactor * resolutionAdjustmentFactor);
+      
+      // For display, show the maximum tokens per request when splitting
+      const tokensPerRequest = numRequests > 1 
+        ? Math.round(segmentTokensAdjusted / numRequests)
+        : segmentTokensAdjusted;
 
       console.log('[TokenCounting] Final calculation:');
       console.log('  - Whole video tokens:', wholeVideoTokens);
@@ -645,9 +652,13 @@ const VideoProcessingOptionsModal = ({
       console.log('  - Base segment tokens:', baseSegmentTokens);
       console.log('  - FPS adjustment (', fps, 'fps):', fpsAdjustmentFactor);
       console.log('  - Resolution adjustment (', mediaResolution, '):', resolutionAdjustmentFactor);
-      console.log('  - Final tokens:', finalTokens);
+      console.log('  - Total segment tokens:', segmentTokensAdjusted);
+      if (numRequests > 1) {
+        console.log('  - Will split into', numRequests, 'requests');
+        console.log('  - Tokens per request:', tokensPerRequest);
+      }
 
-      return finalTokens;
+      return tokensPerRequest;
     } catch (error) {
       console.error('Error counting tokens with Gemini API:', error);
       setTokenCountError(error.message);
@@ -930,8 +941,8 @@ const VideoProcessingOptionsModal = ({
               </div>
             </div>
 
-            {/* Third row: context switch + range slider in a single cell (1st column) */}
-            <div className="option-group" style={{ gridColumn: '1 / 2' }}>
+            {/* Surrounding context and Context coverage in left column */}
+            <div className="option-group">
               <div className="combined-options-row">
                 {/* Left half: Outside context switch */}
                 <div className="combined-option-half">
@@ -1010,8 +1021,8 @@ const VideoProcessingOptionsModal = ({
               </div>
             </div>
 
-            {/* Fourth row: Maximum duration per request slider */}
-            <div className="option-group" style={{ gridColumn: '1 / 2' }}>
+            {/* Maximum duration per request in right column */}
+            <div className="option-group">
               <div className="label-with-help">
                 <label>{t('processing.maxDurationPerRequest', 'Max duration per request')}</label>
                 <div
@@ -1043,22 +1054,20 @@ const VideoProcessingOptionsModal = ({
                 />
                 <div className="slider-value-display">
                   {t('processing.minutesValue', '{{value}} minutes', { value: maxDurationPerRequest })}
+                  {selectedSegment && (() => {
+                    const segmentDuration = (selectedSegment.end - selectedSegment.start) / 60; // Convert to minutes
+                    const numRequests = Math.ceil(segmentDuration / maxDurationPerRequest);
+                    if (numRequests > 1) {
+                      return (
+                        <span className="parallel-info">
+                          {' '}({t('processing.parallelRequestsInfo', 'Will split into {{count}} parallel requests', { count: numRequests })})
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               </div>
-              {selectedSegment && (() => {
-                const segmentDuration = (selectedSegment.end - selectedSegment.start) / 60; // Convert to minutes
-                const numRequests = Math.ceil(segmentDuration / maxDurationPerRequest);
-                if (numRequests > 1) {
-                  return (
-                    <div className="parallel-request-info">
-                      <span className="info-text">
-                        {t('processing.parallelRequestsInfo', 'Will split into {{count}} parallel requests', { count: numRequests })}
-                      </span>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
             </div>
 
 	          </div>

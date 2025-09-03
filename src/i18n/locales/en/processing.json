@@ -39,5 +39,9 @@
   "outsideContextRange": "Context coverage",
   "outsideContextRangeDesc": "How many subtitles before/after to include as context. The last value is Unlimited.",
   "unlimited": "Unlimited",
-  "linesCount": "{{count}} lines"
+  "linesCount": "{{count}} lines",
+  "maxDurationPerRequest": "Max duration per request",
+  "maxDurationPerRequestDesc": "Maximum duration for each Gemini request. Longer segments will be split into parallel requests.",
+  "minutesValue": "{{value}} minutes",
+  "parallelRequestsInfo": "Will split into {{count}} parallel requests"
 }

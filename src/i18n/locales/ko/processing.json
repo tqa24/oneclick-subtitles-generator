@@ -39,5 +39,9 @@
   "outsideContextRange": "컨텍스트 범위",
   "outsideContextRangeDesc": "전/후에 포함할 자막 수. 마지막 값은 무제한입니다.",
   "unlimited": "무제한",
-  "linesCount": "{{count}}줄"
+  "linesCount": "{{count}}줄",
+  "maxDurationPerRequest": "요청당 최대 시간",
+  "maxDurationPerRequestDesc": "각 Gemini 요청의 최대 시간. 더 긴 구간은 병렬 요청으로 분할됩니다.",
+  "minutesValue": "{{value}}분",
+  "parallelRequestsInfo": "{{count}}개의 병렬 요청으로 분할됩니다"
 }

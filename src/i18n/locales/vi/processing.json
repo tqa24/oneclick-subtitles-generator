@@ -39,5 +39,9 @@
   "outsideContextRange": "Phạm vi ngữ cảnh",
   "outsideContextRangeDesc": "Số dòng phụ đề trước/sau được thêm vào ngữ cảnh. Giá trị cuối là Không giới hạn.",
   "unlimited": "Không giới hạn",
-  "linesCount": "{{count}} dòng"
+  "linesCount": "{{count}} dòng",
+  "maxDurationPerRequest": "Thời lượng tối đa mỗi yêu cầu",
+  "maxDurationPerRequestDesc": "Thời lượng tối đa cho mỗi yêu cầu Gemini. Các phân đoạn dài hơn sẽ được chia thành nhiều yêu cầu song song.",
+  "minutesValue": "{{value}} phút",
+  "parallelRequestsInfo": "Sẽ chia thành {{count}} yêu cầu song song"
 }

@@ -71,10 +71,16 @@ export const coordinateParallelStreaming = async (
   let completedSegments = 0;
   let failedSegments = [];
 
-  // Create a promise for each segment
-  const segmentPromises = subSegments.map((subSegment, index) => {
+  // Helper function to attempt streaming with retries for 503 errors
+  const streamWithRetry = async (subSegment, index, retryCount = 0, maxRetries = 3) => {
     return new Promise((resolve, reject) => {
-      console.log(`[ParallelCoordinator] Starting stream for segment ${index + 1}/${subSegments.length}: [${subSegment.start}s-${subSegment.end}s]`);
+      const attemptNumber = retryCount + 1;
+      
+      if (retryCount > 0) {
+        console.log(`[ParallelCoordinator] Retrying segment ${index + 1}/${subSegments.length} (attempt ${attemptNumber}/${maxRetries + 1})`);
+      } else {
+        console.log(`[ParallelCoordinator] Starting stream for segment ${index + 1}/${subSegments.length}: [${subSegment.start}s-${subSegment.end}s]`);
+      }
 
       // Prepare options for this segment
       const segmentOptions = {
@@ -150,28 +156,72 @@ export const coordinateParallelStreaming = async (
           });
         },
         // onError for this segment
-        (error) => {
-          console.error(`[ParallelCoordinator] Error in segment ${index + 1}/${subSegments.length}:`, error);
+        async (error) => {
+          // Check if this is a 503 error (overload)
+          const is503Error = error && error.message && (
+            error.message.includes('503') ||
+            error.message.includes('overloaded') ||
+            error.message.includes('UNAVAILABLE')
+          );
           
-          progressTracker.markSegmentFailed(index, error);
-          failedSegments.push({ index, error });
+          if (is503Error && retryCount < maxRetries) {
+            console.warn(`[ParallelCoordinator] Segment ${index + 1}/${subSegments.length} got 503 error, retrying in ${2 ** retryCount} seconds...`);
+            
+            // Exponential backoff: wait 1s, 2s, 4s
+            await new Promise(wait => setTimeout(wait, 1000 * (2 ** retryCount)));
+            
+            // Retry the segment
+            try {
+              const result = await streamWithRetry(subSegment, index, retryCount + 1, maxRetries);
+              resolve(result);
+            } catch (retryError) {
+              // If retry also fails, handle as final error
+              console.error(`[ParallelCoordinator] Error in segment ${index + 1}/${subSegments.length} after ${attemptNumber} attempts:`, retryError);
+              
+              progressTracker.markSegmentFailed(index, retryError);
+              failedSegments.push({ index, error: retryError });
 
-          // Don't reject immediately - allow other segments to complete
-          // But mark this segment as failed
-          segmentResults[index] = {
-            segment: subSegment,
-            error: error,
-            subtitles: [],
-            text: ''
-          };
+              segmentResults[index] = {
+                segment: subSegment,
+                error: retryError,
+                subtitles: [],
+                text: ''
+              };
 
-          resolve({
-            segmentIndex: index,
-            error: error
-          });
+              resolve({
+                segmentIndex: index,
+                error: retryError
+              });
+            }
+          } else {
+            // Not a 503 error or max retries reached
+            console.error(`[ParallelCoordinator] Error in segment ${index + 1}/${subSegments.length}:`, error);
+            
+            progressTracker.markSegmentFailed(index, error);
+            failedSegments.push({ index, error });
+
+            // Don't reject immediately - allow other segments to complete
+            // But mark this segment as failed
+            segmentResults[index] = {
+              segment: subSegment,
+              error: error,
+              subtitles: [],
+              text: ''
+            };
+
+            resolve({
+              segmentIndex: index,
+              error: error
+            });
+          }
         }
       );
     });
+  };
+
+  // Create a promise for each segment
+  const segmentPromises = subSegments.map((subSegment, index) => {
+    return streamWithRetry(subSegment, index, 0, 3);
   });
 
   try {
