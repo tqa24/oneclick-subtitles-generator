@@ -304,7 +304,8 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
           start: segment.start,
           end: segment.end,
           duration: segment.end - segment.start
-        }
+        },
+        maxDurationPerRequest: options.maxDurationPerRequest // Pass through the max duration
       };
 
       // Start streaming
@@ -314,7 +315,17 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
           apiOptions,
           (chunk) => processor.processChunk(chunk),
           (finalText) => processor.complete(finalText),
-          (error) => processor.error(error)
+          (error) => processor.error(error),
+          (progress) => {
+            // Handle parallel processing progress updates
+            if (progress && progress.segmentProgress) {
+              console.log('[ProcessingUtils] Parallel processing progress:', progress);
+              // Dispatch progress event for UI updates
+              window.dispatchEvent(new CustomEvent('parallel-processing-progress', {
+                detail: progress
+              }));
+            }
+          }
         );
       }).catch(reject);
     }).catch(reject);

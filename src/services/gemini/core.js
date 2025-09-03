@@ -19,6 +19,7 @@ import { getNextAvailableKey, blacklistKey } from './keyManager';
 import { addThinkingConfig } from '../../utils/thinkingBudgetUtils';
 import { uploadFileToGemini, shouldUseFilesApi } from './filesApi';
 import { streamGeminiContent, isStreamingSupported } from './streamingService';
+import { coordinateParallelStreaming, shouldUseParallelProcessing } from './parallelStreamingCoordinator';
 
 /**
  * Clear cached file URI for a specific file
@@ -69,8 +70,8 @@ export const clearAllCachedFileUris = () => {
  * @param {Function} onError - Callback for errors
  * @returns {Promise<void>}
  */
-export const streamGeminiApiWithFilesApi = async (file, options = {}, onChunk, onComplete, onError, retryCount = 0) => {
-    const { userProvidedSubtitles, modelId, videoMetadata, mediaResolution } = options;
+export const streamGeminiApiWithFilesApi = async (file, options = {}, onChunk, onComplete, onError, onProgress, retryCount = 0) => {
+    const { userProvidedSubtitles, modelId, videoMetadata, mediaResolution, maxDurationPerRequest } = options;
     const MODEL = modelId || localStorage.getItem('gemini_model') || "gemini-2.5-flash";
 
     console.log(`[GeminiAPI] Using streaming Files API with model: ${MODEL}`);
@@ -139,7 +140,17 @@ export const streamGeminiApiWithFilesApi = async (file, options = {}, onChunk, o
 
         // Start streaming with error handling wrapper
         const streamWithErrorHandling = async () => {
-            await streamGeminiContent(
+            // Check if we should use parallel processing
+            const useParallel = shouldUseParallelProcessing(
+                options.segmentInfo ? { start: options.segmentInfo.start, end: options.segmentInfo.end } : null,
+                maxDurationPerRequest
+            );
+
+            const streamFunction = useParallel ? coordinateParallelStreaming : streamGeminiContent;
+            
+            console.log(`[GeminiAPI] Using ${useParallel ? 'parallel' : 'single'} streaming`);
+
+            await streamFunction(
                 file,
                 uploadedFile.uri,
                 {
@@ -147,7 +158,8 @@ export const streamGeminiApiWithFilesApi = async (file, options = {}, onChunk, o
                     modelId,
                     videoMetadata,
                     mediaResolution,
-                    segmentInfo: options.segmentInfo
+                    segmentInfo: options.segmentInfo,
+                    maxDurationPerRequest
                 },
                 onChunk,
                 onComplete,
@@ -174,6 +186,7 @@ export const streamGeminiApiWithFilesApi = async (file, options = {}, onChunk, o
                                 onChunk, 
                                 onComplete, 
                                 onError, 
+                                onProgress,
                                 retryCount + 1
                             );
                         } else {

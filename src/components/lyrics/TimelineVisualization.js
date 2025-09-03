@@ -126,11 +126,19 @@ const TimelineVisualization = ({
     }
   }, [onSegmentSelect, hasDraggedInSession]);
   
-  // Listen for streaming events
+  // Listen for streaming events and processing ranges
   useEffect(() => {
     const handleStreamingStart = () => {
       console.log('[Timeline] Streaming started - enabling segment animations');
       setIsStreamingActive(true);
+    };
+    
+    const handleProcessingRanges = (e) => {
+      const ranges = (e.detail && e.detail.ranges) || [];
+      setProcessingRanges(ranges);
+      if (ranges.length > 1) {
+        console.log('[Timeline] Parallel processing ranges set:', ranges);
+      }
     };
     
     const handleStreamingComplete = () => {
@@ -139,6 +147,7 @@ const TimelineVisualization = ({
       setTimeout(() => {
         setIsStreamingActive(false);
         setNewSegments(new Map());
+        setProcessingRanges([]);
       }, 1000);
     };
     
@@ -146,11 +155,13 @@ const TimelineVisualization = ({
     window.addEventListener('streaming-update', handleStreamingStart);
     window.addEventListener('streaming-complete', handleStreamingComplete);
     window.addEventListener('save-after-streaming', handleStreamingComplete);
+    window.addEventListener('processing-ranges', handleProcessingRanges);
     
     return () => {
       window.removeEventListener('streaming-update', handleStreamingStart);
       window.removeEventListener('streaming-complete', handleStreamingComplete);
       window.removeEventListener('save-after-streaming', handleStreamingComplete);
+      window.removeEventListener('processing-ranges', handleProcessingRanges);
     };
   }, []);
   
@@ -343,6 +354,8 @@ const TimelineVisualization = ({
     return calculateVisibleTimeRange(lyrics, duration, tempPanOffset, currentZoomRef.current);
   }, [lyrics, duration]);
 
+  const [processingRanges, setProcessingRanges] = useState([]);
+
   // Draw the timeline visualization with optimizations
   const renderTimeline = useCallback((tempPanOffset = null) => {
     const canvas = timelineRef.current;
@@ -372,7 +385,8 @@ const TimelineVisualization = ({
       dragCurrentTime,
       isProcessing: isProcessingSegment,
       animationTime,
-      newSegments: newSegments // Pass new segments for animation
+      newSegments: newSegments, // Pass new segments for animation
+      processingRanges: processingRanges
     };
 
     // Draw the timeline

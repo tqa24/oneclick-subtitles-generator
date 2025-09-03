@@ -91,6 +91,12 @@ const VideoProcessingOptionsModal = ({
     return Number.isFinite(num) ? num : 5;
   });
 
+  // Maximum duration per request (in minutes) for parallel processing
+  const [maxDurationPerRequest, setMaxDurationPerRequest] = useState(() => {
+    const saved = localStorage.getItem('video_processing_max_duration');
+    return saved ? parseInt(saved, 10) : 10; // Default to 10 minutes
+  });
+
   const [customGeminiModels, setCustomGeminiModels] = useState([]);
   const [isCountingTokens, setIsCountingTokens] = useState(false);
   const [realTokenCount, setRealTokenCount] = useState(null);
@@ -126,6 +132,11 @@ const VideoProcessingOptionsModal = ({
     const val = outsideContextRange === 21 ? 21 : Math.max(1, Math.min(20, Number(outsideContextRange) || 5));
     localStorage.setItem('video_processing_outside_context_range', String(val));
   }, [outsideContextRange]);
+
+  // Persist max duration per request
+  useEffect(() => {
+    localStorage.setItem('video_processing_max_duration', maxDurationPerRequest.toString());
+  }, [maxDurationPerRequest]);
 
 
   // Keep availability and persisted toggle in sync
@@ -711,7 +722,8 @@ const VideoProcessingOptionsModal = ({
       customPrompt: getSelectedPromptText(), // Include the selected prompt
       promptPreset: selectedPromptPreset,
       customLanguage: selectedPromptPreset === 'translate-directly' ? customLanguage : undefined,
-      useTranscriptionRules // Include the transcription rules setting
+      useTranscriptionRules, // Include the transcription rules setting
+      maxDurationPerRequest: maxDurationPerRequest * 60 // Convert to seconds
     };
 
     onProcess(options);
@@ -998,6 +1010,56 @@ const VideoProcessingOptionsModal = ({
               </div>
             </div>
 
+            {/* Fourth row: Maximum duration per request slider */}
+            <div className="option-group" style={{ gridColumn: '1 / 2' }}>
+              <div className="label-with-help">
+                <label>{t('processing.maxDurationPerRequest', 'Max duration per request')}</label>
+                <div
+                  className="help-icon-container"
+                  title={t('processing.maxDurationPerRequestDesc', 'Maximum duration for each Gemini request. Longer segments will be split into parallel requests.')}
+                >
+                  <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                  </svg>
+                </div>
+              </div>
+              <div className="slider-control">
+                <StandardSlider
+                  value={maxDurationPerRequest}
+                  onChange={(value) => setMaxDurationPerRequest(parseInt(value))}
+                  min={1}
+                  max={20}
+                  step={1}
+                  orientation="Horizontal"
+                  size="XSmall"
+                  state="Enabled"
+                  showValueIndicator={false}
+                  showIcon={false}
+                  showStops={false}
+                  id="max-duration-slider"
+                  ariaLabel={t('processing.maxDurationPerRequest', 'Max duration per request')}
+                />
+                <div className="slider-value-display">
+                  {t('processing.minutesValue', '{{value}} minutes', { value: maxDurationPerRequest })}
+                </div>
+              </div>
+              {selectedSegment && (() => {
+                const segmentDuration = (selectedSegment.end - selectedSegment.start) / 60; // Convert to minutes
+                const numRequests = Math.ceil(segmentDuration / maxDurationPerRequest);
+                if (numRequests > 1) {
+                  return (
+                    <div className="parallel-request-info">
+                      <span className="info-text">
+                        {t('processing.parallelRequestsInfo', 'Will split into {{count}} parallel requests', { count: numRequests })}
+                      </span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+            </div>
 
 	          </div>
 

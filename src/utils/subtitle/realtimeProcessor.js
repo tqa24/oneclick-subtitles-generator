@@ -46,6 +46,27 @@ export class RealtimeSubtitleProcessor {
     this.chunkCount++;
     this.accumulatedText = chunk.accumulatedText || '';
     
+    // If upstream provided parsed subtitles (e.g., from parallel aggregator), use them directly
+    if (Array.isArray(chunk.subtitles) && chunk.subtitles.length > 0) {
+      this.currentSubtitles = chunk.subtitles;
+      this.lastValidSubtitles = [...chunk.subtitles];
+
+      // Notify UI immediately with provided subtitles (avoids reparsing joined text)
+      this.onSubtitleUpdate({
+        subtitles: chunk.subtitles,
+        isStreaming: true,
+        chunkCount: this.chunkCount,
+        textLength: this.accumulatedText.length
+      });
+
+      // Update status with progress
+      this.onStatusUpdate({
+        message: `Processing... (${this.chunkCount} chunks, ${this.currentSubtitles.length} subtitles found)`,
+        type: 'loading'
+      });
+      return;
+    }
+
     console.log(`[RealtimeProcessor] Processing chunk ${this.chunkCount}, text length: ${this.accumulatedText.length}`);
 
     // Try to parse subtitles periodically or if we have enough text
