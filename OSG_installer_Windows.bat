@@ -119,7 +119,7 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Installing dependencies... (takes long time) (Cai dat phu thuoc... mat thoi gian dai)' -ForegroundColor Cyan"
-CALL npm run install:all >nul 2>&1
+CALL npm run install:all
 IF %ERRORLEVEL% NEQ 0 (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment (Khoi dong lai de cap nhat moi truong)...' -ForegroundColor Blue"
     POPD
@@ -127,7 +127,7 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Finalizing installation (Hoan thien cai dat)...' -ForegroundColor Cyan"
-CALL npm run install:yt-dlp >nul 2>&1
+CALL npm run install:yt-dlp
 IF %ERRORLEVEL% NEQ 0 (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[WARN] YouTube downloader installation had issues (Cai dat trinh tai YouTube gap van de).' -ForegroundColor Yellow"
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] You can fix this later with ''npm run install:yt-dlp'' (Ban co the sua loi nay sau bang lenh ''npm run install:yt-dlp'').' -ForegroundColor Blue"
@@ -174,7 +174,7 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Installing dependencies... (takes long time) (Cai dat phu thuoc... mat thoi gian dai)' -ForegroundColor Cyan"
-CALL npm install >nul 2>&1
+CALL npm install
 IF %ERRORLEVEL% NEQ 0 (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment (Khoi dong lai de cap nhat moi truong)...' -ForegroundColor Blue"
     POPD
@@ -182,7 +182,7 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Finalizing installation (Hoan thien cai dat)...' -ForegroundColor Cyan"
-CALL npm run install:yt-dlp >nul 2>&1
+CALL npm run install:yt-dlp
 IF %ERRORLEVEL% NEQ 0 (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[WARN] YouTube downloader installation had issues.' -ForegroundColor Yellow"
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] You can fix this later with ''npm run install:yt-dlp''.' -ForegroundColor Blue"
