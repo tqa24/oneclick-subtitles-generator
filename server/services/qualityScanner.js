@@ -8,6 +8,9 @@ const {
 } = require('./shared/progressTracker');
 const { getYtDlpPath, getYtDlpArgs } = require('./shared/ytdlpUtils');
 
+// Track active quality download processes by videoId for cancellation
+const activeQualityProcesses = new Map();
+
 
 
 
@@ -118,11 +121,11 @@ function parseYtDlpFormats(formatOutput) {
 
     if (height && height >= 144 && !seenResolutions.has(height)) {
       seenResolutions.add(height);
-      
+
       // Determine quality label
       let qualityLabel = `${height}p`;
       let qualityDescription = `${height}p`;
-      
+
       if (height >= 2160) {
         qualityDescription = `${height}p (4K)`;
       } else if (height >= 1440) {
@@ -326,6 +329,11 @@ async function downloadWithQualityAttempt(videoURL, outputPath, quality, videoId
 
     const ytdlpProcess = spawn(ytDlpPath, args);
 
+    // Track process for cancellation if videoId provided
+    if (videoId) {
+      activeQualityProcesses.set(videoId, ytdlpProcess);
+    }
+
     let stderr = '';
 
     let stdoutBuffer = ''; // Buffer for line-by-line processing
@@ -365,8 +373,17 @@ async function downloadWithQualityAttempt(videoURL, outputPath, quality, videoId
       // Removed duplicate stderr progress parsing to prevent conflicts with centralized parser
     });
 
-    ytdlpProcess.on('close', (code) => {
-      console.log(`[downloadWithQualityAttempt] Process finished with code: ${code}`);
+    ytdlpProcess.on('close', (code, signal) => {
+      console.log(`[downloadWithQualityAttempt] Process finished with code: ${code}, signal: ${signal}`);
+
+      // Remove from process tracking
+      if (videoId) {
+        activeQualityProcesses.delete(videoId);
+      }
+
+      // If process was cancelled, resolve gracefully
+      const cancelled = signal === 'SIGTERM' || (videoId && (require('./shared/progressTracker').getDownloadProgress(videoId).status === 'cancelled'));
+
       if (code === 0) {
         console.log(`[downloadWithQualityAttempt] Download successful for: ${outputPath}`);
 
@@ -376,6 +393,17 @@ async function downloadWithQualityAttempt(videoURL, outputPath, quality, videoId
         }
 
         resolve(true);
+      } else if (cancelled) {
+        console.log(`[downloadWithQualityAttempt] Download cancelled for videoId: ${videoId}`);
+        // Remove partial file if present
+        try {
+          if (fs.existsSync(outputPath)) {
+            fs.unlinkSync(outputPath);
+          }
+        } catch (e) {
+          // ignore file cleanup errors
+        }
+        resolve(false);
       } else {
         console.error(`[downloadWithQualityAttempt] yt-dlp download failed:`, stderr);
 
@@ -388,10 +416,26 @@ async function downloadWithQualityAttempt(videoURL, outputPath, quality, videoId
       }
     });
   });
+  }
+
+
+/**
+ * Cancel an active quality download by videoId
+ */
+function cancelQualityDownload(videoId) {
+  const proc = activeQualityProcesses.get(videoId);
+  if (proc) {
+    try { proc.kill('SIGTERM'); } catch (e) {}
+    activeQualityProcesses.delete(videoId);
+    return true;
+  }
+  return false;
 }
 
 module.exports = {
   scanAvailableQualities,
   getVideoInfo,
-  downloadWithQuality
+  downloadWithQuality,
+  cancelQualityDownload
 };
+

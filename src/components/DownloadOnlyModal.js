@@ -24,6 +24,8 @@ const DownloadOnlyModal = ({
   const [isScanning, setIsScanning] = useState(false);
   const [availableQualities, setAvailableQualities] = useState([]);
   const [isDownloading, setIsDownloading] = useState(false);
+  const pollingIntervalRef = useRef(null);
+
   const [downloadProgress, setDownloadProgress] = useState(0);
   // eslint-disable-next-line no-unused-vars
   const [downloadVideoId, setDownloadVideoId] = useState(null);
@@ -181,6 +183,12 @@ const DownloadOnlyModal = ({
   };
 
   const pollDownloadProgress = (videoId) => {
+    // Clear any existing polling before starting a new one
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+
     const interval = setInterval(async () => {
       try {
         const response = await fetch(`http://localhost:3031/api/download-only-progress/${videoId}`);
@@ -189,8 +197,9 @@ const DownloadOnlyModal = ({
         if (data.success) {
           setDownloadProgress(data.progress || 0);
 
-          if (data.status === 'completed' || data.status === 'error') {
+          if (['completed', 'error', 'cancelled'].includes(data.status)) {
             clearInterval(interval);
+            pollingIntervalRef.current = null;
             setIsDownloading(false);
 
             if (data.status === 'completed') {
@@ -202,18 +211,28 @@ const DownloadOnlyModal = ({
               document.body.appendChild(a);
               a.click();
               document.body.removeChild(a);
-              onClose();
             }
+
+            // Close modal on any terminal state
+            onClose();
           }
         }
       } catch (error) {
         console.error('Error polling download progress:', error);
       }
     }, 1000);
+
+    // Save interval ref so we can clear on cancel/unmount
+    pollingIntervalRef.current = interval;
   };
 
   const handleClose = () => {
     if (!isDownloading) {
+      // Clear any polling if present
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
       onClose();
     }
   };
@@ -221,6 +240,12 @@ const DownloadOnlyModal = ({
   const handleCancel = async () => {
     if (isDownloading && downloadVideoId) {
       console.log('[DownloadOnlyModal] Cancelling download:', downloadVideoId);
+
+      // Clear polling interval immediately
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
 
       // Cancel the download on the server
       const success = await cancelDownloadOnly(downloadVideoId);
@@ -243,6 +268,16 @@ const DownloadOnlyModal = ({
     if (selectedType === 'video') return selectedQuality !== null;
     return false;
   };
+
+  // Clear any interval when component unmounts
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   if (!isOpen) return null;
 

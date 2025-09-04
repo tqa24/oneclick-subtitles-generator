@@ -21,6 +21,8 @@ const VideoQualityModal = ({
   const [isRedownloading, setIsRedownloading] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [availableQualities, setAvailableQualities] = useState([]);
+  const [qualityVideoId, setQualityVideoId] = useState(null);
+
   const [downloadProgress, setDownloadProgress] = useState(0);
   const progressIntervalRef = useRef(null);
 
@@ -124,6 +126,23 @@ const VideoQualityModal = ({
   };
 
 
+  // Cancel an in-progress quality re-download
+  const handleCancelRedownload = async () => {
+    try {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+      if (qualityVideoId) {
+        await fetch(`http://localhost:3031/api/cancel-quality-download/${encodeURIComponent(qualityVideoId)}`, { method: 'POST' });
+      }
+    } catch (e) {
+      // ignore
+    } finally {
+      setIsRedownloading(false);
+    }
+  };
+
 
   // Start quality download with pre-generated video ID
   const startQualityDownloadWithId = async (quality, url, videoId) => {
@@ -157,6 +176,7 @@ const VideoQualityModal = ({
     if (progressIntervalRef.current) {
       console.log(`[VideoQualityModal] Clearing existing progress interval`);
       clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
     }
 
     // Use polling instead of WebSocket
@@ -200,6 +220,11 @@ const VideoQualityModal = ({
                 handleClose();
               }
             }, 1000);
+          } else if (data.status === 'cancelled') {
+            console.log(`[VideoQualityModal] Download cancelled: ${videoId}`);
+            clearInterval(newProgressInterval);
+            progressIntervalRef.current = null;
+            setIsRedownloading(false);
           } else if (data.status === 'error') {
             console.log(`[VideoQualityModal] Download error detected:`, data.error);
             clearInterval(newProgressInterval);
@@ -275,6 +300,9 @@ const VideoQualityModal = ({
       try {
         // Generate video ID first
         const videoId = `quality_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+        // Save the quality videoId so cancel button can use it
+        setQualityVideoId(videoId);
 
         // Start progress tracking BEFORE starting download
         startProgressTracking(videoId, selectedQuality.quality, videoInfo.url);
@@ -523,13 +551,21 @@ const VideoQualityModal = ({
         </div>
 
         <div className="modal-actions">
-          <button
-            className="cancel-button"
-            onClick={handleClose}
-            disabled={isRedownloading}
-          >
-            {t('common.cancel', 'Cancel')}
-          </button>
+          {isRedownloading ? (
+            <button
+              className="cancel-button"
+              onClick={handleCancelRedownload}
+            >
+              {t('download.downloadOnly.cancelDownload', 'Cancel Download')}
+            </button>
+          ) : (
+            <button
+              className="cancel-button"
+              onClick={handleClose}
+            >
+              {t('common.cancel', 'Cancel')}
+            </button>
+          )}
           <button
             className="confirm-button"
             onClick={handleConfirm}
