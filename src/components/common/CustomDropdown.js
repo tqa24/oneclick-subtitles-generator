@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { FiChevronDown } from 'react-icons/fi';
+
 import '../../styles/common/CustomDropdown.css';
 
 const CustomDropdown = ({ 
@@ -13,10 +13,43 @@ const CustomDropdown = ({
   style = {}
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, height: 0, upCount: 0, downCount: 0, revealMode: 'center' });
+  const getChevronModeFromIndex = (val, opts) => {
+    const idx = Math.max(0, opts.findIndex(o => o.value === val));
+    if (idx === 0) return 'down';
+    if (idx === opts.length - 1) return 'up';
+    return 'center';
+  };
+  const [dropdownPosition, setDropdownPosition] = useState(() => ({
+    top: 0, left: 0, width: 0, height: 0, upCount: 0, downCount: 0,
+    revealMode: getChevronModeFromIndex(value, options)
+  }));
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
-  const initialScaleRef = useRef(1);
+
+  // Chevron that switches based on reveal mode
+  const DropdownChevron = ({ mode }) => {
+    // mode: 'center' | 'up' | 'down'
+    if (mode === 'down') {
+      return (
+        <svg className="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" height="16" viewBox="0 -960 960 960" width="16" fill="currentColor" aria-hidden="true" focusable="false">
+          <path d="M480-338q-12 0-24-5t-21-14L252-540q-18-18-18-44t18-44q18-18 44-18t44 18l140 140 140-140q18-18 44-18t44 18q18 18 18 44t-18 44L525-357q-9 9-21 14t-24 5Z"/>
+        </svg>
+      );
+    }
+    if (mode === 'up') {
+      return (
+        <svg className="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" height="16" viewBox="0 -960 960 960" width="16" fill="currentColor" aria-hidden="true" focusable="false">
+          <path d="M480-496 340-356q-18 18-44 18t-44-18q-18-18-18-44t18-44l183-183q19-19 45-19t45 19l183 183q18 18 18 44t-18 44q-18 18-44 18t-44-18L480-496Z"/>
+        </svg>
+      );
+    }
+    // two-direction center icon
+    return (
+      <svg className="dropdown-arrow" xmlns="http://www.w3.org/2000/svg" height="16" viewBox="0 -960 960 960" width="16" fill="currentColor" aria-hidden="true" focusable="false">
+        <path d="m480-225 140-139q18-18 44-18t44 18q18 18 18 44t-18 44L569-137q-37 37-89 37t-89-37L252-276q-18-18-18-44t18-44q18-18 44-18t44 18l140 139Zm0-510L340-596q-18 18-44 18t-44-18q-18-18-18-44t18-44l139-139q37-37 89-37t89 37l139 139q18 18 18 44t-18 44q-18 18-44 18t-44-18L480-735Z"/>
+      </svg>
+    );
+  };
 
   // Close dropdown when clicking outside (account for portal menu)
   useEffect(() => {
@@ -200,9 +233,6 @@ const CustomDropdown = ({
     // Position so the selected option stays anchored at the pill center
     const topPosition = centerY - (upCount + 0.5) * optionHeight;
 
-    // Compute scrollTop so the first visible item aligns at the top of the viewport
-    const firstVisibleIndex = Math.max(0, selectedIndex - upCount);
-    const scrollTop = firstVisibleIndex * optionHeight;
 
     const revealMode = (upCount === 0 && downCount > 0) ? 'down' : (downCount === 0 && upCount > 0) ? 'up' : 'center';
 
@@ -219,6 +249,12 @@ const CustomDropdown = ({
     // After the menu renders, we will set the list scrollTop to keep selected anchored
     // This is done in the isOpen effect below.
   };
+
+  // Ensure chevron shows correct direction before first open
+  useEffect(() => {
+    calculatePosition();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, options]);
 
   const handleToggle = () => {
     if (!disabled) {
@@ -367,10 +403,7 @@ const CustomDropdown = ({
         <span className="dropdown-value">
           {selectedOption ? selectedOption.label : placeholder}
         </span>
-        <FiChevronDown 
-          className={`dropdown-arrow ${isOpen ? 'rotated' : ''}`}
-          size={16}
-        />
+        <DropdownChevron mode={getChevronModeFromIndex(value, options)} />
       </button>
 
       {/* Dropdown menu - rendered as portal to avoid clipping */}
@@ -392,7 +425,7 @@ const CustomDropdown = ({
           }}
         >
           <div className="dropdown-options-list">
-            {options.map((option, idx) => {
+            {options.map((option) => {
               const isSelected = option.value === value;
               return (
                 <button
