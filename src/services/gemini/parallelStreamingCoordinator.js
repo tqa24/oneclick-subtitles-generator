@@ -94,7 +94,9 @@ export const coordinateParallelStreaming = async (
         videoMetadata: videoMetadata ? {
           ...videoMetadata,
           start_offset: `${Math.floor(subSegment.start)}s`,
-          end_offset: `${Math.floor(subSegment.end)}s`
+          // Add 2 second buffer to end_offset to ensure Gemini processes the entire segment
+          // Use ceiling + 1 to make sure we capture everything
+          end_offset: `${Math.ceil(subSegment.end) + 2}s`
         } : undefined
       };
 

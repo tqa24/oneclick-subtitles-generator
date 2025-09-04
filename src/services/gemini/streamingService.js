@@ -292,7 +292,7 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                       
                       // Check for short sequences repeated many times
                       // NOTE: Be careful with legitimate repetitive content like song lyrics
-                      const shortSequencePattern = /(.{2,5})\1{14,}/; // 2-5 char sequence repeated 15+ times
+                      const shortSequencePattern = /(.{2,5})\1{19,}/; // 2-5 char sequence repeated 20+ times (increased from 15)
                       if (shortSequencePattern.test(subtitle.text)) {
                         const match = subtitle.text.match(shortSequencePattern);
                         const repetitions = match[0].length / match[1].length;
@@ -314,14 +314,15 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                         
                         // Musical/vocal patterns are often short ("la", "na", "oh", "ah", "두비", "라파")
                         // Hallucinations tend to be: symbols only, very long repetitions, or nonsense
-                        const isLikelyLegitimate = hasLetters && (isShortVocalSound || repetitions < 25);
-                        const isDefiniteHallucination = looksLikeGibberish || repetitions > 30;
+                        // INCREASED thresholds for legitimate repetitive content like "루비루비루라파"
+                        const isLikelyLegitimate = hasLetters && (isShortVocalSound || repetitions < 40); // Increased from 25
+                        const isDefiniteHallucination = looksLikeGibberish || repetitions > 50; // Increased from 30
                         
-                        if (isDefiniteHallucination || (!isLikelyLegitimate && repetitions > 20)) {
+                        if (isDefiniteHallucination || (!isLikelyLegitimate && repetitions > 35)) { // Increased from 20
                           foundHallucination = true;
                           console.log(`[StreamingService] Detected hallucination: Sequence "${repeatedPattern}" repeated ${Math.floor(repetitions)} times`);
                           break;
-                        } else if (repetitions > 15) {
+                        } else if (repetitions > 20) { // Increased from 15
                           console.log(`[StreamingService] Allowing potentially legitimate repetition: "${repeatedPattern}" x${Math.floor(repetitions)} (contains letters: ${hasLetters}, short vocal: ${isShortVocalSound})`);
                         }
                       }
@@ -386,11 +387,16 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                       
                       if (firstHalf === secondHalf && halfLength >= 5) {
                         blockRepetitionCount++;
-                        if (blockRepetitionCount >= 2) {
+                        // Songs commonly have 4-8 repetitions of chorus/bridge sections
+                        // Only flag as hallucination after 8+ identical block repetitions
+                        if (blockRepetitionCount >= 8) { // Increased from 4 to allow more chorus repetitions
                           foundHallucination = true;
                           console.log(`[StreamingService] Detected hallucination: Block of ${halfLength} subtitles repeated ${blockRepetitionCount} times`);
                           console.log(`[StreamingService] Repeated block sample: "${recentTextBlocks[0]}" ... "${recentTextBlocks[halfLength - 1]}"`);
                           break;
+                        } else if (blockRepetitionCount >= 5) {
+                          // Log but don't terminate for moderate repetitions
+                          console.log(`[StreamingService] Allowing block repetition ${blockRepetitionCount} (likely chorus/bridge): "${recentTextBlocks[0].substring(0, 30)}..."`);
                         }
                       }
                     }
@@ -403,15 +409,18 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                       // Context-aware thresholds:
                       // - Very short text (< 5 chars): Could be "No!", "Oh!", etc. Allow more
                       // - Medium text (5-20 chars): Could be short phrases, moderate threshold  
-                      // - Long text (> 20 chars): Full sentences, less likely to legitimately repeat
+                      // - Long text (> 20 chars): Full sentences, choruses often repeat 4-6 times
+                      // - Very long text (> 50 chars): Full verses might repeat 3-4 times in songs
                       const textLength = subtitle.text.length;
                       let threshold;
                       if (textLength < 5) {
-                        threshold = 10; // "No!" repeated 10x could be legitimate panic/emphasis
+                        threshold = 20; // "No!" repeated many times in excitement (increased from 15)
                       } else if (textLength <= 20) {
-                        threshold = 7;  // Short phrases
+                        threshold = 15;  // Short phrases in songs (increased from 12)
+                      } else if (textLength <= 50) {
+                        threshold = 12;  // Medium sentences/choruses (increased from 8)
                       } else {
-                        threshold = 4;  // Long sentences rarely repeat legitimately
+                        threshold = 10;  // Long verses can still repeat multiple times
                       }
                       
                       // Check if it looks like dialogue or song (has actual words from ANY language)
