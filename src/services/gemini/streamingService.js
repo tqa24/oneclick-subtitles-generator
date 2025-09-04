@@ -355,18 +355,28 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                     
                     // Check for stuck timestamps (many subtitles with very similar times)
                     // This catches cases like multiple lines all at 01:36:09,517
+                    // HOWEVER: Be very careful with music - repetitive lyrics can legitimately appear at similar times
                     if (lastValidSubtitleEndTime > 0) {
                       const timeDiff = Math.abs(subtitle.start - lastValidSubtitleEndTime);
-                      // If we have multiple subtitles within 1 second of each other with the same text pattern
-                      if (timeDiff < 1 && recentTextBlocks.length > 2) {
-                        const lastFewTexts = recentTextBlocks.slice(-3);
+                      // Only check for stuck timestamps if they're EXTREMELY close (< 0.1 seconds)
+                      // AND the text repeats many times (5+), not just 3
+                      if (timeDiff < 0.1 && recentTextBlocks.length > 5) {
+                        const lastFewTexts = recentTextBlocks.slice(-5);
                         const uniqueTexts = [...new Set(lastFewTexts)];
-                        if (uniqueTexts.length === 1 && lastFewTexts.length === 3) {
-                          // Same text 3 times at nearly the same timestamp
-                          foundHallucination = true;
-                          console.log(`[StreamingService] Detected hallucination: Multiple subtitles with same text at similar timestamps`);
-                          console.log(`[StreamingService] Text: "${uniqueTexts[0]}" at ~${subtitle.start.toFixed(1)}s`);
-                          break;
+                        // Only flag if ALL 5 recent texts are identical AND timestamps barely moved
+                        if (uniqueTexts.length === 1 && lastFewTexts.length === 5 && timeDiff < 0.05) {
+                          // Check if it looks like music/vocal content
+                          const hasMusicalPattern = /[\p{L}]{2,}/u.test(uniqueTexts[0]);
+                          if (!hasMusicalPattern) {
+                            // Only flag non-musical content as hallucination
+                            foundHallucination = true;
+                            console.log(`[StreamingService] Detected hallucination: 5+ identical non-musical subtitles at stuck timestamp`);
+                            console.log(`[StreamingService] Text: "${uniqueTexts[0]}" at ~${subtitle.start.toFixed(1)}s with time diff ${timeDiff.toFixed(3)}s`);
+                            break;
+                          } else {
+                            // Log but don't terminate for musical content
+                            console.log(`[StreamingService] Allowing repeated musical content: "${uniqueTexts[0].substring(0, 50)}..." at ~${subtitle.start.toFixed(1)}s`);
+                          }
                         }
                       }
                     }
