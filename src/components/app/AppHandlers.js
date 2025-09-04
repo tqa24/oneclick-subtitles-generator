@@ -581,6 +581,8 @@ export const useAppHandlers = (appState) => {
         mediaResolution: options.mediaResolution,
         model: options.model,
         maxDurationPerRequest: options.maxDurationPerRequest,
+        autoSplitSubtitles: options.autoSplitSubtitles,
+        maxWordsPerSubtitle: options.maxWordsPerSubtitle,
       };
 
       // Add custom prompt if provided

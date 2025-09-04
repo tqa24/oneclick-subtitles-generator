@@ -159,7 +159,9 @@ export const streamGeminiApiWithFilesApi = async (file, options = {}, onChunk, o
                     videoMetadata,
                     mediaResolution,
                     segmentInfo: options.segmentInfo,
-                    maxDurationPerRequest
+                    maxDurationPerRequest,
+                    autoSplitSubtitles: options.autoSplitSubtitles,
+                    maxWordsPerSubtitle: options.maxWordsPerSubtitle
                 },
                 onChunk,
                 onComplete,

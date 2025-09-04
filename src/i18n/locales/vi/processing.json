@@ -43,5 +43,19 @@
   "maxDurationPerRequest": "Thời lượng tối đa mỗi yêu cầu",
   "maxDurationPerRequestDesc": "Thời lượng tối đa cho mỗi yêu cầu Gemini. Các phân đoạn dài hơn sẽ được chia thành nhiều yêu cầu song song.",
   "minutesValue": "{{value}} phút",
-  "parallelRequestsInfo": "Sẽ chia thành {{count}} yêu cầu song song"
+  "parallelRequestsInfo": "Sẽ chia thành {{count}} yêu cầu song song",
+  "autoSplitSubtitles": "Tự động chia nhỏ phụ đề",
+  "autoSplitHelp": "Tự động chia phụ đề dài thành các phân đoạn nhỏ hơn để dễ đọc hơn. Việc chia nhỏ diễn ra theo thời gian thực trong quá trình xử lý.",
+  "enableAutoSplit": "Bật tự động chia nhỏ",
+  "maxWordsPerSubtitle": "Số từ tối đa mỗi phụ đề",
+  "maxWordsHelp": "Số từ tối đa cho phép trong mỗi phụ đề. Phụ đề dài hơn sẽ được chia đều.",
+  "wordsLimit": "{{count}} {{unit}}",
+  "word": "từ",
+  "words": "từ",
+  "autoSplitNote": "Phụ đề sẽ được chia đều khi vượt quá giới hạn này. Ví dụ: phụ đề 12 từ với giới hạn 5 từ sẽ được chia thành 4-4-4 từ (không phải 5-5-2).",
+  "gemini25ProFpsNote": "Lưu ý: Gemini 2.5 Pro yêu cầu FPS ≥ 1 để tương thích",
+  "timingGenerationDescDisabled": "Thêm phụ đề để kích hoạt tạo thời gian",
+  "selectResolution": "Chọn độ phân giải",
+  "selectModel": "Chọn mô hình",
+  "selectPreset": "Chọn mẫu"
 }

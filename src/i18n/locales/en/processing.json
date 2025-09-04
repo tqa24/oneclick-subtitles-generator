@@ -43,5 +43,19 @@
   "maxDurationPerRequest": "Max duration per request",
   "maxDurationPerRequestDesc": "Maximum duration for each Gemini request. Longer segments will be split into parallel requests.",
   "minutesValue": "{{value}} minutes",
-  "parallelRequestsInfo": "Will split into {{count}} parallel requests"
+  "parallelRequestsInfo": "Will split into {{count}} parallel requests",
+  "autoSplitSubtitles": "Auto-split subtitles",
+  "autoSplitHelp": "Automatically split long subtitles into smaller segments for better readability. The splitting happens in real-time during streaming.",
+  "enableAutoSplit": "Enable auto-splitting",
+  "maxWordsPerSubtitle": "Max words per subtitle",
+  "maxWordsHelp": "Maximum number of words allowed per subtitle. Longer subtitles will be split evenly.",
+  "wordsLimit": "{{count}} {{unit}}",
+  "word": "word",
+  "words": "words",
+  "autoSplitNote": "Subtitles will be split evenly when they exceed this limit. For example, a 12-word subtitle with a 5-word limit will be split into 4-4-4 words (not 5-5-2).",
+  "gemini25ProFpsNote": "Note: Gemini 2.5 Pro requires FPS ≥ 1 for compatibility",
+  "timingGenerationDescDisabled": "Add subtitles to enable timing generation",
+  "selectResolution": "Select Resolution",
+  "selectModel": "Select Model",
+  "selectPreset": "Select Preset"
 }

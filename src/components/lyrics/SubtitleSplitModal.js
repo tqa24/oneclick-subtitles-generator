@@ -330,7 +330,7 @@ const SubtitleSplitModal = ({ isOpen, onClose, lyrics, onSplitSubtitles }) => {
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
               gap: '16px',
-              '@media (max-width: 768px)': {
+              '@media (maxWidth: 768px)': {
                 gridTemplateColumns: '1fr'
               }
             }}>

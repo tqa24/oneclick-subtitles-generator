@@ -43,5 +43,19 @@
   "maxDurationPerRequest": "요청당 최대 시간",
   "maxDurationPerRequestDesc": "각 Gemini 요청의 최대 시간. 더 긴 구간은 병렬 요청으로 분할됩니다.",
   "minutesValue": "{{value}}분",
-  "parallelRequestsInfo": "{{count}}개의 병렬 요청으로 분할됩니다"
+  "parallelRequestsInfo": "{{count}}개의 병렬 요청으로 분할됩니다",
+  "autoSplitSubtitles": "자막 자동 분할",
+  "autoSplitHelp": "긴 자막을 더 읽기 쉽도록 작은 세그먼트로 자동으로 분할합니다. 분할은 스트리밍 중에 실시간으로 발생합니다.",
+  "enableAutoSplit": "자동 분할 활성화",
+  "maxWordsPerSubtitle": "자막당 최대 단어 수",
+  "maxWordsHelp": "각 자막에 허용되는 최대 단어 수. 더 긴 자막은 균등하게 분할됩니다.",
+  "wordsLimit": "{{count}} {{unit}}",
+  "word": "단어",
+  "words": "단어",
+  "autoSplitNote": "자막이 이 제한을 초과하면 균등하게 분할됩니다. 예: 5단어 제한의 12단어 자막은 4-4-4단어로 분할됩니다 (5-5-2가 아님).",
+  "gemini25ProFpsNote": "참고: Gemini 2.5 Pro는 호환성을 위해 FPS ≥ 1이 필요합니다",
+  "timingGenerationDescDisabled": "타이밍 생성을 활성화하려면 자막을 추가하세요",
+  "selectResolution": "해상도 선택",
+  "selectModel": "모델 선택",
+  "selectPreset": "프리셋 선택"
 }

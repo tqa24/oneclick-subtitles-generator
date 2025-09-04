@@ -369,7 +369,9 @@ export const useSubtitles = (t) => {
                         mediaResolution,
                         model,
                         userProvidedSubtitles,
-                        maxDurationPerRequest: options.maxDurationPerRequest
+                        maxDurationPerRequest: options.maxDurationPerRequest,
+                        autoSplitSubtitles: options.autoSplitSubtitles,
+                        maxWordsPerSubtitle: options.maxWordsPerSubtitle
                     },
                     setStatus,
                     (() => {

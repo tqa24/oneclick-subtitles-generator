@@ -9,6 +9,7 @@ import {
   mergeParallelSubtitles,
   ParallelProgressTracker 
 } from '../../utils/parallelProcessingUtils';
+import { autoSplitSubtitles } from '../../utils/subtitle/splitUtils';
 
 /**
  * Coordinate parallel streaming requests for a video segment
@@ -35,7 +36,9 @@ export const coordinateParallelStreaming = async (
     userProvidedSubtitles,
     modelId,
     videoMetadata,
-    mediaResolution
+    mediaResolution,
+    autoSplitSubtitles: autoSplitEnabled,
+    maxWordsPerSubtitle
   } = options;
 
   // Check if we need to split the segment
@@ -132,7 +135,7 @@ export const coordinateParallelStreaming = async (
               }
             }
             
-            const adjustedSubtitles = chunk.subtitles.map((subtitle, subIdx) => {
+            let adjustedSubtitles = chunk.subtitles.map((subtitle, subIdx) => {
               if (needsAdjustment) {
                 // Add segment start to convert relative to absolute
                 const adjusted = {
@@ -153,6 +156,15 @@ export const coordinateParallelStreaming = async (
               }
               return subtitle;
             });
+            
+            // Apply auto-split if enabled
+            if (autoSplitEnabled && maxWordsPerSubtitle > 0) {
+              const beforeSplitCount = adjustedSubtitles.length;
+              adjustedSubtitles = autoSplitSubtitles(adjustedSubtitles, maxWordsPerSubtitle);
+              if (adjustedSubtitles.length > beforeSplitCount) {
+                console.log(`[ParallelCoordinator] Auto-split applied to segment ${index + 1}: ${beforeSplitCount} -> ${adjustedSubtitles.length} subtitles`);
+              }
+            }
             
             segmentSubtitles[index] = adjustedSubtitles;
             segmentTexts[index] = chunk.accumulatedText || '';
@@ -370,8 +382,17 @@ export const coordinateParallelStreaming = async (
     });
     
     // Merge all successful subtitles
-    const finalSubtitles = mergeParallelSubtitles(successfulResults);
+    let finalSubtitles = mergeParallelSubtitles(successfulResults);
     console.log(`[ParallelCoordinator] After merge: ${finalSubtitles.length} subtitles (was ${totalInputSubtitles})`);
+    
+    // Apply final auto-split if enabled (in case merging combined any subtitles)
+    if (autoSplitEnabled && maxWordsPerSubtitle > 0) {
+      const beforeSplitCount = finalSubtitles.length;
+      finalSubtitles = autoSplitSubtitles(finalSubtitles, maxWordsPerSubtitle);
+      if (finalSubtitles.length > beforeSplitCount) {
+        console.log(`[ParallelCoordinator] Final auto-split applied: ${beforeSplitCount} -> ${finalSubtitles.length} subtitles`);
+      }
+    }
     
     const finalText = successfulResults
       .map(r => r.text)

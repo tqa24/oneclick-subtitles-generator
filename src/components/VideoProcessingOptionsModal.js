@@ -97,6 +97,16 @@ const VideoProcessingOptionsModal = ({
     return saved ? parseInt(saved, 10) : 10; // Default to 10 minutes
   });
 
+  // Auto-split subtitles settings
+  const [autoSplitSubtitles, setAutoSplitSubtitles] = useState(() => {
+    const saved = localStorage.getItem('video_processing_auto_split');
+    return saved === 'true';
+  });
+  const [maxWordsPerSubtitle, setMaxWordsPerSubtitle] = useState(() => {
+    const saved = localStorage.getItem('video_processing_max_words');
+    return saved ? parseInt(saved, 10) : 8;
+  });
+
   const [customGeminiModels, setCustomGeminiModels] = useState([]);
   const [isCountingTokens, setIsCountingTokens] = useState(false);
   const [realTokenCount, setRealTokenCount] = useState(null);
@@ -137,6 +147,15 @@ const VideoProcessingOptionsModal = ({
   useEffect(() => {
     localStorage.setItem('video_processing_max_duration', maxDurationPerRequest.toString());
   }, [maxDurationPerRequest]);
+
+  // Persist auto-split settings
+  useEffect(() => {
+    localStorage.setItem('video_processing_auto_split', autoSplitSubtitles.toString());
+  }, [autoSplitSubtitles]);
+
+  useEffect(() => {
+    localStorage.setItem('video_processing_max_words', maxWordsPerSubtitle.toString());
+  }, [maxWordsPerSubtitle]);
 
 
   // Keep availability and persisted toggle in sync
@@ -734,9 +753,11 @@ const VideoProcessingOptionsModal = ({
       promptPreset: selectedPromptPreset,
       customLanguage: selectedPromptPreset === 'translate-directly' ? customLanguage : undefined,
       useTranscriptionRules, // Include the transcription rules setting
-      maxDurationPerRequest: maxDurationPerRequest * 60 // Convert to seconds
+      maxDurationPerRequest: maxDurationPerRequest * 60, // Convert to seconds
+      autoSplitSubtitles,
+      maxWordsPerSubtitle
     };
-
+    
     onProcess(options);
   };
 
@@ -1066,6 +1087,84 @@ const VideoProcessingOptionsModal = ({
                     }
                     return null;
                   })()}
+                </div>
+              </div>
+            </div>
+
+            {/* Auto-split subtitles and Max words per subtitle - 4th row */}
+            <div className="option-group">
+              <div className="combined-options-row">
+                {/* Left half: Auto-split switch */}
+                <div className="combined-option-half">
+                  <div className="label-with-help">
+                    <label>{t('processing.autoSplitSubtitles', 'Auto-split subtitles')}</label>
+                    <div
+                      className="help-icon-container"
+                      title={t('processing.autoSplitHelp', 'Automatically split long subtitles into smaller segments for better readability. The splitting happens in real-time during streaming.')}
+                    >
+                      <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="material-switch-container">
+                    <MaterialSwitch
+                      id="auto-split-subtitles"
+                      checked={autoSplitSubtitles}
+                      onChange={(e) => setAutoSplitSubtitles(e.target.checked)}
+                      ariaLabel={t('processing.autoSplitSubtitles', 'Auto-split subtitles')}
+                      icons={true}
+                    />
+                    <label htmlFor="auto-split-subtitles" className="material-switch-label">
+                      {t('processing.enableAutoSplit', 'Enable auto-splitting')}
+                    </label>
+                  </div>
+                </div>
+
+                {/* Right half: Max words slider (always visible, disabled when switch is off) */}
+                <div className="combined-option-half">
+                  <div className="label-with-help">
+                    <label>{t('processing.maxWordsPerSubtitle', 'Max words per subtitle')}</label>
+                    <div
+                      className="help-icon-container"
+                      title={t('processing.maxWordsHelp', 'Maximum number of words allowed per subtitle. Longer subtitles will be split evenly.')}
+                    >
+                      <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="slider-control">
+                    <StandardSlider
+                      value={maxWordsPerSubtitle}
+                      onChange={(value) => setMaxWordsPerSubtitle(parseInt(value))}
+                      min={1}
+                      max={30}
+                      step={1}
+                      orientation="Horizontal"
+                      size="XSmall"
+                      state={autoSplitSubtitles ? 'Enabled' : 'Disabled'}
+                      showValueIndicator={false}
+                      showIcon={false}
+                      showStops={false}
+                      className="max-words-slider"
+                      id="max-words-slider"
+                      ariaLabel={t('processing.maxWordsPerSubtitle', 'Maximum words per subtitle')}
+                      disabled={!autoSplitSubtitles}
+                      showValueBadge={true}
+                      valueBadgeFormatter={(v) => Math.round(Number(v))}
+                    />
+                    <div className="slider-value-display">
+                      {t('processing.wordsLimit', '{{count}} {{unit}}', {
+                        count: maxWordsPerSubtitle,
+                        unit: maxWordsPerSubtitle === 1 ? t('processing.word', 'word') : t('processing.words', 'words')
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

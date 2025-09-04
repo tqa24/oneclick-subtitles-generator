@@ -8,6 +8,7 @@ import { getTranscriptionPrompt } from './promptManagement';
 import { parseGeminiResponse } from '../../utils/subtitle';
 import { createSubtitleSchema, addResponseSchema } from '../../utils/schemaUtils';
 import { addThinkingConfig } from '../../utils/thinkingBudgetUtils';
+import { autoSplitSubtitles } from '../../utils/subtitle/splitUtils';
 
 /**
  * Stream content generation from Gemini API
@@ -19,11 +20,9 @@ import { addThinkingConfig } from '../../utils/thinkingBudgetUtils';
  * @param {Function} onError - Callback for errors
  */
 export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, onComplete, onError) => {
-  const { userProvidedSubtitles, modelId, videoMetadata, mediaResolution } = options;
+  const { userProvidedSubtitles, modelId, videoMetadata, mediaResolution, autoSplitSubtitles: autoSplitEnabled, maxWordsPerSubtitle } = options;
   const MODEL = modelId || localStorage.getItem('gemini_model') || "gemini-2.5-flash";
   
-  // Log which model is being used for debugging
-  console.log('[StreamingService] Model selected:', MODEL);
   
   // Check if this is Gemini 2.5 Pro which might have specific requirements
   const isGemini25Pro = MODEL.includes('gemini-2.5-pro');
@@ -137,6 +136,9 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
   let buffer = '';
   let accumulatedText = '';
   let chunkCount = 0;
+  
+  // Extract auto-split options
+  const { autoSplitSubtitles: autoSplitEnabled, maxWordsPerSubtitle } = options;
   
   // Extract segment end offset if provided
   // Note: The property is 'end', not 'endOffset'
@@ -484,10 +486,19 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                     
                     // Send only valid subtitles
                     if (validSubtitles.length > 0) {
+                      // Apply auto-split if enabled
+                      let finalSubtitles = validSubtitles;
+                      if (autoSplitEnabled && maxWordsPerSubtitle > 0) {
+                        finalSubtitles = autoSplitSubtitles(validSubtitles, maxWordsPerSubtitle);
+                        if (finalSubtitles.length > validSubtitles.length) {
+                          console.log(`[StreamingService] Auto-split applied: ${validSubtitles.length} -> ${finalSubtitles.length} subtitles`);
+                        }
+                      }
+                      
                       onChunk({
                         text: textPart.text,
                         accumulatedText,
-                        subtitles: validSubtitles,
+                        subtitles: finalSubtitles,
                         chunkCount,
                         isComplete: false
                       });
@@ -503,21 +514,37 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                     onComplete(accumulatedText);
                     return;
                   } else {
-                    // All subtitles are valid, send them normally
+                    // All subtitles are valid, apply auto-split if enabled
+                    let finalSubtitles = validSubtitles;
+                    if (autoSplitEnabled && maxWordsPerSubtitle > 0) {
+                      finalSubtitles = autoSplitSubtitles(validSubtitles, maxWordsPerSubtitle);
+                      if (finalSubtitles.length > validSubtitles.length) {
+                        console.log(`[StreamingService] Auto-split applied: ${validSubtitles.length} -> ${finalSubtitles.length} subtitles`);
+                      }
+                    }
+                    
                     onChunk({
                       text: textPart.text,
                       accumulatedText,
-                      subtitles: validSubtitles,
+                      subtitles: finalSubtitles,
                       chunkCount,
                       isComplete: false
                     });
                   }
                 } else if (parsedSubtitles && parsedSubtitles.length > 0) {
-                  // No segment limit, send all subtitles
+                  // No segment limit, apply auto-split if enabled
+                  let finalSubtitles = parsedSubtitles;
+                  if (autoSplitEnabled && maxWordsPerSubtitle > 0) {
+                    finalSubtitles = autoSplitSubtitles(parsedSubtitles, maxWordsPerSubtitle);
+                    if (finalSubtitles.length > parsedSubtitles.length) {
+                      console.log(`[StreamingService] Auto-split applied: ${parsedSubtitles.length} -> ${finalSubtitles.length} subtitles`);
+                    }
+                  }
+                  
                   onChunk({
                     text: textPart.text,
                     accumulatedText,
-                    subtitles: parsedSubtitles,
+                    subtitles: finalSubtitles,
                     chunkCount,
                     isComplete: false
                   });

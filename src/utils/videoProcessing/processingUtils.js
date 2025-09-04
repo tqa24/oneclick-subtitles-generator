@@ -132,7 +132,7 @@ export const processSegmentWithFilesApi = async (file, segment, options, setStat
  */
 export const processSegmentWithStreaming = async (file, segment, options, setStatus, onSubtitleUpdate, t) => {
   return new Promise((resolve, reject) => {
-    const { fps, mediaResolution, model, userProvidedSubtitles } = options;
+    const { fps, mediaResolution, model, userProvidedSubtitles, autoSplitSubtitles, maxWordsPerSubtitle } = options;
 
     // Check if this is a Gemini 2.0 model (they don't respect video_metadata offsets)
     const isGemini20Model = model && (model.includes('gemini-2.0') || model.includes('gemini-1.5'));
@@ -146,8 +146,11 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
 
     // Import streaming processor
     import('../../utils/subtitle/realtimeProcessor').then(({ createRealtimeProcessor }) => {
-      // Create realtime processor
+      // Create realtime processor with auto-split options from the modal
+      // Convert to boolean properly - the value comes as a boolean from the modal
       const processor = createRealtimeProcessor({
+        autoSplitEnabled: Boolean(autoSplitSubtitles),
+        maxWordsPerSubtitle: parseInt(maxWordsPerSubtitle) || 8,
         onSubtitleUpdate: (data) => {
           // console.log('[ProcessingUtils] Subtitle update:', data.subtitles.length, 'subtitles');
 
@@ -305,14 +308,17 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
           end: segment.end,
           duration: segment.end - segment.start
         },
-        maxDurationPerRequest: options.maxDurationPerRequest // Pass through the max duration
+        maxDurationPerRequest: options.maxDurationPerRequest, // Pass through the max duration
+        autoSplitSubtitles: autoSplitSubtitles, // Pass auto-split settings to streaming API
+        maxWordsPerSubtitle: maxWordsPerSubtitle
       };
-
+      
       // Start streaming
       import('../../services/gemini').then(({ streamGeminiApiWithFilesApi }) => {
+        // Pass the apiOptions which includes auto-split settings
         streamGeminiApiWithFilesApi(
           file,
-          apiOptions,
+          apiOptions,  // This already includes autoSplitSubtitles and maxWordsPerSubtitle
           (chunk) => processor.processChunk(chunk),
           (finalText) => processor.complete(finalText),
           (error) => processor.error(error),
