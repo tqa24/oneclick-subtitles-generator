@@ -294,17 +294,24 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                       
                       // Check for short sequences repeated many times
                       // NOTE: Be careful with legitimate repetitive content like song lyrics
+                      // Convert to lowercase for case-insensitive matching
+                      const textLower = subtitle.text.toLowerCase();
                       const shortSequencePattern = /(.{2,5})\1{19,}/; // 2-5 char sequence repeated 20+ times
-                      if (shortSequencePattern.test(subtitle.text)) {
-                        const match = subtitle.text.match(shortSequencePattern);
+                      if (shortSequencePattern.test(textLower)) {
+                        const match = textLower.match(shortSequencePattern);
                         const repetitions = match[0].length / match[1].length;
                         const repeatedPattern = match[1];
+                        
+                        // Also check the original text to get the actual pattern (with original casing)
+                        // Find the starting position in lowercase text and extract from original
+                        const startPos = textLower.indexOf(match[0]);
+                        const originalRepeatedSection = subtitle.text.substring(startPos, startPos + match[1].length);
                         
                         // Simple rule: ANY pattern repeated more than 30 times is a hallucination
                         // Even the most repetitive songs rarely repeat the same word/syllable 30+ times in a row
                         if (repetitions > 30) {
                           foundHallucination = true;
-                          console.log(`[StreamingService] Detected hallucination: "${repeatedPattern}" repeated ${Math.floor(repetitions)} times (>30 threshold)`);
+                          console.log(`[StreamingService] Detected hallucination: "${originalRepeatedSection}" repeated ${Math.floor(repetitions)} times (>30 threshold)`);
                           break;
                         }
                         
@@ -315,11 +322,11 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                         
                         if (!hasLetters || looksLikeGibberish) {
                           foundHallucination = true;
-                          console.log(`[StreamingService] Detected hallucination: Non-text pattern "${repeatedPattern}" repeated ${Math.floor(repetitions)} times`);
+                          console.log(`[StreamingService] Detected hallucination: Non-text pattern "${originalRepeatedSection}" repeated ${Math.floor(repetitions)} times`);
                           break;
                         } else if (repetitions > 25) {
                           // Log warning for 25-30 repetitions but allow it
-                          console.log(`[StreamingService] Warning: "${repeatedPattern}" repeated ${Math.floor(repetitions)} times (approaching threshold)`);
+                          console.log(`[StreamingService] Warning: "${originalRepeatedSection}" repeated ${Math.floor(repetitions)} times (approaching threshold)`);
                         }
                       }
                       
