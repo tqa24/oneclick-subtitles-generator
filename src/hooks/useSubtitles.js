@@ -415,12 +415,23 @@ export const useSubtitles = (t) => {
                                         }));
                                     }
 
-                                    // CRITICAL: For parallel processing, DON'T use progressive merge
-                                    // Just replace all subtitles with the new aggregated result
-                                    const mergedStreamingSubtitles = streamingSubtitles;
-
-                                    // Update the UI with streaming results
-                                    setSubtitlesData(mergedStreamingSubtitles);
+                                    // CRITICAL FIX: Merge streaming subtitles with existing timeline
+                                    // Get current subtitles and filter out those in the segment range
+                                    setSubtitlesData(current => {
+                                        const existingSubtitles = current || [];
+                                        
+                                        // Filter out existing subtitles that overlap with this segment
+                                        const nonOverlappingSubtitles = existingSubtitles.filter(sub => {
+                                            // Keep subtitles that are completely outside the segment boundaries
+                                            return sub.end <= segment.start || sub.start >= segment.end;
+                                        });
+                                        
+                                        // Merge: existing non-overlapping + new streaming subtitles
+                                        const mergedStreamingSubtitles = [...nonOverlappingSubtitles, ...streamingSubtitles]
+                                            .sort((a, b) => a.start - b.start);
+                                        
+                                        return mergedStreamingSubtitles;
+                                    });
 
                                     // Update status to show streaming progress
                                     if (isStreaming) {
@@ -449,12 +460,22 @@ export const useSubtitles = (t) => {
                                                 }));
                                             }
                                             
-                                            // CRITICAL: For parallel processing, DON'T use progressive merge
-                                            // Just replace all subtitles with the new aggregated result
-                                            const mergedStreamingSubtitles = pending;
-                                            
-                                            // Update the UI with streaming results
-                                            setSubtitlesData(mergedStreamingSubtitles);
+                                            // CRITICAL FIX: Merge streaming subtitles with existing timeline
+                                            setSubtitlesData(current => {
+                                                const existingSubtitles = current || [];
+                                                
+                                                // Filter out existing subtitles that overlap with this segment
+                                                const nonOverlappingSubtitles = existingSubtitles.filter(sub => {
+                                                    // Keep subtitles that are completely outside the segment boundaries
+                                                    return sub.end <= segment.start || sub.start >= segment.end;
+                                                });
+                                                
+                                                // Merge: existing non-overlapping + new streaming subtitles
+                                                const mergedStreamingSubtitles = [...nonOverlappingSubtitles, ...pending]
+                                                    .sort((a, b) => a.start - b.start);
+                                                
+                                                return mergedStreamingSubtitles;
+                                            });
                                             
                                             // Update status to show streaming progress
                                             if (pendingStreaming) {
@@ -479,13 +500,35 @@ export const useSubtitles = (t) => {
                     segmentRange: `${segment.start}s - ${segment.end}s`
                 });
 
-                // CRITICAL FIX: Use the actual returned subtitles from processSegmentWithStreaming
-                // NOT the React state which may be stale or not updated yet
-                subtitles = segmentSubtitles;
-                
-                // Also update the React state with the final result
+                // CRITICAL FIX: For single segment processing, we need to MERGE with existing subtitles
+                // NOT replace the entire timeline
                 if (segmentSubtitles && segmentSubtitles.length > 0) {
-                    setSubtitlesData(segmentSubtitles);
+                    // Get current subtitles from state
+                    const currentSubtitles = subtitlesData || [];
+                    
+                    // Filter out existing subtitles that overlap with this segment
+                    const nonOverlappingSubtitles = currentSubtitles.filter(sub => {
+                        // Keep subtitles that are completely outside the segment boundaries
+                        return sub.end <= segment.start || sub.start >= segment.end;
+                    });
+                    
+                    // Merge: existing non-overlapping + new segment subtitles
+                    const mergedSubtitles = [...nonOverlappingSubtitles, ...segmentSubtitles]
+                        .sort((a, b) => a.start - b.start);
+                    
+                    console.log('[Subtitle Generation] Merging single segment result:', {
+                        existingCount: currentSubtitles.length,
+                        nonOverlappingCount: nonOverlappingSubtitles.length,
+                        segmentCount: segmentSubtitles.length,
+                        finalCount: mergedSubtitles.length
+                    });
+                    
+                    // Update with merged result
+                    subtitles = mergedSubtitles;
+                    setSubtitlesData(mergedSubtitles);
+                } else {
+                    // No new subtitles from segment
+                    subtitles = subtitlesData;
                 }
 
                 console.log('[Subtitle Generation] Using final streaming result:', {

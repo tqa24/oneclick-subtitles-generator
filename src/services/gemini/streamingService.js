@@ -257,26 +257,73 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                   let uniformDurationCount = 0;
                   let lastDuration = null;
                   
+                  // Track blocks of text to detect verse/chorus repetitions
+                  let recentTextBlocks = [];
+                  let blockRepetitionCount = 0;
+                  
                   for (const subtitle of parsedSubtitles) {
                     // Check for excessive character repetition in text
                     if (subtitle.text) {
                       // Check for single character repeated many times  
-                      const singleCharPattern = /(.)\1{19,}/; // Same character repeated 20+ times
+                      const singleCharPattern = /(.)\1{29,}/; // Same character repeated 30+ times (raised from 20)
                       if (singleCharPattern.test(subtitle.text)) {
-                        foundHallucination = true;
+                        // Some legitimate cases: "Ahhhhhhhh!" (screaming), "Zzzzzz" (sleeping)
                         const match = subtitle.text.match(singleCharPattern);
-                        console.log(`[StreamingService] Detected hallucination: Character "${match[1]}" repeated ${match[0].length} times`);
-                        break;
+                        const char = match[1];
+                        const count = match[0].length;
+                        
+                        // Common legitimate extended characters in subtitles
+                        // Vowels from various languages, h (breathing), z (sleeping), dots, dashes
+                        // Using Unicode categories for broader coverage:
+                        // - Any vowel-like character (rough approximation)
+                        // - Common sound effect characters
+                        const legitimateExtended = /[aeiouAEIOUаеёиоуыэюяАЕЁИОУЫЭЮЯあいうえおアイウエオㅏㅑㅓㅕㅗㅛㅜㅠㅡㅣhHzZｚＺ.\-~!?]/.test(char) ||
+                                                 // Or any letter that might be legitimately extended
+                                                 /[\p{L}]/u.test(char);
+                        
+                        if (!legitimateExtended || count > 50) {
+                          foundHallucination = true;
+                          console.log(`[StreamingService] Detected hallucination: Character "${char}" repeated ${count} times`);
+                          break;
+                        } else if (count > 30) {
+                          console.log(`[StreamingService] Allowing extended character "${char}" x${count} (possibly legitimate vocalization)`);
+                        }
                       }
                       
                       // Check for short sequences repeated many times
-                      const shortSequencePattern = /(.{2,5})\1{9,}/; // 2-5 char sequence repeated 10+ times
+                      // NOTE: Be careful with legitimate repetitive content like song lyrics
+                      const shortSequencePattern = /(.{2,5})\1{14,}/; // 2-5 char sequence repeated 15+ times
                       if (shortSequencePattern.test(subtitle.text)) {
-                        foundHallucination = true;
                         const match = subtitle.text.match(shortSequencePattern);
                         const repetitions = match[0].length / match[1].length;
-                        console.log(`[StreamingService] Detected hallucination: Sequence "${match[1]}" repeated ${Math.floor(repetitions)} times`);
-                        break;
+                        const repeatedPattern = match[1];
+                        
+                        // Detect if this looks like legitimate content:
+                        // 1. Contains actual letters/characters from ANY language (not just symbols)
+                        // 2. Common vocal sounds in any language
+                        // 3. Includes punctuation that's normal in subtitles
+                        
+                        // Unicode ranges for detecting "real" text vs pure symbols:
+                        // \p{L} = any letter from any language
+                        // \p{M} = combining marks (accents, etc.)
+                        // \p{N} = numbers from any script
+                        const hasLetters = /[\p{L}\p{M}]/u.test(repeatedPattern);
+                        const isShortVocalSound = repeatedPattern.length <= 3 && hasLetters;
+                        // Only symbols/punctuation, no actual letters or numbers from any language
+                        const looksLikeGibberish = /^[^\p{L}\p{M}\p{N}\s]+$/u.test(repeatedPattern);
+                        
+                        // Musical/vocal patterns are often short ("la", "na", "oh", "ah", "두비", "라파")
+                        // Hallucinations tend to be: symbols only, very long repetitions, or nonsense
+                        const isLikelyLegitimate = hasLetters && (isShortVocalSound || repetitions < 25);
+                        const isDefiniteHallucination = looksLikeGibberish || repetitions > 30;
+                        
+                        if (isDefiniteHallucination || (!isLikelyLegitimate && repetitions > 20)) {
+                          foundHallucination = true;
+                          console.log(`[StreamingService] Detected hallucination: Sequence "${repeatedPattern}" repeated ${Math.floor(repetitions)} times`);
+                          break;
+                        } else if (repetitions > 15) {
+                          console.log(`[StreamingService] Allowing potentially legitimate repetition: "${repeatedPattern}" x${Math.floor(repetitions)} (contains letters: ${hasLetters}, short vocal: ${isShortVocalSound})`);
+                        }
                       }
                       
                       // Check if more than 80% of the text is the same character
@@ -305,13 +352,81 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                       }
                     }
                     
-                    // Check for repeated text (same text 3+ times in a row)
+                    // Check for stuck timestamps (many subtitles with very similar times)
+                    // This catches cases like multiple lines all at 01:36:09,517
+                    if (lastValidSubtitleEndTime > 0) {
+                      const timeDiff = Math.abs(subtitle.start - lastValidSubtitleEndTime);
+                      // If we have multiple subtitles within 1 second of each other with the same text pattern
+                      if (timeDiff < 1 && recentTextBlocks.length > 2) {
+                        const lastFewTexts = recentTextBlocks.slice(-3);
+                        const uniqueTexts = [...new Set(lastFewTexts)];
+                        if (uniqueTexts.length === 1 && lastFewTexts.length === 3) {
+                          // Same text 3 times at nearly the same timestamp
+                          foundHallucination = true;
+                          console.log(`[StreamingService] Detected hallucination: Multiple subtitles with same text at similar timestamps`);
+                          console.log(`[StreamingService] Text: "${uniqueTexts[0]}" at ~${subtitle.start.toFixed(1)}s`);
+                          break;
+                        }
+                      }
+                    }
+                    
+                    // Track recent text blocks to detect verse/chorus repetitions
+                    // Keep a sliding window of the last 20 subtitles
+                    recentTextBlocks.push(subtitle.text);
+                    if (recentTextBlocks.length > 20) {
+                      recentTextBlocks.shift();
+                    }
+                    
+                    // Check for block-level repetitions (e.g., same verse repeating)
+                    // Look for patterns where a sequence of 5+ subtitles repeats
+                    if (recentTextBlocks.length >= 10) {
+                      const halfLength = Math.floor(recentTextBlocks.length / 2);
+                      const firstHalf = recentTextBlocks.slice(0, halfLength).join('|');
+                      const secondHalf = recentTextBlocks.slice(halfLength, halfLength * 2).join('|');
+                      
+                      if (firstHalf === secondHalf && halfLength >= 5) {
+                        blockRepetitionCount++;
+                        if (blockRepetitionCount >= 2) {
+                          foundHallucination = true;
+                          console.log(`[StreamingService] Detected hallucination: Block of ${halfLength} subtitles repeated ${blockRepetitionCount} times`);
+                          console.log(`[StreamingService] Repeated block sample: "${recentTextBlocks[0]}" ... "${recentTextBlocks[halfLength - 1]}"`);
+                          break;
+                        }
+                      }
+                    }
+                    
+                    // Check for repeated text (same text multiple times in a row)
+                    // Be more lenient with repetitions as they might be legitimate (e.g., chorus, repeated dialogue)
                     if (lastText && subtitle.text === lastText) {
                       repeatedTextCount++;
-                      if (repeatedTextCount >= 3) {
-                        foundHallucination = true;
-                        console.log(`[StreamingService] Detected hallucination: Text "${subtitle.text}" repeated ${repeatedTextCount + 1} times`);
-                        break;
+                      
+                      // Context-aware thresholds:
+                      // - Very short text (< 5 chars): Could be "No!", "Oh!", etc. Allow more
+                      // - Medium text (5-20 chars): Could be short phrases, moderate threshold  
+                      // - Long text (> 20 chars): Full sentences, less likely to legitimately repeat
+                      const textLength = subtitle.text.length;
+                      let threshold;
+                      if (textLength < 5) {
+                        threshold = 10; // "No!" repeated 10x could be legitimate panic/emphasis
+                      } else if (textLength <= 20) {
+                        threshold = 7;  // Short phrases
+                      } else {
+                        threshold = 4;  // Long sentences rarely repeat legitimately
+                      }
+                      
+                      // Check if it looks like dialogue or song (has actual words from ANY language)
+                      // \p{L} matches any Unicode letter from any language
+                      const hasWords = /[\p{L}]{2,}/u.test(subtitle.text);
+                      
+                      if (repeatedTextCount >= threshold) {
+                        // Give dialogue/songs more leeway
+                        if (!hasWords || repeatedTextCount >= threshold + 3) {
+                          foundHallucination = true;
+                          console.log(`[StreamingService] Detected hallucination: Text "${subtitle.text.substring(0, 50)}" repeated ${repeatedTextCount + 1} times`);
+                          break;
+                        } else {
+                          console.log(`[StreamingService] Warning: Text "${subtitle.text.substring(0, 30)}..." repeated ${repeatedTextCount + 1} times (allowing as it contains words)`);
+                        }
                       }
                     } else {
                       repeatedTextCount = 0;

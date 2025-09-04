@@ -107,26 +107,73 @@ export const coordinateParallelStreaming = async (
         (chunk) => {
           if (chunk.subtitles && chunk.subtitles.length > 0) {
             // CRITICAL FIX: Adjust subtitle timestamps to be absolute, not relative
-            // Gemini returns timestamps relative to the segment start (0-based)
-            const adjustedSubtitles = chunk.subtitles.map(subtitle => {
-              // If timestamp is suspiciously small (less than segment start), it's relative
-              const needsAdjustment = subtitle.start < subSegment.start - 10; // 10s tolerance
-              return needsAdjustment ? {
-                ...subtitle,
-                start: subtitle.start + subSegment.start,
-                end: subtitle.end + subSegment.start
-              } : subtitle;
+            // When processing a segment starting at time X, Gemini might return:
+            // 1. Absolute timestamps (already correct)
+            // 2. Relative timestamps starting from 0
+            // We detect relative timestamps when they're too small to be in the segment
+            const segmentDuration = subSegment.end - subSegment.start;
+            
+            // Check the first subtitle to determine if adjustment is needed
+            let needsAdjustment = false;
+            if (chunk.subtitles.length > 0) {
+              const firstSubtitle = chunk.subtitles[0];
+              // If the first subtitle starts before half the segment start time, it's likely relative
+              needsAdjustment = firstSubtitle.start < subSegment.start / 2;
+              
+              if (index === 1 || index === 6) { // Debug problematic segments
+                console.log(`[ParallelCoordinator] Segment ${index + 1} timestamp check:`, {
+                  segmentStart: subSegment.start,
+                  firstSubStart: firstSubtitle.start,
+                  needsAdjustment,
+                  isRelative: firstSubtitle.start < subSegment.start / 2
+                });
+              }
+            }
+            
+            const adjustedSubtitles = chunk.subtitles.map((subtitle, subIdx) => {
+              if (needsAdjustment) {
+                // Add segment start to convert relative to absolute
+                const adjusted = {
+                  ...subtitle,
+                  start: subtitle.start + subSegment.start,
+                  end: subtitle.end + subSegment.start
+                };
+                
+                // Debug log for first subtitle of problematic segments
+                if ((index === 1 || index === 6) && subIdx === 0) {
+                  console.log(`[ParallelCoordinator] Adjusting Seg ${index + 1} subtitle:`, {
+                    original: `${subtitle.start}-${subtitle.end}`,
+                    adjusted: `${adjusted.start}-${adjusted.end}`
+                  });
+                }
+                
+                return adjusted;
+              }
+              return subtitle;
             });
             
             segmentSubtitles[index] = adjustedSubtitles;
             segmentTexts[index] = chunk.accumulatedText || '';
             
-            console.log(`[ParallelCoordinator] Segment ${index + 1}/${subSegments.length} chunk update:`, {
-              segmentRange: `[${subSegment.start}s-${subSegment.end}s]`,
-              subtitleCount: chunk.subtitles.length,
-              chunkCount: chunk.chunkCount,
-              subtitleRanges: chunk.subtitles.slice(0, 3).map(s => `${s.start}-${s.end}s`).join(', ') + (chunk.subtitles.length > 3 ? '...' : '')
-            });
+            // Special detailed logging for segment 6
+            if (index === 5) { // Segment 6 is index 5 (0-based)
+              console.log(`[SEGMENT 6 DEBUG] Chunk ${chunk.chunkCount} received:`, {
+                segmentRange: `[${subSegment.start}s-${subSegment.end}s]`,
+                rawSubtitleCount: chunk.subtitles.length,
+                adjustedSubtitleCount: adjustedSubtitles.length,
+                firstThreeRaw: chunk.subtitles.slice(0, 3).map(s => `${s.start.toFixed(1)}-${s.end.toFixed(1)}s`),
+                firstThreeAdjusted: adjustedSubtitles.slice(0, 3).map(s => `${s.start.toFixed(1)}-${s.end.toFixed(1)}s`),
+                lastThreeAdjusted: adjustedSubtitles.slice(-3).map(s => `${s.start.toFixed(1)}-${s.end.toFixed(1)}s`)
+              });
+            } else {
+              // Regular logging for other segments (less verbose)
+              console.log(`[ParallelCoordinator] Segment ${index + 1}/${subSegments.length} chunk update:`, {
+                segmentRange: `[${subSegment.start}s-${subSegment.end}s]`,
+                subtitleCount: chunk.subtitles.length,
+                chunkCount: chunk.chunkCount,
+                subtitleRanges: chunk.subtitles.slice(0, 3).map(s => `${s.start}-${s.end}s`).join(', ') + (chunk.subtitles.length > 3 ? '...' : '')
+              });
+            }
 
             // Update progress for this segment
             const progress = Math.min(90, (chunk.chunkCount || 1) * 10); // Estimate progress
@@ -164,19 +211,25 @@ export const coordinateParallelStreaming = async (
         },
         // onComplete for this segment
         (finalText) => {
-          console.log(`[ParallelCoordinator] Segment ${index + 1}/${subSegments.length} completed:`, {
-            segmentRange: `[${subSegment.start}s-${subSegment.end}s]`,
-            finalSubtitleCount: segmentSubtitles[index]?.length || 0,
-            textLength: finalText?.length || 0
-          });
+          // Special logging for segment 6
+          if (index === 5) {
+            console.log(`[SEGMENT 6 DEBUG] FINAL COMPLETION:`, {
+              segmentRange: `[${subSegment.start}s-${subSegment.end}s]`,
+              finalSubtitleCount: segmentSubtitles[index]?.length || 0,
+              textLength: finalText?.length || 0,
+              allSubtitles: segmentSubtitles[index]?.map(s => `${s.start.toFixed(1)}-${s.end.toFixed(1)}: ${s.text.substring(0, 20)}...`)
+            });
+          } else {
+            console.log(`[ParallelCoordinator] Segment ${index + 1}/${subSegments.length} completed:`, {
+              segmentRange: `[${subSegment.start}s-${subSegment.end}s]`,
+              finalSubtitleCount: segmentSubtitles[index]?.length || 0,
+              textLength: finalText?.length || 0
+            });
+          }
           
-          // CRITICAL FIX: Adjust subtitle timestamps to be absolute, not relative to segment start
-          // Gemini returns timestamps relative to the video segment it processed
-          const adjustedSubtitles = segmentSubtitles[index]?.map(subtitle => ({
-            ...subtitle,
-            start: subtitle.start + (subtitle.start < subSegment.start ? subSegment.start : 0),
-            end: subtitle.end + (subtitle.end < subSegment.end - subSegment.start + 100 ? subSegment.start : 0)
-          })) || [];
+          // Final adjustment check - ensure we haven't already adjusted these
+          // The adjustment should have been done during streaming
+          const adjustedSubtitles = segmentSubtitles[index] || [];
           
           // Store final results for this segment with adjusted timestamps
           segmentResults[index] = {
