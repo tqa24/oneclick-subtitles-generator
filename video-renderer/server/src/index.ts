@@ -626,6 +626,10 @@ app.post('/render', async (req, res) => {
     // Store original console.log for restoration
     const originalConsoleLog = console.log;
 
+
+    // Throttle console progress logs to 1% increments across render + retry
+    let lastLoggedPercent = -1;
+
     try {
       // Double-check that temp directories exist right before rendering
       ensureRemotionTempDirs();
@@ -650,6 +654,10 @@ app.post('/render', async (req, res) => {
         // Call original console.log
         originalConsoleLog(...args);
       };
+
+
+      // Throttle console progress logs to 1% increments
+      let lastLoggedPercent = -1;
 
       await renderMedia({
         composition,
@@ -697,24 +705,25 @@ app.post('/render', async (req, res) => {
         puppeteerInstance: undefined, // Let Remotion manage browser instances efficiently
         cancelSignal,
         onProgress: ({ renderedFrames, encodedFrames }) => {
-          console.log(`Progress: ${renderedFrames}/${durationInFrames} frames`);
           const progress = renderedFrames / durationInFrames;
+          const percent = Math.floor(progress * 100);
+          if (percent > lastLoggedPercent) {
+            lastLoggedPercent = percent;
+            console.log(`Progress: ${percent}% (${renderedFrames}/${durationInFrames})`);
+          }
 
           // Update progress in activeRenders
           const activeRender = activeRenders.get(renderId);
           if (activeRender) {
             activeRender.progress = progress;
 
-            // Determine the current phase based on progress
+            // Determine phase: show 'encoding' only after frames are fully rendered
             let phase = 'rendering';
             let phaseDescription = 'Rendering video frames';
 
-            if (encodedFrames !== undefined && renderedFrames > 0) {
-              const encodingRatio = encodedFrames / renderedFrames;
-              if (encodingRatio < 0.8 && progress > 0.8) {
-                phase = 'encoding';
-                phaseDescription = 'Encoding and stitching frames';
-              }
+            if (renderedFrames >= durationInFrames) {
+              phase = 'encoding';
+              phaseDescription = 'Encoding and stitching frames';
             }
 
             // Use the current response object (which may have been updated on reconnection)
@@ -797,24 +806,25 @@ app.post('/render', async (req, res) => {
               puppeteerInstance: undefined, // Let Remotion manage browser instances efficiently
               cancelSignal,
               onProgress: ({ renderedFrames, encodedFrames }) => {
-                console.log(`Retry Progress: ${renderedFrames}/${durationInFrames} frames`);
                 const progress = renderedFrames / durationInFrames;
+                const percent = Math.floor(progress * 100);
+                if (percent > lastLoggedPercent) {
+                  lastLoggedPercent = percent;
+                  console.log(`Retry Progress: ${percent}% (${renderedFrames}/${durationInFrames})`);
+                }
 
                 // Update progress in activeRenders
                 const activeRender = activeRenders.get(renderId);
                 if (activeRender) {
                   activeRender.progress = progress;
 
-                  // Determine the current phase based on progress
+                  // Determine phase: show 'encoding' only after frames are fully rendered
                   let phase = 'rendering';
                   let phaseDescription = 'Rendering video frames';
 
-                  if (encodedFrames !== undefined && renderedFrames > 0) {
-                    const encodingRatio = encodedFrames / renderedFrames;
-                    if (encodingRatio < 0.8 && progress > 0.8) {
-                      phase = 'encoding';
-                      phaseDescription = 'Encoding and stitching frames';
-                    }
+                  if (renderedFrames >= durationInFrames) {
+                    phase = 'encoding';
+                    phaseDescription = 'Encoding and stitching frames';
                   }
 
                   // Use the current response object (which may have been updated on reconnection)
