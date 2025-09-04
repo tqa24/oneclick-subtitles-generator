@@ -149,7 +149,7 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
       // Create realtime processor
       const processor = createRealtimeProcessor({
         onSubtitleUpdate: (data) => {
-          console.log('[ProcessingUtils] Subtitle update:', data.subtitles.length, 'subtitles');
+          // console.log('[ProcessingUtils] Subtitle update:', data.subtitles.length, 'subtitles');
 
           // For Gemini 2.0 models: implement early stopping when subtitles exceed segment
           if (isGemini20Model && data.subtitles && data.subtitles.length > 0 && !hasStoppedEarly) {
@@ -243,7 +243,7 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
         },
         onStatusUpdate: setStatus,
         onComplete: (finalSubtitles) => {
-          console.log('[ProcessingUtils] Streaming complete:', finalSubtitles.length, 'subtitles');
+          // console.log('[ProcessingUtils] Streaming complete:', finalSubtitles.length, 'subtitles');
 
           // Filter final subtitles for Gemini 2.0 models
           let filteredFinal = finalSubtitles;

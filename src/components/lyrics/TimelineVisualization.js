@@ -129,7 +129,7 @@ const TimelineVisualization = ({
   // Listen for streaming events and processing ranges
   useEffect(() => {
     const handleStreamingStart = () => {
-      console.log('[Timeline] Streaming started - enabling segment animations');
+      // console.log('[Timeline] Streaming started - enabling segment animations');
       setIsStreamingActive(true);
     };
     
@@ -142,7 +142,7 @@ const TimelineVisualization = ({
     };
     
     const handleStreamingComplete = () => {
-      console.log('[Timeline] Streaming complete - disabling segment animations');
+      // console.log('[Timeline] Streaming complete - disabling segment animations');
       // Keep animations active for a bit after streaming completes
       setTimeout(() => {
         setIsStreamingActive(false);

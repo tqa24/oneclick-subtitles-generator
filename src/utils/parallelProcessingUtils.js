@@ -63,6 +63,8 @@ export const mergeParallelSubtitles = (segmentResults) => {
     return [];
   }
 
+  console.log(`[MergeParallelSubtitles] Starting merge of ${segmentResults.length} segments`);
+
   // Collect all subtitles from all segments
   const allSubtitles = [];
   
@@ -89,10 +91,13 @@ export const mergeParallelSubtitles = (segmentResults) => {
 
   // Sort subtitles by start time
   allSubtitles.sort((a, b) => a.start - b.start);
+  console.log(`[MergeParallelSubtitles] Collected ${allSubtitles.length} total subtitles before deduplication`);
 
   // Remove duplicates and overlaps
   const mergedSubtitles = [];
   let lastSubtitle = null;
+  let duplicatesRemoved = 0;
+  let overlapsAdjusted = 0;
 
   allSubtitles.forEach(subtitle => {
     if (!lastSubtitle) {
@@ -106,9 +111,11 @@ export const mergeParallelSubtitles = (segmentResults) => {
 
       if (isDuplicate) {
         // Skip duplicate
+        duplicatesRemoved++;
         return;
       } else if (isOverlapping) {
         // Handle overlap by adjusting timing
+        overlapsAdjusted++;
         // If subtitles are from different segments, prefer boundary adjustment
         if (lastSubtitle.segmentIndex !== subtitle.segmentIndex) {
           // Adjust the end of the previous subtitle to the start of the current one
@@ -127,7 +134,13 @@ export const mergeParallelSubtitles = (segmentResults) => {
   // Clean up segment tracking info
   const finalSubtitles = mergedSubtitles.map(({ segmentIndex, ...subtitle }) => subtitle);
 
-  console.log(`[ParallelProcessing] Merged ${allSubtitles.length} subtitles from ${segmentResults.length} segments into ${finalSubtitles.length} final subtitles`);
+  console.log(`[MergeParallelSubtitles] Merge complete:`, {
+    input: allSubtitles.length,
+    output: finalSubtitles.length,
+    duplicatesRemoved,
+    overlapsAdjusted,
+    subtitlesLost: allSubtitles.length - finalSubtitles.length
+  });
 
   return finalSubtitles;
 };

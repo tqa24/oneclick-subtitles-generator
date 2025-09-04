@@ -106,19 +106,46 @@ export const coordinateParallelStreaming = async (
         // onChunk - collect subtitles from each segment
         (chunk) => {
           if (chunk.subtitles && chunk.subtitles.length > 0) {
-            segmentSubtitles[index] = chunk.subtitles;
+            // CRITICAL FIX: Adjust subtitle timestamps to be absolute, not relative
+            // Gemini returns timestamps relative to the segment start (0-based)
+            const adjustedSubtitles = chunk.subtitles.map(subtitle => {
+              // If timestamp is suspiciously small (less than segment start), it's relative
+              const needsAdjustment = subtitle.start < subSegment.start - 10; // 10s tolerance
+              return needsAdjustment ? {
+                ...subtitle,
+                start: subtitle.start + subSegment.start,
+                end: subtitle.end + subSegment.start
+              } : subtitle;
+            });
+            
+            segmentSubtitles[index] = adjustedSubtitles;
             segmentTexts[index] = chunk.accumulatedText || '';
+            
+            console.log(`[ParallelCoordinator] Segment ${index + 1}/${subSegments.length} chunk update:`, {
+              segmentRange: `[${subSegment.start}s-${subSegment.end}s]`,
+              subtitleCount: chunk.subtitles.length,
+              chunkCount: chunk.chunkCount,
+              subtitleRanges: chunk.subtitles.slice(0, 3).map(s => `${s.start}-${s.end}s`).join(', ') + (chunk.subtitles.length > 3 ? '...' : '')
+            });
 
             // Update progress for this segment
             const progress = Math.min(90, (chunk.chunkCount || 1) * 10); // Estimate progress
             progressTracker.updateSegmentProgress(index, progress);
 
             // Aggregate and send combined results
-            const aggregatedSubtitles = mergeParallelSubtitles(
-              segmentSubtitles
-                .map((subs, i) => ({ segment: subSegments[i], subtitles: subs }))
-                .filter(result => result.subtitles.length > 0)
-            );
+            const segmentsWithSubtitles = segmentSubtitles
+              .map((subs, i) => ({ segment: subSegments[i], subtitles: subs }))
+              .filter(result => result.subtitles.length > 0);
+            
+            console.log(`[ParallelCoordinator] Pre-merge state:`, {
+              segmentsWithData: segmentsWithSubtitles.length,
+              segmentIndices: segmentsWithSubtitles.map(s => {
+                const idx = subSegments.indexOf(s.segment);
+                return `Seg${idx + 1}[${s.segment.start}-${s.segment.end}]: ${s.subtitles.length} subs`;
+              }).join(', ')
+            });
+            
+            const aggregatedSubtitles = mergeParallelSubtitles(segmentsWithSubtitles);
 
             // Send aggregated chunk update
             onChunk({
@@ -137,12 +164,24 @@ export const coordinateParallelStreaming = async (
         },
         // onComplete for this segment
         (finalText) => {
-          console.log(`[ParallelCoordinator] Segment ${index + 1}/${subSegments.length} completed`);
+          console.log(`[ParallelCoordinator] Segment ${index + 1}/${subSegments.length} completed:`, {
+            segmentRange: `[${subSegment.start}s-${subSegment.end}s]`,
+            finalSubtitleCount: segmentSubtitles[index]?.length || 0,
+            textLength: finalText?.length || 0
+          });
           
-          // Store final results for this segment
+          // CRITICAL FIX: Adjust subtitle timestamps to be absolute, not relative to segment start
+          // Gemini returns timestamps relative to the video segment it processed
+          const adjustedSubtitles = segmentSubtitles[index]?.map(subtitle => ({
+            ...subtitle,
+            start: subtitle.start + (subtitle.start < subSegment.start ? subSegment.start : 0),
+            end: subtitle.end + (subtitle.end < subSegment.end - subSegment.start + 100 ? subSegment.start : 0)
+          })) || [];
+          
+          // Store final results for this segment with adjusted timestamps
           segmentResults[index] = {
             segment: subSegment,
-            subtitles: segmentSubtitles[index],
+            subtitles: adjustedSubtitles,
             text: finalText
           };
 
@@ -157,18 +196,30 @@ export const coordinateParallelStreaming = async (
         },
         // onError for this segment
         async (error) => {
-          // Check if this is a 503 error (overload)
+          // Check if this is a 503 error (overload) or 429 error (rate limit)
           const is503Error = error && error.message && (
             error.message.includes('503') ||
             error.message.includes('overloaded') ||
             error.message.includes('UNAVAILABLE')
           );
           
-          if (is503Error && retryCount < maxRetries) {
-            console.warn(`[ParallelCoordinator] Segment ${index + 1}/${subSegments.length} got 503 error, retrying in ${2 ** retryCount} seconds...`);
+          const is429Error = error && error.message && (
+            error.message.includes('429') ||
+            error.message.includes('RESOURCE_EXHAUSTED') ||
+            error.message.includes('quota') ||
+            error.message.includes('rate limit')
+          );
+          
+          const shouldRetry = (is503Error || is429Error) && retryCount < maxRetries;
+          
+          if (shouldRetry) {
+            const errorType = is429Error ? '429 (rate limit)' : '503 (overload)';
+            // TODO: MAKE THIS CONFIGURABLE IN SETTINGS MODAL - ALLOW USERS TO TUNE RETRY DELAY
+            const retryDelaySeconds = 5; // Fixed 5 second delay between retries for both 503 and 429 errors
+            console.warn(`[ParallelCoordinator] Segment ${index + 1}/${subSegments.length} got ${errorType} error, retrying in ${retryDelaySeconds} seconds (attempt ${retryCount + 1}/${maxRetries})...`);
             
-            // Exponential backoff: wait 1s, 2s, 4s
-            await new Promise(wait => setTimeout(wait, 1000 * (2 ** retryCount)));
+            // Wait with fixed delay (will be configurable in settings later)
+            await new Promise(wait => setTimeout(wait, 1000 * retryDelaySeconds));
             
             // Retry the segment
             try {
@@ -229,6 +280,17 @@ export const coordinateParallelStreaming = async (
     const results = await Promise.allSettled(segmentPromises);
 
     console.log(`[ParallelCoordinator] All segments processed. Success: ${completedSegments}, Failed: ${failedSegments.length}`);
+    
+    // Log detailed segment results for debugging
+    console.log('[ParallelCoordinator] Detailed segment results:');
+    segmentResults.forEach((result, idx) => {
+      if (result) {
+        console.log(`  Segment ${idx + 1}: [${result.segment.start}-${result.segment.end}s] - `, 
+          result.error ? `FAILED: ${result.error.message}` : `SUCCESS: ${result.subtitles?.length || 0} subtitles`);
+      } else {
+        console.log(`  Segment ${idx + 1}: NOT PROCESSED`);
+      }
+    });
 
     // Check if we have at least some successful segments
     const successfulResults = segmentResults.filter(r => r && !r.error && r.subtitles);
@@ -240,8 +302,22 @@ export const coordinateParallelStreaming = async (
       return;
     }
 
+    // Log before merging to understand the input
+    console.log('[ParallelCoordinator] Before final merge:');
+    const totalInputSubtitles = successfulResults.reduce((sum, r) => sum + (r.subtitles?.length || 0), 0);
+    console.log(`  Total input subtitles: ${totalInputSubtitles}`);
+    successfulResults.forEach((result, idx) => {
+      if (result.subtitles && result.subtitles.length > 0) {
+        const firstSub = result.subtitles[0];
+        const lastSub = result.subtitles[result.subtitles.length - 1];
+        console.log(`  Segment ${idx + 1}: ${result.subtitles.length} subs, range: ${firstSub.start.toFixed(1)}-${lastSub.end.toFixed(1)}s`);
+      }
+    });
+    
     // Merge all successful subtitles
     const finalSubtitles = mergeParallelSubtitles(successfulResults);
+    console.log(`[ParallelCoordinator] After merge: ${finalSubtitles.length} subtitles (was ${totalInputSubtitles})`);
+    
     const finalText = successfulResults
       .map(r => r.text)
       .filter(t => t)

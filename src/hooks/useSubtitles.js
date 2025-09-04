@@ -381,17 +381,17 @@ export const useSubtitles = (t) => {
                         const CAPTURE_THROTTLE_MS = 2000; // Capture undo state less frequently
                         let lastCaptureTime = 0;
                         
-                        return (streamingSubtitles, isStreaming) => {
+                        return (streamingSubtitles, isStreaming, chunkInfo) => {
                             // Real-time subtitle updates during streaming
                             if (streamingSubtitles && streamingSubtitles.length > 0) {
-                                console.log(`[Subtitle Generation] Streaming update: ${streamingSubtitles.length} subtitles`);
+                                // console.log(`[Subtitle Generation] Streaming update: ${streamingSubtitles.length} subtitles`);
 
                                 const now = Date.now();
                                 const timeSinceMerge = now - lastMergeTime;
                                 const timeSinceCapture = now - lastCaptureTime;
                                 
                                 // Store the pending update
-                                pendingUpdate = { streamingSubtitles, isStreaming };
+                                pendingUpdate = { streamingSubtitles, isStreaming, chunkInfo };
                                 
                                 // Clear any existing timer
                                 if (updateTimer) {
@@ -415,8 +415,9 @@ export const useSubtitles = (t) => {
                                         }));
                                     }
 
-                                    // Use progressive merging for streaming updates (clears left to right)
-                                    const mergedStreamingSubtitles = mergeStreamingSubtitlesProgressively(currentSubtitles, streamingSubtitles, segment);
+                                    // CRITICAL: For parallel processing, DON'T use progressive merge
+                                    // Just replace all subtitles with the new aggregated result
+                                    const mergedStreamingSubtitles = streamingSubtitles;
 
                                     // Update the UI with streaming results
                                     setSubtitlesData(mergedStreamingSubtitles);
@@ -448,8 +449,9 @@ export const useSubtitles = (t) => {
                                                 }));
                                             }
                                             
-                                            // Use progressive merging for streaming updates
-                                            const mergedStreamingSubtitles = mergeStreamingSubtitlesProgressively(currentSubtitles, pending, segment);
+                                            // CRITICAL: For parallel processing, DON'T use progressive merge
+                                            // Just replace all subtitles with the new aggregated result
+                                            const mergedStreamingSubtitles = pending;
                                             
                                             // Update the UI with streaming results
                                             setSubtitlesData(mergedStreamingSubtitles);
@@ -477,10 +479,14 @@ export const useSubtitles = (t) => {
                     segmentRange: `${segment.start}s - ${segment.end}s`
                 });
 
-                // The streaming process already handled progressive merging correctly
-                // The final result from processSegmentWithStreaming is already properly merged
-                // No need for additional merging - just use the current state from the last progressive merge
-                subtitles = subtitlesData;
+                // CRITICAL FIX: Use the actual returned subtitles from processSegmentWithStreaming
+                // NOT the React state which may be stale or not updated yet
+                subtitles = segmentSubtitles;
+                
+                // Also update the React state with the final result
+                if (segmentSubtitles && segmentSubtitles.length > 0) {
+                    setSubtitlesData(segmentSubtitles);
+                }
 
                 console.log('[Subtitle Generation] Using final streaming result:', {
                     totalCount: subtitles?.length || 0,

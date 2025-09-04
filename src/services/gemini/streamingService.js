@@ -190,7 +190,7 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
           }
 
           if (eventData) {
-            console.log('[StreamingService] Event data received:', JSON.stringify(eventData).substring(0, 200));
+            // console.log('[StreamingService] Event data received:', JSON.stringify(eventData).substring(0, 200));
             
             // Check for error in the event data
             if (eventData.error) {
@@ -225,7 +225,7 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                 chunkCount++;
                 accumulatedText += textPart.text;
                 
-                console.log(`[StreamingService] Chunk ${chunkCount}:`, textPart.text.substring(0, 100) + '...');
+                // console.log(`[StreamingService] Chunk ${chunkCount}:`, textPart.text.substring(0, 100) + '...');
                 
                 // Try to parse accumulated text as subtitles
                 try {
@@ -244,7 +244,7 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                 
                 // Check if we should terminate based on segment end offset
                 if (segmentEndOffset !== null && parsedSubtitles && parsedSubtitles.length > 0) {
-                  console.log(`[StreamingService] Checking segment bounds: end offset = ${segmentEndOffset}s`);
+                  // console.log(`[StreamingService] Checking segment bounds: end offset = ${segmentEndOffset}s`);
                   // Find the last subtitle that's within the segment bounds
                   let validSubtitles = [];
                   let foundExceeding = false;
@@ -258,6 +258,43 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                   let lastDuration = null;
                   
                   for (const subtitle of parsedSubtitles) {
+                    // Check for excessive character repetition in text
+                    if (subtitle.text) {
+                      // Check for single character repeated many times  
+                      const singleCharPattern = /(.)\1{19,}/; // Same character repeated 20+ times
+                      if (singleCharPattern.test(subtitle.text)) {
+                        foundHallucination = true;
+                        const match = subtitle.text.match(singleCharPattern);
+                        console.log(`[StreamingService] Detected hallucination: Character "${match[1]}" repeated ${match[0].length} times`);
+                        break;
+                      }
+                      
+                      // Check for short sequences repeated many times
+                      const shortSequencePattern = /(.{2,5})\1{9,}/; // 2-5 char sequence repeated 10+ times
+                      if (shortSequencePattern.test(subtitle.text)) {
+                        foundHallucination = true;
+                        const match = subtitle.text.match(shortSequencePattern);
+                        const repetitions = match[0].length / match[1].length;
+                        console.log(`[StreamingService] Detected hallucination: Sequence "${match[1]}" repeated ${Math.floor(repetitions)} times`);
+                        break;
+                      }
+                      
+                      // Check if more than 80% of the text is the same character
+                      if (subtitle.text.length > 50) {
+                        const charCounts = {};
+                        for (const char of subtitle.text) {
+                          charCounts[char] = (charCounts[char] || 0) + 1;
+                        }
+                        const maxCount = Math.max(...Object.values(charCounts));
+                        if (maxCount / subtitle.text.length > 0.8) {
+                          foundHallucination = true;
+                          const dominantChar = Object.keys(charCounts).find(key => charCounts[key] === maxCount);
+                          console.log(`[StreamingService] Detected hallucination: Text is ${Math.round(maxCount / subtitle.text.length * 100)}% character "${dominantChar}"`);
+                          break;
+                        }
+                      }
+                    }
+                    
                     // Check for invalid timing (0,0 or both start and end are 0)
                     if (subtitle.start === 0 && subtitle.end === 0) {
                       invalidTimingCount++;
@@ -361,7 +398,23 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                   });
                 }
                 } catch (parseError) {
-                  // Parsing failed, but that's okay - we'll try again with more text
+                  // Parsing failed - log details to understand what we're receiving
+                  console.warn('[StreamingService] Parse error at chunk', chunkCount, ':', parseError.message);
+                  
+                  // Log a sample of the accumulated text to see what format we're getting
+                  if (chunkCount % 100 === 0) { // Every 100 chunks, log a sample
+                    console.log('[StreamingService] Sample of unparseable content at chunk', chunkCount, ':');
+                    console.log('- Text length:', accumulatedText.length);
+                    console.log('- Last 500 chars:', accumulatedText.slice(-500));
+                    console.log('- Contains JSON markers:', {
+                      hasOpenBracket: accumulatedText.includes('['),
+                      hasCloseBracket: accumulatedText.includes(']'),
+                      hasStartTime: accumulatedText.includes('startTime'),
+                      hasText: accumulatedText.includes('text')
+                    });
+                  }
+                  
+                  // Continue accumulating - we'll try parsing again
                   onChunk({
                     text: textPart.text,
                     accumulatedText,
