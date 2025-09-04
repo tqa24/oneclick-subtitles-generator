@@ -4,6 +4,8 @@ import { FiImage, FiUpload, FiRefreshCw, FiDownload, FiX, FiAlertTriangle, FiChe
 import '../styles/BackgroundImageGenerator.css';
 import BackgroundPromptEditorButton from './background/BackgroundPromptEditorButton';
 import LoadingIndicator from './common/LoadingIndicator';
+import CustomScrollbarTextarea from './common/CustomScrollbarTextarea';
+
 
 // Custom hook to detect current theme
 const useCurrentTheme = () => {
@@ -576,11 +578,13 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
           <div className="content-grid top-inputs-grid">
           {/* Lyrics input */}
           <div className="lyrics-input-container">
-            <textarea
+            <CustomScrollbarTextarea
               value={customLyrics}
               onChange={(e) => setCustomLyrics(e.target.value)}
               placeholder={t('backgroundGenerator.lyricsPlaceholder', 'Enter lyrics here...')}
               rows={6}
+              containerClassName="large"
+              style={{ minHeight: '150px' }}
             />
           </div>
 
@@ -622,7 +626,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
                 </button>
               </div>
               <div className="prompt-container">
-                <textarea
+                <CustomScrollbarTextarea
                   value={generatedPrompt}
                   onChange={(e) => setGeneratedPrompt(e.target.value)}
                   placeholder={t('backgroundGenerator.promptPlaceholder', 'Generated prompt will appear here...')}
