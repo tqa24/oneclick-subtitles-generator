@@ -413,8 +413,21 @@ export const coordinateParallelStreaming = async (
       }));
     }
 
-    // Call onComplete with merged results (prefer passing subtitles array directly)
-    onComplete(finalSubtitles);
+    // CRITICAL FIX: Return subtitles as an object with metadata about the segment
+    // This allows the caller to know this is a segment result that needs merging with existing subtitles
+    // For backward compatibility, check if this is segment processing
+    if (options.segmentInfo) {
+      // Return as segment result that needs merging
+      onComplete({
+        subtitles: finalSubtitles,
+        isSegmentResult: true,
+        segment: options.segmentInfo,
+        text: finalText
+      });
+    } else {
+      // Non-segment processing - return subtitles directly for backward compatibility
+      onComplete(finalSubtitles);
+    }
 
   } catch (error) {
     console.error('[ParallelCoordinator] Unexpected error in parallel processing:', error);

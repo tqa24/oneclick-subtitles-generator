@@ -245,8 +245,23 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
           }
         },
         onStatusUpdate: setStatus,
-        onComplete: (finalSubtitles) => {
-          // console.log('[ProcessingUtils] Streaming complete:', finalSubtitles.length, 'subtitles');
+        onComplete: (result) => {
+          // Check if this is a parallel processing result that needs special handling
+          let finalSubtitles;
+          if (result && result.isSegmentResult) {
+            // This is from parallel processing - extract subtitles
+            console.log('[ProcessingUtils] Received parallel processing segment result');
+            finalSubtitles = result.subtitles;
+          } else if (Array.isArray(result)) {
+            // Direct subtitle array from single streaming
+            finalSubtitles = result;
+          } else {
+            // Might be text or other format, try to handle it
+            console.warn('[ProcessingUtils] Unexpected result format:', typeof result);
+            finalSubtitles = [];
+          }
+
+          console.log('[ProcessingUtils] Streaming complete:', finalSubtitles.length, 'subtitles');
 
           // Filter final subtitles for Gemini 2.0 models
           let filteredFinal = finalSubtitles;

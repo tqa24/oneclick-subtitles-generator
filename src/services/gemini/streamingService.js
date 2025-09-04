@@ -294,38 +294,32 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                       
                       // Check for short sequences repeated many times
                       // NOTE: Be careful with legitimate repetitive content like song lyrics
-                      const shortSequencePattern = /(.{2,5})\1{19,}/; // 2-5 char sequence repeated 20+ times (increased from 15)
+                      const shortSequencePattern = /(.{2,5})\1{19,}/; // 2-5 char sequence repeated 20+ times
                       if (shortSequencePattern.test(subtitle.text)) {
                         const match = subtitle.text.match(shortSequencePattern);
                         const repetitions = match[0].length / match[1].length;
                         const repeatedPattern = match[1];
                         
-                        // Detect if this looks like legitimate content:
-                        // 1. Contains actual letters/characters from ANY language (not just symbols)
-                        // 2. Common vocal sounds in any language
-                        // 3. Includes punctuation that's normal in subtitles
-                        
-                        // Unicode ranges for detecting "real" text vs pure symbols:
-                        // \p{L} = any letter from any language
-                        // \p{M} = combining marks (accents, etc.)
-                        // \p{N} = numbers from any script
-                        const hasLetters = /[\p{L}\p{M}]/u.test(repeatedPattern);
-                        const isShortVocalSound = repeatedPattern.length <= 3 && hasLetters;
-                        // Only symbols/punctuation, no actual letters or numbers from any language
-                        const looksLikeGibberish = /^[^\p{L}\p{M}\p{N}\s]+$/u.test(repeatedPattern);
-                        
-                        // Musical/vocal patterns are often short ("la", "na", "oh", "ah", "두비", "라파")
-                        // Hallucinations tend to be: symbols only, very long repetitions, or nonsense
-                        // INCREASED thresholds for legitimate repetitive content like "루비루비루라파"
-                        const isLikelyLegitimate = hasLetters && (isShortVocalSound || repetitions < 40); // Increased from 25
-                        const isDefiniteHallucination = looksLikeGibberish || repetitions > 50; // Increased from 30
-                        
-                        if (isDefiniteHallucination || (!isLikelyLegitimate && repetitions > 35)) { // Increased from 20
+                        // Simple rule: ANY pattern repeated more than 30 times is a hallucination
+                        // Even the most repetitive songs rarely repeat the same word/syllable 30+ times in a row
+                        if (repetitions > 30) {
                           foundHallucination = true;
-                          console.log(`[StreamingService] Detected hallucination: Sequence "${repeatedPattern}" repeated ${Math.floor(repetitions)} times`);
+                          console.log(`[StreamingService] Detected hallucination: "${repeatedPattern}" repeated ${Math.floor(repetitions)} times (>30 threshold)`);
                           break;
-                        } else if (repetitions > 20) { // Increased from 15
-                          console.log(`[StreamingService] Allowing potentially legitimate repetition: "${repeatedPattern}" x${Math.floor(repetitions)} (contains letters: ${hasLetters}, short vocal: ${isShortVocalSound})`);
+                        }
+                        
+                        // For patterns repeated 20-30 times, only allow if it contains actual text
+                        // \p{L} = any letter from any language
+                        const hasLetters = /[\p{L}]/u.test(repeatedPattern);
+                        const looksLikeGibberish = /^[^\p{L}\p{N}\s]+$/u.test(repeatedPattern);
+                        
+                        if (!hasLetters || looksLikeGibberish) {
+                          foundHallucination = true;
+                          console.log(`[StreamingService] Detected hallucination: Non-text pattern "${repeatedPattern}" repeated ${Math.floor(repetitions)} times`);
+                          break;
+                        } else if (repetitions > 25) {
+                          // Log warning for 25-30 repetitions but allow it
+                          console.log(`[StreamingService] Warning: "${repeatedPattern}" repeated ${Math.floor(repetitions)} times (approaching threshold)`);
                         }
                       }
                       

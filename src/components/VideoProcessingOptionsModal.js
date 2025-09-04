@@ -100,7 +100,8 @@ const VideoProcessingOptionsModal = ({
   // Auto-split subtitles settings
   const [autoSplitSubtitles, setAutoSplitSubtitles] = useState(() => {
     const saved = localStorage.getItem('video_processing_auto_split');
-    return saved === 'true';
+    // Default to true (enabled) if not previously saved
+    return saved !== null ? saved === 'true' : true;
   });
   const [maxWordsPerSubtitle, setMaxWordsPerSubtitle] = useState(() => {
     const saved = localStorage.getItem('video_processing_max_words');
