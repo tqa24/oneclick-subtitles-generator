@@ -29,11 +29,11 @@ const VideoProcessingOptionsModal = ({
   // Processing options state with localStorage persistence
   const [fps, setFps] = useState(() => {
     const saved = localStorage.getItem('video_processing_fps');
-    return saved ? parseFloat(saved) : 1;
+    return saved ? parseFloat(saved) : 0.25; // Default to 0.25 FPS for efficiency
   });
   const [mediaResolution, setMediaResolution] = useState(() => {
     const saved = localStorage.getItem('video_processing_media_resolution');
-    return saved || 'medium';
+    return saved || 'low'; // Default to low resolution for efficiency
   });
   const [selectedModel, setSelectedModel] = useState(() => {
     const saved = localStorage.getItem('video_processing_model');
