@@ -46,8 +46,8 @@ const VideoProcessingTab = ({
   const getAnalysisModels = () => {
     const builtInAnalysisModels = [
       { id: 'gemini-2.5-flash', name: t('settings.modelFlash25', 'Gemini 2.5 Flash (Best)') },
-      { id: 'gemini-2.5-flash-lite', name: t('settings.modelFlash25LiteAnalysis', 'Gemini 2.5 Flash Lite (Good + Fast)') },
-      { id: 'gemini-2.0-flash', name: t('settings.modelFlash', 'Gemini 2.0 Flash (More Detailed)') }
+      { id: 'gemini-2.5-flash-lite', name: t('settings.modelFlash25Lite', 'Gemini 2.5 Flash Lite (Fast + Efficient)') },
+      { id: 'gemini-2.0-flash', name: t('settings.modelFlash', 'Gemini 2.0 Flash (Normal)') }
     ];
 
     const customModels = customGeminiModels.map(model => ({
