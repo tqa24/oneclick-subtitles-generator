@@ -73,7 +73,8 @@ const VideoProcessingOptionsModal = ({
   });
   const [useTranscriptionRules, setUseTranscriptionRules] = useState(() => {
     const saved = localStorage.getItem('video_processing_use_transcription_rules');
-    return saved !== 'false'; // Default to true, only false if explicitly set to 'false'
+    // Default to true - switch is ON unless explicitly turned off
+    return saved !== null ? saved === 'true' : true;
   });
   const [transcriptionRulesAvailable, setTranscriptionRulesAvailable] = useState(false);
 
@@ -276,8 +277,28 @@ const VideoProcessingOptionsModal = ({
   // Check transcription rules availability
   useEffect(() => {
     const checkRulesAvailability = () => {
-      const transcriptionRules = localStorage.getItem('transcription_rules');
-      const hasRules = transcriptionRules && transcriptionRules.trim() !== '' && transcriptionRules !== 'null';
+      const transcriptionRulesStr = localStorage.getItem('transcription_rules');
+      let hasRules = false;
+      
+      if (transcriptionRulesStr && transcriptionRulesStr.trim() !== '' && transcriptionRulesStr !== 'null') {
+        try {
+          const rules = JSON.parse(transcriptionRulesStr);
+          // Check if rules object has any meaningful content
+          hasRules = rules && typeof rules === 'object' && 
+            (Object.keys(rules).length > 0) && 
+            // Make sure it's not just an empty object or only has empty arrays/strings
+            Object.values(rules).some(value => {
+              if (Array.isArray(value)) return value.length > 0;
+              if (typeof value === 'string') return value.trim() !== '';
+              if (typeof value === 'object' && value !== null) return Object.keys(value).length > 0;
+              return value !== null && value !== undefined;
+            });
+        } catch (e) {
+          // If it's not valid JSON, treat as no rules
+          hasRules = false;
+        }
+      }
+      
       setTranscriptionRulesAvailable(hasRules);
 
       // If rules are not available, disable the switch
