@@ -13,7 +13,7 @@ const CustomDropdown = ({
   style = {}
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, height: 0, upCount: 0, downCount: 0 });
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, height: 0, upCount: 0, downCount: 0, revealMode: 'center' });
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
   const initialScaleRef = useRef(1);
@@ -204,13 +204,16 @@ const CustomDropdown = ({
     const firstVisibleIndex = Math.max(0, selectedIndex - upCount);
     const scrollTop = firstVisibleIndex * optionHeight;
 
+    const revealMode = (upCount === 0 && downCount > 0) ? 'down' : (downCount === 0 && upCount > 0) ? 'up' : 'center';
+
     setDropdownPosition({
       top: Math.max(spacing, Math.min(topPosition, viewportHeight - menuHeight - spacing)),
       left: buttonRect.left,
       width: buttonRect.width,
       height: menuHeight,
       upCount,
-      downCount
+      downCount,
+      revealMode
     });
 
     // After the menu renders, we will set the list scrollTop to keep selected anchored
@@ -235,19 +238,46 @@ const CustomDropdown = ({
     if (isOpen) {
       const targetH = dropdownPosition.height || 200;
       el.style.setProperty('--menu-height', `${targetH}px`);
-      // Start as pill-height reveal centered: top/bottom insets so visible area equals 42px, centered
-      const inset = Math.max(0, (targetH - 42) / 2);
-      el.style.clipPath = `inset(${inset}px 0 ${inset}px 0 round var(--dropdown-radius, 24px))`;
+
+      // Compute initial clip based on reveal mode: 'center', 'up', or 'down'
+      let clipTop = 0, clipBottom = 0;
+      if (dropdownPosition.revealMode === 'up') {
+        // Reveal upward only: start collapsed at bottom edge
+        clipTop = Math.max(0, targetH - 42);
+        clipBottom = 0;
+      } else if (dropdownPosition.revealMode === 'down') {
+        // Reveal downward only: start collapsed at top edge
+        clipTop = 0;
+        clipBottom = Math.max(0, targetH - 42);
+      } else {
+        // Center reveal (default)
+        const inset = Math.max(0, (targetH - 42) / 2);
+        clipTop = inset;
+        clipBottom = inset;
+      }
+      el.style.clipPath = `inset(${clipTop}px 0 ${clipBottom}px 0 round var(--dropdown-radius, 24px))`;
+
       // next frame: animate reveal to full height and smaller radius
       requestAnimationFrame(() => {
         el.classList.add('is-open');
         el.style.clipPath = `inset(0 0 0 0 round var(--dropdown-radius, 12px))`;
       });
     } else {
-      // Closing: reveal back to pill-height centered and remove open class
+      // Closing: reverse the opening direction and remove open class
       const targetH = dropdownPosition.height || 200;
-      const inset = Math.max(0, (targetH - 42) / 2);
-      el.style.clipPath = `inset(${inset}px 0 ${inset}px 0 round var(--dropdown-radius, 24px))`;
+      let clipTop = 0, clipBottom = 0;
+      if (dropdownPosition.revealMode === 'up') {
+        clipTop = Math.max(0, targetH - 42);
+        clipBottom = 0;
+      } else if (dropdownPosition.revealMode === 'down') {
+        clipTop = 0;
+        clipBottom = Math.max(0, targetH - 42);
+      } else {
+        const inset = Math.max(0, (targetH - 42) / 2);
+        clipTop = inset;
+        clipBottom = inset;
+      }
+      el.style.clipPath = `inset(${clipTop}px 0 ${clipBottom}px 0 round var(--dropdown-radius, 24px))`;
       el.classList.remove('is-open');
     }
   }, [isOpen, dropdownPosition.height]);
