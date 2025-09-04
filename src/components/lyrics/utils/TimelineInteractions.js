@@ -102,6 +102,8 @@ export const handleTimelineClick = (
  * @param {number} duration - Total duration of the video
  * @param {Object} currentZoomRef - Reference to the current zoom level
  * @param {Function} drawTimeline - Function to draw the timeline
+ * @param {number} currentTime - Current playback time to center zoom on
+ * @param {Function} setPanOffset - Function to set the pan offset
  */
 export const animateZoom = (
   targetZoom,
@@ -109,16 +111,51 @@ export const animateZoom = (
   lyrics,
   duration,
   currentZoomRef,
-  drawTimeline
+  drawTimeline,
+  currentTime,
+  setPanOffset
 ) => {
   if (animationFrameRef.current) {
     cancelAnimationFrame(animationFrameRef.current);
   }
 
-  // Use target zoom directly without restrictions
-  const effectiveTargetZoom = targetZoom;
+  if (!duration || !setPanOffset || typeof currentTime !== 'number') {
+    // Fallback to simple zoom without centering
+    currentZoomRef.current = targetZoom;
+    drawTimeline();
+    return;
+  }
 
-  // Let getVisibleTimeRange recalculate panOffset to center on playhead
-  currentZoomRef.current = effectiveTargetZoom;
-  drawTimeline();
+  console.log('[Timeline] Zoom centering on time:', currentTime.toFixed(2), 's, zoom:', targetZoom);
+
+  // Calculate timeline end
+  const maxLyricTime = lyrics.length > 0
+    ? Math.max(...lyrics.map(lyric => lyric.end))
+    : duration;
+  const timelineEnd = Math.max(maxLyricTime, duration) * 1.05;
+
+  // Calculate new visible duration based on target zoom
+  const newVisibleDuration = timelineEnd / targetZoom;
+  const halfVisibleDuration = newVisibleDuration / 2;
+
+  // Center the view on the current playhead position
+  const newPanOffset = Math.max(0, Math.min(
+    currentTime - halfVisibleDuration,
+    timelineEnd - newVisibleDuration
+  ));
+
+  console.log('[Timeline] Setting pan offset to:', newPanOffset.toFixed(2), 's to center on playhead');
+
+  // Update zoom first
+  currentZoomRef.current = targetZoom;
+  
+  // Use requestAnimationFrame to ensure pan offset is set after zoom
+  requestAnimationFrame(() => {
+    setPanOffset(newPanOffset);
+    
+    // Redraw timeline after both zoom and pan are updated
+    requestAnimationFrame(() => {
+      drawTimeline();
+    });
+  });
 };

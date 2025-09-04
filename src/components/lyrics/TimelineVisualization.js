@@ -290,38 +290,15 @@ const TimelineVisualization = ({
   // No longer need to enforce minimum zoom
   // Users can zoom out to see the entire timeline
 
-  // Calculate visible time range with playhead-centered zoom
+  // Calculate visible time range - simplified without zoom centering logic
   const getTimeRange = useCallback(() => {
     const { start, end, total: timelineEnd, effectiveZoom } = getVisibleTimeRange(lyrics, duration, panOffset, zoom, currentZoomRef.current);
 
     // Update currentZoomRef to match effective zoom
-    const prevZoom = currentZoomRef.current;
     currentZoomRef.current = effectiveZoom;
 
-    // If zoom changed, recalculate panOffset to keep playhead centered
-    if (prevZoom !== effectiveZoom && duration > 0) {
-      const prevVisibleDuration = timelineEnd / prevZoom;
-      const newVisibleDuration = timelineEnd / effectiveZoom;
-
-      // Calculate relative position of playhead in previous view (0-1)
-      const relativePlayheadPos = (currentTime - panOffset) / prevVisibleDuration;
-
-      // Apply the relative position to the new visible duration
-      const newPanOffset = Math.max(0, currentTime - (relativePlayheadPos * newVisibleDuration));
-
-      // Ensure we don't go past the end
-      const maxPanOffset = Math.max(0, timelineEnd - newVisibleDuration);
-
-      // Use requestAnimationFrame to avoid state update during render
-      if (panOffset !== Math.min(newPanOffset, maxPanOffset)) {
-        requestAnimationFrame(() => {
-          setPanOffset(Math.min(newPanOffset, maxPanOffset));
-        });
-      }
-    }
-
     return { start, end, total: timelineEnd };
-  }, [lyrics, duration, panOffset, zoom, currentTime, setPanOffset]);
+  }, [lyrics, duration, panOffset, zoom]);
 
   // Store the playhead position before zooming
   // This effect is no longer needed since we removed the playhead animation
@@ -465,24 +442,15 @@ const TimelineVisualization = ({
     };
   }, [renderTimeline]);
 
-  // Simplified zoom animation function - just set zoom and let getTimeRange handle panOffset
-  const animateZoom = useCallback((targetZoom) => {
-    animateZoomTo(
-      targetZoom,
-      animationFrameRef,
-      lyrics,
-      duration,
-      currentZoomRef,
-      renderTimeline
-    );
-  }, [renderTimeline, lyrics, duration]);
-
-  // Update zoom with animation when zoom prop changes
+  // Simple zoom update for programmatic changes (non-user initiated)
   useEffect(() => {
     if (zoom !== currentZoomRef.current) {
-      animateZoom(zoom);
+      // Just update zoom without centering for programmatic changes
+      // User-initiated zoom centering is handled directly in the mouse move handler
+      currentZoomRef.current = zoom;
+      renderTimeline();
     }
-  }, [zoom, animateZoom]);
+  }, [zoom, renderTimeline]);
 
 
 
@@ -1072,12 +1040,46 @@ const TimelineVisualization = ({
             onMouseDown={(e) => {
               const startX = e.clientX;
               const startZoom = zoom;
-              // No minimum zoom restriction - allow zoom out to 1 (100%)
+              
+              // Mark this as a manual interaction to prevent auto-scroll interference
+              lastManualPanTime.current = performance.now();
+              
               const handleMouseMove = (moveEvent) => {
                 const deltaX = moveEvent.clientX - startX;
                 // Increased sensitivity for more responsive zooming
                 // Allow zoom from 1 (100% - full timeline) to 200 (very detailed view)
                 const newZoom = Math.max(1, Math.min(200, startZoom + (deltaX * 0.05)));
+                
+                // Get real-time playhead position during drag
+                const videoElement = document.querySelector('video');
+                const realTimeCurrentTime = videoElement && !isNaN(videoElement.currentTime) 
+                  ? videoElement.currentTime 
+                  : currentTime;
+                
+                // Apply zoom centering immediately with real-time playhead position
+                if (duration && setPanOffset) {
+                  // Calculate timeline end
+                  const maxLyricTime = lyrics.length > 0
+                    ? Math.max(...lyrics.map(lyric => lyric.end))
+                    : duration;
+                  const timelineEnd = Math.max(maxLyricTime, duration) * 1.05;
+                
+                  // Calculate new visible duration based on zoom
+                  const newVisibleDuration = timelineEnd / newZoom;
+                  const halfVisibleDuration = newVisibleDuration / 2;
+                
+                  // Center the view on the real-time playhead position
+                  const newPanOffset = Math.max(0, Math.min(
+                    realTimeCurrentTime - halfVisibleDuration,
+                    timelineEnd - newVisibleDuration
+                  ));
+                
+                  // Update zoom and pan offset immediately
+                  currentZoomRef.current = newZoom;
+                  setPanOffset(newPanOffset);
+                }
+                
+                // Also update the zoom state
                 setZoom(newZoom);
               };
 
