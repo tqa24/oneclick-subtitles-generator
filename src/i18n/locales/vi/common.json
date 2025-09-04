@@ -1,9 +1,15 @@
 {
   "cancel": "Hủy",
   "undo": "Hoàn tác",
+  "undoWithShortcut": "Hoàn tác (Ctrl+Z)",
+  "redo": "Làm lại",
+  "redoWithShortcut": "Làm lại (Ctrl+Y hoặc Ctrl+Shift+Z)",
   "reset": "Đặt lại",
+  "resetWithShortcut": "Đặt lại về trạng thái đã lưu",
   "resetToDefaults": "Khôi phục mặc định",
   "save": "Lưu",
+  "saveDisabled": "Không có thay đổi để lưu",
+  "saveWithShortcut": "Lưu (Ctrl+S)",
   "close": "Đóng",
   "on": "Bật",
   "off": "Tắt",
@@ -11,5 +17,6 @@
   "recentVideos": "Video gần đây",
   "clearAll": "Xóa tất cả",
   "confirm": "Xác nhận",
-  "jumpToCheckpoint": "Nhảy đến mốc lưu gần nhất (hoàn tác nhiều bước)"
+  "jumpToCheckpoint": "Nhảy đến mốc lưu gần nhất (hoàn tác nhiều bước)",
+  "jumpToCheckpointWithShortcut": "Nhảy đến mốc lưu gần nhất (Ctrl+J)"
 }

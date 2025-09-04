@@ -1,6 +1,9 @@
 {
   "synchronizedLyrics": "동기화된 자막",
   "stickyTimingsToggle": "고정",
+  "stickyTimingsToggleWithShortcut": "고정 타이밍 전환 (Ctrl+Shift+T)",
+  "splitWithShortcut": "자막 분할 (Ctrl+Shift+X)",
+  "dragHintOrShortcut": "(또는 Ctrl+A)",
   "autoScroll": "스크롤",
   "autoScrollEnable": "자동 스크롤 활성화",
   "autoScrollDisable": "자동 스크롤 비활성화",

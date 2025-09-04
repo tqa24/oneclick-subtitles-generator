@@ -1,6 +1,9 @@
 {
   "synchronizedLyrics": "Synchronized Subtitles",
   "stickyTimingsToggle": "Stick",
+  "stickyTimingsToggleWithShortcut": "Toggle sticky timings (Ctrl+Shift+T)",
+  "splitWithShortcut": "Split subtitles (Ctrl+Shift+X)",
+  "dragHintOrShortcut": "(or Ctrl+A)",
   "autoScroll": "Scroll",
   "autoScrollEnable": "Enable auto-scroll",
   "autoScrollDisable": "Disable auto-scroll",
