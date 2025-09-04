@@ -5,6 +5,8 @@ import '../styles/BackgroundImageGenerator.css';
 import BackgroundPromptEditorButton from './background/BackgroundPromptEditorButton';
 import LoadingIndicator from './common/LoadingIndicator';
 import CustomScrollbarTextarea from './common/CustomScrollbarTextarea';
+import CustomDropdown from './common/CustomDropdown';
+
 
 
 // Custom hook to detect current theme
@@ -749,24 +751,14 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
                     </span>
                   </button>
 
-                  <select
+                  <CustomDropdown
                     className="image-count-dropdown"
-                    value={regularImageCount}
-                    onChange={(e) => handleRegularImageCountChange(e.target.value)}
+                    value={String(regularImageCount)}
+                    onChange={(val) => handleRegularImageCountChange(val)}
                     disabled={isGeneratingImage || isGeneratingPrompt}
-                    title={t('backgroundGenerator.samePromptCountTooltip', 'Number of images to generate using the same prompt')}
-                  >
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
-                      <option key={num} value={num}>{num}</option>
-                    ))}
-                  </select>
+                    options={[1,2,3,4,5,6,7,8].map(num => ({ value: String(num), label: String(num) }))}
+                  />
 
-                  <span
-                    className="dropdown-label"
-                    title={t('backgroundGenerator.samePromptCountTooltip', 'Number of images to generate using the same prompt')}
-                  >
-                    {t('backgroundGenerator.images', 'images')}
-                  </span>
                 </div>
 
                 <div className="generate-button-group">
@@ -789,24 +781,14 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
                     </span>
                   </button>
 
-                  <select
+                  <CustomDropdown
                     className="image-count-dropdown"
-                    value={newPromptImageCount}
-                    onChange={(e) => handleNewPromptImageCountChange(e.target.value)}
+                    value={String(newPromptImageCount)}
+                    onChange={(val) => handleNewPromptImageCountChange(val)}
                     disabled={isGeneratingImage || isGeneratingPrompt}
-                    title={t('backgroundGenerator.uniquePromptCountTooltip', 'Number of images to generate, each with a unique prompt')}
-                  >
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
-                      <option key={num} value={num}>{num}</option>
-                    ))}
-                  </select>
+                    options={[1,2,3,4,5,6,7,8].map(num => ({ value: String(num), label: String(num) }))}
+                  />
 
-                  <span
-                    className="dropdown-label"
-                    title={t('backgroundGenerator.uniquePromptCountTooltip', 'Number of images to generate, each with a unique prompt')}
-                  >
-                    {t('backgroundGenerator.uniqueImages', 'unique images')}
-                  </span>
                 </div>
               </div>
             </div>
