@@ -519,7 +519,7 @@ const TimelineVisualization = ({
     }
   }, [renderTimeline]);
 
-  // Add keyboard shortcut to toggle auto-scrolling
+  // Add keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
       // Alt+S to toggle auto-scrolling
@@ -550,13 +550,67 @@ const TimelineVisualization = ({
           }, 1500);
         }
       }
+      
+      // Ctrl+A to select entire video range
+      if (e.ctrlKey && e.key === 'a' && onSegmentSelect && duration) {
+        e.preventDefault(); // Prevent default browser select all
+        
+        console.log('[Timeline] Ctrl+A pressed - selecting entire video range');
+        
+        // Set drag state to simulate range selection from 0 to duration
+        const startTime = 0;
+        const endTime = duration;
+        
+        // Mark that dragging has been done in this session
+        setHasDraggedInSession(true);
+        
+        // Set drag state to show visual selection
+        setIsDraggingSegment(true);
+        setDragStartTime(startTime);
+        setDragCurrentTime(endTime);
+        dragStartRef.current = startTime;
+        dragCurrentRef.current = endTime;
+        isDraggingRef.current = true;
+        
+        // Force re-render to show selection
+        renderTimeline();
+        
+        console.log('[Timeline] Ctrl+A selection:', startTime.toFixed(2), '-', endTime.toFixed(2), 's');
+        
+        // Show selection for 500ms, then open modal
+        setTimeout(() => {
+          // Clean up drag state
+          setIsDraggingSegment(false);
+          setDragStartTime(null);
+          setDragCurrentTime(null);
+          dragStartRef.current = null;
+          dragCurrentRef.current = null;
+          isDraggingRef.current = false;
+          
+          // Helper function to check if there are subtitles in the range
+          const checkForSubtitles = (start, end) => {
+            if (!lyrics || lyrics.length === 0) return false;
+            // Only consider subtitles fully contained within the range
+            return lyrics.some(l => l.start >= start && l.end <= end);
+          };
+          
+          // Check if there are subtitles in the range
+          if (checkForSubtitles(startTime, endTime)) {
+            // Show action bar instead of opening modal
+            setActionBarRange({ start: startTime, end: endTime });
+          } else {
+            // Open video processing modal for entire range
+            onSegmentSelect({ start: startTime, end: endTime });
+          }
+        }, 500); // 0.5 second delay to show blue highlight
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [renderTimeline]);
+  }, [renderTimeline, onSegmentSelect, duration, lyrics]);
 
   // Handle timeline updates
   useEffect(() => {

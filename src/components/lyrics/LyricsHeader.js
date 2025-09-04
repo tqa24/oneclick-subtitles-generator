@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import SubtitleSplitModal from './SubtitleSplitModal';
 
@@ -23,6 +23,71 @@ const LyricsHeader = ({
 }) => {
   const { t } = useTranslation();
   const [showSplitModal, setShowSplitModal] = useState(false);
+
+  // Global keyboard shortcuts for editor actions
+  useEffect(() => {
+    const shouldIgnore = (e) => {
+      const el = document.activeElement;
+      if (!el) return false;
+      const tag = el.tagName;
+      const editable = el.isContentEditable;
+      return editable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+    };
+
+    const onKeyDown = (e) => {
+      if (!allowEditing) return;
+      if (shouldIgnore(e)) return;
+
+      // Normalize key
+      const key = e.key.toLowerCase();
+      const isCtrl = e.ctrlKey || e.metaKey; // support Cmd on macOS
+
+      // Undo: Ctrl+Z
+      if (isCtrl && key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        if (canUndo && typeof onUndo === 'function') onUndo();
+        return;
+      }
+
+      // Redo: Ctrl+Shift+Z or Ctrl+Y
+      if ((isCtrl && key === 'y') || (isCtrl && key === 'z' && e.shiftKey)) {
+        e.preventDefault();
+        if (canRedo && typeof onRedo === 'function') onRedo();
+        return;
+      }
+
+      // Save: Ctrl+S
+      if (isCtrl && key === 's') {
+        e.preventDefault();
+        if (typeof onSave === 'function') onSave();
+        return;
+      }
+
+      // Open Split modal: Ctrl+Shift+X
+      if (isCtrl && e.shiftKey && key === 'x') {
+        e.preventDefault();
+        setShowSplitModal(true);
+        return;
+      }
+
+      // Jump to checkpoint: Ctrl+J
+      if (isCtrl && key === 'j') {
+        e.preventDefault();
+        if (canJumpToCheckpoint && typeof onJumpToCheckpoint === 'function') onJumpToCheckpoint();
+        return;
+      }
+
+      // Toggle sticky timings: Ctrl+Shift+T
+      if (isCtrl && e.shiftKey && key === 't') {
+        e.preventDefault();
+        if (typeof setIsSticky === 'function') setIsSticky(!isSticky);
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [allowEditing, canUndo, canRedo, canJumpToCheckpoint, onUndo, onRedo, onSave, onJumpToCheckpoint, setIsSticky, isSticky]);
 
   return (
     <div className="combined-controls">
