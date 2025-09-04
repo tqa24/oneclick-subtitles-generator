@@ -203,7 +203,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
           localStorage.setItem('translation_include_rules', 'false');
         }
 
-        console.log('[TranslationState] Rules availability check:', hasRules ? 'Available' : 'Not available');
+
       } catch (error) {
         console.error('Error checking transcription rules availability:', error);
         setRulesAvailable(false);
@@ -217,13 +217,11 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
 
     // Listen for transcription rules updates
     const handleRulesUpdate = () => {
-      console.log('[TranslationState] Transcription rules updated, re-checking availability');
       checkRulesAvailability();
     };
 
     // Listen for video analysis completion
     const handleAnalysisComplete = () => {
-      console.log('[TranslationState] Video analysis completed, re-checking rules availability');
       checkRulesAvailability();
     };
 

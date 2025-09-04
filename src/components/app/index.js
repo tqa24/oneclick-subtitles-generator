@@ -8,8 +8,6 @@ import { useAppEffects } from './AppEffects';
 import OnboardingBanner from '../OnboardingBanner';
 import OnboardingFooterReveal from '../OnboardingFooterReveal';
 import AutoDismissErrorToast from '../common/AutoDismissErrorToast';
-import { initializeAudioAlignmentNotifications } from '../../utils/audioAlignmentNotification';
-
 // Import CSS files
 import '../../styles/App.css';
 import '../../styles/GeminiButtonAnimations.css';
@@ -45,11 +43,6 @@ function App() {
     handleDownloadAndPrepareYouTubeVideo: appHandlers.handleDownloadAndPrepareYouTubeVideo,
     t
   });
-
-  // Initialize audio alignment notification system
-  useEffect(() => {
-    initializeAudioAlignmentNotifications();
-  }, []);
 
   // State change effects removed to reduce console logs
 

@@ -17,15 +17,7 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
       let info = null;
       let versions = [];
 
-      // Debug logging
-      console.log('[useVideoInfo] Debug info:', {
-        selectedVideo,
-        uploadedFile: uploadedFile ? { name: uploadedFile.name, type: uploadedFile.type } : null,
-        actualVideoUrl,
-        currentVideoUrl: localStorage.getItem('current_video_url'),
-        currentFileUrl: localStorage.getItem('current_file_url'),
-        splitResult: localStorage.getItem('split_result') ? 'exists' : 'none'
-      });
+
 
       // Priority 1: Check if we have a selectedVideo (downloaded video) - this is the original source
       if (selectedVideo) {
@@ -318,24 +310,17 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
 
     try {
 
-      console.log('[useVideoInfo] Making API call to fetch dimensions for video ID:', videoId);
-
       const response = await fetch(`http://localhost:3031/api/video-dimensions/${videoId}`);
-      console.log('[useVideoInfo] API response status:', response.status);
 
       const data = await response.json();
-      console.log('[useVideoInfo] API response data:', data);
 
       if (data.success) {
-        console.log('[useVideoInfo] Setting actual dimensions:', data);
         setActualDimensions(data);
         return data;
       } else {
-        console.warn('[useVideoInfo] API returned error:', data.error);
         return null;
       }
     } catch (error) {
-      console.error('[useVideoInfo] Error fetching dimensions:', error);
       return null;
     }
   };
@@ -347,10 +332,7 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
     // Use actual dimensions if available, otherwise fall back to stored quality
     const currentQuality = actualDimensions?.quality || videoInfo?.quality || '360p';
 
-    console.log('[useVideoInfo] getVideoInfoForModal called:');
-    console.log('  - actualDimensions:', actualDimensions);
-    console.log('  - videoInfo.quality:', videoInfo?.quality);
-    console.log('  - final currentQuality:', currentQuality);
+
 
     return {
       videoInfo: {

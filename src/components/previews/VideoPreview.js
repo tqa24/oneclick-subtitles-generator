@@ -620,11 +620,6 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
               // Update fullscreen subtitle if in fullscreen mode
               const container = document.getElementById('fullscreen-subtitle-overlay');
-              console.log('ðŸŽ¬ SUBTITLE - Updating subtitle text:', {
-                text: currentSub.text,
-                containerExists: !!container,
-                isFullscreen
-              });
 
               if (container) {
                 // Clear existing content
@@ -2111,7 +2106,6 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       setTimeout(() => {
                         const actuallyPlaying = !videoRef.current.paused;
                         if (actuallyPlaying !== isPlaying) {
-                          console.log('[VideoPreview] Force syncing UI state after video click:', { actuallyPlaying, uiState: isPlaying });
                           setIsPlaying(actuallyPlaying);
                         }
                       }, 50);

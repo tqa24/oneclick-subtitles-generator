@@ -453,7 +453,6 @@ export const downloadAndPrepareYouTubeVideo = async (
         // This is crucial to avoid creating duplicate videos during splitting
         file.isCopiedToServer = true;
         file.serverPath = `/videos/${videoId}.mp4`;
-        console.log('[DOWNLOAD-AND-PREPARE] Marked file as already on server:', file.serverPath);
 
         // Log the file details
 
@@ -494,7 +493,6 @@ export const downloadAndPrepareYouTubeVideo = async (
 
       // Skip segment preparation here - let the main subtitle generation process handle it
       // This prevents duplicate splitting when generateSubtitles() is called later
-      console.log('[DOWNLOAD-AND-PREPARE] Skipping segment preparation to prevent duplicate splitting');
 
       // Update status to show that video is ready
       setStatus({ message: t('output.videoReady', 'Video is ready for processing!'), type: 'success' });

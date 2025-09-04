@@ -286,7 +286,6 @@ const useGeminiNarration = ({
               window.useGroupedSubtitles = true;
               // Update the React state to reflect that we're now using grouped subtitles
               setUseGroupedSubtitles(true);
-              console.log(`Stored ${updatedResults.length} grouped narrations in window.groupedNarrations and updated state`);
 
               // Clean up old subtitle directories for grouped narrations
               console.log('Gemini: Detected grouped subtitles, cleaning up old directories');
@@ -709,8 +708,6 @@ const useGeminiNarration = ({
         // Set the useGroupedSubtitles state to true
         setUseGroupedSubtitles(true);
 
-        console.log(`Stored ${groupingResult.groupedSubtitles.length} grouped subtitles in window.groupedSubtitles`);
-
         // Show success message
         setGenerationStatus(
           t(
@@ -794,8 +791,6 @@ const useGeminiNarration = ({
           timestamp: Date.now()
         }
       }));
-
-      console.log(`Subtitle grouping changed: useGroupedSubtitles=${useGroupedSubtitles}, window.useGroupedSubtitles=${window.useGroupedSubtitles}`);
     };
 
     handleGroupingChange();

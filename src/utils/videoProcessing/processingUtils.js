@@ -6,9 +6,6 @@
  * the old segment-based processing approach. All functions now redirect to
  * the new simplified processing system for better performance.
  */
-
-console.warn('[LEGACY] processingUtils.js is deprecated. Please enable "Use Simplified Processing" in settings for better performance.');
-
 /**
  * Process a short video/audio file (shorter than max segment duration)
  * @deprecated Use processVideoWithFilesApi from simplifiedProcessing.js instead

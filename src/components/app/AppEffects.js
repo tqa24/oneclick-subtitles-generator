@@ -345,7 +345,6 @@ export const useAppEffects = (props) => {
       if (uploadedFile) {
         // No need to prepare video segments when using cached subtitles
         // The new simplified processing workflow doesn't require video splitting
-        console.log('Cached subtitles loaded successfully for uploaded file');
       }
       // For YouTube tab, we need to download the video first
       else if (handleDownloadAndPrepareYouTubeVideo) {

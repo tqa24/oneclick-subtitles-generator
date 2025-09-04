@@ -16,23 +16,14 @@ import i18n from '../i18n/i18n.js';
  * @param {boolean} showSegmentWarning - Whether to show segment warning
  */
 export const showAudioAlignmentWarning = (durationDifference, adjustmentInfo = null, showDurationWarning = false, showSegmentWarning = false) => {
-  console.log(`🚨 showAudioAlignmentWarning called with duration difference: ${durationDifference}s`);
-  console.log(`📊 Warning flags: Duration: ${showDurationWarning}, Segment: ${showSegmentWarning}`);
-  if (adjustmentInfo) {
-    console.log(`📈 Max adjustment info: Segment ${adjustmentInfo.segmentId} pushed ${adjustmentInfo.adjustmentAmount}s`);
-  }
-
   // Must have at least one warning condition
   if (!showDurationWarning && !showSegmentWarning) {
-    console.log(`⏹️ No warning conditions met, not showing notification`);
     return;
   }
 
-  console.log(`🔄 Removing any existing notification...`);
   // Remove any existing notification
   const existingNotification = document.querySelector('.audio-alignment-warning-container');
   if (existingNotification) {
-    console.log(`🗑️ Found existing notification, removing it`);
     existingNotification.remove();
   }
 
@@ -61,18 +52,15 @@ export const showAudioAlignmentWarning = (durationDifference, adjustmentInfo = n
     messageParams.duration = durationDifference.toFixed(1);
     messageParams.maxSegment = adjustmentInfo.segmentId;
     messageParams.maxAdjustment = adjustmentInfo.adjustmentAmount.toFixed(2);
-    console.log(`📋 Using merged notification`);
   } else if (showDurationWarning) {
     // Only duration warning
     translationKey = 'narration.audioAlignmentWarning';
     messageParams.duration = durationDifference.toFixed(1);
-    console.log(`📋 Using duration-only notification`);
   } else if (showSegmentWarning) {
     // Only segment warning
     translationKey = 'narration.audioAlignmentSegmentWarning';
     messageParams.maxSegment = adjustmentInfo.segmentId;
     messageParams.maxAdjustment = adjustmentInfo.adjustmentAmount.toFixed(2);
-    console.log(`📋 Using segment-only notification`);
   }
 
   const message = i18n.t(translationKey, messageParams);
@@ -235,8 +223,6 @@ export const checkAudioAlignmentFromResponse = (response) => {
     const showDurationWarning = !isNaN(durationDifference) && durationDifference > 3;
     const showSegmentWarning = maxAdjustmentSegment && !isNaN(maxAdjustmentAmount) && maxAdjustmentAmount > 3;
 
-    console.log(`📊 Notification conditions: Duration warning: ${showDurationWarning}, Segment warning: ${showSegmentWarning}`);
-
     if (showDurationWarning || showSegmentWarning) {
       const adjustmentInfo = showSegmentWarning ? {
         segmentId: maxAdjustmentSegment,
@@ -244,19 +230,8 @@ export const checkAudioAlignmentFromResponse = (response) => {
       } : null;
 
       showAudioAlignmentWarning(durationDifference, adjustmentInfo, showDurationWarning, showSegmentWarning);
-    } else {
-      console.log(`✅ No notification conditions met`);
     }
   } catch (error) {
     console.error('❌ Error checking audio alignment from response:', error);
   }
-};
-
-/**
- * Initialize audio alignment notification system
- * This should be called once when the app starts
- */
-export const initializeAudioAlignmentNotifications = () => {
-  // No additional initialization needed since we're using React components
-  console.log('Audio alignment notification system initialized');
 };

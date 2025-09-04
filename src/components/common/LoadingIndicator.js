@@ -346,8 +346,6 @@ const LoadingIndicator = ({
         shapes.push(createFallbackShape(i, RoundedPolygon));
       }
       animationState.current.morphShapes = shapes;
-
-      console.log(`✅ Created ${shapes.length} reliable shapes for morphing`);
       setIsLoaded(true);
       startAnimation(ctx, Morph);
     } catch (error) {
