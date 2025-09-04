@@ -308,51 +308,26 @@ export const useSubtitles = (t) => {
                 const { processSegmentWithStreaming } = await import('../utils/videoProcessing/processingUtils');
                 const { mergeStreamingSubtitlesProgressively } = await import('../utils/subtitle/subtitleMerger');
 
-                // IMPORTANT: Load the saved state from cache AFTER save completes
-                // This ensures we merge with the saved state (including manual edits), not the old React state
+                // IMPORTANT: Use the current React state directly instead of loading from cache
+                // The save operation above should have already persisted any manual edits
+                // Loading from cache can introduce stale data if the save hasn't fully propagated
                 let currentSubtitles = [];
-                try {
-                    // Determine which cache ID to use based on whether this is a downloaded video or uploaded file
-                    const currentVideoUrl = localStorage.getItem('current_video_url');
-                    let cacheIdToUse = null;
-
-                    if (currentVideoUrl) {
-                        // Downloaded video - use URL-based cache ID
-                        cacheIdToUse = await generateUrlBasedCacheId(currentVideoUrl);
-                        console.log('[Subtitle Generation] Using URL-based cache ID for downloaded video:', cacheIdToUse);
-                    } else {
-                        // Uploaded file - use file-based cache ID
-                        cacheIdToUse = localStorage.getItem('current_file_cache_id');
-                        console.log('[Subtitle Generation] Using file-based cache ID for uploaded file:', cacheIdToUse);
-                    }
-
-                    if (cacheIdToUse) {
-                        const response = await fetch(`http://localhost:3031/api/subtitle-exists/${cacheIdToUse}`);
-                        const result = await response.json();
-                        if (result.exists && result.subtitles) {
-                            currentSubtitles = result.subtitles;
-                            console.log('[Subtitle Generation] Loaded saved state from cache for merging:', currentSubtitles.length, 'subtitles');
-                        } else {
-                            console.warn('[Subtitle Generation] Could not load saved state, falling back to React state');
-                            setSubtitlesData(current => {
-                                currentSubtitles = current || [];
-                                return current;
-                            });
-                        }
-                    } else {
-                        console.warn('[Subtitle Generation] No cache ID found, using React state');
-                        setSubtitlesData(current => {
-                            currentSubtitles = current || [];
-                            return current;
-                        });
-                    }
-                } catch (error) {
-                    console.error('[Subtitle Generation] Error loading saved state:', error);
+                
+                // Get the current subtitles from React state
+                // This ensures we're using the most up-to-date data that's currently displayed
+                await new Promise((resolve) => {
                     setSubtitlesData(current => {
                         currentSubtitles = current || [];
-                        return current;
+                        console.log('[Subtitle Generation] Using current React state for merging:', currentSubtitles.length, 'subtitles');
+                        resolve();
+                        return current; // Don't modify the state
                     });
-                }
+                });
+                
+                // Log the subtitles we're about to merge with
+                console.log('[Subtitle Generation] Current subtitles sample:', 
+                    currentSubtitles.slice(0, 3).map(s => `${s.start}-${s.end}: ${s.text.substring(0, 20)}...`)
+                );
 
                 console.log('[Subtitle Generation] Before streaming (using saved state):', {
                     existingCount: currentSubtitles.length,
