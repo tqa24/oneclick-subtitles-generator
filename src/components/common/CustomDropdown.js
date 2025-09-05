@@ -270,13 +270,23 @@ const CustomDropdown = ({
       }
     }
     
-    // If we haven't measured options yet, estimate based on button width and add buffer
+    // Get button rect once for all calculations
+    const buttonRect = dropdownRef.current.getBoundingClientRect();
+    
+    // If we haven't measured options yet, estimate based on button width
     if (maxOptionWidth === 0) {
-      const buttonRect = dropdownRef.current.getBoundingClientRect();
       maxOptionWidth = Math.max(buttonRect.width, 200); // Default minimum of 200px
     } else {
-      // Add some padding to the measured width
-      maxOptionWidth = Math.min(maxOptionWidth + 32, 400); // Add padding, cap at 400px
+      // Add padding to the measured width for comfortable spacing
+      maxOptionWidth = maxOptionWidth + 32; // Add 32px padding (16px each side)
+    }
+    
+    // Check screen constraints and adjust if needed
+    const availableWidth = window.innerWidth - buttonRect.left - 8; // 8px margin from edge
+    
+    // Don't exceed available screen space
+    if (maxOptionWidth > availableWidth) {
+      maxOptionWidth = availableWidth;
     }
     
     const borderCompensation = 2; // 1px border top + 1px border bottom
@@ -285,7 +295,7 @@ const CustomDropdown = ({
     const maxMenuHeight = 400; // Cap to keep UI compact
     const spacing = 4;
 
-    const buttonRect = dropdownRef.current.getBoundingClientRect();
+    // buttonRect already declared above
     const centerY = buttonRect.top + buttonRect.height / 2; // Anchor baseline = pill center
     const viewportHeight = window.innerHeight;
 
@@ -334,9 +344,16 @@ const CustomDropdown = ({
 
     const revealMode = (upCount === 0 && downCount > 0) ? 'down' : (downCount === 0 && upCount > 0) ? 'up' : 'center';
 
+    // Calculate left position - shift left if dropdown would overflow right edge
+    let leftPosition = buttonRect.left;
+    if (leftPosition + maxOptionWidth > window.innerWidth - spacing) {
+      // Shift left to fit, but don't go past left edge
+      leftPosition = Math.max(spacing, window.innerWidth - maxOptionWidth - spacing);
+    }
+    
     setDropdownPosition({
       top: Math.max(spacing, Math.min(topPosition, viewportHeight - menuHeight - spacing)),
-      left: buttonRect.left,
+      left: leftPosition,
       width: buttonRect.width,
       height: menuHeight,
       upCount,
