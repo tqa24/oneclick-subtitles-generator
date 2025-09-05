@@ -6,6 +6,7 @@ import LoadingIndicator from '../common/LoadingIndicator';
 import WavyProgressIndicator from '../common/WavyProgressIndicator';
 import { abortAllRequests } from '../../services/geminiService';
 import { hasValidDownloadedVideo } from '../../utils/videoUtils';
+import '../../styles/ButtonTextBalance.css';
 
 /**
  * Component for rendering the buttons container

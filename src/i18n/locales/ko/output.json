@@ -99,8 +99,8 @@
   "downloadAndViewWithSrt": "다운로드 + 업로드된 SRT로 보기",
   "downloadAndGenerate": "비디오 다운로드 + AI로 시간 맞춤 자막 생성",
   "preparingProcessing": "비디오 처리 준비 중...",
-  "semiAutoGenerate": "반자동 자막 생성",
-  "downloadAndGenerateSemiAuto": "다운로드 + 반자동 자막 생성",
-  "autoFlow": "자동 자막 생성",
-  "downloadAndGenerateAuto": "다운로드 + 자동 자막 생성"
+  "semiAutoGenerate": "반자동\u00a0자막\u00a0생성",
+  "downloadAndGenerateSemiAuto": "다운로드 +\u00a0반자동 자막\u00a0생성",
+  "autoFlow": "자동\u00a0자막\u00a0생성",
+  "downloadAndGenerateAuto": "다운로드 +\u00a0자동 자막\u00a0생성"
 }
