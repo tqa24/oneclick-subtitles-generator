@@ -326,6 +326,8 @@ const AppLayout = ({
               isSrtOnlyMode={isSrtOnlyMode}
               t={t}
               onGenerateBackground={handleGenerateBackground}
+              isProcessingSegment={isProcessingSegment}
+              setIsProcessingSegment={appState.setIsProcessingSegment}
             />
 
             <OutputContainer

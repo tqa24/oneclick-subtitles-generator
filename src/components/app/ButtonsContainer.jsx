@@ -35,7 +35,9 @@ const ButtonsContainer = ({
   uploadedFileData,
   isSrtOnlyMode,
   t,
-  onGenerateBackground
+  onGenerateBackground,
+  isProcessingSegment = false,
+  setIsProcessingSegment = () => {}
 }) => {
   // State for auto-generation flow
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
@@ -628,7 +630,7 @@ const ButtonsContainer = ({
         uploadedFileData={uploadedFileData}
       />
 
-      {(isGenerating || retryingSegments.length > 0 || isRetrying) && (
+      {(isGenerating || retryingSegments.length > 0 || isRetrying || isProcessingSegment) && (
         <button
           className="force-stop-btn"
           onClick={(e) => {
@@ -642,8 +644,11 @@ const ButtonsContainer = ({
               }
             }, 1000);
 
-            // Abort all ongoing Gemini API requests
-            abortAllRequests();
+            // Abort all ongoing Gemini API requests (including streaming)
+            const aborted = abortAllRequests();
+            if (aborted) {
+              console.log('[ButtonsContainer] Successfully aborted all Gemini requests');
+            }
 
             // Abort any active video analysis
             handleAbortVideoAnalysis();
@@ -652,6 +657,16 @@ const ButtonsContainer = ({
             if (isRetrying) {
               setIsRetrying(false);
             }
+            
+            // Also reset processing segment state
+            if (isProcessingSegment) {
+              setIsProcessingSegment(false);
+              // Clear processing ranges overlay
+              try {
+                window.dispatchEvent(new CustomEvent('processing-ranges', { detail: { ranges: [] } }));
+              } catch {}
+            }
+            
             // The state will be updated by the event listener in useSubtitles hook
           }}
           title={t('output.forceStopTooltip', 'Force stop all Gemini requests')}

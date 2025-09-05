@@ -9,6 +9,7 @@ import { parseGeminiResponse } from '../../utils/subtitle';
 import { createSubtitleSchema, addResponseSchema } from '../../utils/schemaUtils';
 import { addThinkingConfig } from '../../utils/thinkingBudgetUtils';
 import { autoSplitSubtitles } from '../../utils/subtitle/splitUtils';
+import { createRequestController, removeRequestController } from './requestManagement';
 
 /**
  * Stream content generation from Gemini API
@@ -35,6 +36,10 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
     onError(new Error('No valid Gemini API key available. Please add at least one API key in Settings.'));
     return;
   }
+
+  // Declare requestId and signal at function scope so they're accessible in catch block
+  let requestId = null;
+  let signal = null;
 
   try {
     // Determine content type
@@ -88,6 +93,11 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
 
     console.log('[StreamingService] Starting streaming request with model:', MODEL);
 
+    // Create request controller for abort support
+    const controller = createRequestController();
+    requestId = controller.requestId;
+    signal = controller.signal;
+
     // Make streaming request
     console.log('[StreamingService] Request URL:', `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse`);
     console.log('[StreamingService] Request body:', JSON.stringify(requestData, null, 2));
@@ -100,7 +110,8 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
           'x-goog-api-key': geminiApiKey,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestData)
+        body: JSON.stringify(requestData),
+        signal: signal // Add abort signal
       }
     );
 
@@ -108,6 +119,7 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
     console.log('[StreamingService] Response headers:', [...response.headers.entries()]);
     
     if (!response.ok) {
+      removeRequestController(requestId);
       const errorData = await response.text();
       console.error('[StreamingService] Error response body:', errorData);
       throw new Error(`Gemini API error: ${response.status} - ${errorData}`);
@@ -115,10 +127,21 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
 
     // Process streaming response with options for early termination
     await processStreamingResponse(response, onChunk, onComplete, onError, options);
+    
+    // Clean up request controller after successful completion
+    removeRequestController(requestId);
 
   } catch (error) {
+    // Clean up request controller if it exists
+    if (requestId) {
+      removeRequestController(requestId);
+    }
     console.error('[StreamingService] Error:', error);
-    onError(error);
+    if (error.name === 'AbortError') {
+      onError(new Error('Request was aborted'));
+    } else {
+      onError(error);
+    }
   }
 };
 
