@@ -70,7 +70,7 @@ const CustomDropdown = ({
     return () => document.removeEventListener('mousedown', handlePointerDown, true);
   }, [isOpen]);
 
-  // Initialize custom scrollbar when dropdown opens
+  // Initialize/update custom scrollbar when dropdown opens or position changes
   useEffect(() => {
     if (isOpen && menuRef.current) {
       const timer = setTimeout(() => {
@@ -79,7 +79,7 @@ const CustomDropdown = ({
 
       return () => clearTimeout(timer);
     }
-  }, [isOpen]);
+  }, [isOpen, dropdownPosition.height]); // Re-initialize when height changes
 
   // Custom scrollbar implementation specifically for dropdown
   const initializeDropdownScrollbar = (container) => {
@@ -90,8 +90,14 @@ const CustomDropdown = ({
     const existingThumb = container.querySelector('.custom-scrollbar-thumb');
     if (existingThumb) existingThumb.remove();
 
+    // Remove scrollable class first (will be re-added if needed)
+    container.classList.remove('has-scrollable-content');
+
     // Check if scrolling is needed
-    if (optionsList.scrollHeight <= optionsList.clientHeight) return;
+    if (optionsList.scrollHeight <= optionsList.clientHeight) {
+      // No scrollbar needed, ensure class is removed
+      return;
+    }
 
     // Create thumb element
     const thumb = document.createElement('div');
@@ -103,9 +109,20 @@ const CustomDropdown = ({
 
     // Update thumb position and size
     const updateThumb = () => {
-      const scrollRatio = optionsList.scrollTop / (optionsList.scrollHeight - optionsList.clientHeight);
-      const thumbHeight = Math.max(20, (optionsList.clientHeight / optionsList.scrollHeight) * optionsList.clientHeight);
-      const thumbTop = scrollRatio * (optionsList.clientHeight - thumbHeight);
+      // Recalculate in case dimensions changed
+      const scrollHeight = optionsList.scrollHeight;
+      const clientHeight = optionsList.clientHeight;
+      
+      if (scrollHeight <= clientHeight) {
+        // No longer needs scrolling
+        thumb.style.display = 'none';
+        return;
+      }
+      
+      thumb.style.display = 'block';
+      const scrollRatio = optionsList.scrollTop / (scrollHeight - clientHeight);
+      const thumbHeight = Math.max(20, (clientHeight / scrollHeight) * clientHeight);
+      const thumbTop = scrollRatio * (clientHeight - thumbHeight);
 
       thumb.style.height = `${thumbHeight}px`;
       thumb.style.top = `${thumbTop + 8}px`; // 8px offset from top
@@ -167,6 +184,12 @@ const CustomDropdown = ({
     const handleResize = () => {
       if (isOpen) {
         calculatePosition();
+        // Re-initialize scrollbar after position change
+        setTimeout(() => {
+          if (menuRef.current) {
+            initializeDropdownScrollbar(menuRef.current);
+          }
+        }, 100);
       }
     };
 
@@ -178,6 +201,26 @@ const CustomDropdown = ({
         window.removeEventListener('scroll', handleResize, true);
       };
     }
+  }, [isOpen]);
+
+  // Use ResizeObserver to detect when menu actually changes size
+  useEffect(() => {
+    if (!isOpen || !menuRef.current) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        // Menu size changed, update scrollbar
+        if (entry.target === menuRef.current) {
+          initializeDropdownScrollbar(menuRef.current);
+        }
+      }
+    });
+
+    resizeObserver.observe(menuRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
   }, [isOpen]);
 
   const selectedOption = options.find(option => option.value === value);
@@ -268,8 +311,14 @@ const CustomDropdown = ({
       revealMode
     });
 
-    // After the menu renders, we will set the list scrollTop to keep selected anchored
-    // This is done in the isOpen effect below.
+    // After position update, reinitialize scrollbar if menu is already open
+    if (isOpen && menuRef.current) {
+      setTimeout(() => {
+        if (menuRef.current) {
+          initializeDropdownScrollbar(menuRef.current);
+        }
+      }, 50);
+    }
   };
 
   // Ensure chevron shows correct direction before first open
@@ -352,15 +401,24 @@ const CustomDropdown = ({
           setTimeout(() => {
             calculatePosition();
             
-            // Check if scrollbar appeared and adjust if needed
-            const optionsList = menuRef.current?.querySelector('.dropdown-options-list');
-            if (optionsList && optionsList.scrollHeight > optionsList.clientHeight) {
-              // Scrollbar is present, add more height
-              const currentHeight = parseInt(menuRef.current.style.getPropertyValue('--menu-height') || '0');
-              if (currentHeight > 0) {
-                menuRef.current.style.setProperty('--menu-height', `${currentHeight + 8}px`);
+            // Initialize scrollbar after position calculation
+            setTimeout(() => {
+              if (menuRef.current) {
+                initializeDropdownScrollbar(menuRef.current);
+                
+                // Check if scrollbar appeared and adjust if needed
+                const optionsList = menuRef.current.querySelector('.dropdown-options-list');
+                if (optionsList && optionsList.scrollHeight > optionsList.clientHeight) {
+                  // Scrollbar is present but we want to hide it if possible
+                  const currentHeight = parseInt(menuRef.current.style.getPropertyValue('--menu-height') || '0');
+                  if (currentHeight > 0 && currentHeight < 400) {
+                    menuRef.current.style.setProperty('--menu-height', `${currentHeight + 10}px`);
+                    // Re-initialize scrollbar after height adjustment
+                    setTimeout(() => initializeDropdownScrollbar(menuRef.current), 50);
+                  }
+                }
               }
-            }
+            }, 30);
           }, 20);
         }
       });
