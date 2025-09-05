@@ -611,10 +611,50 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[?] Checking
 IF EXIST "%FOLDER_TO_CLEAN%" (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[WARN] Found existing installation. Removing for clean install (Tim thay cai dat hien co. Xoa de cai dat sach)...' -ForegroundColor Yellow"
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Removing existing project folder (Xoa thu muc du an hien co)...' -ForegroundColor Cyan"
-    RMDIR /S /Q "%FOLDER_TO_CLEAN%" >nul 2>&1
-    IF %ERRORLEVEL% NEQ 0 (
-        powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment (Khoi dong lai de cap nhat moi truong)...' -ForegroundColor Blue"
-        EXIT /B 1
+    
+    :: Use PowerShell for more robust folder removal with retry logic
+    powershell -NoProfile -ExecutionPolicy Bypass -Command ^"^
+        $folderPath = '%FOLDER_TO_CLEAN%'; ^
+        $maxRetries = 5; ^
+        $retryCount = 0; ^
+        while ((Test-Path $folderPath) -and ($retryCount -lt $maxRetries)) { ^
+            try { ^
+                # First try to unlock any files
+                Get-Process | Where-Object {$_.MainWindowTitle -eq ''} | Where-Object { ^
+                    try { ^
+                        $modules = $_.Modules.ModuleName; ^
+                        $modules -like '*' + $folderPath + '*' ^
+                    } catch { $false } ^
+                } | Stop-Process -Force -ErrorAction SilentlyContinue; ^
+                ^
+                # Remove folder with force
+                Remove-Item -Path $folderPath -Recurse -Force -ErrorAction Stop; ^
+                Write-Host '[OK] Folder removed successfully on attempt' ($retryCount + 1) -ForegroundColor Green; ^
+                break; ^
+            } catch { ^
+                $retryCount++; ^
+                if ($retryCount -lt $maxRetries) { ^
+                    Write-Host '[RETRY] Attempt' $retryCount 'failed, retrying in 2 seconds...' -ForegroundColor Yellow; ^
+                    Start-Sleep -Seconds 2; ^
+                } else { ^
+                    Write-Host '[ERROR] Failed to remove folder after' $maxRetries 'attempts:' $_.Exception.Message -ForegroundColor Red; ^
+                    exit 1; ^
+                } ^
+            } ^
+        } ^
+    ^"
+    
+    :: Double-check removal with small delay
+    ping 127.0.0.1 -n 2 >nul
+    IF EXIST "%FOLDER_TO_CLEAN%" (
+        :: If still exists, try Windows native RMDIR as fallback
+        RMDIR /S /Q "%FOLDER_TO_CLEAN%" >nul 2>&1
+        ping 127.0.0.1 -n 2 >nul
+        IF EXIST "%FOLDER_TO_CLEAN%" (
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[ERROR] Could not remove folder. It may be locked by another process (Khong the xoa thu muc. Co the bi khoa boi tien trinh khac).' -ForegroundColor Red"
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[TIP] Try closing Windows Explorer and any editors, then restart (Thu dong Windows Explorer va cac trinh soan thao, sau do khoi dong lai).' -ForegroundColor Yellow"
+            EXIT /B 1
+        )
     )
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Existing installation removed successfully (Xoa cai dat hien co thanh cong).' -ForegroundColor Green"
 ) ELSE (
