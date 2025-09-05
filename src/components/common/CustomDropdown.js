@@ -26,6 +26,9 @@ const CustomDropdown = ({
   }));
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
+  const isDraggingRef = useRef(false);
+  const hoveredIndexRef = useRef(null);
+  const pendingSelectionRef = useRef(null);
 
   // Chevron that switches based on reveal mode
   const DropdownChevron = ({ mode }) => {
@@ -696,7 +699,66 @@ const CustomDropdown = ({
                   onMouseDown={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    handleOptionSelect(option.value);
+                    // Start drag mode - don't select yet
+                    isDraggingRef.current = true;
+                    hoveredIndexRef.current = options.findIndex(o => o.value === option.value);
+                    pendingSelectionRef.current = option.value;
+                    
+                    // Add visual feedback for pressed state
+                    e.currentTarget.classList.add('pressed');
+                    
+                    // Set up global mouse up listener
+                    const handleMouseUp = (upEvent) => {
+                      if (isDraggingRef.current) {
+                        isDraggingRef.current = false;
+                        
+                        // Remove pressed state from all buttons
+                        const allButtons = menuRef.current?.querySelectorAll('.dropdown-option');
+                        allButtons?.forEach(btn => btn.classList.remove('pressed', 'hover-preview'));
+                        
+                        // If mouse is still over the same item, select it
+                        if (pendingSelectionRef.current && hoveredIndexRef.current === options.findIndex(o => o.value === pendingSelectionRef.current)) {
+                          handleOptionSelect(pendingSelectionRef.current);
+                        } else {
+                          // Mouse was dragged away - just cancel
+                          pendingSelectionRef.current = null;
+                          hoveredIndexRef.current = null;
+                        }
+                        
+                        // Clean up listener
+                        document.removeEventListener('mouseup', handleMouseUp);
+                      }
+                    };
+                    
+                    document.addEventListener('mouseup', handleMouseUp);
+                  }}
+                  onMouseEnter={(e) => {
+                    // Track which item the mouse is over during drag
+                    const idx = options.findIndex(o => o.value === option.value);
+                    
+                    if (isDraggingRef.current) {
+                      hoveredIndexRef.current = idx;
+                      // Update visual feedback
+                      const allButtons = menuRef.current?.querySelectorAll('.dropdown-option');
+                      allButtons?.forEach((btn, i) => {
+                        btn.classList.remove('hover-preview');
+                        if (i === idx) {
+                          btn.classList.add('hover-preview');
+                        }
+                      });
+                      
+                      // Update pending selection if hovering over different item
+                      if (idx === options.findIndex(o => o.value === pendingSelectionRef.current)) {
+                        pendingSelectionRef.current = option.value;
+                      } else {
+                        pendingSelectionRef.current = null;
+                      }
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (isDraggingRef.current) {
+                      e.currentTarget.classList.remove('hover-preview');
+                    }
                   }}
                   role="option"
                   aria-selected={isSelected}

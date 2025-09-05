@@ -362,6 +362,25 @@
   background-color: var(--md-surface-2);
 }
 
+/* Pressed state when mouse is held down */
+.dropdown-option.pressed {
+  background-color: var(--md-primary-container) !important;
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+/* Preview state when dragging over different items */
+.dropdown-option.hover-preview {
+  background-color: var(--md-surface-3);
+  transform: scale(1.02);
+  transition: all 100ms ease-out;
+}
+
+/* Visual feedback for drag operation */
+.dropdown-option.pressed:not(.hover-preview) {
+  opacity: 0.6;
+}
+
 .dropdown-option:focus {
   outline: none;
   background-color: var(--md-surface-2);
