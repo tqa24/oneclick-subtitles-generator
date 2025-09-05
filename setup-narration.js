@@ -435,22 +435,22 @@ if (fs.existsSync(VENV_DIR)) {
     }
 }
 
-if (!venvExists) {
-    logger.installing(`virtual environment with uv at ./${VENV_DIR} using Python "${pythonInterpreterIdentifier}"`);
+    if (!venvExists) {
+        logger.installing(`virtual environment with uv at ./${VENV_DIR} using Python "${pythonInterpreterIdentifier}"`);
 
-    // Remove existing directory if it exists but is invalid
-    if (fs.existsSync(VENV_DIR)) {
-        logger.progress(`Removing invalid virtual environment directory...`);
-        try {
-            fs.rmSync(VENV_DIR, { recursive: true, force: true });
-        } catch (error) {
-            logger.error(`Error removing existing venv directory: ${error.message}`);
-            process.exit(1);
+        // Remove existing directory if it exists but is invalid
+        if (fs.existsSync(VENV_DIR)) {
+            logger.progress(`Removing invalid virtual environment directory...`);
+            try {
+                fs.rmSync(VENV_DIR, { recursive: true, force: true });
+            } catch (error) {
+                logger.error(`Error removing existing venv directory: ${error.message}`);
+                process.exit(1);
+            }
         }
-    }
 
-    try {
-        execSync(`uv venv -p ${pythonInterpreterIdentifier} ${VENV_DIR}`, { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
+        try {
+            execSync(`uv venv -p ${pythonInterpreterIdentifier} ${VENV_DIR}`, { stdio: 'inherit' });
         logger.success(`Virtual environment created at ${VENV_DIR}`);
     } catch (error) {
         logger.error(`Error creating virtual environment with uv: ${error.message}`);
@@ -519,11 +519,11 @@ try {
         console.log(`   Notes: ${installNotes}`);
     }
     // Explicitly specify the virtual environment to ensure uv uses it
-    const torchInstallCmdWithVenv = torchInstallCmd.replace('uv pip install', `uv pip install --python ${VENV_DIR} --quiet`);
+    const torchInstallCmdWithVenv = torchInstallCmd.replace('uv pip install', `uv pip install --python ${VENV_DIR}`);
     logger.command(torchInstallCmdWithVenv);
     // Set longer timeout for large PyTorch downloads
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
-    execSync(torchInstallCmdWithVenv, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+    execSync(torchInstallCmdWithVenv, { stdio: 'inherit', env });
     logger.success(`PyTorch (${gpuVendor} target) installed successfully`);
 
     // --- 5b. Verify Installation ---
@@ -615,7 +615,7 @@ except Exception as e:
 `;
     // Escape double quotes inside the Python code string for the shell command
     const verifyTorchCmd = `uv run --python ${VENV_DIR} -- python -c "${verifyTorchPyCode.replace(/"/g, '\\"')}"`;
-    execSync(verifyTorchCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', encoding: 'utf8' });
+    execSync(verifyTorchCmd, { stdio: 'inherit', encoding: 'utf8' });
     logger.success('PyTorch verification check completed');
 
     // --- 5c. Validate PyTorch/torchvision compatibility ---
@@ -705,10 +705,10 @@ try {
         'gtts'       // Google Text-to-Speech
     ];
 
-    const depsCmd = `uv pip install --python ${VENV_DIR} --quiet ${coreDeps.join(' ')}`;
+    const depsCmd = `uv pip install --python ${VENV_DIR} ${coreDeps.join(' ')}`;
     logger.command(depsCmd);
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
-    execSync(depsCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+    execSync(depsCmd, { stdio: 'inherit', env });
     logger.success('Core AI dependencies installed (including edge-tts and gtts)');
 } catch (error) {
     console.error(`❌ Error installing core dependencies with uv: ${error.message}`);
@@ -758,12 +758,12 @@ try {
         logger.found(`Text-to-Speech engine source code`);
     }
 
-    const installF5Cmd = `uv pip install --python ${VENV_DIR} --quiet -e ./${F5_TTS_DIR}`;
+    const installF5Cmd = `uv pip install --python ${VENV_DIR} -e ./${F5_TTS_DIR}`;
     logger.command(installF5Cmd);
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
 
     try {
-        execSync(installF5Cmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+        execSync(installF5Cmd, { stdio: 'inherit', env });
         logger.success('Text-to-Speech engine installation completed');
     } catch (installError) {
         console.error(`❌ Error during F5-TTS editable installation: ${installError.message}`);
@@ -859,7 +859,7 @@ try {
     // Clone the repository
     const cloneCmd = `git clone https://github.com/resemble-ai/chatterbox.git ${CHATTERBOX_DIR}`;
     logger.command(cloneCmd);
-    execSync(cloneCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe' });
+    execSync(cloneCmd, { stdio: 'inherit' });
     logger.success('Chatterbox repository cloned');
     
     // Apply PyTorch compatibility fix by modifying chatterbox dependencies
@@ -897,7 +897,7 @@ try {
     // First ensure numpy is installed (required for pkuseg build dependency)
     logger.progress('Installing numpy (required for chatterbox dependencies)');
     const numpyCmd = `uv pip install --python ${VENV_DIR} numpy`;
-    execSync(numpyCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe' });
+    execSync(numpyCmd, { stdio: 'inherit' });
     
     // Install chatterbox from the local modified directory
     logger.progress('Installing chatterbox from local modified directory');
@@ -906,7 +906,7 @@ try {
     logger.info(`Installing chatterbox in editable mode from local directory`);
 
     const env = { ...process.env, UV_HTTP_TIMEOUT: '600' }; // 10 minutes for installation
-    execSync(installChatterboxCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+    execSync(installChatterboxCmd, { stdio: 'inherit', env });
     logger.success('Chatterbox installation completed');
     
     // Verify PyTorch versions are correct
@@ -918,7 +918,7 @@ try {
             logger.success('PyTorch 2.4.1 verified successfully');
         } else {
             logger.warning('PyTorch version mismatch detected, reinstalling...');
-            execSync(torchInstallCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+            execSync(torchInstallCmd, { stdio: 'inherit', env });
             logger.success('PyTorch 2.4.1 reinstalled');
         }
     } catch (error) {
@@ -1015,17 +1015,17 @@ logger.progress('Finalizing AI model setup');
 try {
     // Verify PyTorch is still working after Chatterbox installation
     const verifyPytorchCmd = `uv run --python ${VENV_DIR} -- python -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}')"`;
-    execSync(verifyPytorchCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe' });
+    execSync(verifyPytorchCmd, { stdio: 'inherit' });
     logger.success('AI model setup verified');
 } catch (error) {
     logger.warning(`PyTorch verification failed: ${error.message}`);
     logger.info('Attempting to fix PyTorch installation...');
     try {
         // Only reinstall if verification failed
-        const fixPytorchCmd = `uv pip install --python ${VENV_DIR} --quiet torch==2.4.1+cu121 torchvision==0.19.1+cu121 torchaudio==2.4.1+cu121 --index-url https://download.pytorch.org/whl/cu121 --force-reinstall`;
+        const fixPytorchCmd = `uv pip install --python ${VENV_DIR} torch==2.4.1+cu121 torchvision==0.19.1+cu121 torchaudio==2.4.1+cu121 --index-url https://download.pytorch.org/whl/cu121 --force-reinstall`;
         logger.command(fixPytorchCmd);
         const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
-        execSync(fixPytorchCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+        execSync(fixPytorchCmd, { stdio: 'inherit', env });
         logger.success('PyTorch installation fixed');
     } catch (fixError) {
         logger.warning(`Could not fix PyTorch: ${fixError.message}`);
