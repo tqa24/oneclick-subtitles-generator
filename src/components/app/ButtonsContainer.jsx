@@ -62,6 +62,14 @@ const ButtonsContainer = ({
   // Ref for WavyProgressIndicator animations
   const wavyProgressRef = useRef(null);
   
+  // Refs to track current state for autoflow (to avoid closure issues)
+  const currentStateRef = useRef({
+    uploadedFile: null,
+    uploadedFileData: null,
+    isDownloading: false,
+    downloadProgress: 0
+  });
+  
   // Auto-generate flow implementation
   const startAutoGenerateFlow = async () => {
     if (isAutoGenerating) return;
@@ -85,10 +93,19 @@ const ButtonsContainer = ({
       console.log('[AutoFlow] Step 1: Triggering video load...');
       
       // Click the semi-automatic generate button to trigger video loading
-      handleGenerateSubtitles();
+      try {
+        console.log('[AutoFlow] Calling handleGenerateSubtitles...');
+        handleGenerateSubtitles();
+        console.log('[AutoFlow] handleGenerateSubtitles called successfully');
+      } catch (error) {
+        console.error('[AutoFlow] Error calling handleGenerateSubtitles:', error);
+        throw error;
+      }
       
       // Wait for video to be loaded (either uploaded or downloaded)
+      console.log('[AutoFlow] Waiting for video to be ready...');
       await waitForVideoReady();
+      console.log('[AutoFlow] Video ready, continuing to step 2');
       
       if (autoFlowAbortedRef.current) return;
       
@@ -179,6 +196,12 @@ const ButtonsContainer = ({
   
   // Helper function to wait for video to be ready
   const waitForVideoReady = () => {
+    console.log('[AutoFlow] waitForVideoReady started, initial state:', {
+      uploadedFile: !!currentStateRef.current.uploadedFile,
+      uploadedFileData: !!currentStateRef.current.uploadedFileData,
+      isDownloading: currentStateRef.current.isDownloading
+    });
+    
     return new Promise((resolve) => {
       let checkCount = 0;
       const maxChecks = 300; // 5 minutes max wait
@@ -186,15 +209,40 @@ const ButtonsContainer = ({
       const checkInterval = setInterval(() => {
         checkCount++;
         
+        // Get current state from ref (to avoid closure issues)
+        const currentState = currentStateRef.current;
+        
+        // Log current state every 5 checks
+        if (checkCount % 5 === 0) {
+          console.log('[AutoFlow] Check #' + checkCount + ', state:', {
+            uploadedFile: !!currentState.uploadedFile,
+            uploadedFileData: !!currentState.uploadedFileData,
+            isDownloading: currentState.isDownloading,
+            downloadProgress: currentState.downloadProgress
+          });
+        }
+        
         // Check if video is ready (uploaded or downloaded)
-        if (uploadedFile || uploadedFileData) {
+        // Also check that we're not still downloading
+        if ((currentState.uploadedFile || currentState.uploadedFileData) && !currentState.isDownloading) {
           clearInterval(checkInterval);
-          console.log('[AutoFlow] Video is ready');
+          console.log('[AutoFlow] Video is ready! File available:', !!currentState.uploadedFile, 'FileData available:', !!currentState.uploadedFileData);
           resolve();
         } else if (checkCount >= maxChecks || autoFlowAbortedRef.current) {
           clearInterval(checkInterval);
           console.log('[AutoFlow] Video loading timeout or aborted');
           resolve();
+        } else if (currentState.isDownloading) {
+          // Still downloading, keep waiting
+          console.log('[AutoFlow] Still downloading video...', currentState.downloadProgress + '%');
+        } else {
+          // Not downloading but also no file - log this state
+          if (checkCount % 5 === 0) {
+            console.log('[AutoFlow] Waiting for video, but not downloading. File states:', {
+              uploadedFile: !!currentState.uploadedFile,
+              uploadedFileData: !!currentState.uploadedFileData
+            });
+          }
         }
       }, 1000); // Check every second
     });
@@ -283,6 +331,16 @@ const ButtonsContainer = ({
     }
   }, [uploadedSrtInfo]);
 
+  // Update current state ref whenever props change
+  useEffect(() => {
+    currentStateRef.current = {
+      uploadedFile,
+      uploadedFileData,
+      isDownloading,
+      downloadProgress
+    };
+  }, [uploadedFile, uploadedFileData, isDownloading, downloadProgress]);
+  
   // Handle entrance/disappear animations for WavyProgressIndicator
   useEffect(() => {
     if (isDownloading && wavyProgressRef.current) {
@@ -533,9 +591,11 @@ const ButtonsContainer = ({
                   color={isDarkTheme ? '#324574' : '#FFFFFF'}
                 />
                 <span className="processing-text">
-                  {autoFlowStep === 'loading' ? t('autoFlow.loading', 'Đang tải video...') :
+                  {/* Show download state when downloading, otherwise show autoflow step */}
+                  {isDownloading ? t('autoFlow.loading', 'Đang tải video...') :
                    autoFlowStep === 'analyzing' ? t('autoFlow.analyzing', 'Đang phân tích...') :
                    autoFlowStep === 'processing' ? t('autoFlow.processing', 'Đang xử lý...') :
+                   autoFlowStep === 'complete' ? t('autoFlow.complete', 'Hoàn thành!') :
                    t('autoFlow.running', 'Đang chạy tự động...')}
                 </span>
               </span>
