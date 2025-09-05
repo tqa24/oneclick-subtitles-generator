@@ -399,6 +399,18 @@ const CustomDropdown = ({
         el.classList.add('is-open');
         el.style.width = `${targetW}px`; // Expand to full width
         el.style.clipPath = `inset(0 0 0 0 round var(--dropdown-radius, 12px))`;
+        
+        // Trigger font morphing for selected item
+        const selectedIdx = options.findIndex(o => o.value === value);
+        const buttons = el.querySelectorAll('.dropdown-option');
+        if (buttons[selectedIdx]) {
+          buttons[selectedIdx].classList.add('morphing-from-button');
+          setTimeout(() => {
+            if (buttons[selectedIdx]) {
+              buttons[selectedIdx].classList.remove('morphing-from-button');
+            }
+          }, 300);
+        }
       });
     } else if (!el.classList.contains('is-closing-with-selection')) {
       // Only apply default closing if not handled by selection animation
@@ -589,9 +601,10 @@ const CustomDropdown = ({
           btn.style.transition = 'opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)';
           
           if (idx === newIndex) {
-            // Selected item stays fully visible
+            // Selected item stays fully visible and morphs font
             btn.style.opacity = '1';
             btn.style.backgroundColor = 'var(--md-primary-container)';
+            btn.classList.add('morphing-to-button');
           } else {
             // Fade other items
             btn.style.opacity = '0';
@@ -647,7 +660,7 @@ const CustomDropdown = ({
         aria-expanded={isOpen}
         style={isOpen ? { boxShadow: 'none', borderColor: 'transparent' } : undefined}
       >
-        <span className="dropdown-value">
+        <span className={`dropdown-value ${isOpen ? 'morphing-open' : ''}`}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <DropdownChevron mode={getChevronModeFromIndex(value, options)} />
@@ -679,7 +692,7 @@ const CustomDropdown = ({
                 <button
                   key={option.value}
                   type="button"
-                  className={`dropdown-option ${isSelected ? 'selected' : ''}`}
+                  className={`dropdown-option ${isSelected ? 'selected morphing-item' : ''}`}
                   onMouseDown={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
