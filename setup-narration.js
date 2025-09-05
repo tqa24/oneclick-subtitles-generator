@@ -24,9 +24,6 @@ const VENV_DIR = '.venv'; // Define the virtual environment directory name
 const PYTHON_VERSION_TARGET = "3.11"; // Target Python version
 const F5_TTS_DIR = 'F5-TTS'; // Define the F5-TTS directory name
 const F5_TTS_REPO_URL = 'https://github.com/SWivid/F5-TTS.git';
-const CHATTERBOX_DIR = 'better-chatterbox'; // Define the better-chatterbox directory name (submodule)
-const CHATTERBOX_REPO_URL = 'https://github.com/resemble-ai/chatterbox.git'; // Official better-chatterbox repository
-const CHATTERBOX_BRANCH = 'main'; // Main branch of better-chatterbox
 
 // --- Helper Function to Check Command Existence ---
 function commandExists(command) {
@@ -287,15 +284,6 @@ if (!fs.existsSync(F5_TTS_DIR)) {
     }
 }
 
-// Check Chatterbox source code (now directly committed to repository)
-if (!fs.existsSync(CHATTERBOX_DIR)) {
-    logger.error(`Chatterbox source code directory "${CHATTERBOX_DIR}" not found.`);
-    logger.info('This should be included directly in the repository now.');
-    process.exit(1);
-} else {
-    logger.success('Chatterbox source code found');
-}
-
 logger.success('Submodule verification completed');
 
 
@@ -447,22 +435,22 @@ if (fs.existsSync(VENV_DIR)) {
     }
 }
 
-if (!venvExists) {
-    logger.installing(`virtual environment with uv at ./${VENV_DIR} using Python "${pythonInterpreterIdentifier}"`);
+    if (!venvExists) {
+        logger.installing(`virtual environment with uv at ./${VENV_DIR} using Python "${pythonInterpreterIdentifier}"`);
 
-    // Remove existing directory if it exists but is invalid
-    if (fs.existsSync(VENV_DIR)) {
-        logger.progress(`Removing invalid virtual environment directory...`);
-        try {
-            fs.rmSync(VENV_DIR, { recursive: true, force: true });
-        } catch (error) {
-            logger.error(`Error removing existing venv directory: ${error.message}`);
-            process.exit(1);
+        // Remove existing directory if it exists but is invalid
+        if (fs.existsSync(VENV_DIR)) {
+            logger.progress(`Removing invalid virtual environment directory...`);
+            try {
+                fs.rmSync(VENV_DIR, { recursive: true, force: true });
+            } catch (error) {
+                logger.error(`Error removing existing venv directory: ${error.message}`);
+                process.exit(1);
+            }
         }
-    }
 
-    try {
-        execSync(`uv venv -p ${pythonInterpreterIdentifier} ${VENV_DIR}`, { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
+        try {
+            execSync(`uv venv -p ${pythonInterpreterIdentifier} ${VENV_DIR}`, { stdio: 'inherit' });
         logger.success(`Virtual environment created at ${VENV_DIR}`);
     } catch (error) {
         logger.error(`Error creating virtual environment with uv: ${error.message}`);
@@ -490,9 +478,9 @@ switch (gpuVendor) {
     case 'NVIDIA':
         logger.installing('PyTorch for NVIDIA GPU (CUDA)');
         // Using CUDA 12.1 with specific versions for Chatterbox compatibility
-        // PyTorch 2.5.1 with torchvision 0.20.1 for stable compatibility
-        torchInstallCmd = `uv pip install torch==2.5.1+cu121 torchvision==0.20.1+cu121 torchaudio==2.5.1+cu121 --index-url https://download.pytorch.org/whl/cu121 --force-reinstall`;
-        installNotes = 'Ensure NVIDIA drivers compatible with CUDA 12.1+ are installed. Using PyTorch 2.5.1 for Chatterbox compatibility.';
+        // PyTorch 2.4.1 with torchvision 0.19.1 for stable compatibility
+        torchInstallCmd = `uv pip install torch==2.4.1+cu121 torchvision==0.19.1+cu121 torchaudio==2.4.1+cu121 --index-url https://download.pytorch.org/whl/cu121 --force-reinstall`;
+        installNotes = 'Ensure NVIDIA drivers compatible with CUDA 12.1+ are installed. Using PyTorch 2.4.1 for Chatterbox compatibility.';
         break;
     case 'AMD':
         logger.installing('PyTorch for AMD GPU (ROCm)');
@@ -501,27 +489,27 @@ switch (gpuVendor) {
             logger.warning('Installation may fail or runtime errors may occur on non-Linux systems.');
         }
         // Using compatible versions for Chatterbox - fallback to CPU versions for ROCm compatibility
-        torchInstallCmd = `uv pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --force-reinstall`;
-        installNotes = 'Using CPU versions of PyTorch 2.5.1 for Chatterbox compatibility. ROCm support may be limited.';
+        torchInstallCmd = `uv pip install torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --force-reinstall`;
+        installNotes = 'Using CPU versions of PyTorch 2.4.1 for Chatterbox compatibility. ROCm support may be limited.';
         break;
     case 'INTEL':
         logger.installing('PyTorch for Intel GPU (XPU)');
         // Using compatible versions for Chatterbox - fallback to CPU versions for Intel compatibility
-        torchInstallCmd = `uv pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --force-reinstall`;
-        installNotes = 'Using CPU versions of PyTorch 2.5.1 for Chatterbox compatibility. Intel GPU support may be limited.';
+        torchInstallCmd = `uv pip install torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --force-reinstall`;
+        installNotes = 'Using CPU versions of PyTorch 2.4.1 for Chatterbox compatibility. Intel GPU support may be limited.';
         break;
     case 'APPLE_SILICON':
         logger.installing('PyTorch for Apple Silicon (MPS)');
         // Using compatible versions for Chatterbox with MPS support
-        torchInstallCmd = `uv pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --force-reinstall`;
-        installNotes = 'Using PyTorch 2.5.1 with Metal Performance Shaders (MPS) support for Chatterbox compatibility.';
+        torchInstallCmd = `uv pip install torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --force-reinstall`;
+        installNotes = 'Using PyTorch 2.4.1 with Metal Performance Shaders (MPS) support for Chatterbox compatibility.';
         break;
     case 'CPU':
     default:
         logger.installing('CPU-only PyTorch');
         // Using compatible versions for Chatterbox
-        torchInstallCmd = `uv pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --force-reinstall`;
-        installNotes = 'Installed PyTorch 2.5.1 CPU-only version for Chatterbox compatibility. No GPU acceleration will be used.';
+        torchInstallCmd = `uv pip install torch==2.4.1 torchvision==0.19.1 torchaudio==2.4.1 --force-reinstall`;
+        installNotes = 'Installed PyTorch 2.4.1 CPU-only version for Chatterbox compatibility. No GPU acceleration will be used.';
         break;
 }
 
@@ -531,11 +519,11 @@ try {
         console.log(`   Notes: ${installNotes}`);
     }
     // Explicitly specify the virtual environment to ensure uv uses it
-    const torchInstallCmdWithVenv = torchInstallCmd.replace('uv pip install', `uv pip install --python ${VENV_DIR} --quiet`);
+    const torchInstallCmdWithVenv = torchInstallCmd.replace('uv pip install', `uv pip install --python ${VENV_DIR}`);
     logger.command(torchInstallCmdWithVenv);
     // Set longer timeout for large PyTorch downloads
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
-    execSync(torchInstallCmdWithVenv, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+    execSync(torchInstallCmdWithVenv, { stdio: 'inherit', env });
     logger.success(`PyTorch (${gpuVendor} target) installed successfully`);
 
     // --- 5b. Verify Installation ---
@@ -627,7 +615,7 @@ except Exception as e:
 `;
     // Escape double quotes inside the Python code string for the shell command
     const verifyTorchCmd = `uv run --python ${VENV_DIR} -- python -c "${verifyTorchPyCode.replace(/"/g, '\\"')}"`;
-    execSync(verifyTorchCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', encoding: 'utf8' });
+    execSync(verifyTorchCmd, { stdio: 'inherit', encoding: 'utf8' });
     logger.success('PyTorch verification check completed');
 
     // --- 5c. Validate PyTorch/torchvision compatibility ---
@@ -660,9 +648,9 @@ try:
         print("This indicates a PyTorch/torchvision version mismatch")
         sys.exit(1)
 
-    # Validate expected versions for Chatterbox compatibility
-    expected_torch = "2.5.1"
-    expected_torchvision = "0.20.1"
+    // Validate expected versions for Chatterbox compatibility
+    expected_torch = "2.4.1";
+    expected_torchvision = "0.19.1";
 
     if not torch_version.startswith(expected_torch):
         print(f"⚠️ Warning: Expected PyTorch {expected_torch}, got {torch_version}")
@@ -717,10 +705,10 @@ try {
         'gtts'       // Google Text-to-Speech
     ];
 
-    const depsCmd = `uv pip install --python ${VENV_DIR} --quiet ${coreDeps.join(' ')}`;
+    const depsCmd = `uv pip install --python ${VENV_DIR} ${coreDeps.join(' ')}`;
     logger.command(depsCmd);
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
-    execSync(depsCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+    execSync(depsCmd, { stdio: 'inherit', env });
     logger.success('Core AI dependencies installed (including edge-tts and gtts)');
 } catch (error) {
     console.error(`❌ Error installing core dependencies with uv: ${error.message}`);
@@ -770,12 +758,12 @@ try {
         logger.found(`Text-to-Speech engine source code`);
     }
 
-    const installF5Cmd = `uv pip install --python ${VENV_DIR} --quiet -e ./${F5_TTS_DIR}`;
+    const installF5Cmd = `uv pip install --python ${VENV_DIR} -e ./${F5_TTS_DIR}`;
     logger.command(installF5Cmd);
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
 
     try {
-        execSync(installF5Cmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+        execSync(installF5Cmd, { stdio: 'inherit', env });
         logger.success('Text-to-Speech engine installation completed');
     } catch (installError) {
         console.error(`❌ Error during F5-TTS editable installation: ${installError.message}`);
@@ -855,80 +843,96 @@ except Exception as e:
     process.exit(1);
 }
 
-// --- 7.5. Install better-chatterbox using uv pip ---
-logger.installing('Voice cloning engine (better-chatterbox)');
+// --- 7.5. Install official chatterbox using uv pip ---
+logger.installing('Voice cloning engine (chatterbox)');
+const CHATTERBOX_DIR = 'chatterbox-temp'; // Temporary directory for cloning
 try {
-    // Check if better-chatterbox submodule exists
-    if (!fs.existsSync(CHATTERBOX_DIR)) {
-        logger.error(`Better-chatterbox submodule not found at ${CHATTERBOX_DIR}`);
-        logger.info('Please ensure the better-chatterbox submodule is properly initialized');
-        process.exit(1);
+    // Clone the official chatterbox repository
+    logger.progress('Cloning official chatterbox repository');
+    
+    // Remove existing chatterbox directory if it exists
+    if (fs.existsSync(CHATTERBOX_DIR)) {
+        logger.info('Removing existing chatterbox directory...');
+        fs.rmSync(CHATTERBOX_DIR, { recursive: true, force: true });
     }
-
-    // Install better-chatterbox in development mode from the submodule
-    logger.progress('Installing better-chatterbox from submodule');
-    const installChatterboxCmd = `uv pip install --python ${VENV_DIR} -e ./${CHATTERBOX_DIR}`;
+    
+    // Clone the repository
+    const cloneCmd = `git clone https://github.com/resemble-ai/chatterbox.git ${CHATTERBOX_DIR}`;
+    logger.command(cloneCmd);
+    execSync(cloneCmd, { stdio: 'inherit' });
+    logger.success('Chatterbox repository cloned');
+    
+    // Apply PyTorch compatibility fix by modifying chatterbox dependencies
+    logger.progress('Applying PyTorch compatibility fix for chatterbox');
+    const pyprojectPath = path.join(CHATTERBOX_DIR, 'pyproject.toml');
+    
+    if (fs.existsSync(pyprojectPath)) {
+        logger.info('Updating chatterbox dependencies for PyTorch 2.4.1 compatibility...');
+        
+        let pyprojectContent = fs.readFileSync(pyprojectPath, 'utf8');
+        
+        // Replace incompatible PyTorch versions with compatible ones
+        // Handle both single and double quotes, and various version formats
+        pyprojectContent = pyprojectContent
+            .replace(/["']torch==2\.[5-9]\.\d+["']/g, '"torch>=2.4.1,<2.5.0"')
+            .replace(/["']torchaudio==2\.[5-9]\.\d+["']/g, '"torchaudio>=2.4.1,<2.5.0"')
+            .replace(/["']transformers==4\.4[6-9]\.\d+["']/g, '"transformers>=4.40.0,<4.47.0"')
+            .replace(/["']diffusers==0\.2[9]\.\d+["']/g, '"diffusers>=0.25.0,<0.30.0"')
+            // Fallback for exact matches
+            .replace('"torch==2.6.0"', '"torch>=2.4.1,<2.5.0"')
+            .replace('"torch==2.5.1"', '"torch>=2.4.1,<2.5.0"')
+            .replace('"torch==2.5.0"', '"torch>=2.4.1,<2.5.0"')
+            .replace('"torchaudio==2.6.0"', '"torchaudio>=2.4.1,<2.5.0"')
+            .replace('"torchaudio==2.5.1"', '"torchaudio>=2.4.1,<2.5.0"')
+            .replace('"torchaudio==2.5.0"', '"torchaudio>=2.4.1,<2.5.0"')
+            .replace('"transformers==4.46.3"', '"transformers>=4.40.0,<4.47.0"')
+            .replace('"diffusers==0.29.0"', '"diffusers>=0.25.0,<0.30.0"');
+        
+        fs.writeFileSync(pyprojectPath, pyprojectContent, 'utf8');
+        logger.success('Chatterbox dependencies updated for compatibility');
+    } else {
+        logger.warning('pyproject.toml not found in chatterbox directory');
+    }
+    
+    // First ensure numpy is installed (required for pkuseg build dependency)
+    logger.progress('Installing numpy (required for chatterbox dependencies)');
+    const numpyCmd = `uv pip install --python ${VENV_DIR} numpy`;
+    execSync(numpyCmd, { stdio: 'inherit' });
+    
+    // Install chatterbox from the local modified directory
+    logger.progress('Installing chatterbox from local modified directory');
+    const installChatterboxCmd = `uv pip install --python ${VENV_DIR} --no-build-isolation -e ./${CHATTERBOX_DIR}`;
     logger.command(installChatterboxCmd);
-    logger.info(`Installing better-chatterbox in development mode from submodule`);
+    logger.info(`Installing chatterbox in editable mode from local directory`);
 
     const env = { ...process.env, UV_HTTP_TIMEOUT: '600' }; // 10 minutes for installation
-    execSync(installChatterboxCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
-    logger.success('Better-chatterbox installation completed');
-
-    // Apply PyTorch compatibility fix by modifying better-chatterbox dependencies
-    logger.progress('Applying PyTorch compatibility fix for better-chatterbox');
+    execSync(installChatterboxCmd, { stdio: 'inherit', env });
+    logger.success('Chatterbox installation completed');
+    
+    // Verify PyTorch versions are correct
+    logger.progress('Verifying PyTorch compatibility after chatterbox installation');
     try {
-        // Fix better-chatterbox pyproject.toml to use compatible PyTorch versions
-        const pyprojectPath = path.join(CHATTERBOX_DIR, 'pyproject.toml');
-        if (fs.existsSync(pyprojectPath)) {
-            logger.info('Updating better-chatterbox dependencies for PyTorch compatibility...');
-
-            let pyprojectContent = fs.readFileSync(pyprojectPath, 'utf8');
-
-            // Replace incompatible PyTorch versions with compatible ones
-            // Handle both single and double quotes, and various version formats
-            pyprojectContent = pyprojectContent
-                .replace(/["']torch==2\.[6-9]\.\d+["']/g, '"torch>=2.5.1"')
-                .replace(/["']torchaudio==2\.[6-9]\.\d+["']/g, '"torchaudio>=2.5.1"')
-                .replace(/["']transformers==4\.4[6-9]\.\d+["']/g, '"transformers>=4.40.0,<4.47.0"')
-                .replace(/["']diffusers==0\.2[9]\.\d+["']/g, '"diffusers>=0.25.0,<0.30.0"')
-                // Fallback for exact matches
-                .replace('"torch==2.6.0"', '"torch>=2.5.1"')
-                .replace('"torchaudio==2.6.0"', '"torchaudio>=2.5.1"')
-                .replace('"transformers==4.46.3"', '"transformers>=4.40.0,<4.47.0"')
-                .replace('"diffusers==0.29.0"', '"diffusers>=0.25.0,<0.30.0"');
-
-            fs.writeFileSync(pyprojectPath, pyprojectContent, 'utf8');
-            logger.success('Better-chatterbox dependencies updated for compatibility');
+        const verifyCmd = `uv run --python ${VENV_DIR} -- python -c "import torch; print(f'PyTorch version: {torch.__version__}')"`;
+        const output = execSync(verifyCmd, { encoding: 'utf8' });
+        if (output.includes('2.4.1')) {
+            logger.success('PyTorch 2.4.1 verified successfully');
+        } else {
+            logger.warning('PyTorch version mismatch detected, reinstalling...');
+            execSync(torchInstallCmd, { stdio: 'inherit', env });
+            logger.success('PyTorch 2.4.1 reinstalled');
         }
-
-        // Reinstall compatible PyTorch versions to ensure consistency
-        logger.info('Ensuring PyTorch compatibility after better-chatterbox installation...');
-        execSync(torchInstallCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
-        logger.success('PyTorch compatibility fix applied successfully');
     } catch (error) {
-        logger.warning(`PyTorch compatibility fix failed: ${error.message}`);
-        logger.warning('This may cause compatibility issues with transformers library');
+        logger.warning(`PyTorch verification failed: ${error.message}`);
     }
 
-    // Verify better-chatterbox submodule is properly installed
-    if (fs.existsSync(CHATTERBOX_DIR)) {
-        logger.success(`Better-chatterbox submodule configured successfully at ${CHATTERBOX_DIR}`);
-    } else {
-        logger.error(`Better-chatterbox submodule not found at ${CHATTERBOX_DIR}`);
-        process.exit(1);
-    }
-
-    // --- Apply Chatterbox fixes for proper operation ---
-    // Better-chatterbox doesn't need the old fixes
-    logger.success('Better-chatterbox is ready to use');
+    logger.success('Chatterbox is ready to use');
 
     logger.progress('Verifying voice cloning engine');
     const verifyChatterboxPyCode = `
 import sys
 import traceback
 
-print("Verifying better-chatterbox installation...")
+print("Verifying chatterbox installation...")
 print("Python executable:", sys.executable)
 
 # Test core service dependencies
@@ -964,17 +968,17 @@ chatterbox_working = False
 try:
     from chatterbox.tts import ChatterboxTTS
     from chatterbox.vc import ChatterboxVC
-    print('✅ Better-chatterbox imported successfully')
+    print('✅ Chatterbox imported successfully')
     print('✅ ChatterboxTTS and ChatterboxVC classes available')
     chatterbox_working = True
 except Exception as e:
     error_str = str(e)
     if 'torchvision::nms does not exist' in error_str:
-        print(f'❌ CRITICAL: Better-chatterbox import failed due to torchvision::nms error: {e}')
+        print(f'❌ CRITICAL: Chatterbox import failed due to torchvision::nms error: {e}')
         print('   This indicates a PyTorch/torchvision version mismatch that needs to be fixed')
         sys.exit(1)
     else:
-        print(f'⚠️ Warning: Better-chatterbox import failed: {e}')
+        print(f'⚠️ Warning: Chatterbox import failed: {e}')
         print('   Voice cloning features may not work, but installation will continue')
         print('   This is often due to PyTorch/TorchVision compatibility issues')
 
@@ -987,7 +991,7 @@ if chatterbox_working:
         print(f'⚠️ Warning: Transformers import failed: {e}')
         print('   Some advanced voice cloning features may not work')
 else:
-    print('⚠️ Skipping transformers test due to better-chatterbox import failure')
+    print('⚠️ Skipping transformers test due to chatterbox import failure')
 
 print('✅ Verification completed (with warnings if any shown above)')
 `;
@@ -1001,7 +1005,7 @@ print('✅ Verification completed (with warnings if any shown above)')
     }
 
 } catch (error) {
-    console.error(`❌ Error installing/verifying better-chatterbox with uv: ${error.message}`);
+    console.error(`❌ Error installing/verifying chatterbox with uv: ${error.message}`);
     console.log(`   Verification command failed. Check the output above for details from Python.`);
     process.exit(1);
 }
@@ -1011,17 +1015,17 @@ logger.progress('Finalizing AI model setup');
 try {
     // Verify PyTorch is still working after Chatterbox installation
     const verifyPytorchCmd = `uv run --python ${VENV_DIR} -- python -c "import torch; print(f'PyTorch version: {torch.__version__}'); print(f'CUDA available: {torch.cuda.is_available()}')"`;
-    execSync(verifyPytorchCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe' });
+    execSync(verifyPytorchCmd, { stdio: 'inherit' });
     logger.success('AI model setup verified');
 } catch (error) {
     logger.warning(`PyTorch verification failed: ${error.message}`);
     logger.info('Attempting to fix PyTorch installation...');
     try {
         // Only reinstall if verification failed
-        const fixPytorchCmd = `uv pip install --python ${VENV_DIR} --quiet torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 --force-reinstall`;
+        const fixPytorchCmd = `uv pip install --python ${VENV_DIR} torch==2.4.1+cu121 torchvision==0.19.1+cu121 torchaudio==2.4.1+cu121 --index-url https://download.pytorch.org/whl/cu121 --force-reinstall`;
         logger.command(fixPytorchCmd);
         const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
-        execSync(fixPytorchCmd, { stdio: logger.verboseMode ? 'inherit' : 'pipe', env });
+        execSync(fixPytorchCmd, { stdio: 'inherit', env });
         logger.success('PyTorch installation fixed');
     } catch (fixError) {
         logger.warning(`Could not fix PyTorch: ${fixError.message}`);
@@ -1438,11 +1442,11 @@ logger.step(7, 7, 'Setup completed successfully!');
 const summaryItems = [
     `Target PyTorch backend: ${gpuVendor}`,
     `F5-TTS submodule at: "${F5_TTS_DIR}"`,
-    `Better-chatterbox submodule at: "${CHATTERBOX_DIR}"`,
+    `Chatterbox package installed from GitHub`,
     `Shared virtual environment at: ./${VENV_DIR}`,
     `Python ${PYTHON_VERSION_TARGET} confirmed/installed`,
-    `PyTorch, F5-TTS, better-chatterbox, and all dependencies installed`,
-    `Better-chatterbox installed in development mode from submodule`
+    `PyTorch, F5-TTS, chatterbox, and all dependencies installed`,
+    `Chatterbox installed from official GitHub repository`
 ];
 
 if (installNotes) {
@@ -1453,15 +1457,15 @@ logger.summary('Setup Summary', summaryItems);
 
 logger.newLine();
 logger.success('✅ PyTorch/torchvision compatibility fix applied');
-logger.info('   - Using PyTorch with CUDA support for better-chatterbox compatibility');
-logger.info('   - Better-chatterbox installed from official submodule');
+logger.info('   - Using PyTorch 2.4.1 with CUDA support for chatterbox compatibility');
+logger.info('   - Chatterbox installed from official GitHub repository');
 logger.info('   - Dependencies installed with proper version management');
 
 logger.newLine();
 logger.info('🚀 To run the application with ALL narration services:');
 logger.info('   1. Ensure `uv` and `npm` are in your PATH');
 logger.info('   2. Run: npm run dev:cuda');
-logger.info('   This starts F5-TTS (port 3035) + Better-chatterbox API (port 3036) + Frontend (port 3030)');
+logger.info('   This starts F5-TTS (port 3035) + Chatterbox API (port 3036) + Frontend (port 3030)');
 
 logger.newLine();
 logger.info('💡 Other useful commands:');
