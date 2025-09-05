@@ -16,6 +16,7 @@ import '../../styles/SrtUploadButton.css';
 import '../../styles/VideoAnalysisModal.css';
 import '../../styles/TranscriptionRulesEditor.css';
 import '../../styles/OnboardingBanner.css';
+import '../../styles/AutoGenerate.css'; // Auto-generate button and flow styles
 // Removed spinner-fix.css - now using LoadingIndicator component
 import '../../styles/lyrics/save-message.css'; // Audio alignment notification styles
 import '../../styles/common/auto-dismiss-error-toast.css'; // Auto-dismiss error toast styles

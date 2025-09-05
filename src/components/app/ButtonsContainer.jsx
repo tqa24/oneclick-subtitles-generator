@@ -36,6 +36,11 @@ const ButtonsContainer = ({
   t,
   onGenerateBackground
 }) => {
+  // State for auto-generation flow
+  const [isAutoGenerating, setIsAutoGenerating] = useState(false);
+  const [autoFlowStep, setAutoFlowStep] = useState('');
+  const autoFlowTimeoutRef = useRef(null);
+  const autoFlowAbortedRef = useRef(false);
   // State for tracking uploaded SRT files with localStorage persistence
   const [uploadedSrtInfo, setUploadedSrtInfo] = useState(() => {
     try {
@@ -56,6 +61,218 @@ const ButtonsContainer = ({
 
   // Ref for WavyProgressIndicator animations
   const wavyProgressRef = useRef(null);
+  
+  // Auto-generate flow implementation
+  const startAutoGenerateFlow = async () => {
+    if (isAutoGenerating) return;
+    
+    setIsAutoGenerating(true);
+    autoFlowAbortedRef.current = false;
+    
+    try {
+      // Step 0: Save current subtitle state (especially if cleared/empty)
+      console.log('[AutoFlow] Step 0: Saving current subtitle state...');
+      const lyricsSaveBtn = document.querySelector('.lyrics-save-btn');
+      if (lyricsSaveBtn) {
+        console.log('[AutoFlow] Triggering lyrics save to persist current state (including empty state)');
+        lyricsSaveBtn.click();
+        // Wait a moment for save to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      // Step 1: Trigger video loading (semi-automatic generate)
+      setAutoFlowStep('loading');
+      console.log('[AutoFlow] Step 1: Triggering video load...');
+      
+      // Click the semi-automatic generate button to trigger video loading
+      handleGenerateSubtitles();
+      
+      // Wait for video to be loaded (either uploaded or downloaded)
+      await waitForVideoReady();
+      
+      if (autoFlowAbortedRef.current) return;
+      
+      // Step 2: Trigger video analysis
+      setAutoFlowStep('analyzing');
+      console.log('[AutoFlow] Step 2: Starting video analysis...');
+      
+      // Wait a moment for buttons to be ready after video load
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Find the video analysis button - check for either the button or its container
+      const analysisButton = document.querySelector('.video-analysis-button, .video-analysis-button-container button');
+      console.log('[AutoFlow] Found analysis button:', analysisButton);
+      
+      if (analysisButton && !analysisButton.disabled) {
+        // Check if it already has analysis (edit mode)
+        const hasAnalysis = analysisButton.classList.contains('has-analysis');
+        
+        if (!hasAnalysis) {
+          console.log('[AutoFlow] Triggering video analysis...');
+          analysisButton.click();
+          
+          // Wait for analysis to complete
+          await waitForAnalysisComplete();
+        } else {
+          console.log('[AutoFlow] Analysis already exists, skipping analysis step');
+          // Show temporary toast about using existing analysis
+          const toast = document.createElement('div');
+          toast.className = 'auto-flow-toast';
+          toast.textContent = t('autoFlow.usingExistingAnalysis', 'Using existing analysis rules');
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 2000);
+        }
+      } else {
+        console.log('[AutoFlow] Analysis button not found or disabled, continuing without analysis');
+        // Show temporary toast about skipping analysis
+        const toast = document.createElement('div');
+        toast.className = 'auto-flow-toast';
+        toast.textContent = t('autoFlow.analysisSkipped', 'Analysis skipped, continuing with default settings');
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+      }
+      
+      if (autoFlowAbortedRef.current) return;
+      
+      // Step 3: Trigger Ctrl+A to select all and open processing modal
+      setAutoFlowStep('processing');
+      console.log('[AutoFlow] Step 3: Selecting all timeline and opening processing modal...');
+      
+      // Dispatch Ctrl+A keyboard event
+      const ctrlAEvent = new KeyboardEvent('keydown', {
+        key: 'a',
+        code: 'KeyA',
+        ctrlKey: true,
+        bubbles: true
+      });
+      document.dispatchEvent(ctrlAEvent);
+      
+      // Wait a moment for modal to open
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (autoFlowAbortedRef.current) return;
+      
+      // Step 4: Click the process button in the modal
+      console.log('[AutoFlow] Step 4: Starting processing...');
+      const processBtn = document.querySelector('.video-processing-modal .process-btn');
+      if (processBtn && !processBtn.disabled) {
+        processBtn.click();
+      }
+      
+      // Auto-flow complete
+      setAutoFlowStep('complete');
+      console.log('[AutoFlow] Auto-generation flow completed successfully');
+      
+    } catch (error) {
+      console.error('[AutoFlow] Error during auto-generation:', error);
+      // Show error toast
+      const toast = document.createElement('div');
+      toast.className = 'auto-flow-toast error';
+      toast.textContent = t('autoFlow.error', 'Auto-generation encountered an error');
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    } finally {
+      setIsAutoGenerating(false);
+      setAutoFlowStep('');
+    }
+  };
+  
+  // Helper function to wait for video to be ready
+  const waitForVideoReady = () => {
+    return new Promise((resolve) => {
+      let checkCount = 0;
+      const maxChecks = 300; // 5 minutes max wait
+      
+      const checkInterval = setInterval(() => {
+        checkCount++;
+        
+        // Check if video is ready (uploaded or downloaded)
+        if (uploadedFile || uploadedFileData) {
+          clearInterval(checkInterval);
+          console.log('[AutoFlow] Video is ready');
+          resolve();
+        } else if (checkCount >= maxChecks || autoFlowAbortedRef.current) {
+          clearInterval(checkInterval);
+          console.log('[AutoFlow] Video loading timeout or aborted');
+          resolve();
+        }
+      }, 1000); // Check every second
+    });
+  };
+  
+  // Helper function to wait for analysis to complete
+  const waitForAnalysisComplete = () => {
+    return new Promise((resolve) => {
+      let checkCount = 0;
+      const maxChecks = 60; // 1 minute max wait for analysis
+      let modalClosedCount = 0;
+      
+      const checkInterval = setInterval(() => {
+        checkCount++;
+        
+        // Check for analysis modal or completion indicators
+        const analysisModal = document.querySelector('.video-analysis-modal');
+        const rulesEditor = document.querySelector('.rules-editor-modal');
+        const hasRules = localStorage.getItem('transcription_rules');
+        
+        if (analysisModal) {
+          // Video analysis modal is open
+          console.log('[AutoFlow] Video analysis modal detected, waiting...');
+          
+          // Check if there's a "Use Default Settings" button (appears after analysis)
+          const useDefaultBtn = analysisModal.querySelector('button.secondary-btn, button.use-default-btn');
+          if (useDefaultBtn) {
+            console.log('[AutoFlow] Clicking "Use Default Settings" button');
+            useDefaultBtn.click();
+            modalClosedCount++;
+          }
+        } else if (rulesEditor) {
+          // Rules editor modal is open
+          console.log('[AutoFlow] Rules editor modal detected, auto-closing...');
+          
+          // Wait a moment to show it, then close
+          if (modalClosedCount === 0) {
+            setTimeout(() => {
+              // Try multiple selectors for close button
+              const closeBtn = rulesEditor.querySelector('.close-button') || 
+                              rulesEditor.querySelector('.cancel-button') ||
+                              rulesEditor.querySelector('button[aria-label*="Close"]');
+              
+              if (closeBtn) {
+                console.log('[AutoFlow] Clicking close button on rules editor');
+                closeBtn.click();
+              } else {
+                // Fallback: trigger ESC key to close modal
+                console.log('[AutoFlow] No close button found, triggering ESC key');
+                const escEvent = new KeyboardEvent('keydown', {
+                  key: 'Escape',
+                  code: 'Escape',
+                  bubbles: true
+                });
+                document.dispatchEvent(escEvent);
+              }
+            }, 1000); // Show modal for 1 second
+            modalClosedCount++;
+          }
+        } else if ((hasRules && modalClosedCount > 0) || checkCount >= maxChecks || autoFlowAbortedRef.current) {
+          // Analysis complete when we have rules AND we've closed at least one modal
+          clearInterval(checkInterval);
+          console.log('[AutoFlow] Analysis complete or timeout');
+          resolve();
+        }
+      }, 500); // Check every 500ms for faster response
+    });
+  };
+  
+  // Stop auto-flow if user manually intervenes
+  const stopAutoFlow = () => {
+    if (isAutoGenerating) {
+      autoFlowAbortedRef.current = true;
+      setIsAutoGenerating(false);
+      setAutoFlowStep('');
+      console.log('[AutoFlow] Auto-generation stopped by user');
+    }
+  };
 
   // Persist uploadedSrtInfo to localStorage whenever it changes
   useEffect(() => {
@@ -226,10 +443,12 @@ const ButtonsContainer = ({
 
       {/* Hide generate button when retrying segments, when isRetrying is true, or when any segment is being retried */}
       {validateInput() && retryingSegments.length === 0 && !isRetrying && !segmentsStatus.some(segment => segment.status === 'retrying') && (
-        <button
-          className={`generate-btn ${isGenerating || isDownloading ? 'processing' : ''}`}
-          onClick={handleGenerateSubtitles}
-          disabled={isGenerating || isDownloading}
+        <>
+          {/* Semi-automatic Generate Button */}
+          <button
+            className={`generate-btn semi-auto ${isGenerating || isDownloading ? 'processing' : ''}`}
+            onClick={handleGenerateSubtitles}
+            disabled={isGenerating || isDownloading || isAutoGenerating}
         >
           {/* Static Gemini icons for fallback */}
           <div className="gemini-icon-container">
@@ -280,13 +499,53 @@ const ButtonsContainer = ({
             </span>
           ) : isSrtOnlyMode ? t('output.srtOnlyMode', 'Working with SRT only') :
             hasUrlAndSrtOnly ? t('output.downloadAndViewWithSrt', 'Download + View with Uploaded SRT') :
-            selectedVideo && !uploadedFile ? t('output.downloadAndGenerate', 'Download video + Generate timed subtitles with AI') :
-            t('header.tagline')}
-        </button>
+            selectedVideo && !uploadedFile ? t('output.downloadAndGenerateSemiAuto', 'Tải xuống video + Tạo sub bán tự động') :
+            t('header.semiAutoGenerate', 'Tạo sub bán tự động')}
+          </button>
+          
+          {/* Auto Generate Button */}
+          <button
+            className={`generate-btn auto-generate ${isAutoGenerating ? 'processing' : ''}`}
+            onClick={startAutoGenerateFlow}
+            disabled={isGenerating || isDownloading || isAutoGenerating}
+            title={t('header.autoGenerateTooltip', 'Fully automatic subtitle generation with analysis and optimal settings')}
+          >
+            {/* Gemini icons for auto-generate button */}
+            <div className="gemini-icon-container">
+              <div className="gemini-mini-icon random-2 size-sm">
+                <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14 28C14 26.0633 13.6267 24.2433 12.88 22.54C12.1567 20.8367 11.165 19.355 9.905 18.095C8.645 16.835 7.16333 15.8433 5.46 15.12C3.75667 14.3733 1.93667 14 0 14C1.93667 14 3.75667 13.6383 5.46 12.915C7.16333 12.1683 8.645 11.165 9.905 9.905C11.165 8.645 12.1567 7.16333 12.88 5.46C13.6267 3.75667 14 1.93667 14 0C14 1.93667 14.3617 3.75667 15.085 5.46C15.8317 7.16333 16.835 8.645 18.095 9.905C19.355 11.165 20.8367 12.1683 22.54 12.915C24.2433 13.6383 26.0633 14 28 14C26.0633 14 24.2433 14.3733 22.54 15.12C20.8367 15.8433 19.355 16.835 18.095 18.095C16.835 19.355 15.8317 20.8367 15.085 22.54C14.3617 24.2433 14 26.0633 14 28Z" stroke="currentColor" strokeWidth="1.5"/>
+                </svg>
+              </div>
+              <div className="gemini-mini-icon random-4 size-md">
+                <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M14 28C14 26.0633 13.6267 24.2433 12.88 22.54C12.1567 20.8367 11.165 19.355 9.905 18.095C8.645 16.835 7.16333 15.8433 5.46 15.12C3.75667 14.3733 1.93667 14 0 14C1.93667 14 3.75667 13.6383 5.46 12.915C7.16333 12.1683 8.645 11.165 9.905 9.905C11.165 8.645 12.1567 7.16333 12.88 5.46C13.6267 3.75667 14 1.93667 14 0C14 1.93667 14.3617 3.75667 15.085 5.46C15.8317 7.16333 16.835 8.645 18.095 9.905C19.355 11.165 20.8367 12.1683 22.54 12.915C24.2433 13.6383 26.0633 14 28 14C26.0633 14 24.2433 14.3733 22.54 15.12C20.8367 15.8433 19.355 16.835 18.095 18.095C16.835 19.355 15.8317 20.8367 15.085 22.54C14.3617 24.2433 14 26.0633 14 28Z" stroke="currentColor" strokeWidth="1.5"/>
+                </svg>
+              </div>
+            </div>
+            {isAutoGenerating ? (
+              <span className="processing-text-container">
+                <LoadingIndicator
+                  theme={isDarkTheme ? 'light' : 'dark'}
+                  showContainer={false}
+                  size={16}
+                  className="buttons-processing-loading"
+                  color={isDarkTheme ? '#324574' : '#FFFFFF'}
+                />
+                <span className="processing-text">
+                  {autoFlowStep === 'loading' ? t('autoFlow.loading', 'Đang tải video...') :
+                   autoFlowStep === 'analyzing' ? t('autoFlow.analyzing', 'Đang phân tích...') :
+                   autoFlowStep === 'processing' ? t('autoFlow.processing', 'Đang xử lý...') :
+                   t('autoFlow.running', 'Đang chạy tự động...')}
+                </span>
+              </span>
+            ) : t('header.autoGenerate', 'Tạo sub tự động')}
+          </button>
+        </>
       )}
 
       {/* Add cancel button as a proper member of the buttons-container */}
-      {isDownloading && currentDownloadId && validateInput() && retryingSegments.length === 0 && !isRetrying && !segmentsStatus.some(segment => segment.status === 'retrying') && (
+      {isDownloading && currentDownloadId && validateInput() && retryingSegments.length === 0 && !isRetrying && !segmentsStatus.some(segment => segment.status === 'retrying') && !isAutoGenerating && (
         <button
           className="cancel-download-btn"
           onClick={handleCancelDownload}

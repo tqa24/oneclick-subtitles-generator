@@ -12,6 +12,9 @@ let globalTranscriptionRules = null;
 // LocalStorage key for transcription rules (legacy - will be removed)
 const TRANSCRIPTION_RULES_KEY = 'transcription_rules';
 
+// LocalStorage key for video-specific rules association
+const RULES_VIDEO_ID_KEY = 'transcription_rules_video_id';
+
 // Current cache ID for the video being processed
 let currentCacheId = null;
 
@@ -20,8 +23,14 @@ let currentCacheId = null;
  * @param {string} cacheId - Cache ID for the current video
  */
 export const setCurrentCacheId = (cacheId) => {
+  const previousCacheId = currentCacheId;
   currentCacheId = cacheId;
-
+  
+  // If the video has changed, clear in-memory rules to force reload
+  if (previousCacheId && previousCacheId !== cacheId) {
+    console.log('[TranscriptionRules] Video changed, clearing in-memory rules');
+    globalTranscriptionRules = null;
+  }
 };
 
 /**
@@ -55,7 +64,8 @@ export const setTranscriptionRules = async (rules) => {
 
       const result = await response.json();
       if (result.success) {
-
+        // Also save the association between rules and video ID
+        localStorage.setItem(RULES_VIDEO_ID_KEY, currentCacheId);
       } else {
         console.error('Failed to save transcription rules to cache:', result.error);
       }
@@ -66,14 +76,17 @@ export const setTranscriptionRules = async (rules) => {
     // Fallback to localStorage if no cache ID is available
     try {
       localStorage.setItem(TRANSCRIPTION_RULES_KEY, JSON.stringify(rules));
-
+      // Save the video ID association if we have a cache ID
+      if (currentCacheId) {
+        localStorage.setItem(RULES_VIDEO_ID_KEY, currentCacheId);
+      }
     } catch (error) {
       console.error('Error saving transcription rules to localStorage:', error);
     }
   } else {
     // If rules are null, remove from localStorage
     localStorage.removeItem(TRANSCRIPTION_RULES_KEY);
-
+    localStorage.removeItem(RULES_VIDEO_ID_KEY);
   }
 
   // Dispatch event to notify components that transcription rules have been updated
@@ -100,12 +113,26 @@ export const getTranscriptionRules = async () => {
 
       if (data.exists && data.rules) {
         globalTranscriptionRules = data.rules; // Update in-memory rules
-
+        // Update the video ID association
+        localStorage.setItem(RULES_VIDEO_ID_KEY, currentCacheId);
         return data.rules;
       }
     } catch (error) {
       console.error('Error loading transcription rules from cache:', error);
     }
+  }
+
+  // Check if the saved rules are for the current video
+  const savedVideoId = localStorage.getItem(RULES_VIDEO_ID_KEY);
+  const isMatchingVideo = savedVideoId && currentCacheId && savedVideoId === currentCacheId;
+  
+  // Only load rules if they match the current video or if we don't have video IDs to compare
+  const shouldLoadRules = isMatchingVideo || (!savedVideoId && !currentCacheId);
+  
+  if (!shouldLoadRules) {
+    console.log('[TranscriptionRules] Skipping rules load - different video detected');
+    console.log('[TranscriptionRules] Saved video ID:', savedVideoId, 'Current video ID:', currentCacheId);
+    return null;
   }
 
   // Fallback to localStorage
@@ -114,7 +141,7 @@ export const getTranscriptionRules = async () => {
     if (savedRules) {
       const parsedRules = JSON.parse(savedRules);
       globalTranscriptionRules = parsedRules; // Update in-memory rules
-
+      console.log('[TranscriptionRules] Loaded rules for matching video');
       return parsedRules;
     }
   } catch (error) {
@@ -134,13 +161,27 @@ export const getTranscriptionRulesSync = () => {
     return globalTranscriptionRules;
   }
 
+  // Check if the saved rules are for the current video
+  const savedVideoId = localStorage.getItem(RULES_VIDEO_ID_KEY);
+  const isMatchingVideo = savedVideoId && currentCacheId && savedVideoId === currentCacheId;
+  
+  // Only load rules if they match the current video or if we don't have video IDs to compare
+  // (backwards compatibility for when video ID wasn't tracked)
+  const shouldLoadRules = isMatchingVideo || (!savedVideoId && !currentCacheId);
+  
+  if (!shouldLoadRules) {
+    console.log('[TranscriptionRules] Skipping rules load - different video detected');
+    console.log('[TranscriptionRules] Saved video ID:', savedVideoId, 'Current video ID:', currentCacheId);
+    return null;
+  }
+
   // Fallback to localStorage
   try {
     const savedRules = localStorage.getItem(TRANSCRIPTION_RULES_KEY);
     if (savedRules) {
       const parsedRules = JSON.parse(savedRules);
       globalTranscriptionRules = parsedRules; // Update in-memory rules
-
+      console.log('[TranscriptionRules] Loaded rules for matching video');
       return parsedRules;
     }
   } catch (error) {
@@ -158,6 +199,7 @@ export const clearTranscriptionRules = async () => {
 
   // Clear from localStorage
   localStorage.removeItem(TRANSCRIPTION_RULES_KEY);
+  localStorage.removeItem(RULES_VIDEO_ID_KEY);
 
   // Clear from cache if we have a cache ID
   if (currentCacheId) {
