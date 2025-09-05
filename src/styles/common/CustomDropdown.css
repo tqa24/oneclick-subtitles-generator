@@ -159,19 +159,35 @@
   will-change: transform, opacity;
 }
 
-/* Closing without selection - smooth fade out */
+/* Closing without selection - reverse of opening animation */
 .custom-dropdown-menu.is-closing-no-selection {
-  transition: clip-path 250ms cubic-bezier(0.4, 0, 0.2, 1),
-              width 250ms cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 250ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+  /* Mirror the opening animation but in reverse */
+  transition: clip-path 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              width 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              border-radius 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 50ms !important;
+  /* Opacity has 50ms delay to fade after shrinking starts */
 }
 
 .custom-dropdown-menu.is-closing-no-selection .dropdown-options-list {
   overflow: hidden !important;
 }
 
+/* Options fade out in reverse order during non-selection close */
 .custom-dropdown-menu.is-closing-no-selection .dropdown-option {
-  will-change: opacity, transform;
+  animation: fade-out-option 150ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: calc(var(--item-index, 0) * 10ms);
+}
+
+@keyframes fade-out-option {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(2px);
+  }
 }
 
 /* Drop-down animation (default) */

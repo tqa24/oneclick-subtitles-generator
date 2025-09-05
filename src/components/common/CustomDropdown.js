@@ -508,79 +508,56 @@ const CustomDropdown = ({
     }
   }, [isOpen, value, dropdownPosition.upCount]);
 
-  // Smooth close animation for non-selection closes
+  // Smooth close animation for non-selection closes - reverse of opening
   const handleSmoothClose = () => {
     if (menuRef.current) {
-      const list = menuRef.current.querySelector('.dropdown-options-list');
-      const buttons = list ? Array.from(list.querySelectorAll('.dropdown-option')) : [];
+      const el = menuRef.current;
       
-      // Add closing class for smooth animation
-      menuRef.current.classList.add('is-closing-no-selection');
+      // Add closing class
+      el.classList.add('is-closing-no-selection');
+      el.classList.remove('is-open');
       
-      // Find currently selected/highlighted item if any
-      const currentValue = value;
-      const currentIndex = options.findIndex(o => o.value === currentValue);
-      const currentBtn = buttons[currentIndex];
+      // Get the current height for calculating clip
+      const currentHeight = el.offsetHeight || dropdownPosition.height || 200;
       
-      if (list && currentBtn) {
-        // Get position of current selection
-        const selectedRect = currentBtn.getBoundingClientRect();
-        const menuRect = menuRef.current.getBoundingClientRect();
-        const optionHeight = currentBtn.offsetHeight;
-        const selectedRelativeTop = selectedRect.top - menuRect.top;
-        const menuHeight = menuRef.current.offsetHeight;
-        
-        // Fade all items with staggered timing based on distance from selected
-        buttons.forEach((btn, idx) => {
-          const distance = Math.abs(idx - currentIndex);
-          const delay = distance * 20; // 20ms delay per item distance
-          
-          btn.style.transition = `opacity 200ms cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms,
-                                   transform 200ms cubic-bezier(0.4, 0, 0.2, 1)`;
-          btn.style.opacity = '0';
-          btn.style.transform = 'scale(0.95)';
-        });
-        
-        // Collapse around current selection
-        const clipTop = selectedRelativeTop * 0.8; // Don't fully collapse, leave some space
-        const clipBottom = (menuHeight - selectedRelativeTop - optionHeight) * 0.8;
-        
-        menuRef.current.style.transition = 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)';
-        menuRef.current.style.clipPath = `inset(${clipTop}px 0 ${clipBottom}px 0 round var(--dropdown-radius, 24px))`;
-        menuRef.current.style.width = `${dropdownPosition.width}px`;
-        menuRef.current.style.opacity = '0';
-        
+      // Apply reverse animation - exact opposite of opening
+      // 1. Start shrinking width back to button width
+      el.style.transition = 'clip-path 200ms cubic-bezier(0.4, 0, 0.2, 1), width 200ms cubic-bezier(0.4, 0, 0.2, 1), opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 50ms';
+      el.style.width = `${dropdownPosition.width}px`;
+      
+      // 2. Apply clip-path based on reveal mode (reverse of opening)
+      let clipTop = 0, clipBottom = 0;
+      if (dropdownPosition.revealMode === 'up') {
+        // Was revealed upward, collapse back down
+        clipTop = Math.max(0, currentHeight - 42);
+        clipBottom = 0;
+      } else if (dropdownPosition.revealMode === 'down') {
+        // Was revealed downward, collapse back up
+        clipTop = 0;
+        clipBottom = Math.max(0, currentHeight - 42);
       } else {
-        // No selection - uniform fade and shrink
-        buttons.forEach((btn, idx) => {
-          const delay = idx * 15; // Staggered fade
-          btn.style.transition = `opacity 150ms ease-out ${delay}ms`;
-          btn.style.opacity = '0';
-        });
-        
-        // Center collapse
-        const menuHeight = menuRef.current.offsetHeight;
-        const collapseAmount = menuHeight * 0.4;
-        
-        menuRef.current.style.transition = 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)';
-        menuRef.current.style.clipPath = `inset(${collapseAmount}px 0 ${collapseAmount}px 0 round var(--dropdown-radius, 24px))`;
-        menuRef.current.style.width = `${dropdownPosition.width}px`;
-        menuRef.current.style.opacity = '0';
+        // Center reveal - collapse from both sides
+        const inset = Math.max(0, (currentHeight - 42) / 2);
+        clipTop = inset;
+        clipBottom = inset;
       }
       
-      // Close after animation
+      el.style.clipPath = `inset(${clipTop}px 0 ${clipBottom}px 0 round var(--dropdown-radius, 24px))`;
+      
+      // 3. Fade out gracefully
+      el.style.opacity = '0';
+      
+      // Close after animation completes
       setTimeout(() => {
         setIsOpen(false);
         if (menuRef.current) {
           menuRef.current.classList.remove('is-closing-no-selection');
           menuRef.current.style.opacity = '';
-          buttons.forEach(btn => {
-            btn.style.opacity = '';
-            btn.style.transform = '';
-            btn.style.transition = '';
-          });
+          menuRef.current.style.width = '';
+          menuRef.current.style.clipPath = '';
+          menuRef.current.style.transition = '';
         }
-      }, 250);
+      }, 200);
     } else {
       // Fallback immediate close
       setIsOpen(false);
