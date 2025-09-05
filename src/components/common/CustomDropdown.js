@@ -83,6 +83,8 @@ const CustomDropdown = ({
 
   // Custom scrollbar implementation specifically for dropdown
   const initializeDropdownScrollbar = (container) => {
+    if (!container) return; // Guard against null container
+    
     const optionsList = container.querySelector('.dropdown-options-list');
     if (!optionsList) return;
 
@@ -210,15 +212,21 @@ const CustomDropdown = ({
     const resizeObserver = new ResizeObserver((entries) => {
       for (let entry of entries) {
         // Menu size changed, update scrollbar
-        if (entry.target === menuRef.current) {
+        if (entry.target && entry.target === menuRef.current && menuRef.current) {
           initializeDropdownScrollbar(menuRef.current);
         }
       }
     });
 
-    resizeObserver.observe(menuRef.current);
+    // Small delay to ensure menu is rendered
+    const timeoutId = setTimeout(() => {
+      if (menuRef.current) {
+        resizeObserver.observe(menuRef.current);
+      }
+    }, 100);
 
     return () => {
+      clearTimeout(timeoutId);
       resizeObserver.disconnect();
     };
   }, [isOpen]);
@@ -238,17 +246,17 @@ const CustomDropdown = ({
       if (firstOption) {
         const computedStyle = window.getComputedStyle(firstOption);
         const actualHeight = firstOption.offsetHeight;
-        // Use the actual measured height if available, with a small buffer
+        // Use the actual measured height if available
         if (actualHeight > 0) {
-          // Add 1-2px buffer per item to account for sub-pixel rendering
-          optionHeight = Math.ceil(actualHeight) + 1;
+          // Just use ceiling to handle sub-pixel rendering, no extra buffer
+          optionHeight = Math.ceil(actualHeight);
         }
       }
     }
     
     const borderCompensation = 2; // 1px border top + 1px border bottom
     const menuPadding = 4; // Container padding: 2px top + 2px bottom
-    const extraBuffer = 8; // Extra buffer to ensure no scrollbar appears
+    const extraBuffer = 2; // Small buffer to prevent scrollbar (reduced from 8)
     const maxMenuHeight = 400; // Cap to keep UI compact
     const spacing = 4;
 
@@ -312,13 +320,7 @@ const CustomDropdown = ({
     });
 
     // After position update, reinitialize scrollbar if menu is already open
-    if (isOpen && menuRef.current) {
-      setTimeout(() => {
-        if (menuRef.current) {
-          initializeDropdownScrollbar(menuRef.current);
-        }
-      }, 50);
-    }
+    // Note: menuRef.current might not exist yet during initial calculation
   };
 
   // Ensure chevron shows correct direction before first open
@@ -412,9 +414,13 @@ const CustomDropdown = ({
                   // Scrollbar is present but we want to hide it if possible
                   const currentHeight = parseInt(menuRef.current.style.getPropertyValue('--menu-height') || '0');
                   if (currentHeight > 0 && currentHeight < 400) {
-                    menuRef.current.style.setProperty('--menu-height', `${currentHeight + 10}px`);
+                    menuRef.current.style.setProperty('--menu-height', `${currentHeight + 4}px`);
                     // Re-initialize scrollbar after height adjustment
-                    setTimeout(() => initializeDropdownScrollbar(menuRef.current), 50);
+                    setTimeout(() => {
+                      if (menuRef.current) {
+                        initializeDropdownScrollbar(menuRef.current);
+                      }
+                    }, 50);
                   }
                 }
               }
