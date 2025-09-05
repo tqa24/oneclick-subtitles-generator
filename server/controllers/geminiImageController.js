@@ -111,7 +111,7 @@ const generateImage = async (req, res) => {
     }
 
 	    // Selected image model (defaults to UI default)
-	    let selectedImageModel = 'gemini-2.5-flash-image-preview';
+	    let selectedImageModel = 'gemini-2.0-flash-preview-image-generation';
 	    try {
 	      const storagePath = path.join(process.cwd(), 'localStorage.json');
 	      const storageRaw = await fs.readFile(storagePath, 'utf-8');
@@ -359,7 +359,7 @@ const getPrompts = async (req, res) => {
 
     // Pull models from persisted storage (preferred) else fallback to code scanning
     let promptModel = 'gemini-2.5-flash-lite';
-    let imageModel = 'gemini-2.5-flash-image-preview';
+    let imageModel = 'gemini-2.0-flash-preview-image-generation';
     try {
       const storagePath = path.join(process.cwd(), 'localStorage.json');
       const storageRaw = await fs.readFile(storagePath, 'utf-8');

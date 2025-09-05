@@ -459,7 +459,7 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                     const duration = subtitle.end - subtitle.start;
                     if (lastDuration !== null && Math.abs(duration - lastDuration) < 0.01) {
                       uniformDurationCount++;
-                      if (uniformDurationCount >= 5) {
+                      if (uniformDurationCount >= 10) {
                         foundHallucination = true;
                         console.log(`[StreamingService] Detected hallucination: ${uniformDurationCount + 1} subtitles with identical duration ${duration.toFixed(2)}s`);
                         break;

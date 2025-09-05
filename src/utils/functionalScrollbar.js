@@ -163,11 +163,8 @@ class FunctionalScrollbar {
     const scrollPercentage = Math.max(0, Math.min(1, clickY / containerHeight));
     const targetScrollTop = scrollPercentage * maxScrollTop;
     
-    // Smooth scroll to target position
-    this.textarea.scrollTo({
-      top: targetScrollTop,
-      behavior: 'smooth'
-    });
+    // Jump instantly to target position (no smooth behavior)
+    this.textarea.scrollTop = targetScrollTop;
   }
   
   destroy() {

@@ -180,9 +180,9 @@
   transition: none !important; /* Disable transitions while dragging */
 }
 
-/* Smooth scrolling for the textarea */
+/* Remove smooth scrolling so drag follows immediately */
 .custom-scrollbar-textarea {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
 }
 
 /* Variants for different use cases */

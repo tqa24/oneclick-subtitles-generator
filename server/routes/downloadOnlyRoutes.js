@@ -143,8 +143,11 @@ router.post('/download-only', async (req, res) => {
       fs.unlinkSync(outputPath);
     }
 
-    // Start download process asynchronously
-    downloadMediaAsync(url, outputPath, type, quality, videoId, useCookies, processKey);
+    // Start download process asynchronously; swallow rejections to avoid unhandled promise rejection crashing the server
+    downloadMediaAsync(url, outputPath, type, quality, videoId, useCookies, processKey)
+      .catch((err) => {
+        console.error(`[DOWNLOAD-ONLY] Background download error for ${videoId}:`, err?.message || err);
+      });
 
     res.json({
       success: true,
@@ -385,14 +388,12 @@ async function downloadMediaAsync(url, outputPath, type, quality, videoId, useCo
     } catch (error) {
       if (error.code === 'EEXIST') {
         console.log(`[DOWNLOAD-ONLY] CRITICAL: File is being written by another process: ${outputPath}`);
-        activeDownloads.delete(downloadKey);
+        const cleanupKey = `${url}_${type}_${quality || 'default'}`;
+        activeDownloads.delete(cleanupKey);
         activeFileOperations.delete(outputPath);
         activeYtdlpProcesses.delete(processKey);
-        return res.json({
-          success: false,
-          error: 'File is being written by another process',
-          videoId: videoId
-        });
+        setDownloadProgress(videoId, 0, 'error');
+        return reject(new Error('File is being written by another process'));
       }
     }
 
@@ -427,7 +428,7 @@ async function downloadMediaAsync(url, outputPath, type, quality, videoId, useCo
       // Removed duplicate progress parsing from stderr to prevent conflicts
     });
 
-    ytdlpProcess.on('close', (code) => {
+    ytdlpProcess.on('close', (code, signal) => {
       // Clean up the active download tracking
       const cleanupKey = `${url}_${type}_${quality || 'default'}`;
       activeDownloads.delete(cleanupKey);
@@ -442,6 +443,15 @@ async function downloadMediaAsync(url, outputPath, type, quality, videoId, useCo
       activeYtdlpProcesses.delete(processKey);
       console.log(`[DOWNLOAD-ONLY] Released yt-dlp process lock: ${processKey}`);
 
+      // Detect explicit cancellation (by signal) or via progress tracker state
+      let wasCancelled = false;
+      try {
+        const state = getDownloadProgress(videoId);
+        wasCancelled = state && state.status === 'cancelled';
+      } catch (e) {
+        // ignore
+      }
+
       if (code === 0) {
         console.log(`[DOWNLOAD-ONLY] Download completed successfully for ${videoId}`);
         setDownloadProgress(videoId, 100, 'completed');
@@ -454,6 +464,19 @@ async function downloadMediaAsync(url, outputPath, type, quality, videoId, useCo
         }
 
         resolve();
+      } else if (signal === 'SIGTERM' || wasCancelled) {
+        console.log(`[DOWNLOAD-ONLY] Download cancelled for ${videoId} (signal: ${signal || 'none'})`);
+        // Remove partial file if exists
+        try {
+          if (fs.existsSync(outputPath)) {
+            fs.unlinkSync(outputPath);
+            console.log(`[DOWNLOAD-ONLY] Removed partial file after cancel: ${outputPath}`);
+          }
+        } catch (e) {
+          console.warn(`[DOWNLOAD-ONLY] Failed to remove partial file ${outputPath}:`, e?.message || e);
+        }
+        // Do not mark as error; cancel route already set status to 'cancelled' and broadcasted
+        resolve(); // Resolve gracefully to avoid unhandled rejection on cancellation
       } else {
         console.error(`[DOWNLOAD-ONLY] Download failed for ${videoId} with code ${code}:`, stderr);
         setDownloadProgress(videoId, 0, 'error');

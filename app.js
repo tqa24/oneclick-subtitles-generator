@@ -321,13 +321,25 @@ app.get('/api/startup-mode', (req, res) => {
 // Endpoint to save localStorage data for server-side use
 app.post('/api/save-local-storage', express.json(), (req, res) => {
   try {
-    const localStorageData = req.body;
+    const incomingData = req.body || {};
+    const localStoragePath = path.join(process.cwd(), 'localStorage.json');
 
+    // Read existing server-side storage if present
+    let existingData = {};
+    try {
+      if (fs.existsSync(localStoragePath)) {
+        const raw = fs.readFileSync(localStoragePath, 'utf-8');
+        existingData = JSON.parse(raw || '{}');
+      }
+    } catch (_) {
+      existingData = {};
+    }
+
+    // Merge: incoming keys override existing; unspecified keys (like background_* models) are preserved
+    const merged = { ...existingData, ...incomingData };
 
     // Save to a file
-    const localStoragePath = path.join(__dirname, 'localStorage.json');
-    fs.writeFileSync(localStoragePath, JSON.stringify(localStorageData, null, 2));
-
+    fs.writeFileSync(localStoragePath, JSON.stringify(merged, null, 2));
 
     res.json({ success: true, message: 'localStorage data saved successfully' });
   } catch (error) {
