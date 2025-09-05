@@ -764,7 +764,9 @@ const CustomDropdown = ({
         style={isOpen ? { boxShadow: 'none', borderColor: 'transparent' } : undefined}
       >
         <span className={`dropdown-value ${isOpen ? 'morphing-open' : ''}`}>
-          {selectedOption ? selectedOption.label : placeholder}
+          {selectedOption ? (
+            typeof selectedOption.label === 'string' ? selectedOption.label : selectedOption.label
+          ) : placeholder}
         </span>
         <DropdownChevron mode={getChevronModeFromIndex(value, options)} />
       </button>
@@ -877,7 +879,7 @@ const CustomDropdown = ({
                     transform: isSelected ? 'translateY(0)' : 'translateY(0)',
                   }}
                 >
-                  {option.label}
+                  {typeof option.label === 'string' ? option.label : option.label}
                 </button>
               );
             })}
