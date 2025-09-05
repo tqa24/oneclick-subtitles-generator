@@ -105,12 +105,32 @@
               opacity 200ms cubic-bezier(0.2, 0, 0, 1),
               width 200ms cubic-bezier(0.2, 0, 0, 1);
   clip-path: inset(0 0 0 0);
-  will-change: clip-path, width;
+  will-change: clip-path, width, transform;
 }
 
 /* When open, apply smaller radius on the menu element itself (portal) */
 .custom-dropdown-menu.anchored-expand.is-open {
   --dropdown-radius: 18px;
+}
+
+/* Closing state with selection - coordinated animation */
+.custom-dropdown-menu.is-closing-with-selection {
+  transition: clip-path 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              width 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              height 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              border-radius 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+  overflow: hidden !important;
+}
+
+.custom-dropdown-menu.is-closing-with-selection .dropdown-options-list {
+  overflow: hidden !important; /* Prevent scrolling during animation */
+}
+
+.custom-dropdown-menu.is-closing-with-selection .dropdown-option {
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+  will-change: transform, opacity;
 }
 
 /* Drop-down animation (default) */
@@ -310,6 +330,24 @@
   background-color: var(--md-primary-container);
   color: var(--md-on-primary-container);
   font-weight: 600;
+  position: relative;
+}
+
+/* Selection animation pulse */
+@keyframes selection-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--md-primary-rgb), 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(var(--md-primary-rgb), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--md-primary-rgb), 0);
+  }
+}
+
+.dropdown-option.selecting {
+  animation: selection-pulse 0.4s ease-out;
 }
 
 .dropdown-option.selected:hover {

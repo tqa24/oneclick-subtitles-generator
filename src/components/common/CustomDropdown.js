@@ -400,9 +400,12 @@ const CustomDropdown = ({
         el.style.width = `${targetW}px`; // Expand to full width
         el.style.clipPath = `inset(0 0 0 0 round var(--dropdown-radius, 12px))`;
       });
-    } else {
-      // Closing: reverse the opening direction and shrink width
+    } else if (!el.classList.contains('is-closing-with-selection')) {
+      // Only apply default closing if not handled by selection animation
       const targetH = dropdownPosition.height || 200;
+      
+      // Smooth transition for closing without selection
+      el.style.transition = 'clip-path 200ms cubic-bezier(0.4, 0, 0.2, 1), width 200ms cubic-bezier(0.4, 0, 0.2, 1)';
       el.style.width = `${dropdownPosition.width}px`; // Shrink back to button width
       
       let clipTop = 0, clipBottom = 0;
@@ -474,51 +477,79 @@ const CustomDropdown = ({
   }, [isOpen, value, dropdownPosition.upCount]);
 
   const handleOptionSelect = (optionValue) => {
-    // Aggressive morph animation: keep menu open briefly, animate items shifting so new selection moves to center
     if (menuRef.current) {
       const list = menuRef.current.querySelector('.dropdown-options-list');
       const buttons = list ? Array.from(list.querySelectorAll('.dropdown-option')) : [];
-      // Get actual option height from rendered element
-      const firstOption = buttons[0];
-      const optionHeight = firstOption ? firstOption.offsetHeight : 52;
       const newIndex = Math.max(0, options.findIndex(o => o.value === optionValue));
+      const selectedBtn = buttons[newIndex];
 
-      if (list) {
-        // Freeze height reveal during morph
-        const targetH = dropdownPosition.height || 200;
-        menuRef.current.style.setProperty('--menu-height', `${targetH}px`);
-        // Compute target scrollTop so new selection is centered based on current upCount
-        const newFirstVis = Math.max(0, newIndex - dropdownPosition.upCount);
-        const targetScrollTop = newFirstVis * optionHeight;
-        list.style.scrollBehavior = 'smooth';
-        list.scrollTop = targetScrollTop;
-        setTimeout(() => {
-          if (list) list.style.scrollBehavior = 'auto';
-        }, 220);
-
-        // Nudge non-selected items to visually shift up/down in addition to the smooth scroll
+      if (list && selectedBtn) {
+        // Add closing animation class
+        menuRef.current.classList.add('is-closing-with-selection');
+        
+        // Get the selected button's position relative to the menu
+        const selectedRect = selectedBtn.getBoundingClientRect();
+        const menuRect = menuRef.current.getBoundingClientRect();
+        const optionHeight = selectedBtn.offsetHeight;
+        
+        // Calculate where the selected item is in the menu
+        const selectedRelativeTop = selectedRect.top - menuRect.top;
+        const menuHeight = menuRef.current.offsetHeight;
+        
+        // The menu will collapse to just show the selected item
+        // We want to keep the selected item where it is visually
+        // So we clip from top and bottom equally around the selected item
+        
+        // Calculate clip amounts to center on selected item
+        const clipTop = selectedRelativeTop;
+        const clipBottom = menuHeight - selectedRelativeTop - optionHeight;
+        
+        // NO TRANSFORM - items stay where they are!
+        // Just fade non-selected items
         buttons.forEach((btn, idx) => {
-          btn.style.transition = 'transform 180ms cubic-bezier(0.2, 0, 0, 1)';
-          if (idx < newIndex) {
-            btn.style.transform = 'translateY(-6px)';
-          } else if (idx > newIndex) {
-            btn.style.transform = 'translateY(6px)';
+          btn.style.transition = 'opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)';
+          
+          if (idx === newIndex) {
+            // Selected item stays fully visible
+            btn.style.opacity = '1';
+            btn.style.backgroundColor = 'var(--md-primary-container)';
           } else {
-            // Selected: slight scale emphasis
-            btn.style.transform = 'translateY(0) scale(1.02)';
+            // Fade other items
+            btn.style.opacity = '0';
           }
         });
+        
+        // Apply the clipping animation to collapse around selected item
+        menuRef.current.style.transition = 'clip-path 300ms cubic-bezier(0.4, 0, 0.2, 1), width 300ms cubic-bezier(0.4, 0, 0.2, 1)';
+        menuRef.current.style.clipPath = `inset(${clipTop}px 0 ${clipBottom}px 0 round var(--dropdown-radius, 24px))`;
+        menuRef.current.style.width = `${dropdownPosition.width}px`;
+        
+        // Fire change callback
+        onChange(optionValue);
+        
+        // Close after animation completes
         setTimeout(() => {
-          buttons.forEach((btn) => {
-            btn.style.transform = 'translateY(0) scale(1)';
-          });
-        }, 180);
+          setIsOpen(false);
+          // Clean up
+          if (menuRef.current) {
+            menuRef.current.classList.remove('is-closing-with-selection');
+            buttons.forEach(btn => {
+              btn.style.opacity = '';
+              btn.style.backgroundColor = '';
+              btn.style.transition = '';
+            });
+          }
+        }, 300);
+      } else {
+        // Fallback
+        onChange(optionValue);
+        setIsOpen(false);
       }
+    } else {
+      // Fallback
+      onChange(optionValue);
+      setIsOpen(false);
     }
-
-    // Fire change and then close after morph
-    onChange(optionValue);
-    setTimeout(() => setIsOpen(false), 200);
   };
 
   return (
