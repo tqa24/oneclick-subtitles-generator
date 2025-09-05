@@ -25,6 +25,9 @@ import { getGitVersion, getLatestVersion, compareVersions } from '../../utils/gi
 import initSettingsTabPillAnimation from '../../utils/settingsTabPillAnimation';
 import initSettingsTabsDrag from '../../utils/settingsTabsDrag';
 
+// Import Gemini effects functions for immediate toggle
+import { initGeminiButtonEffects, disableGeminiButtonEffects } from '../../utils/geminiEffects';
+
 const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(() => {
@@ -518,6 +521,14 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('video_analysis_model', videoAnalysisModel);
     localStorage.setItem('video_analysis_timeout', videoAnalysisTimeout);
     localStorage.setItem('enable_gemini_effects', enableGeminiEffects.toString());
+    
+    // Apply Gemini effects immediately in the same window
+    if (enableGeminiEffects) {
+      initGeminiButtonEffects();
+    } else {
+      disableGeminiButtonEffects();
+    }
+    
     // Trigger listeners (same-document) to apply effects immediately
     window.dispatchEvent(new Event('storage'));
 

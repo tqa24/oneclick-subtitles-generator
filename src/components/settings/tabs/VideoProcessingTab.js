@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import StandardSlider from '../../common/StandardSlider';
 import MaterialSwitch from '../../common/MaterialSwitch';
@@ -6,6 +6,7 @@ import { DisplayIcon, VideoAnalysisIcon } from '../icons/TabIcons';
 import { FiCpu, FiDownload, FiType } from 'react-icons/fi';
 import CustomGeminiModelsCard from '../components/CustomGeminiModelsCard';
 import CustomDropdown from '../../common/CustomDropdown';
+import { initGeminiButtonEffects, disableGeminiButtonEffects } from '../../../utils/geminiEffects';
 import '../../../styles/common/material-switch.css';
 import '../../../styles/settings/customGeminiModels.css';
 
@@ -48,6 +49,15 @@ const VideoProcessingTab = ({
   setShowFavoriteMaxLength
 }) => {
   const { t } = useTranslation();
+
+  // Apply Gemini effects immediately when toggle changes
+  useEffect(() => {
+    if (enableGeminiEffects) {
+      initGeminiButtonEffects();
+    } else {
+      disableGeminiButtonEffects();
+    }
+  }, [enableGeminiEffects]);
 
   // Helper function to get analysis models (subset of all models)
   const getAnalysisModels = () => {
