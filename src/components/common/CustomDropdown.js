@@ -62,8 +62,8 @@ const CustomDropdown = ({
       if (dropdownRef.current && dropdownRef.current.contains(target)) return;
       // If click is inside the portal menu, ignore
       if (menuRef.current && menuRef.current.contains(target)) return;
-      // Otherwise, close
-      setIsOpen(false);
+      // Otherwise, trigger smooth close
+      handleSmoothClose();
     };
 
     // Use mousedown so it feels instantaneous, but respect clicks inside portal
@@ -172,7 +172,7 @@ const CustomDropdown = ({
   useEffect(() => {
     const handleEscape = (event) => {
       if (event.key === 'Escape') {
-        setIsOpen(false);
+        handleSmoothClose();
       }
     };
 
@@ -475,6 +475,85 @@ const CustomDropdown = ({
       }
     }
   }, [isOpen, value, dropdownPosition.upCount]);
+
+  // Smooth close animation for non-selection closes
+  const handleSmoothClose = () => {
+    if (menuRef.current) {
+      const list = menuRef.current.querySelector('.dropdown-options-list');
+      const buttons = list ? Array.from(list.querySelectorAll('.dropdown-option')) : [];
+      
+      // Add closing class for smooth animation
+      menuRef.current.classList.add('is-closing-no-selection');
+      
+      // Find currently selected/highlighted item if any
+      const currentValue = value;
+      const currentIndex = options.findIndex(o => o.value === currentValue);
+      const currentBtn = buttons[currentIndex];
+      
+      if (list && currentBtn) {
+        // Get position of current selection
+        const selectedRect = currentBtn.getBoundingClientRect();
+        const menuRect = menuRef.current.getBoundingClientRect();
+        const optionHeight = currentBtn.offsetHeight;
+        const selectedRelativeTop = selectedRect.top - menuRect.top;
+        const menuHeight = menuRef.current.offsetHeight;
+        
+        // Fade all items with staggered timing based on distance from selected
+        buttons.forEach((btn, idx) => {
+          const distance = Math.abs(idx - currentIndex);
+          const delay = distance * 20; // 20ms delay per item distance
+          
+          btn.style.transition = `opacity 200ms cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms,
+                                   transform 200ms cubic-bezier(0.4, 0, 0.2, 1)`;
+          btn.style.opacity = '0';
+          btn.style.transform = 'scale(0.95)';
+        });
+        
+        // Collapse around current selection
+        const clipTop = selectedRelativeTop * 0.8; // Don't fully collapse, leave some space
+        const clipBottom = (menuHeight - selectedRelativeTop - optionHeight) * 0.8;
+        
+        menuRef.current.style.transition = 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)';
+        menuRef.current.style.clipPath = `inset(${clipTop}px 0 ${clipBottom}px 0 round var(--dropdown-radius, 24px))`;
+        menuRef.current.style.width = `${dropdownPosition.width}px`;
+        menuRef.current.style.opacity = '0';
+        
+      } else {
+        // No selection - uniform fade and shrink
+        buttons.forEach((btn, idx) => {
+          const delay = idx * 15; // Staggered fade
+          btn.style.transition = `opacity 150ms ease-out ${delay}ms`;
+          btn.style.opacity = '0';
+        });
+        
+        // Center collapse
+        const menuHeight = menuRef.current.offsetHeight;
+        const collapseAmount = menuHeight * 0.4;
+        
+        menuRef.current.style.transition = 'all 250ms cubic-bezier(0.4, 0, 0.2, 1)';
+        menuRef.current.style.clipPath = `inset(${collapseAmount}px 0 ${collapseAmount}px 0 round var(--dropdown-radius, 24px))`;
+        menuRef.current.style.width = `${dropdownPosition.width}px`;
+        menuRef.current.style.opacity = '0';
+      }
+      
+      // Close after animation
+      setTimeout(() => {
+        setIsOpen(false);
+        if (menuRef.current) {
+          menuRef.current.classList.remove('is-closing-no-selection');
+          menuRef.current.style.opacity = '';
+          buttons.forEach(btn => {
+            btn.style.opacity = '';
+            btn.style.transform = '';
+            btn.style.transition = '';
+          });
+        }
+      }, 250);
+    } else {
+      // Fallback immediate close
+      setIsOpen(false);
+    }
+  };
 
   const handleOptionSelect = (optionValue) => {
     if (menuRef.current) {

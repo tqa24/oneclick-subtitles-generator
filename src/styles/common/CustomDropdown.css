@@ -133,6 +133,21 @@
   will-change: transform, opacity;
 }
 
+/* Closing without selection - smooth fade out */
+.custom-dropdown-menu.is-closing-no-selection {
+  transition: clip-path 250ms cubic-bezier(0.4, 0, 0.2, 1),
+              width 250ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 250ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.custom-dropdown-menu.is-closing-no-selection .dropdown-options-list {
+  overflow: hidden !important;
+}
+
+.custom-dropdown-menu.is-closing-no-selection .dropdown-option {
+  will-change: opacity, transform;
+}
+
 /* Drop-down animation (default) */
 .custom-dropdown-menu.drop-down {
   animation: dropdown-slide-in var(--md-duration-medium3) var(--md-easing-emphasized);
