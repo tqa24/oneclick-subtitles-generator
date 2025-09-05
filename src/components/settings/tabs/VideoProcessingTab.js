@@ -43,7 +43,9 @@ const VideoProcessingTab = ({
   setEnableGeminiEffects,
   // New prop for favorite max subtitle length
   favoriteMaxSubtitleLength,
-  setFavoriteMaxSubtitleLength
+  setFavoriteMaxSubtitleLength,
+  showFavoriteMaxLength,
+  setShowFavoriteMaxLength
 }) => {
   const { t } = useTranslation();
 
@@ -489,13 +491,34 @@ const VideoProcessingTab = ({
             <h4>{t('settings.processingSettings', 'Processing')}</h4>
           </div>
           <div className="settings-card-content">
+            {/* Auto Split Subtitles Setting */}
+            <div className="compact-setting">
+              <div className="setting-header">
+                <label htmlFor="auto-split-subtitles">
+                  {t('settings.autoSplitSubtitles', 'Auto-split subtitles')}
+                </label>
+                <div className="material-switch-container">
+                  <MaterialSwitch
+                    id="auto-split-subtitles"
+                    checked={showFavoriteMaxLength}
+                    onChange={(e) => setShowFavoriteMaxLength(e.target.checked)}
+                    ariaLabel={t('settings.autoSplitSubtitles', 'Auto-split subtitles')}
+                    icons={true}
+                  />
+                </div>
+              </div>
+              <p className="setting-description">
+                {t('settings.autoSplitSubtitlesDescription', 'Automatically split long subtitles into smaller segments for better readability.')}
+              </p>
+            </div>
+
             {/* Favorite Max Subtitle Length Setting */}
             <div className="compact-setting">
               <label htmlFor="favorite-max-subtitle-length">
                 {t('settings.favoriteMaxSubtitleLength', 'Favorite max length of one subtitle')}
               </label>
               <p className="setting-description">
-                {t('settings.favoriteMaxSubtitleLengthDescription', 'Set the default maximum number of words per subtitle. This affects auto-split when generating subtitles and is especially useful for autoflow.')}
+                {t('settings.favoriteMaxSubtitleLengthDescription', 'Set the default maximum number of words per subtitle when auto-split is enabled.')}
               </p>
               <div className="slider-with-value">
                 <StandardSlider
@@ -506,15 +529,16 @@ const VideoProcessingTab = ({
                   step={1}
                   orientation="Horizontal"
                   size="Small"
-                  state="Enabled"
+                  state={showFavoriteMaxLength ? "Enabled" : "Disabled"}
                   showValueIndicator={false}
                   showIcon={false}
                   showStops={false}
                   className="max-subtitle-length-slider"
                   id="favorite-max-subtitle-length"
                   ariaLabel={t('settings.favoriteMaxSubtitleLength', 'Favorite max length of one subtitle')}
+                  disabled={!showFavoriteMaxLength}
                 />
-                <div className="slider-value-display">
+                <div className="slider-value-display" style={{ opacity: showFavoriteMaxLength ? 1 : 0.5 }}>
                   {favoriteMaxSubtitleLength} {t('settings.words', 'words')}
                 </div>
               </div>

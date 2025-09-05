@@ -176,6 +176,10 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     const saved = localStorage.getItem('video_processing_max_words');
     return saved ? parseInt(saved, 10) : 10; // Default to 10 words
   }); // Favorite max subtitle length
+  const [showFavoriteMaxLength, setShowFavoriteMaxLength] = useState(() => {
+    const saved = localStorage.getItem('show_favorite_max_length');
+    return saved === null ? true : saved === 'true'; // Default to true (showing)
+  }); // Toggle for showing favorite max length setting
 
   // Custom Gemini models state
   const [customGeminiModels, setCustomGeminiModels] = useState(() => {
@@ -251,6 +255,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     useCookiesForDownload: false,
     enableYoutubeSearch: false,
     favoriteMaxSubtitleLength: 10,
+    showFavoriteMaxLength: true,
     customGeminiModels: []
   });
 
@@ -295,6 +300,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedUseCookiesForDownload = localStorage.getItem('use_cookies_for_download') === 'true';
       const savedEnableYoutubeSearch = localStorage.getItem('enable_youtube_search') === 'true'; // Default to false
       const savedFavoriteMaxSubtitleLength = parseInt(localStorage.getItem('video_processing_max_words') || '10');
+      const savedShowFavoriteMaxLength = localStorage.getItem('show_favorite_max_length') === null ? true : localStorage.getItem('show_favorite_max_length') === 'true';
 
       // Load custom Gemini models
       const savedCustomGeminiModels = (() => {
@@ -354,6 +360,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       setUseCookiesForDownload(savedUseCookiesForDownload);
       setEnableYoutubeSearch(savedEnableYoutubeSearch);
       setFavoriteMaxSubtitleLength(savedFavoriteMaxSubtitleLength);
+      setShowFavoriteMaxLength(savedShowFavoriteMaxLength);
       setThinkingBudgets(savedThinkingBudgets);
       setCustomGeminiModels(savedCustomGeminiModels);
       setHasChanges(false); // Reset changes flag when loading settings
@@ -383,6 +390,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         useCookiesForDownload: savedUseCookiesForDownload,
         enableYoutubeSearch: savedEnableYoutubeSearch,
         favoriteMaxSubtitleLength: savedFavoriteMaxSubtitleLength,
+        showFavoriteMaxLength: savedShowFavoriteMaxLength,
         thinkingBudgets: savedThinkingBudgets,
         customGeminiModels: savedCustomGeminiModels
       });
@@ -482,6 +490,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       useCookiesForDownload !== originalSettings.useCookiesForDownload ||
       enableYoutubeSearch !== originalSettings.enableYoutubeSearch ||
       favoriteMaxSubtitleLength !== originalSettings.favoriteMaxSubtitleLength ||
+      showFavoriteMaxLength !== originalSettings.showFavoriteMaxLength ||
       JSON.stringify(thinkingBudgets) !== JSON.stringify(originalSettings.thinkingBudgets) ||
       JSON.stringify(customGeminiModels) !== JSON.stringify(originalSettings.customGeminiModels);
 
@@ -489,7 +498,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   }, [isSettingsLoaded, geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveformLongVideos,
       segmentOffsetCorrection, transcriptionPrompt, useOAuth, youtubeClientId,
       youtubeClientSecret, useVideoAnalysis, videoAnalysisModel, videoAnalysisTimeout, enableGeminiEffects,
-      optimizeVideos, optimizedResolution, useOptimizedPreview, useCookiesForDownload, enableYoutubeSearch, favoriteMaxSubtitleLength, thinkingBudgets, customGeminiModels, originalSettings]);
+      optimizeVideos, optimizedResolution, useOptimizedPreview, useCookiesForDownload, enableYoutubeSearch, favoriteMaxSubtitleLength, showFavoriteMaxLength, thinkingBudgets, customGeminiModels, originalSettings]);
 
   // Handle save button click
   const handleSave = async () => {
@@ -499,6 +508,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('genius_token', geniusApiKey);
     localStorage.setItem('time_format', timeFormat);
     localStorage.setItem('video_processing_max_words', favoriteMaxSubtitleLength.toString());
+    localStorage.setItem('show_favorite_max_length', showFavoriteMaxLength.toString());
 
     localStorage.setItem('show_waveform_long_videos', showWaveformLongVideos.toString());
     localStorage.setItem('segment_offset_correction', segmentOffsetCorrection.toString());
@@ -589,6 +599,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       useCookiesForDownload,
       enableYoutubeSearch,
       favoriteMaxSubtitleLength,
+      showFavoriteMaxLength,
       thinkingBudgets,
       customGeminiModels
     });
@@ -792,6 +803,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
               setEnableGeminiEffects={setEnableGeminiEffects}
               favoriteMaxSubtitleLength={favoriteMaxSubtitleLength}
               setFavoriteMaxSubtitleLength={setFavoriteMaxSubtitleLength}
+              showFavoriteMaxLength={showFavoriteMaxLength}
+              setShowFavoriteMaxLength={setShowFavoriteMaxLength}
             />
           </div>
 

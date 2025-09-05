@@ -98,9 +98,10 @@ const VideoProcessingOptionsModal = ({
     return saved ? parseInt(saved, 10) : 10; // Default to 10 minutes
   });
 
-  // Auto-split subtitles settings
+  // Auto-split subtitles settings (synced with Settings modal)
   const [autoSplitSubtitles, setAutoSplitSubtitles] = useState(() => {
-    const saved = localStorage.getItem('video_processing_auto_split');
+    // Use the same key as Settings modal for consistency
+    const saved = localStorage.getItem('show_favorite_max_length');
     // Default to true (enabled) if not previously saved
     return saved !== null ? saved === 'true' : true;
   });
@@ -150,9 +151,9 @@ const VideoProcessingOptionsModal = ({
     localStorage.setItem('video_processing_max_duration', maxDurationPerRequest.toString());
   }, [maxDurationPerRequest]);
 
-  // Persist auto-split settings
+  // Persist auto-split settings (synced with Settings modal)
   useEffect(() => {
-    localStorage.setItem('video_processing_auto_split', autoSplitSubtitles.toString());
+    localStorage.setItem('show_favorite_max_length', autoSplitSubtitles.toString());
   }, [autoSplitSubtitles]);
 
   useEffect(() => {
@@ -223,6 +224,22 @@ const VideoProcessingOptionsModal = ({
   };
 
   const modelOptions = getAllAvailableModels();
+
+  // Listen for storage changes to sync auto-split setting
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'show_favorite_max_length') {
+        const newValue = e.newValue === 'true';
+        setAutoSplitSubtitles(newValue);
+      } else if (e.key === 'video_processing_max_words') {
+        const newValue = parseInt(e.newValue, 10) || 10;
+        setMaxWordsPerSubtitle(newValue);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Load custom models on component mount
   useEffect(() => {

@@ -139,6 +139,28 @@
   padding-right: 10px;
 }
 
+/* Setting header with toggle - combines label/description and toggle */
+.setting-header-with-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.setting-header-with-toggle > div:first-child {
+  flex: 1;
+}
+
+.setting-header-with-toggle label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.setting-header-with-toggle .setting-description {
+  margin-top: 4px;
+}
+
 /* Material Web Switch container */
 .material-switch-container {
   display: flex;
