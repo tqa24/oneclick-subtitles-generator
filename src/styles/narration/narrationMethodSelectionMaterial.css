@@ -90,6 +90,10 @@
   background-color: #34a853; /* Green for Chatterbox to match pill theme */
 }
 
+.narration-method-selection .method-ms-vibevoice .voice-clone-badge {
+  background-color: #00bcd4; /* Cyan for MS VibeVoice */
+}
+
 /* Badge adjustments for unavailable state */
 .narration-method-selection .radio-pill label.unavailable .voice-clone-badge {
   opacity: 0.5;
@@ -216,6 +220,18 @@
   --method-color: #9c27b0; /* Purple */
   --method-bg: rgba(156, 39, 176, 0.1);
   --method-border: rgba(156, 39, 176, 0.3);
+}
+
+.narration-method-selection .method-ms-vibevoice {
+  --method-color: #00bcd4; /* Cyan */
+  --method-bg: rgba(0, 188, 212, 0.1);
+  --method-border: rgba(0, 188, 212, 0.3);
+}
+
+.narration-method-selection .method-gemini-native {
+  --method-color: #795548; /* Brown */
+  --method-bg: rgba(121, 85, 72, 0.1);
+  --method-border: rgba(121, 85, 72, 0.3);
 }
 
 /* Apply method colors to pills */
