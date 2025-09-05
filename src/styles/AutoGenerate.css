@@ -1,33 +1,62 @@
-/* Auto-generate button styles - consistent with semi-auto button */
+/* Auto-generate button styles - clean mesh gradient */
 .generate-btn.auto-generate {
-  /* Use same base background as other generate buttons from App.css */
-  background-color: var(--md-primary);
-  color: var(--md-on-primary);
-  /* Add subtle gradient overlay for distinction */
-  background-image: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+  /* Simple animated gradient base */
+  background: linear-gradient(90deg, #2979FF, #F50057, #7B1FA2, #2979FF);
+  background-size: 200% 100%;
+  animation: gradient-shift 15s ease infinite, subtle-pulse-glow 4s ease-in-out infinite;
+  color: #FFFFFF;
   border: none;
   position: relative;
   overflow: hidden;
-  /* Subtle pulse animation for auto distinction */
-  animation: subtle-pulse-glow 3s ease-in-out infinite;
+  isolation: isolate;
 }
 
+/* Add mesh overlay with proper clipping */
+.generate-btn.auto-generate::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 30% 50%, rgba(245, 0, 87, 0.3), transparent 40%),
+    radial-gradient(circle at 70% 50%, rgba(41, 121, 255, 0.3), transparent 40%);
+  border-radius: inherit;
+  z-index: 1;
+  pointer-events: none;
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+
+
 .generate-btn.auto-generate:hover:not(:disabled) {
-  /* Exact same hover behavior as semi-auto button */
-  background-color: transparent !important;
-  background-image: none !important; /* Remove any gradient overlay on hover */
-  color: var(--md-primary);
+  /* Hover behavior - transparent background with blue text like other buttons */
+  background: transparent !important;
+  animation: none !important;
+  /* Use primary blue for text on hover */
+  color: #2979FF !important;
   text-shadow: none;
   transform: translateY(-2px);
   box-shadow: var(--md-elevation-level3);
 }
 
+/* Hide the overlay on hover */
+.generate-btn.auto-generate:hover:not(:disabled)::before {
+  display: none;
+}
+
 .generate-btn.auto-generate.processing {
-  /* Use same processing state as other buttons */
-  background-color: var(--md-primary);
-  color: var(--md-on-primary);
-  background-image: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-  animation: auto-processing 1s ease-in-out infinite;
+  /* Processing state - medium speed animation */
+  background: linear-gradient(90deg, #2979FF, #F50057, #7B1FA2, #2979FF);
+  background-size: 200% 100%;
+  animation: gradient-shift 8s ease infinite, auto-processing 1s ease-in-out infinite;
+  color: #FFFFFF;
 }
 
 /* Subtle pulse glow to match other button styling */
@@ -163,16 +192,32 @@
 }
 
 [data-theme="dark"] .generate-btn.auto-generate {
-  /* Use same base styling as other buttons with subtle overlay */
-  background-color: var(--md-primary);
-  color: var(--md-on-primary);
-  background-image: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%);
+  /* Clean gradient for dark mode */
+  background: linear-gradient(90deg, #82B1FF, #FF80AB, #AB47BC, #82B1FF);
+  background-size: 200% 100%;
+  animation: gradient-shift 15s ease infinite, subtle-pulse-glow 4s ease-in-out infinite;
+  color: #1A1A1A;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+[data-theme="dark"] .generate-btn.auto-generate::before {
+  background: 
+    radial-gradient(circle at 30% 50%, rgba(255, 128, 171, 0.25), transparent 40%),
+    radial-gradient(circle at 70% 50%, rgba(130, 177, 255, 0.25), transparent 40%);
 }
 
 [data-theme="dark"] .generate-btn.auto-generate:hover:not(:disabled) {
-  /* Exact same hover behavior as semi-auto button in dark mode */
-  background-color: transparent !important;
-  background-image: none !important; /* Remove any gradient overlay on hover */
-  color: var(--md-primary);
+  /* Hover behavior in dark mode - transparent with blue text */
+  background: transparent !important;
+  animation: none !important;
+  /* Use light blue for text in dark mode */
+  color: #82B1FF !important;
   text-shadow: none;
+}
+
+/* Hide overlay on hover in dark mode */
+[data-theme="dark"] .generate-btn.auto-generate:hover:not(:disabled)::before {
+  display: none;
 }
