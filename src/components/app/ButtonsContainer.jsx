@@ -269,7 +269,7 @@ const ButtonsContainer = ({
             modalDetected = true;
             
             // Check if countdown is enabled
-            const timeoutSetting = localStorage.getItem('video_analysis_timeout') || '20';
+            const timeoutSetting = localStorage.getItem('video_analysis_timeout') || '10';
             const showCountdown = sessionStorage.getItem('show_rules_editor_countdown') === 'true';
             
             if (timeoutSetting !== 'none' && showCountdown) {
@@ -558,8 +558,8 @@ const ButtonsContainer = ({
             </span>
           ) : isSrtOnlyMode ? t('output.srtOnlyMode', 'Working with SRT only') :
             hasUrlAndSrtOnly ? t('output.downloadAndViewWithSrt', 'Download + View with Uploaded SRT') :
-            selectedVideo && !uploadedFile ? t('output.downloadAndGenerateSemiAuto', 'Tải xuống video + Tạo sub bán tự động') :
-            t('header.semiAutoGenerate', 'Tạo sub bán tự động')}
+            selectedVideo && !uploadedFile ? t('output.downloadAndGenerateSemiAuto', 'Download + Generate (semi-auto)') :
+            t('output.semiAutoGenerate', 'Semi-auto')}
           </button>
           
           {/* Auto Generate Button */}
@@ -593,14 +593,14 @@ const ButtonsContainer = ({
                 />
                 <span className="processing-text">
                   {/* Show download state when downloading, otherwise show autoflow step */}
-                  {isDownloading ? t('autoFlow.loading', 'Đang tải video...') :
-                   autoFlowStep === 'analyzing' ? t('autoFlow.analyzing', 'Đang phân tích...') :
-                   autoFlowStep === 'processing' ? t('autoFlow.processing', 'Đang xử lý...') :
-                   autoFlowStep === 'complete' ? t('autoFlow.complete', 'Hoàn thành!') :
-                   t('autoFlow.running', 'Đang chạy tự động...')}
+                  {isDownloading ? t('autoFlow.loading', 'Loading video...') :
+                   autoFlowStep === 'analyzing' ? t('autoFlow.analyzing', 'Analyzing...') :
+                   autoFlowStep === 'processing' ? t('autoFlow.processing', 'Processing...') :
+                   autoFlowStep === 'complete' ? t('autoFlow.complete', 'Complete!') :
+                   t('autoFlow.running', 'Running auto...')}
                 </span>
               </span>
-            ) : t('header.autoGenerate', 'Tạo sub tự động')}
+            ) : t('output.autoFlow', 'Autoflow')}
           </button>
         </>
       )}

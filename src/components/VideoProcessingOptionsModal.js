@@ -106,7 +106,7 @@ const VideoProcessingOptionsModal = ({
   });
   const [maxWordsPerSubtitle, setMaxWordsPerSubtitle] = useState(() => {
     const saved = localStorage.getItem('video_processing_max_words');
-    return saved ? parseInt(saved, 10) : 8;
+    return saved ? parseInt(saved, 10) : 10;
   });
 
   const [customGeminiModels, setCustomGeminiModels] = useState([]);

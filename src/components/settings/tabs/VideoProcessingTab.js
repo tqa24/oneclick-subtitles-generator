@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import StandardSlider from '../../common/StandardSlider';
 import MaterialSwitch from '../../common/MaterialSwitch';
 import { DisplayIcon, VideoAnalysisIcon } from '../icons/TabIcons';
-import { FiCpu, FiDownload } from 'react-icons/fi';
+import { FiCpu, FiDownload, FiType } from 'react-icons/fi';
 import CustomGeminiModelsCard from '../components/CustomGeminiModelsCard';
 import CustomDropdown from '../../common/CustomDropdown';
 import '../../../styles/common/material-switch.css';
@@ -22,6 +22,8 @@ const VideoProcessingTab = ({
   setUseVideoAnalysis,
   videoAnalysisModel,
   setVideoAnalysisModel,
+  videoAnalysisTimeout,
+  setVideoAnalysisTimeout,
   optimizeVideos,
   setOptimizeVideos,
   optimizedResolution,
@@ -38,7 +40,10 @@ const VideoProcessingTab = ({
   setCustomGeminiModels,
   // New prop for gemini effects toggle
   enableGeminiEffects,
-  setEnableGeminiEffects
+  setEnableGeminiEffects,
+  // New prop for favorite max subtitle length
+  favoriteMaxSubtitleLength,
+  setFavoriteMaxSubtitleLength
 }) => {
   const { t } = useTranslation();
 
@@ -291,6 +296,25 @@ const VideoProcessingTab = ({
               />
             </div>
 
+            <div className="compact-setting">
+              <label htmlFor="video-analysis-timeout">
+                {t('settings.videoAnalysisCountdown', 'Analysis Countdown Time')}
+              </label>
+              <p className="setting-description">
+                {t('settings.videoAnalysisCountdownDesc', 'How long to wait before auto-saving analysis rules in autoflow mode.')}
+              </p>
+              <CustomDropdown
+                value={videoAnalysisTimeout}
+                onChange={(value) => setVideoAnalysisTimeout(value)}
+                options={[
+                  { value: 'none', label: t('settings.countdownNone', 'No countdown (trust the analysis, not recommended)') },
+                  { value: '10', label: t('settings.countdown10', '10 seconds (default)') },
+                  { value: '20', label: t('settings.countdown20', '20 seconds') },
+                  { value: 'infinite', label: t('settings.countdownInfinite', 'Infinite countdown (no auto proceeding)') }
+                ]}
+                placeholder={t('settings.selectCountdownTime', 'Select Countdown Time')}
+              />
+            </div>
 
           </div>
         </div>
@@ -452,6 +476,48 @@ const VideoProcessingTab = ({
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Processing Settings Card */}
+        <div className="settings-card processing-card">
+          <div className="settings-card-header">
+            <div className="settings-card-icon">
+              <FiType />
+            </div>
+            <h4>{t('settings.processingSettings', 'Processing')}</h4>
+          </div>
+          <div className="settings-card-content">
+            {/* Favorite Max Subtitle Length Setting */}
+            <div className="compact-setting">
+              <label htmlFor="favorite-max-subtitle-length">
+                {t('settings.favoriteMaxSubtitleLength', 'Favorite max length of one subtitle')}
+              </label>
+              <p className="setting-description">
+                {t('settings.favoriteMaxSubtitleLengthDescription', 'Set the default maximum number of words per subtitle. This affects auto-split when generating subtitles and is especially useful for autoflow.')}
+              </p>
+              <div className="slider-with-value">
+                <StandardSlider
+                  value={favoriteMaxSubtitleLength}
+                  onChange={(value) => setFavoriteMaxSubtitleLength(parseInt(value))}
+                  min={1}
+                  max={30}
+                  step={1}
+                  orientation="Horizontal"
+                  size="Small"
+                  state="Enabled"
+                  showValueIndicator={false}
+                  showIcon={false}
+                  showStops={false}
+                  className="max-subtitle-length-slider"
+                  id="favorite-max-subtitle-length"
+                  ariaLabel={t('settings.favoriteMaxSubtitleLength', 'Favorite max length of one subtitle')}
+                />
+                <div className="slider-value-display">
+                  {favoriteMaxSubtitleLength} {t('settings.words', 'words')}
+                </div>
+              </div>
             </div>
           </div>
         </div>

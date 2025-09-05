@@ -63,32 +63,38 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
       const shouldShowCountdown = sessionStorage.getItem('show_rules_editor_countdown') === 'true';
       
       if (shouldShowCountdown && !userInteracted) {
-        const timeoutSetting = localStorage.getItem('video_analysis_timeout') || '20';
+        const timeoutSetting = localStorage.getItem('video_analysis_timeout') || '10';
         
         if (timeoutSetting !== 'none') {
-          const seconds = parseInt(timeoutSetting, 10);
-          if (!isNaN(seconds) && seconds > 0) {
+          if (timeoutSetting === 'infinite') {
+            // For infinite countdown, just show a static message, no countdown
             setShowCountdown(true);
-            setCountdown(seconds);
+            setCountdown(-1); // Use -1 to indicate infinite
+          } else {
+            const seconds = parseInt(timeoutSetting, 10);
+            if (!isNaN(seconds) && seconds > 0) {
+              setShowCountdown(true);
+              setCountdown(seconds);
             
-            // Set up the countdown interval
-            countdownIntervalRef.current = setInterval(() => {
-              setCountdown(prev => {
-                if (prev <= 1) {
-                  clearInterval(countdownIntervalRef.current);
-                  return 0;
+              // Set up the countdown interval
+              countdownIntervalRef.current = setInterval(() => {
+                setCountdown(prev => {
+                  if (prev <= 1) {
+                    clearInterval(countdownIntervalRef.current);
+                    return 0;
+                  }
+                  return prev - 1;
+                });
+              }, 1000);
+              
+              // Set up the auto-save timeout
+              countdownTimeoutRef.current = setTimeout(() => {
+                if (!userInteracted) {
+                  console.log('[TranscriptionRulesEditor] Countdown completed, auto-saving...');
+                  handleSave();
                 }
-                return prev - 1;
-              });
-            }, 1000);
-            
-            // Set up the auto-save timeout
-            countdownTimeoutRef.current = setTimeout(() => {
-              if (!userInteracted) {
-                console.log('[TranscriptionRulesEditor] Countdown completed, auto-saving...');
-                handleSave();
-              }
-            }, seconds * 1000);
+              }, seconds * 1000);
+            }
           }
         }
       }
@@ -329,25 +335,40 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
         {showCountdown && (
           <div className="countdown-banner">
             <div className="countdown-content">
-              <span className="countdown-text">
-                {t('rulesEditor.autoSaveCountdown', 'Auto-saving in')}
-              </span>
-              <span className="countdown-number">{countdown}</span>
-              <span className="countdown-text">
-                {t('rulesEditor.seconds', 'seconds')}
-              </span>
-              <span className="countdown-hint">
-                {t('rulesEditor.clickToCancel', '(click anywhere to cancel)')}
-              </span>
+              {countdown === -1 ? (
+                <>
+                  <span className="countdown-text">
+                    {t('rulesEditor.waitingForAction', 'Waiting for your action')}
+                  </span>
+                  <span className="countdown-hint">
+                    {t('rulesEditor.clickToEdit', '(click to start editing)')}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="countdown-text">
+                    {t('rulesEditor.autoSaveCountdown', 'Auto-saving in')}
+                  </span>
+                  <span className="countdown-number">{countdown}</span>
+                  <span className="countdown-text">
+                    {t('rulesEditor.seconds', 'seconds')}
+                  </span>
+                  <span className="countdown-hint">
+                    {t('rulesEditor.clickToCancel', '(click anywhere to cancel)')}
+                  </span>
+                </>
+              )}
             </div>
-            <div className="countdown-progress">
-              <div 
-                className="countdown-progress-bar" 
-                style={{ 
-                  width: `${((parseInt(localStorage.getItem('video_analysis_timeout') || '20', 10) - countdown) / parseInt(localStorage.getItem('video_analysis_timeout') || '20', 10)) * 100}%` 
-                }}
-              />
-            </div>
+            {countdown !== -1 && (
+              <div className="countdown-progress">
+                <div 
+                  className="countdown-progress-bar" 
+                  style={{ 
+                    width: `${((parseInt(localStorage.getItem('video_analysis_timeout') || '10', 10) - countdown) / parseInt(localStorage.getItem('video_analysis_timeout') || '10', 10)) * 100}%` 
+                  }}
+                />
+              </div>
+            )}
           </div>
         )}
         <div className="modal-header">
