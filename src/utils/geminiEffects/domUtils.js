@@ -117,7 +117,7 @@ export const initializeButton = (button, initializedButtons, particles) => {
 
   // Create a collection of particles for this button - use a few particles for initial state
   const isAutoGenerate = button.classList.contains('auto-generate');
-  const initialCount = isAutoGenerate ? 15 : // More particles for auto-generate with special stars
+  const initialCount = isAutoGenerate ? 6 : // Fewer particles for auto-generate to prevent overlap
                       button.classList.contains('generate-btn') ? 10 :
                       button.classList.contains('cancel-download-btn') ? 8 :
                       button.classList.contains('add-subtitles-button') ? 6 :
@@ -125,15 +125,9 @@ export const initializeButton = (button, initializedButtons, particles) => {
   const buttonParticles = createParticles(button, iconContainer, initialCount);
 
   // Make sure they're initially inactive/invisible
-  // Exception: auto-generate buttons get some visible particles for consistency with other buttons
-  buttonParticles.forEach((particle, index) => {
-    if (isAutoGenerate && index < 6) {
-      // Make first 6 particles visible with higher opacity for auto-generate buttons
-      particle.isActive = true;
-      particle.element.style.opacity = '0.8';
-    } else {
-      particle.isActive = false;
-    }
+  // All buttons start with invisible particles, including auto-generate
+  buttonParticles.forEach(particle => {
+    particle.isActive = false;
   });
 
   // Mark this button as initialized
