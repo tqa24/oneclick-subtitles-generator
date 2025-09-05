@@ -5,15 +5,88 @@
 import { createGeminiSVG, createSpecialStarSVG, getSizeInPixels } from './renderUtils';
 
 /**
+ * Check if a point is within a pill-shaped boundary
+ * @param {number} x - X position (in percentage 0-100)
+ * @param {number} y - Y position (in percentage 0-100)
+ * @param {number} particleSize - Size of the particle in percentage
+ * @returns {boolean} - True if point is within pill boundary
+ */
+const isWithinPillBoundary = (x, y, particleSize = 5) => {
+  // Button dimensions in percentage (pill-shaped button)
+  const buttonWidth = 100;
+  const buttonHeight = 100;
+  const radius = buttonHeight / 2; // Radius of the circular ends
+  
+  // IMPORTANT: x, y is the TOP-LEFT corner of the particle, not center!
+  // So we need to check if the entire particle box fits within boundaries
+  
+  // Special stars need extra padding because they're images, not vectors
+  const isSpecialStar = particleSize > 15; // Special stars are typically larger
+  const extraPadding = isSpecialStar ? 8 : 5; // More padding for special stars
+  
+  // Check if the particle's bounding box is within button bounds
+  // Left edge check
+  if (x < extraPadding) return false;
+  // Right edge check - account for particle width
+  if ((x + particleSize) > (100 - extraPadding)) return false;
+  // Top edge check  
+  if (y < extraPadding) return false;
+  // Bottom edge check - account for particle height
+  if ((y + particleSize) > (100 - extraPadding)) return false;
+  
+  // Now check pill-shaped boundaries for the curved ends
+  // We need to check all four corners of the particle's bounding box
+  const particleCorners = [
+    { px: x, py: y },                              // Top-left
+    { px: x + particleSize, py: y },               // Top-right
+    { px: x, py: y + particleSize },               // Bottom-left
+    { px: x + particleSize, py: y + particleSize }  // Bottom-right
+  ];
+  
+  // Check if any corner is outside the pill shape
+  for (const corner of particleCorners) {
+    // Check if in left circular cap
+    if (corner.px < radius) {
+      const centerY = 50;
+      const distFromCenter = Math.sqrt(
+        Math.pow(corner.px - radius, 2) + 
+        Math.pow(corner.py - centerY, 2)
+      );
+      // Must be inside the circle minus extra padding
+      if (distFromCenter > (radius - extraPadding)) {
+        return false;
+      }
+    }
+    
+    // Check if in right circular cap  
+    if (corner.px > (buttonWidth - radius)) {
+      const centerY = 50;
+      const distFromCenter = Math.sqrt(
+        Math.pow(corner.px - (buttonWidth - radius), 2) + 
+        Math.pow(corner.py - centerY, 2)
+      );
+      // Must be inside the circle minus extra padding
+      if (distFromCenter > (radius - extraPadding)) {
+        return false;
+      }
+    }
+  }
+  
+  // All corners are within bounds
+  return true;
+};
+
+/**
  * Poisson disk sampling for evenly distributed points with guaranteed minimum distance
  * @param {number} width - Width of the area (in percentage, e.g., 80 for 80%)
  * @param {number} height - Height of the area (in percentage, e.g., 80 for 80%)
  * @param {number} minDistance - Minimum distance between points (in percentage)
  * @param {number} maxSamples - Maximum number of samples to generate
  * @param {number} maxAttempts - Maximum attempts per sample
+ * @param {Array} particleSizes - Array of particle sizes to check boundaries
  * @returns {Array} - Array of {x, y} positions
  */
-const poissonDiskSampling = (width, height, minDistance, maxSamples, maxAttempts = 30) => {
+const poissonDiskSampling = (width, height, minDistance, maxSamples, maxAttempts = 30, particleSizes = []) => {
   const points = [];
   const activeList = [];
   const grid = [];
@@ -36,8 +109,13 @@ const poissonDiskSampling = (width, height, minDistance, maxSamples, maxAttempts
   };
   
   // Helper function to check if point is valid (no neighbors within minDistance)
-  const isValidPoint = (x, y) => {
-    if (x < 0 || x >= width || y < 0 || y >= height) return false;
+  const isValidPoint = (x, y, particleIndex = 0) => {
+    // Get particle size for this index (convert to percentage)
+    const particleSize = particleSizes[particleIndex] || 12; // Default 12px
+    const particleSizePercent = (particleSize / 200) * 100; // Assume ~200px button width
+    
+    // First check pill boundary with particle size
+    if (!isWithinPillBoundary(x + 10, y + 10, particleSizePercent)) return false; // Add 10% offset since we work in 80x80 area
     
     const gridX = Math.floor(x / cellSize);
     const gridY = Math.floor(y / cellSize);
@@ -66,9 +144,18 @@ const poissonDiskSampling = (width, height, minDistance, maxSamples, maxAttempts
     return true;
   };
   
-  // Start with a random initial point
-  const initialX = Math.random() * width;
-  const initialY = Math.random() * height;
+  // Start with a random initial point that's within the pill boundary
+  let initialX, initialY;
+  let attempts = 0;
+  const particleSize = particleSizes[0] || 12;
+  const particleSizePercent = (particleSize / 200) * 100;
+  
+  do {
+    initialX = Math.random() * width;
+    initialY = Math.random() * height;
+    attempts++;
+  } while (!isWithinPillBoundary(initialX + 10, initialY + 10, particleSizePercent) && attempts < 100);
+  
   const initialPoint = { x: initialX, y: initialY };
   
   points.push(initialPoint);
@@ -93,7 +180,7 @@ const poissonDiskSampling = (width, height, minDistance, maxSamples, maxAttempts
       const newX = currentPoint.x + Math.cos(angle) * radius;
       const newY = currentPoint.y + Math.sin(angle) * radius;
       
-      if (isValidPoint(newX, newY)) {
+      if (isValidPoint(newX, newY, points.length)) {
         const newPoint = { x: newX, y: newY };
         const pointIndex = points.length;
         
@@ -134,7 +221,8 @@ const generateWellDistributedPositions = (particleCount, particleSizes) => {
     80, // 80% height (10% margin on each side)
     minDistancePercent,
     particleCount * 2, // Generate more than needed, we'll pick the best ones
-    40 // More attempts for better distribution
+    40, // More attempts for better distribution
+    particleSizes // Pass particle sizes for boundary checking
   );
   
   // Offset positions to account for margins (add 10% offset)
