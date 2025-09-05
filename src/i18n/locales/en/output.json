@@ -99,7 +99,8 @@
   "downloadAndViewWithSrt": "Download + View with Uploaded SRT",
   "downloadAndGenerate": "Download video + Generate timed subtitles with AI",
   "preparingProcessing": "Preparing video for processing...",
-  "semiAutoGenerate": "Semi-auto",
-  "downloadAndGenerateSemiAuto": "Download + Generate (semi-auto)",
-  "autoFlow": "Autoflow"
+  "semiAutoGenerate": "Generate subtitles (semi-auto)",
+  "downloadAndGenerateSemiAuto": "Download + Generate subtitles (semi-auto)",
+  "autoFlow": "Generate subtitles (auto)",
+  "downloadAndGenerateAuto": "Download + Generate subtitles (auto)"
 }

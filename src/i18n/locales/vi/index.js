@@ -37,6 +37,7 @@ import subtitleSplit from './subtitleSplit.json';
 import consolidation from './consolidation.json';
 import processing from './processing.json';
 import waveform from './waveform.json';
+import autoFlow from './autoFlow.json';
 
 const vi = {
   common,
@@ -77,7 +78,8 @@ const vi = {
   subtitleSplit,
   consolidation,
   processing,
-  waveform
+  waveform,
+  autoFlow
 };
 
 export default vi;

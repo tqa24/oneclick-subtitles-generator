@@ -38,6 +38,7 @@ import subtitleSplit from './subtitleSplit.json';
 import consolidation from './consolidation.json';
 import processing from './processing.json';
 import waveform from './waveform.json';
+import autoFlow from './autoFlow.json';
 
 // Combine all translations
 const enTranslations = {
@@ -78,7 +79,8 @@ const enTranslations = {
   subtitleSplit,
   consolidation,
   processing,
-  waveform
+  waveform,
+  autoFlow
 };
 
 export default enTranslations;

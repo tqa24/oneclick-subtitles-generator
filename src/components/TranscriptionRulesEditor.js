@@ -331,9 +331,12 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
 
   return (
     <div className="rules-editor-overlay" onClick={handleUserInteraction}>
-      <div className={`rules-editor-modal ${showCountdown ? 'with-countdown' : ''}`} onClick={(e) => e.stopPropagation()}>
+      <div className={`rules-editor-modal ${showCountdown ? 'with-countdown' : ''}`} onClick={(e) => {
+        e.stopPropagation();
+        handleUserInteraction();
+      }}>
         {showCountdown && (
-          <div className="countdown-banner">
+          <div className="countdown-banner" onClick={handleUserInteraction}>
             <div className="countdown-content">
               {countdown === -1 ? (
                 <>
@@ -384,6 +387,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
             <CustomDropdown
               value={currentPresetId}
               onChange={(value) => handleChangePrompt({ target: { value } })}
+              onClick={handleUserInteraction}
               options={[
                 // Prompt from settings option
                 { value: 'custom', label: t('settings.promptFromSettings', 'Prompt from settings') },
@@ -411,6 +415,8 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
             <textarea
               value={rules.atmosphere || ''}
               onChange={handleAtmosphereChange}
+              onClick={handleUserInteraction}
+              onFocus={handleUserInteraction}
               placeholder={t('rulesEditor.atmospherePlaceholder', 'Description of the setting or context...')}
               rows={3}
             />
@@ -426,18 +432,25 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
                   <input
                     value={term.term || ''}
                     onChange={(e) => handleArrayItemChange('terminology', index, 'term', e.target.value)}
+                    onClick={handleUserInteraction}
+                    onFocus={handleUserInteraction}
                     placeholder={t('rulesEditor.termPlaceholder', 'Term')}
                   />
                   <input
                     value={term.definition || ''}
                     onChange={(e) => handleArrayItemChange('terminology', index, 'definition', e.target.value)}
+                    onClick={handleUserInteraction}
+                    onFocus={handleUserInteraction}
                     placeholder={t('rulesEditor.definitionPlaceholder', 'Definition')}
                     className="definition-input"
                   />
                 </div>
                 <button
                   className="remove-item-button"
-                  onClick={() => removeArrayItem('terminology', index)}
+                  onClick={() => {
+                    handleUserInteraction();
+                    removeArrayItem('terminology', index);
+                  }}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" height="16px" viewBox="0 -960 960 960" width="16px" fill="currentColor">
                     <path d="M480-392 300-212q-18 18-44 18t-44-18q-18-18-18-44t18-44l180-180-180-180q-18-18-18-44t18-44q18-18 44-18t44 18l180 180 180-180q18-18 44-18t44 18q18 18 18 44t-18 44L568-480l180 180q18 18 18 44t-18 44q-18 18-44 18t-44-18L480-392Z"/>
@@ -448,7 +461,10 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
 
             <button
               className="add-item-button"
-              onClick={() => addArrayItem('terminology', { term: '', definition: '' })}
+              onClick={() => {
+                handleUserInteraction();
+                addArrayItem('terminology', { term: '', definition: '' });
+              }}
             >
               {t('rulesEditor.addTerm', '+ Add Term')}
             </button>

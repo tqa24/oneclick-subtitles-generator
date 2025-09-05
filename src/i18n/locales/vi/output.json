@@ -98,5 +98,9 @@
   "subtitleUploadSuccess": "Tập tin phụ đề đã được tải lên thành công!",
   "downloadAndViewWithSrt": "Tải xuống + Xem với SRT đã upload",
   "downloadAndGenerate": "Tải xuống + Tạo phụ đề có thời gian bằng AI",
-  "preparingProcessing": "Đang chuẩn bị xử lý video..."
+  "preparingProcessing": "Đang chuẩn bị xử lý video...",
+  "semiAutoGenerate": "Tạo sub bán tự động",
+  "downloadAndGenerateSemiAuto": "Tải + Tạo sub bán tự động",
+  "autoFlow": "Tạo sub tự động",
+  "downloadAndGenerateAuto": "Tải + Tạo sub tự động"
 }
