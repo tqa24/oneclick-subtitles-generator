@@ -601,8 +601,8 @@ const ButtonsContainer = ({
                    t('autoFlow.running', 'Running auto...')}
                 </span>
               </span>
-            ) : selectedVideo && !uploadedFile ? t('output.downloadAndGenerateAuto', 'Download + Generate subtitles (auto)') :
-            t('output.autoFlow', 'Generate subtitles (auto)')}
+            ) : <span className="button-text">{selectedVideo && !uploadedFile ? t('output.downloadAndGenerateAuto', 'Download + Generate subtitles (auto)') :
+            t('output.autoFlow', 'Generate subtitles (auto)')}</span>}
           </button>
         </>
       )}

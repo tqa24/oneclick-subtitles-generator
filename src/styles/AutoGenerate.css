@@ -73,27 +73,41 @@
   }
 }
 
+/* Text balancing for button text */
+.generate-btn .button-text {
+  text-wrap: balance;
+  display: inline-block;
+  max-width: 100%;
+}
+
 /* Gemini icons for auto-generate button */
 .generate-btn.auto-generate .gemini-icon-container {
   position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 24px;
-  height: 24px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
 }
 
 .generate-btn.auto-generate .gemini-mini-icon {
   position: absolute;
   animation: sparkle-rotate 3s linear infinite;
+  width: 20px;
+  height: 20px;
 }
 
 .generate-btn.auto-generate .gemini-mini-icon.random-2 {
   animation-delay: -0.5s;
+  top: 15%;
+  left: 10%;
 }
 
 .generate-btn.auto-generate .gemini-mini-icon.random-4 {
   animation-delay: -1.5s;
+  bottom: 20%;
+  right: 15%;
 }
 
 @keyframes sparkle-rotate {
