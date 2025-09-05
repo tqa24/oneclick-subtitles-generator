@@ -181,9 +181,10 @@ export const splitTiming = (startTime, endTime, chunks) => {
  * Apply auto-split to a single subtitle
  * @param {Object} subtitle - Subtitle object with text, start, end properties
  * @param {number} maxWords - Maximum words per subtitle
+ * @param {number} startingId - Starting ID for the split subtitles (optional)
  * @returns {Array} - Array of split subtitles (or single subtitle if no split needed)
  */
-export const autoSplitSubtitle = (subtitle, maxWords) => {
+export const autoSplitSubtitle = (subtitle, maxWords, startingId = null) => {
   if (!subtitle || !subtitle.text) return [subtitle];
   
   const wordCount = countWords(subtitle.text);
@@ -204,6 +205,9 @@ export const autoSplitSubtitle = (subtitle, maxWords) => {
   // Create split subtitles
   return chunks.map((chunk, index) => {
     const timing = timings[index];
+    // Use startingId if provided, otherwise use the original subtitle ID
+    const newId = startingId !== null ? startingId + index : 
+                  (subtitle.id ? parseInt(subtitle.id) + index : undefined);
     return {
       ...subtitle,
       text: chunk.text,
@@ -211,7 +215,7 @@ export const autoSplitSubtitle = (subtitle, maxWords) => {
       end: timing.end,
       startTime: timing.start,
       endTime: timing.end,
-      id: subtitle.id ? `${subtitle.id}_split_${index + 1}` : undefined,
+      id: newId,
       // Mark as split for tracking
       isSplit: true,
       originalId: subtitle.id
@@ -223,15 +227,23 @@ export const autoSplitSubtitle = (subtitle, maxWords) => {
  * Apply auto-split to an array of subtitles
  * @param {Array} subtitles - Array of subtitle objects
  * @param {number} maxWords - Maximum words per subtitle
- * @returns {Array} - Array of split subtitles
+ * @returns {Array} - Array of split subtitles with sequential IDs
  */
 export const autoSplitSubtitles = (subtitles, maxWords) => {
   if (!Array.isArray(subtitles) || maxWords <= 0) return subtitles;
   
   const result = [];
+  let currentId = 1; // Start with ID 1
   
   for (const subtitle of subtitles) {
-    const splitSubs = autoSplitSubtitle(subtitle, maxWords);
+    const splitSubs = autoSplitSubtitle(subtitle, maxWords, currentId);
+    
+    // Update each split subtitle with the correct sequential ID
+    for (let i = 0; i < splitSubs.length; i++) {
+      splitSubs[i].id = currentId;
+      currentId++;
+    }
+    
     result.push(...splitSubs);
   }
   

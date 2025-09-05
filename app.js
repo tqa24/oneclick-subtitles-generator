@@ -27,6 +27,7 @@ const testAudioRoute = require('./server/routes/testAudioRoute');
 const qualityScanRoutes = require('./server/routes/qualityScanRoutes');
 const videoCompatibilityRoutes = require('./server/routes/videoCompatibilityRoutes');
 const downloadOnlyRoutes = require('./server/routes/downloadOnlyRoutes');
+const downloadManagementRoutes = require('./server/routes/downloadManagementRoutes');
 const diagnosticsRoutes = require('./server/routes/diagnostics');
 const { scanModels } = require('./server/utils/scan-models');
 
@@ -360,6 +361,7 @@ app.use('/api', douyinPlaywrightRoutes);
 app.use('/api', allSitesRoutes);
 app.use('/api', qualityScanRoutes);
 app.use('/api', downloadOnlyRoutes);
+app.use('/api/download-management', downloadManagementRoutes);
 app.use('/api/video', videoCompatibilityRoutes);
 app.use('/api/gemini', geminiImageRoutes);
 app.use('/api/narration', narrationRoutes);

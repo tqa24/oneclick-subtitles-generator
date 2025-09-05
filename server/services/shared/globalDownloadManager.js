@@ -60,27 +60,97 @@ function getDownloadInfo(videoId) {
 }
 
 /**
- * Clean up stale downloads (older than 10 minutes)
+ * Clean up stale downloads (older than specified threshold)
+ * @param {number} thresholdMinutes - Minutes after which a download is considered stale (default: 10)
+ * @returns {Array} - Array of cleaned up video IDs
  */
-function cleanupStaleDownloads() {
+function cleanupStaleDownloads(thresholdMinutes = 10) {
   const now = Date.now();
-  const staleThreshold = 10 * 60 * 1000; // 10 minutes
+  const staleThreshold = thresholdMinutes * 60 * 1000;
+  const cleanedUp = [];
 
   for (const [videoId, info] of globalActiveDownloads.entries()) {
     if (now - info.startTime > staleThreshold) {
-      console.log(`[GlobalDownloadManager] CLEANUP: Removing stale download lock for ${videoId} (${info.route})`);
+      console.log(`[GlobalDownloadManager] CLEANUP: Removing stale download lock for ${videoId} (${info.route}, age: ${Math.round((now - info.startTime) / 60000)} minutes)`);
       globalActiveDownloads.delete(videoId);
+      cleanedUp.push(videoId);
     }
   }
+  
+  if (cleanedUp.length > 0) {
+    console.log(`[GlobalDownloadManager] Cleaned up ${cleanedUp.length} stale downloads`);
+  }
+  
+  return cleanedUp;
 }
 
-// Run cleanup every 5 minutes
-setInterval(cleanupStaleDownloads, 5 * 60 * 1000);
+/**
+ * Force cleanup a specific download
+ * @param {string} videoId - Video ID to force cleanup
+ * @returns {boolean} - True if cleaned up, false if not found
+ */
+function forceCleanupDownload(videoId) {
+  if (globalActiveDownloads.has(videoId)) {
+    const info = globalActiveDownloads.get(videoId);
+    console.log(`[GlobalDownloadManager] FORCE CLEANUP: Removing download lock for ${videoId} (${info.route})`);
+    globalActiveDownloads.delete(videoId);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Check if a download is stale
+ * @param {string} videoId - Video ID to check
+ * @param {number} thresholdMinutes - Minutes after which a download is considered stale (default: 5)
+ * @returns {boolean} - True if stale or not found
+ */
+function isDownloadStale(videoId, thresholdMinutes = 5) {
+  const info = globalActiveDownloads.get(videoId);
+  if (!info) return true; // Not found means it's not active
+  
+  const now = Date.now();
+  const ageMinutes = (now - info.startTime) / 60000;
+  const isStale = ageMinutes > thresholdMinutes;
+  
+  if (isStale) {
+    console.log(`[GlobalDownloadManager] Download ${videoId} is stale (age: ${Math.round(ageMinutes)} minutes)`);
+  }
+  
+  return isStale;
+}
+
+/**
+ * Get all active downloads
+ * @returns {Array} - Array of active download info
+ */
+function getAllActiveDownloads() {
+  const downloads = [];
+  const now = Date.now();
+  
+  for (const [videoId, info] of globalActiveDownloads.entries()) {
+    downloads.push({
+      videoId,
+      route: info.route,
+      startTime: info.startTime,
+      ageMinutes: Math.round((now - info.startTime) / 60000),
+      processId: info.processId
+    });
+  }
+  
+  return downloads;
+}
+
+// Run cleanup every 2 minutes (more frequently for better responsiveness)
+setInterval(() => cleanupStaleDownloads(10), 2 * 60 * 1000);
 
 module.exports = {
   isDownloadActive,
   lockDownload,
   unlockDownload,
   getDownloadInfo,
-  cleanupStaleDownloads
+  cleanupStaleDownloads,
+  forceCleanupDownload,
+  isDownloadStale,
+  getAllActiveDownloads
 };

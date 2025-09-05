@@ -22,7 +22,7 @@ const activeYtdlpProcesses = new Map(); // processKey -> { videoId, process }
  * POST /api/download-only - Download video or audio only
  */
 router.post('/download-only', async (req, res) => {
-  const { url, type, quality, source, useCookies = false } = req.body;
+  const { url, type, quality, source, useCookies = false, forceRetry = false } = req.body;
 
   if (!url) {
     return res.status(400).json({
@@ -49,12 +49,48 @@ router.post('/download-only', async (req, res) => {
     if (isDownloadActive(videoId)) {
       const downloadInfo = getDownloadInfo(videoId);
       console.log(`[DOWNLOAD-ONLY] Download blocked: ${videoId} is already being downloaded by ${downloadInfo.route}`);
-      return res.status(409).json({
-        success: false,
-        error: 'Video is already being downloaded',
-        activeRoute: downloadInfo.route,
-        videoId: videoId
-      });
+      
+      // If forceRetry is true, clean up the stuck download and proceed
+      if (forceRetry) {
+        console.log(`[DOWNLOAD-ONLY] Force retry requested - cleaning up stuck download for ${videoId}`);
+        unlockDownload(videoId, downloadInfo.route);
+        // Clear any progress tracking
+        const { clearDownloadProgress } = require('../services/shared/progressTracker');
+        clearDownloadProgress(videoId);
+        
+        // Clean up any active download tracking
+        for (const [key, vid] of activeDownloads.entries()) {
+          if (vid === videoId) {
+            activeDownloads.delete(key);
+            console.log(`[DOWNLOAD-ONLY] Cleaned up active download tracking for: ${key}`);
+            break;
+          }
+        }
+        
+        // Clean up any active yt-dlp processes
+        for (const [processKey, processInfo] of activeYtdlpProcesses.entries()) {
+          if (processInfo.videoId === videoId) {
+            try {
+              processInfo.process.kill('SIGTERM');
+              console.log(`[DOWNLOAD-ONLY] Killed stuck yt-dlp process for: ${videoId}`);
+            } catch (killErr) {
+              console.error(`[DOWNLOAD-ONLY] Error killing process: ${killErr.message}`);
+            }
+            activeYtdlpProcesses.delete(processKey);
+            break;
+          }
+        }
+        
+        console.log(`[DOWNLOAD-ONLY] Cleaned up stuck download, proceeding with retry`);
+      } else {
+        return res.status(409).json({
+          success: false,
+          error: 'Video is already being downloaded',
+          activeRoute: downloadInfo.route,
+          videoId: videoId,
+          canRetry: true
+        });
+      }
     }
 
     // Create a unique key for this download request
@@ -159,9 +195,29 @@ router.post('/download-only', async (req, res) => {
 
   } catch (error) {
     console.error('[DOWNLOAD-ONLY] Error starting download:', error);
+    
+    // Clear progress tracking
+    const { clearDownloadProgress } = require('../services/shared/progressTracker');
+    clearDownloadProgress(videoId);
+    
+    // Clean up any partial files
+    const extension = type === 'video' ? 'mp4' : 'mp3';
+    const outputFilename = `${videoId}.${extension}`;
+    const outputPath = path.join(VIDEOS_DIR, outputFilename);
+    try {
+      if (fs.existsSync(outputPath)) {
+        fs.unlinkSync(outputPath);
+        console.log(`[DOWNLOAD-ONLY] Cleaned up partial file: ${outputPath}`);
+      }
+    } catch (cleanupErr) {
+      console.error(`[DOWNLOAD-ONLY] Error cleaning up partial file: ${cleanupErr.message}`);
+    }
+    
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to start download'
+      error: error.message || 'Failed to start download',
+      videoId: videoId,
+      canRetry: true
     });
   } finally {
     // Always release the global download lock

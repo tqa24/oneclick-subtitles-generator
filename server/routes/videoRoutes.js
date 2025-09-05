@@ -328,7 +328,7 @@ router.get('/segment-exists/:segmentId', (req, res) => {
  * POST /api/download-video - Download a YouTube video
  */
 router.post('/download-video', async (req, res) => {
-  const { videoId, useCookies = false } = req.body;
+  const { videoId, useCookies = false, forceRetry = false } = req.body;
 
   if (!videoId) {
     return res.status(400).json({ error: 'Video ID is required' });
@@ -338,11 +338,23 @@ router.post('/download-video', async (req, res) => {
   if (isDownloadActive(videoId)) {
     const downloadInfo = getDownloadInfo(videoId);
     console.log(`[VIDEO-ROUTE] Download blocked: ${videoId} is already being downloaded by ${downloadInfo.route}`);
-    return res.status(409).json({
-      error: 'Video is already being downloaded',
-      activeRoute: downloadInfo.route,
-      videoId: videoId
-    });
+    
+    // If forceRetry is true, clean up the stuck download and proceed
+    if (forceRetry) {
+      console.log(`[VIDEO-ROUTE] Force retry requested - cleaning up stuck download for ${videoId}`);
+      unlockDownload(videoId, downloadInfo.route);
+      // Clear any progress tracking
+      const { clearDownloadProgress } = require('../services/shared/progressTracker');
+      clearDownloadProgress(videoId);
+      console.log(`[VIDEO-ROUTE] Cleaned up stuck download, proceeding with retry`);
+    } else {
+      return res.status(409).json({
+        error: 'Video is already being downloaded',
+        activeRoute: downloadInfo.route,
+        videoId: videoId,
+        canRetry: true
+      });
+    }
   }
 
   const videoPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
@@ -395,14 +407,36 @@ router.post('/download-video', async (req, res) => {
     try {
       if (fs.existsSync(videoPath)) {
         fs.unlinkSync(videoPath);
+        console.log(`[VIDEO-ROUTE] Cleaned up partial file: ${videoPath}`);
       }
     } catch (e) {
       console.error('Error cleaning up incomplete file:', e);
     }
 
+    // Clear progress tracking
+    const { clearDownloadProgress } = require('../services/shared/progressTracker');
+    clearDownloadProgress(videoId);
+
+    // Provide more user-friendly error message with retry option
+    let errorMessage = 'Failed to download video';
+    let canRetry = true;
+    
+    if (error.message.includes('Video unavailable')) {
+      errorMessage = 'This video is unavailable or has been removed.';
+      canRetry = false;
+    } else if (error.message.includes('Private video')) {
+      errorMessage = 'This video is private and cannot be downloaded.';
+      canRetry = false;
+    } else if (error.message.includes('Sign in to confirm')) {
+      errorMessage = 'This video requires age verification and cannot be downloaded.';
+      canRetry = false;
+    }
+
     return res.status(500).json({
-      error: 'Failed to download video',
-      details: error.message
+      error: errorMessage,
+      details: error.message,
+      videoId: videoId,
+      canRetry: canRetry
     });
   } finally {
     // Always release the global download lock
