@@ -198,10 +198,34 @@ const VideoProcessingOptionsModal = ({
     { value: 'medium', label: t('processing.mediumRes', 'Medium (256 tokens/frame)'), tokens: 256 },
   ];
 
-  // Helper function to get FPS label for slider
-  const getFpsLabel = (value) => {
-    const option = fpsOptions.find(opt => opt.value === value);
-    return option ? option.label : `${value} FPS`;
+  // Helper function to get FPS value display
+  const getFpsValue = (value) => {
+    return `${value} FPS`;
+  };
+
+  // Helper function to get FPS interval description
+  const getFpsInterval = (value) => {
+    // Calculate the interval in seconds between frames
+    const interval = 1 / value;
+    
+    // Format the interval nicely - always in seconds
+    let formattedInterval;
+    if (interval >= 10) {
+      // For large intervals, use whole numbers
+      formattedInterval = interval.toFixed(0);
+    } else if (interval >= 1) {
+      // For intervals 1-10s, show one decimal if needed
+      formattedInterval = interval % 1 === 0 ? interval.toFixed(0) : interval.toFixed(1);
+    } else {
+      // For sub-second intervals, show appropriate decimals
+      if (interval >= 0.1) {
+        formattedInterval = interval.toFixed(1); // 0.1, 0.2, 0.5, etc.
+      } else {
+        formattedInterval = interval.toFixed(2); // 0.05, 0.04, etc.
+      }
+    }
+    
+    return `${formattedInterval}s intervals`;
   };
 
   // Helper function to get all available models (built-in + custom)
@@ -843,7 +867,10 @@ const VideoProcessingOptionsModal = ({
                 {/* Frame Rate Slider */}
                 <div className="combined-option-half">
                   <div className="label-with-help">
-                    <label>{t('processing.frameRate', 'Frame Rate')}</label>
+                    <label>
+                      {t('processing.frameRate', 'Frame Rate')}
+                      <span className="label-subtitle">({getFpsInterval(fps)})</span>
+                    </label>
                     {selectedModel === 'gemini-2.5-pro' && (
                       <div
                         className="help-icon-container"
@@ -857,7 +884,7 @@ const VideoProcessingOptionsModal = ({
                       </div>
                     )}
                   </div>
-                  <div className="slider-control">
+                  <div className="slider-with-value fps-slider-container">
                     <StandardSlider
                       value={fps}
                       onChange={(value) => setFps(parseFloat(value))}
@@ -875,7 +902,7 @@ const VideoProcessingOptionsModal = ({
                       ariaLabel={t('processing.frameRate', 'Frame Rate')}
                     />
                     <div className="slider-value-display">
-                      {getFpsLabel(fps)}
+                      {getFpsValue(fps)}
                     </div>
                   </div>
                 </div>
@@ -1052,7 +1079,7 @@ const VideoProcessingOptionsModal = ({
                       </svg>
                     </div>
                   </div>
-                  <div className="slider-control">
+                  <div className="slider-with-value context-slider-container">
                     <StandardSlider
                       value={outsideContextRange}
                       onChange={(value) => setOutsideContextRange(Number(value))}
@@ -1096,7 +1123,7 @@ const VideoProcessingOptionsModal = ({
                   </svg>
                 </div>
               </div>
-              <div className="slider-control">
+              <div className="slider-with-value duration-slider-container">
                 <StandardSlider
                   value={maxDurationPerRequest}
                   onChange={(value) => setMaxDurationPerRequest(parseInt(value))}
@@ -1177,7 +1204,7 @@ const VideoProcessingOptionsModal = ({
                       </svg>
                     </div>
                   </div>
-                  <div className="slider-control">
+                  <div className="slider-with-value words-slider-container">
                     <StandardSlider
                       value={maxWordsPerSubtitle}
                       onChange={(value) => setMaxWordsPerSubtitle(parseInt(value))}

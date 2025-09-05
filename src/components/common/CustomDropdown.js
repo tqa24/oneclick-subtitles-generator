@@ -564,7 +564,12 @@ const CustomDropdown = ({
     }
   };
 
-  const handleOptionSelect = (optionValue) => {
+  const handleOptionSelect = (optionValue, isDisabled) => {
+    // Don't select if the option is disabled
+    if (isDisabled) {
+      return;
+    }
+    
     if (menuRef.current) {
       const list = menuRef.current.querySelector('.dropdown-options-list');
       const buttons = list ? Array.from(list.querySelectorAll('.dropdown-option')) : [];
@@ -686,14 +691,22 @@ const CustomDropdown = ({
           <div className="dropdown-options-list">
             {options.map((option) => {
               const isSelected = option.value === value;
+              const isDisabled = option.disabled || false;
               return (
                 <button
                   key={option.value}
                   type="button"
-                  className={`dropdown-option ${isSelected ? 'selected morphing-item' : ''}`}
+                  className={`dropdown-option ${isSelected ? 'selected morphing-item' : ''} ${isDisabled ? 'disabled' : ''}`}
+                  disabled={isDisabled}
                   onMouseDown={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    
+                    // Don't initiate drag for disabled items
+                    if (isDisabled) {
+                      return;
+                    }
+                    
                     // Start drag mode - don't select yet
                     isDraggingRef.current = true;
                     hoveredIndexRef.current = options.findIndex(o => o.value === option.value);
@@ -711,9 +724,10 @@ const CustomDropdown = ({
                         const allButtons = menuRef.current?.querySelectorAll('.dropdown-option');
                         allButtons?.forEach(btn => btn.classList.remove('pressed', 'hover-preview'));
                         
-                        // If mouse is still over the same item, select it
+                        // If mouse is still over the same item, select it (unless it's disabled)
                         if (pendingSelectionRef.current && hoveredIndexRef.current === options.findIndex(o => o.value === pendingSelectionRef.current)) {
-                          handleOptionSelect(pendingSelectionRef.current);
+                          const targetOption = options.find(o => o.value === pendingSelectionRef.current);
+                          handleOptionSelect(pendingSelectionRef.current, targetOption?.disabled);
                         } else {
                           // Mouse was dragged away - just cancel
                           pendingSelectionRef.current = null;

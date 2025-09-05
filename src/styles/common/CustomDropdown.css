@@ -402,6 +402,43 @@
   background-color: var(--md-surface-2);
 }
 
+/* Disabled dropdown options */
+.dropdown-option.disabled {
+  cursor: not-allowed;
+  /* In light mode: more gray (less black) */
+  color: rgba(128, 128, 128, 0.8);
+  background-color: transparent;
+  font-weight: 400;
+  opacity: 1; /* Full opacity to show the gray color clearly */
+}
+
+/* Dark theme specific disabled color */
+[data-theme="dark"] .dropdown-option.disabled {
+  /* In dark mode: darker gray (less white) */
+  color: rgba(100, 100, 100, 0.9);
+}
+
+.dropdown-option.disabled:hover {
+  background-color: transparent;
+  transform: none;
+  color: rgba(128, 128, 128, 0.8);
+}
+
+[data-theme="dark"] .dropdown-option.disabled:hover {
+  color: rgba(100, 100, 100, 0.9);
+}
+
+.dropdown-option.disabled:active {
+  background-color: transparent;
+  transform: none;
+}
+
+/* Remove hover effects for disabled options */
+.dropdown-option.disabled.hover-preview {
+  background-color: transparent;
+  transform: none;
+}
+
 .dropdown-option.selected {
   background-color: var(--md-primary-container);
   color: var(--md-on-primary-container);
