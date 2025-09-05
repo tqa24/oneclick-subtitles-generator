@@ -935,18 +935,84 @@ const VideoProcessingOptionsModal = ({
               </div>
             </div>
 
-            {/* Model Selection */}
+            {/* Model and Max Duration Combined Row */}
             <div className="option-group">
-              <label>{t('processing.model', 'Model')}</label>
-              <CustomDropdown
-                value={selectedModel}
-                onChange={(value) => setSelectedModel(value)}
-                options={modelOptions.map(option => ({
-                  value: option.value,
-                  label: option.label
-                }))}
-                placeholder={t('processing.selectModel', 'Select Model')}
-              />
+              <div className="combined-options-row">
+                {/* Left half: Model Selection */}
+                <div className="combined-option-half">
+                  <div className="label-with-help">
+                    <label>{t('processing.model', 'Model')}</label>
+                    <div
+                      className="help-icon-container"
+                      title={t('processing.gemini20Warning', 'Gemini 2.0 models do not work well with the new offset mechanism')}
+                    >
+                      <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                      </svg>
+                    </div>
+                  </div>
+                  <CustomDropdown
+                    value={selectedModel}
+                    onChange={(value) => setSelectedModel(value)}
+                    options={modelOptions.map(option => ({
+                      value: option.value,
+                      label: option.label
+                    }))}
+                    placeholder={t('processing.selectModel', 'Select Model')}
+                  />
+                </div>
+
+                {/* Right half: Max duration per request */}
+                <div className="combined-option-half">
+                  <div className="label-with-help">
+                    <label>{t('processing.maxDurationPerRequest', 'Max duration per request')}</label>
+                    <div
+                      className="help-icon-container"
+                      title={t('processing.maxDurationPerRequestDesc', 'Maximum duration for each Gemini request. Longer segments will be split into parallel requests.')}
+                    >
+                      <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="slider-with-value duration-slider-container">
+                    <StandardSlider
+                      value={maxDurationPerRequest}
+                      onChange={(value) => setMaxDurationPerRequest(parseInt(value))}
+                      min={1}
+                      max={20}
+                      step={1}
+                      orientation="Horizontal"
+                      size="XSmall"
+                      state="Enabled"
+                      showValueIndicator={false}
+                      showIcon={false}
+                      showStops={false}
+                      id="max-duration-slider"
+                      ariaLabel={t('processing.maxDurationPerRequest', 'Max duration per request')}
+                    />
+                    <div className="slider-value-display">
+                      {t('processing.minutesValue', '{{value}} minutes', { value: maxDurationPerRequest })}
+                      {selectedSegment && (() => {
+                        const segmentDuration = (selectedSegment.end - selectedSegment.start) / 60; // Convert to minutes
+                        const numRequests = Math.ceil(segmentDuration / maxDurationPerRequest);
+                        if (numRequests > 1) {
+                          return (
+                            <span className="parallel-info">
+                              {' '}({t('processing.parallelRequestsInfo', 'Will split into {{count}} parallel requests', { count: numRequests })})
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Prompt Preset and Settings Row */}
@@ -1108,56 +1174,7 @@ const VideoProcessingOptionsModal = ({
               </div>
             </div>
 
-            {/* Maximum duration per request in right column */}
-            <div className="option-group">
-              <div className="label-with-help">
-                <label>{t('processing.maxDurationPerRequest', 'Max duration per request')}</label>
-                <div
-                  className="help-icon-container"
-                  title={t('processing.maxDurationPerRequestDesc', 'Maximum duration for each Gemini request. Longer segments will be split into parallel requests.')}
-                >
-                  <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                  </svg>
-                </div>
-              </div>
-              <div className="slider-with-value duration-slider-container">
-                <StandardSlider
-                  value={maxDurationPerRequest}
-                  onChange={(value) => setMaxDurationPerRequest(parseInt(value))}
-                  min={1}
-                  max={20}
-                  step={1}
-                  orientation="Horizontal"
-                  size="XSmall"
-                  state="Enabled"
-                  showValueIndicator={false}
-                  showIcon={false}
-                  showStops={false}
-                  id="max-duration-slider"
-                  ariaLabel={t('processing.maxDurationPerRequest', 'Max duration per request')}
-                />
-                <div className="slider-value-display">
-                  {t('processing.minutesValue', '{{value}} minutes', { value: maxDurationPerRequest })}
-                  {selectedSegment && (() => {
-                    const segmentDuration = (selectedSegment.end - selectedSegment.start) / 60; // Convert to minutes
-                    const numRequests = Math.ceil(segmentDuration / maxDurationPerRequest);
-                    if (numRequests > 1) {
-                      return (
-                        <span className="parallel-info">
-                          {' '}({t('processing.parallelRequestsInfo', 'Will split into {{count}} parallel requests', { count: numRequests })})
-                        </span>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
-              </div>
-            </div>
-
-            {/* Auto-split subtitles and Max words per subtitle - 4th row */}
+            {/* Auto-split subtitles and Max words per subtitle */}
             <div className="option-group">
               <div className="combined-options-row">
                 {/* Left half: Auto-split switch */}

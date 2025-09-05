@@ -482,7 +482,12 @@
 
 /* Max words slider - "30 words" */
 .video-processing-modal .words-slider-container .slider-value-display {
-  min-width: 65px;
+  min-width: 80px;
+}
+
+/* Model dropdown in combined row - limit width */
+.video-processing-modal .combined-option-half:first-child .custom-dropdown {
+  max-width: 200px;
 }
 
 /* Additional info (like parallel requests) should be on its own line */

@@ -57,5 +57,6 @@
   "timingGenerationDescDisabled": "Add subtitles to enable timing generation",
   "selectResolution": "Select Resolution",
   "selectModel": "Select Model",
-  "selectPreset": "Select Preset"
+  "selectPreset": "Select Preset",
+  "gemini20Warning": "Gemini 2.0 models do not work well with the new offset mechanism"
 }
