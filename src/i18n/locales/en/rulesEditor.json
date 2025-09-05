@@ -26,5 +26,6 @@
   "seconds": "seconds",
   "clickToCancel": "(click anywhere to cancel)",
   "waitingForAction": "Waiting for your action",
-  "clickToEdit": "(click to start editing)"
+  "clickToEdit": "(click to start editing)",
+  "saveContinue": "Save & Continue"
 }

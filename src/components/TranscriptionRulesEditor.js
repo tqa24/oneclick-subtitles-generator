@@ -638,11 +638,14 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
             {t('common.cancel', 'Cancel')}
           </button>
           <button
-            className={`save-button ${!hasChanges ? 'disabled' : ''}`}
+            className={`save-button ${!hasChanges && !showCountdown ? 'disabled' : ''} ${showCountdown ? 'autoflow-active' : ''}`}
             onClick={handleSave}
-            disabled={!hasChanges}
+            disabled={!hasChanges && !showCountdown}
           >
-            {t('common.save', 'Save')}
+            {showCountdown 
+              ? t('rulesEditor.saveContinue', 'Save & Continue')
+              : t('common.save', 'Save')
+            }
           </button>
         </div>
       </div>

@@ -547,9 +547,6 @@ const ButtonsContainer = ({
                     color={isDarkTheme ? '#FFFFFF' : '#FFFFFF'}
                     trackColor={isDarkTheme ? '#404659' : 'rgba(255,255,255,0.35)'}
                   />
-                  <span className="processing-text" style={{ flexShrink: 0, whiteSpace: 'nowrap', marginLeft: '8px' }}>
-                    {t('output.downloadingVideo', 'Downloading video...')}
-                  </span>
                 </div>
               ) : (
                 <span className="processing-text">
