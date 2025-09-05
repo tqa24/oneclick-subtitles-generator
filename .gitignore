@@ -96,6 +96,9 @@ latest.yml
 2.0.0
 *.0.0
 
+# Temporary chatterbox clone for installation
+chatterbox-temp/
+
 # Local storage and config
 localStorage.json
 tiktokdien/
