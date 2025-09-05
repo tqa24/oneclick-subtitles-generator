@@ -1278,6 +1278,15 @@ const VideoRenderingSection = ({
       <div className="video-rendering-header">
         <div className="header-left">
           <h2>{t('videoRendering.title', 'Video Rendering')}</h2>
+          <span style={{
+            marginLeft: '16px',
+            fontSize: '12px',
+            color: 'var(--md-on-surface-variant)',
+            fontStyle: 'italic',
+            opacity: 0.7
+          }}>
+            {t('videoRendering.upcomingFeatures', 'Upcoming features: crop, add text, logo, images, background music, ...')}
+          </span>
         </div>
         <button
           className="collapse-button"

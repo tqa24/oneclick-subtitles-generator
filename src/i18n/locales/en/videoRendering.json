@@ -159,5 +159,6 @@
   "fps30": "30 FPS (Standard)",
   "fps50": "50 FPS (PAL High)",
   "fps60": "60 FPS (Smooth)",
-  "fps120": "120 FPS (High Speed)"
+  "fps120": "120 FPS (High Speed)",
+  "upcomingFeatures": "Upcoming features: crop, add text, logo, images, background music, ..."
 }

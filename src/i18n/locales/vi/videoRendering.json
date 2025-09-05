@@ -237,5 +237,6 @@
   "fps30": "30 FPS (Tiêu chuẩn)",
   "fps50": "50 FPS (PAL Cao)",
   "fps60": "60 FPS (Mượt)",
-  "fps120": "120 FPS (Tốc độ cao)"
+  "fps120": "120 FPS (Tốc độ cao)",
+  "upcomingFeatures": "Các tính năng sắp tới: crop, thêm text, logo, ảnh, nhạc nền, ..."
 }
