@@ -181,7 +181,7 @@
   "countdownInfinite": "무한 카운트다운 (자동 진행 없음)",
   "selectCountdownTime": "카운트다운 시간 선택",
   "autoSplitSubtitles": "자막 자동 분할",
-  "autoSplitSubtitlesDescription": "긴 자막을 더 읽기 쉽도록 자동으로 작은 세그먼트로 분할합니다.",
+  "autoSplitSubtitlesDescription": "긴 자막을 더 읽기 쉽도록 자동으로 작은 세그먼트로 분할합니다. 이는 Gemini 프롬프트에서 짧은 문장을 지정하는 것보다 권장됩니다 (Gemini 프롬프트는 자연스럽고 간결하게 유지하고, 필요할 때만 제약 조건을 추가하세요)",
   "favoriteMaxSubtitleLength": "선호하는 자막 최대 길이",
   "favoriteMaxSubtitleLengthDescription": "자동 분할이 활성화되었을 때 각 자막의 기본 최대 단어 수를 설정합니다.",
   "words": "단어",

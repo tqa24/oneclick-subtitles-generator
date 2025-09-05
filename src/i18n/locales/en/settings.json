@@ -181,7 +181,7 @@
   "countdownInfinite": "Infinite countdown (no auto proceeding)",
   "selectCountdownTime": "Select Countdown Time",
   "autoSplitSubtitles": "Auto-split subtitles",
-  "autoSplitSubtitlesDescription": "Automatically split long subtitles into smaller segments for better readability.",
+  "autoSplitSubtitlesDescription": "Automatically split long subtitles into smaller segments for better readability. This is recommended over specifying short sentences in Gemini prompts (keep Gemini prompts natural and concise, only add constraints when necessary)",
   "favoriteMaxSubtitleLength": "Favorite max length of one subtitle",
   "favoriteMaxSubtitleLengthDescription": "Set the default maximum number of words per subtitle when auto-split is enabled.",
   "words": "words",
