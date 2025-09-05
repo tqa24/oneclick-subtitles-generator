@@ -133,10 +133,11 @@
   /* Hide native scrollbar completely */
   scrollbar-width: none !important; /* Firefox */
   -ms-overflow-style: none !important; /* IE and Edge */
-  /* No padding - clean dropdown styling */
-  padding: 0;
+  /* Small vertical padding for visual breathing room */
+  padding: 2px 0;
   margin: 0;
   position: relative;
+  box-sizing: border-box;
 }
 
 /* Remove edge fades for pure Material look */
@@ -265,7 +266,8 @@
   background: transparent;
   border: none;
   color: var(--md-on-surface);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
   font-family: var(--font-primary);
   font-weight: 500;
   text-align: left;
@@ -275,6 +277,8 @@
               opacity 200ms cubic-bezier(0.2, 0, 0, 1);
   border-radius: 0;
   will-change: transform;
+  min-height: 44px; /* Minimum height for consistency */
+  box-sizing: border-box; /* Ensure padding is included in height */
 }
 
 .dropdown-option:first-child {

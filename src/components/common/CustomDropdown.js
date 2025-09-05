@@ -186,7 +186,26 @@ const CustomDropdown = ({
   const calculatePosition = () => {
     if (!dropdownRef.current) return;
 
-    const optionHeight = 44; // Fixed per your spec
+    // Dynamically calculate option height from first rendered option or use fallback
+    let optionHeight = 48; // Default fallback height
+    
+    // If menu is already open, try to measure actual option height
+    if (menuRef.current) {
+      const firstOption = menuRef.current.querySelector('.dropdown-option');
+      if (firstOption) {
+        const computedStyle = window.getComputedStyle(firstOption);
+        const actualHeight = firstOption.offsetHeight;
+        // Use the actual measured height if available, with a small buffer
+        if (actualHeight > 0) {
+          // Add 1-2px buffer per item to account for sub-pixel rendering
+          optionHeight = Math.ceil(actualHeight) + 1;
+        }
+      }
+    }
+    
+    const borderCompensation = 2; // 1px border top + 1px border bottom
+    const menuPadding = 4; // Container padding: 2px top + 2px bottom
+    const extraBuffer = 8; // Extra buffer to ensure no scrollbar appears
     const maxMenuHeight = 400; // Cap to keep UI compact
     const spacing = 4;
 
@@ -228,7 +247,10 @@ const CustomDropdown = ({
     }
 
     const visibleCount = upCount + 1 + downCount;
-    const menuHeight = Math.min(maxMenuHeight, visibleCount * optionHeight);
+    // Add border compensation, padding, and extra buffer to the calculated menu height
+    const contentHeight = visibleCount * optionHeight;
+    const totalCompensation = borderCompensation + menuPadding + extraBuffer;
+    const menuHeight = Math.min(maxMenuHeight, contentHeight + totalCompensation);
 
     // Position so the selected option stays anchored at the pill center
     const topPosition = centerY - (upCount + 0.5) * optionHeight;
@@ -325,12 +347,30 @@ const CustomDropdown = ({
       requestAnimationFrame(() => {
         if (menuRef.current) {
           menuRef.current.classList.add('radius-open');
+          
+          // Recalculate position after menu is rendered to get accurate measurements
+          setTimeout(() => {
+            calculatePosition();
+            
+            // Check if scrollbar appeared and adjust if needed
+            const optionsList = menuRef.current?.querySelector('.dropdown-options-list');
+            if (optionsList && optionsList.scrollHeight > optionsList.clientHeight) {
+              // Scrollbar is present, add more height
+              const currentHeight = parseInt(menuRef.current.style.getPropertyValue('--menu-height') || '0');
+              if (currentHeight > 0) {
+                menuRef.current.style.setProperty('--menu-height', `${currentHeight + 8}px`);
+              }
+            }
+          }, 20);
         }
       });
 
       const optionsList = menuRef.current.querySelector('.dropdown-options-list');
       if (optionsList) {
-        const optionHeight = 44;
+        // Get actual option height from rendered element
+        const firstOption = optionsList.querySelector('.dropdown-option');
+        const optionHeight = firstOption ? firstOption.offsetHeight : 52;
+        
         const selectedIndex = Math.max(0, options.findIndex(o => o.value === value));
         const firstVisibleIndex = Math.max(0, selectedIndex - dropdownPosition.upCount);
         optionsList.scrollTop = firstVisibleIndex * optionHeight;
@@ -343,7 +383,9 @@ const CustomDropdown = ({
     if (menuRef.current) {
       const list = menuRef.current.querySelector('.dropdown-options-list');
       const buttons = list ? Array.from(list.querySelectorAll('.dropdown-option')) : [];
-      const optionHeight = 44;
+      // Get actual option height from rendered element
+      const firstOption = buttons[0];
+      const optionHeight = firstOption ? firstOption.offsetHeight : 52;
       const newIndex = Math.max(0, options.findIndex(o => o.value === optionValue));
 
       if (list) {
