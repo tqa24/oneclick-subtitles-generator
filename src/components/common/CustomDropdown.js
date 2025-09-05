@@ -21,7 +21,8 @@ const CustomDropdown = ({
   };
   const [dropdownPosition, setDropdownPosition] = useState(() => ({
     top: 0, left: 0, width: 0, height: 0, upCount: 0, downCount: 0,
-    revealMode: getChevronModeFromIndex(value, options)
+    revealMode: getChevronModeFromIndex(value, options),
+    expandedWidth: 0 // Track the expanded width for menu
   }));
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
@@ -239,19 +240,40 @@ const CustomDropdown = ({
 
     // Dynamically calculate option height from first rendered option or use fallback
     let optionHeight = 48; // Default fallback height
+    let maxOptionWidth = 0; // Track the widest option
     
-    // If menu is already open, try to measure actual option height
+    // If menu is already open, try to measure actual option height and width
     if (menuRef.current) {
-      const firstOption = menuRef.current.querySelector('.dropdown-option');
-      if (firstOption) {
-        const computedStyle = window.getComputedStyle(firstOption);
-        const actualHeight = firstOption.offsetHeight;
-        // Use the actual measured height if available
+      const allOptions = menuRef.current.querySelectorAll('.dropdown-option');
+      if (allOptions.length > 0) {
+        // Get height from first option
+        const actualHeight = allOptions[0].offsetHeight;
         if (actualHeight > 0) {
-          // Just use ceiling to handle sub-pixel rendering, no extra buffer
           optionHeight = Math.ceil(actualHeight);
         }
+        
+        // Measure all options to find the widest one
+        allOptions.forEach(option => {
+          // Temporarily remove width constraints to measure natural width
+          const originalWidth = option.style.width;
+          option.style.width = 'auto';
+          option.style.whiteSpace = 'nowrap';
+          const naturalWidth = option.scrollWidth;
+          option.style.width = originalWidth;
+          option.style.whiteSpace = '';
+          
+          maxOptionWidth = Math.max(maxOptionWidth, naturalWidth);
+        });
       }
+    }
+    
+    // If we haven't measured options yet, estimate based on button width and add buffer
+    if (maxOptionWidth === 0) {
+      const buttonRect = dropdownRef.current.getBoundingClientRect();
+      maxOptionWidth = Math.max(buttonRect.width, 200); // Default minimum of 200px
+    } else {
+      // Add some padding to the measured width
+      maxOptionWidth = Math.min(maxOptionWidth + 32, 400); // Add padding, cap at 400px
     }
     
     const borderCompensation = 2; // 1px border top + 1px border bottom
@@ -316,7 +338,8 @@ const CustomDropdown = ({
       height: menuHeight,
       upCount,
       downCount,
-      revealMode
+      revealMode,
+      expandedWidth: maxOptionWidth // Store the target expanded width
     });
 
     // After position update, reinitialize scrollbar if menu is already open
@@ -339,14 +362,19 @@ const CustomDropdown = ({
     }
   };
 
-  // Opening/closing animation control using reveal (clip-path), not scale
+  // Opening/closing animation control using reveal (clip-path) and width expansion
   useEffect(() => {
     if (!menuRef.current) return;
     const el = menuRef.current;
     // Establish initial state when opening
     if (isOpen) {
       const targetH = dropdownPosition.height || 200;
+      const targetW = dropdownPosition.expandedWidth || dropdownPosition.width;
       el.style.setProperty('--menu-height', `${targetH}px`);
+      el.style.setProperty('--menu-width', `${targetW}px`);
+      
+      // Start with button width for smooth expansion
+      el.style.width = `${dropdownPosition.width}px`;
 
       // Compute initial clip based on reveal mode: 'center', 'up', or 'down'
       let clipTop = 0, clipBottom = 0;
@@ -366,14 +394,17 @@ const CustomDropdown = ({
       }
       el.style.clipPath = `inset(${clipTop}px 0 ${clipBottom}px 0 round var(--dropdown-radius, 24px))`;
 
-      // next frame: animate reveal to full height and smaller radius
+      // next frame: animate reveal to full height and width
       requestAnimationFrame(() => {
         el.classList.add('is-open');
+        el.style.width = `${targetW}px`; // Expand to full width
         el.style.clipPath = `inset(0 0 0 0 round var(--dropdown-radius, 12px))`;
       });
     } else {
-      // Closing: reverse the opening direction and remove open class
+      // Closing: reverse the opening direction and shrink width
       const targetH = dropdownPosition.height || 200;
+      el.style.width = `${dropdownPosition.width}px`; // Shrink back to button width
+      
       let clipTop = 0, clipBottom = 0;
       if (dropdownPosition.revealMode === 'up') {
         clipTop = Math.max(0, targetH - 42);
@@ -389,7 +420,7 @@ const CustomDropdown = ({
       el.style.clipPath = `inset(${clipTop}px 0 ${clipBottom}px 0 round var(--dropdown-radius, 24px))`;
       el.classList.remove('is-open');
     }
-  }, [isOpen, dropdownPosition.height]);
+  }, [isOpen, dropdownPosition.height, dropdownPosition.width, dropdownPosition.expandedWidth]);
 
   // After opening, sync the scroll so the selected item stays anchored at center
   useEffect(() => {
@@ -521,7 +552,8 @@ const CustomDropdown = ({
             position: 'fixed',
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
-            width: `${dropdownPosition.width}px`,
+            width: `${dropdownPosition.expandedWidth || dropdownPosition.width}px`,
+            minWidth: `${dropdownPosition.width}px`,
             zIndex: 999999
           }}
           role="listbox"

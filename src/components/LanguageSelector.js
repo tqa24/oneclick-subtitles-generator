@@ -45,7 +45,6 @@ const LanguageSelector = () => {
       onChange={handleLanguageChange}
       options={dropdownOptions}
       placeholder={t('language.selectLanguage') || 'Select language'}
-      style={{ minWidth: '200px' }}
     />
   );
 };
