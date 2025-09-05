@@ -383,6 +383,124 @@ input:focus {
   background-color: var(--md-surface-container-highest);
 }
 
+/* Countdown banner styling for autoflow */
+.rules-editor-modal.with-countdown {
+  position: relative;
+  padding-top: 60px;
+}
+
+.countdown-banner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(135deg, var(--md-primary-container) 0%, var(--md-secondary-container) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-radius: 32px 32px 0 0;
+  overflow: hidden;
+  z-index: 10;
+  animation: slideDown 0.3s ease;
+}
+
+.countdown-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--md-on-primary-container);
+  padding: 0 24px;
+}
+
+.countdown-text {
+  color: var(--md-on-primary-container);
+  opacity: 0.9;
+}
+
+.countdown-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--md-on-primary-container);
+  min-width: 30px;
+  text-align: center;
+  animation: pulse 1s infinite;
+}
+
+.countdown-hint {
+  margin-left: 8px;
+  font-size: 0.85rem;
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.countdown-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.countdown-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--md-primary) 0%, var(--md-secondary) 100%);
+  transition: width 1s linear;
+  box-shadow: 0 0 8px rgba(var(--md-primary-rgb), 0.4);
+}
+
+/* Adjust modal header when countdown is shown */
+.rules-editor-modal.with-countdown .modal-header {
+  border-radius: 0;
+  background-color: var(--md-surface-container-high);
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .countdown-banner {
+  background: linear-gradient(135deg, 
+    rgba(var(--md-primary-rgb), 0.2) 0%, 
+    rgba(var(--md-secondary-rgb), 0.2) 100%);
+}
+
+[data-theme="dark"] .countdown-content,
+[data-theme="dark"] .countdown-text,
+[data-theme="dark"] .countdown-number {
+  color: var(--md-on-surface);
+}
+
+[data-theme="dark"] .countdown-progress {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .countdown-progress-bar {
+  background: linear-gradient(90deg, var(--md-primary) 0%, var(--md-tertiary) 100%);
+}
+
+/* Animations */
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
 .save-button {
   background-color: var(--md-primary);
   color: var(--md-on-primary);

@@ -252,60 +252,61 @@ const ButtonsContainer = ({
   const waitForAnalysisComplete = () => {
     return new Promise((resolve) => {
       let checkCount = 0;
-      const maxChecks = 60; // 1 minute max wait for analysis
-      let modalClosedCount = 0;
+      const maxChecks = 120; // 2 minutes max wait for analysis
+      let modalDetected = false;
       
       const checkInterval = setInterval(() => {
         checkCount++;
         
-        // Check for analysis modal or completion indicators
-        const analysisModal = document.querySelector('.video-analysis-modal');
-        const rulesEditor = document.querySelector('.rules-editor-modal');
+        // Check for the rules editor modal
+        const rulesModal = document.querySelector('.rules-editor-modal');
         const hasRules = localStorage.getItem('transcription_rules');
         
-        if (analysisModal) {
-          // Video analysis modal is open
-          console.log('[AutoFlow] Video analysis modal detected, waiting...');
-          
-          // Check if there's a "Use Default Settings" button (appears after analysis)
-          const useDefaultBtn = analysisModal.querySelector('button.secondary-btn, button.use-default-btn');
-          if (useDefaultBtn) {
-            console.log('[AutoFlow] Clicking "Use Default Settings" button');
-            useDefaultBtn.click();
-            modalClosedCount++;
-          }
-        } else if (rulesEditor) {
+        if (rulesModal) {
           // Rules editor modal is open
-          console.log('[AutoFlow] Rules editor modal detected, auto-closing...');
-          
-          // Wait a moment to show it, then close
-          if (modalClosedCount === 0) {
-            setTimeout(() => {
-              // Try multiple selectors for close button
-              const closeBtn = rulesEditor.querySelector('.close-button') || 
-                              rulesEditor.querySelector('.cancel-button') ||
-                              rulesEditor.querySelector('button[aria-label*="Close"]');
-              
-              if (closeBtn) {
-                console.log('[AutoFlow] Clicking close button on rules editor');
-                closeBtn.click();
-              } else {
-                // Fallback: trigger ESC key to close modal
-                console.log('[AutoFlow] No close button found, triggering ESC key');
-                const escEvent = new KeyboardEvent('keydown', {
-                  key: 'Escape',
-                  code: 'Escape',
-                  bubbles: true
-                });
-                document.dispatchEvent(escEvent);
+          if (!modalDetected) {
+            console.log('[AutoFlow] Rules editor modal detected with countdown');
+            modalDetected = true;
+            
+            // Check if countdown is enabled
+            const timeoutSetting = localStorage.getItem('video_analysis_timeout') || '20';
+            const showCountdown = sessionStorage.getItem('show_rules_editor_countdown') === 'true';
+            
+            if (timeoutSetting !== 'none' && showCountdown) {
+              const timeout = parseInt(timeoutSetting, 10);
+              if (!isNaN(timeout) && timeout > 0) {
+                console.log(`[AutoFlow] Rules editor has ${timeout}s countdown, waiting for it to complete or modal to close...`);
               }
-            }, 1000); // Show modal for 1 second
-            modalClosedCount++;
+            } else {
+              console.log('[AutoFlow] Rules editor opened without countdown or countdown disabled');
+            }
           }
-        } else if ((hasRules && modalClosedCount > 0) || checkCount >= maxChecks || autoFlowAbortedRef.current) {
-          // Analysis complete when we have rules AND we've closed at least one modal
+          
+          // Just wait while the modal is open
+          // The countdown will auto-save or user will manually save/cancel
+          
+        } else if (modalDetected && !rulesModal) {
+          // Modal was open but now closed - analysis/editing is complete
           clearInterval(checkInterval);
-          console.log('[AutoFlow] Analysis complete or timeout');
+          console.log('[AutoFlow] Rules editor modal closed');
+          
+          // Clean up the countdown flag
+          sessionStorage.removeItem('show_rules_editor_countdown');
+          
+          // Give a small delay to ensure everything is properly saved
+          setTimeout(() => {
+            resolve();
+          }, 500);
+          
+        } else if (!modalDetected && hasRules && checkCount > 10) {
+          // Rules exist but modal never opened (might happen if analysis was very fast)
+          clearInterval(checkInterval);
+          console.log('[AutoFlow] Analysis complete (rules saved without modal)');
+          resolve();
+          
+        } else if (checkCount >= maxChecks || autoFlowAbortedRef.current) {
+          clearInterval(checkInterval);
+          console.log('[AutoFlow] Analysis timeout or aborted');
           resolve();
         }
       }, 500); // Check every 500ms for faster response

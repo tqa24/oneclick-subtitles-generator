@@ -60,9 +60,9 @@ const VideoAnalysisButton = ({ disabled = false, uploadedFile = null, uploadedFi
 
     checkExistingRules();
 
-    // Listen for openRulesEditor event to skip countdown modal
-    const handleOpenRulesEditor = (event) => {
-      const { transcriptionRules, recommendedPresetId } = event.detail;
+    // Listen for openRulesEditorWithCountdown event
+    const handleOpenRulesEditorWithCountdown = (event) => {
+      const { transcriptionRules, recommendedPresetId, showCountdown } = event.detail;
       if (transcriptionRules) {
         setTranscriptionRulesState(transcriptionRules);
         setHasAnalysis(true);
@@ -72,14 +72,19 @@ const VideoAnalysisButton = ({ disabled = false, uploadedFile = null, uploadedFi
           sessionStorage.setItem('current_session_preset_id', recommendedPresetId);
         }
 
+        // Store countdown flag for the rules editor
+        if (showCountdown) {
+          sessionStorage.setItem('show_rules_editor_countdown', 'true');
+        }
+
         setShowRulesEditor(true);
       }
     };
 
-    window.addEventListener('openRulesEditor', handleOpenRulesEditor);
+    window.addEventListener('openRulesEditorWithCountdown', handleOpenRulesEditorWithCountdown);
 
     return () => {
-      window.removeEventListener('openRulesEditor', handleOpenRulesEditor);
+      window.removeEventListener('openRulesEditorWithCountdown', handleOpenRulesEditorWithCountdown);
     };
   }, []);
 

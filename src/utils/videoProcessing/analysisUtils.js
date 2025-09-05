@@ -71,7 +71,7 @@ export const analyzeVideoAndWaitForUserChoice = async (analysisFile, onStatusUpd
       localStorage.setItem('video_analysis_result', JSON.stringify(fallbackResult));
     }
 
-    // Skip the countdown modal and go directly to rules editor
+    // Open rules editor modal directly with countdown
     // Set the transcription rules globally
     if (analysisResult.transcriptionRules) {
       setTranscriptionRules(analysisResult.transcriptionRules);
@@ -91,12 +91,13 @@ export const analyzeVideoAndWaitForUserChoice = async (analysisFile, onStatusUpd
       }
     }
 
-    // Dispatch event to open the rules editor directly
-    const openRulesEditorEvent = new CustomEvent('openRulesEditor', {
+    // Dispatch event to open the rules editor with countdown
+    const openRulesEditorEvent = new CustomEvent('openRulesEditorWithCountdown', {
       detail: {
         transcriptionRules: analysisResult.transcriptionRules,
         analysisResult: analysisResult,
-        recommendedPresetId: recommendedPresetId
+        recommendedPresetId: recommendedPresetId,
+        showCountdown: true // Flag to show countdown
       }
     });
     window.dispatchEvent(openRulesEditorEvent);

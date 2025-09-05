@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import CloseButton from './common/CloseButton';
 import CustomDropdown from './common/CustomDropdown';
@@ -16,6 +16,13 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
     relationships: [],
     additionalNotes: []
   });
+  
+  // Countdown state for autoflow
+  const [countdown, setCountdown] = useState(null);
+  const [showCountdown, setShowCountdown] = useState(false);
+  const [userInteracted, setUserInteracted] = useState(false);
+  const countdownIntervalRef = useRef(null);
+  const countdownTimeoutRef = useRef(null);
 
   // State for prompt presets
   const [currentPresetId, setCurrentPresetId] = useState('');
@@ -49,6 +56,82 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
     return rulesChanged || presetChanged;
   }, [rules, currentPresetId, initialState]);
 
+  // Initialize countdown if triggered by autoflow
+  useEffect(() => {
+    if (isOpen) {
+      // Check if this was triggered by autoflow with countdown
+      const shouldShowCountdown = sessionStorage.getItem('show_rules_editor_countdown') === 'true';
+      
+      if (shouldShowCountdown && !userInteracted) {
+        const timeoutSetting = localStorage.getItem('video_analysis_timeout') || '20';
+        
+        if (timeoutSetting !== 'none') {
+          const seconds = parseInt(timeoutSetting, 10);
+          if (!isNaN(seconds) && seconds > 0) {
+            setShowCountdown(true);
+            setCountdown(seconds);
+            
+            // Set up the countdown interval
+            countdownIntervalRef.current = setInterval(() => {
+              setCountdown(prev => {
+                if (prev <= 1) {
+                  clearInterval(countdownIntervalRef.current);
+                  return 0;
+                }
+                return prev - 1;
+              });
+            }, 1000);
+            
+            // Set up the auto-save timeout
+            countdownTimeoutRef.current = setTimeout(() => {
+              if (!userInteracted) {
+                console.log('[TranscriptionRulesEditor] Countdown completed, auto-saving...');
+                handleSave();
+              }
+            }, seconds * 1000);
+          }
+        }
+      }
+    }
+    
+    return () => {
+      // Cleanup countdown when modal closes
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+      if (countdownTimeoutRef.current) {
+        clearTimeout(countdownTimeoutRef.current);
+        countdownTimeoutRef.current = null;
+      }
+      // Clean up the flag
+      if (!isOpen) {
+        sessionStorage.removeItem('show_rules_editor_countdown');
+      }
+    };
+  }, [isOpen, userInteracted]);
+  
+  // Stop countdown on user interaction
+  const handleUserInteraction = () => {
+    if (showCountdown && !userInteracted) {
+      setUserInteracted(true);
+      setShowCountdown(false);
+      setCountdown(null);
+      
+      // Clear the intervals
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+      if (countdownTimeoutRef.current) {
+        clearTimeout(countdownTimeoutRef.current);
+        countdownTimeoutRef.current = null;
+      }
+      
+      console.log('[TranscriptionRulesEditor] User interaction detected, countdown cancelled');
+    }
+  };
+  
   // Effect to determine the current preset and set initial state - run only once on mount
   useEffect(() => {
     // First check if there's a session-specific preset (from analysis)
@@ -117,6 +200,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
 
   // Handle atmosphere change
   const handleAtmosphereChange = (e) => {
+    handleUserInteraction();
     setRules({
       ...rules,
       atmosphere: e.target.value
@@ -125,6 +209,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
 
   // Handle array item change
   const handleArrayItemChange = (category, index, field, value) => {
+    handleUserInteraction();
     const updatedArray = [...rules[category]];
 
     if (field) {
@@ -146,6 +231,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
 
   // Add new item to array
   const addArrayItem = (category, template) => {
+    handleUserInteraction();
     setRules({
       ...rules,
       [category]: [...(rules[category] || []), template]
@@ -154,6 +240,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
 
   // Remove item from array
   const removeArrayItem = (category, index) => {
+    handleUserInteraction();
     const updatedArray = [...rules[category]];
     updatedArray.splice(index, 1);
 
@@ -179,6 +266,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
 
   // Handle changing the prompt preset
   const handleChangePrompt = (e) => {
+    handleUserInteraction();
     const newPresetId = e.target.value;
     setCurrentPresetId(newPresetId);
 
@@ -236,8 +324,32 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
   if (!isOpen) return null;
 
   return (
-    <div className="rules-editor-overlay">
-      <div className="rules-editor-modal">
+    <div className="rules-editor-overlay" onClick={handleUserInteraction}>
+      <div className={`rules-editor-modal ${showCountdown ? 'with-countdown' : ''}`} onClick={(e) => e.stopPropagation()}>
+        {showCountdown && (
+          <div className="countdown-banner">
+            <div className="countdown-content">
+              <span className="countdown-text">
+                {t('rulesEditor.autoSaveCountdown', 'Auto-saving in')}
+              </span>
+              <span className="countdown-number">{countdown}</span>
+              <span className="countdown-text">
+                {t('rulesEditor.seconds', 'seconds')}
+              </span>
+              <span className="countdown-hint">
+                {t('rulesEditor.clickToCancel', '(click anywhere to cancel)')}
+              </span>
+            </div>
+            <div className="countdown-progress">
+              <div 
+                className="countdown-progress-bar" 
+                style={{ 
+                  width: `${((parseInt(localStorage.getItem('video_analysis_timeout') || '20', 10) - countdown) / parseInt(localStorage.getItem('video_analysis_timeout') || '20', 10)) * 100}%` 
+                }}
+              />
+            </div>
+          </div>
+        )}
         <div className="modal-header">
           <h2>{t('rulesEditor.title', 'Edit Transcription Rules')}</h2>
           <CloseButton onClick={handleCancel} variant="modal" size="medium" />
