@@ -420,6 +420,16 @@ const CustomDropdown = ({
         el.style.width = `${targetW}px`; // Expand to full width
         el.style.clipPath = `inset(0 0 0 0 round var(--dropdown-radius, 12px))`;
         
+        // Check and store scrollbar state for later use
+        const list = el.querySelector('.dropdown-options-list');
+        if (list) {
+          const hasScrollbar = list.scrollHeight > list.clientHeight;
+          el.dataset.hasScrollbar = hasScrollbar ? 'true' : 'false';
+          if (hasScrollbar) {
+            el.classList.add('has-scrollbar-content');
+          }
+        }
+        
         // Trigger font morphing for selected item
         const selectedIdx = options.findIndex(o => o.value === value);
         const buttons = el.querySelectorAll('.dropdown-option');
@@ -432,8 +442,8 @@ const CustomDropdown = ({
           }, 300);
         }
       });
-    } else if (!el.classList.contains('is-closing-with-selection')) {
-      // Only apply default closing if not handled by selection animation
+    } else if (!el.classList.contains('is-closing-with-selection') && !el.classList.contains('is-closing-with-scrollbar')) {
+      // Only apply default closing if not handled by selection or scrollbar animation
       const targetH = dropdownPosition.height || 200;
       
       // Smooth transition for closing without selection
@@ -512,10 +522,31 @@ const CustomDropdown = ({
   const handleSmoothClose = () => {
     if (menuRef.current) {
       const el = menuRef.current;
+      const list = el.querySelector('.dropdown-options-list');
+      const hasScrollbar = list && list.scrollHeight > list.clientHeight;
       
       // Add closing class
       el.classList.add('is-closing-no-selection');
       el.classList.remove('is-open');
+      
+      // If scrollbar is present, use simpler fade animation
+      if (hasScrollbar) {
+        el.style.transition = 'opacity 150ms cubic-bezier(0.4, 0, 0.2, 1), width 150ms cubic-bezier(0.4, 0, 0.2, 1)';
+        el.style.width = `${dropdownPosition.width}px`;
+        el.style.opacity = '0';
+        
+        // Close after animation completes
+        setTimeout(() => {
+          setIsOpen(false);
+          if (menuRef.current) {
+            menuRef.current.classList.remove('is-closing-no-selection');
+            menuRef.current.style.opacity = '';
+            menuRef.current.style.width = '';
+            menuRef.current.style.transition = '';
+          }
+        }, 150);
+        return;
+      }
       
       // Get the current height for calculating clip
       const currentHeight = el.offsetHeight || dropdownPosition.height || 200;
@@ -577,7 +608,76 @@ const CustomDropdown = ({
       const selectedBtn = buttons[newIndex];
 
       if (list && selectedBtn) {
-        // Add closing animation class
+        // CRITICAL: Check if scrollbar is present BEFORE adding any classes that might hide it
+        const hasScrollbar = list.scrollHeight > list.clientHeight;
+        
+        // Store the scrollbar state to persist it through the animation
+        menuRef.current.dataset.hasScrollbar = hasScrollbar ? 'true' : 'false';
+        
+        // If scrollbar is present, use a simpler fade animation to avoid glitches
+        if (hasScrollbar) {
+          // Force remove ALL potential animation artifacts
+          menuRef.current.style.clipPath = '';
+          menuRef.current.style.transform = '';
+          menuRef.current.style.willChange = '';
+          
+          // Remove any opening classes
+          menuRef.current.classList.remove('is-open', 'radius-open');
+          
+          // Add a special class for scrollbar-aware closing
+          menuRef.current.classList.add('is-closing-with-scrollbar');
+          
+          // Force reflow to ensure styles are applied
+          void menuRef.current.offsetHeight;
+          
+          // ONLY fade animation when scrollbar is present - NO size changes at all
+          menuRef.current.style.transition = 'opacity 150ms cubic-bezier(0.4, 0, 0.2, 1)';
+          
+          // Keep current width to avoid reflow
+          const currentWidth = menuRef.current.offsetWidth;
+          menuRef.current.style.width = `${currentWidth}px`;
+          
+          // Immediately start fading out
+          menuRef.current.style.opacity = '0';
+          
+          // Also fade the buttons for visual feedback
+          buttons.forEach((btn, idx) => {
+            btn.style.transition = 'opacity 100ms cubic-bezier(0.4, 0, 0.2, 1)';
+            if (idx === newIndex) {
+              // Keep selected briefly visible
+              btn.style.backgroundColor = 'var(--md-primary-container)';
+              setTimeout(() => {
+                if (btn) btn.style.opacity = '0';
+              }, 50);
+            } else {
+              btn.style.opacity = '0';
+            }
+          });
+          
+          // Fire change callback
+          onChange(optionValue);
+          
+          // Close after quick fade animation
+          setTimeout(() => {
+            setIsOpen(false);
+            // Clean up
+            if (menuRef.current) {
+              menuRef.current.classList.remove('is-closing-with-scrollbar');
+              menuRef.current.style.opacity = '';
+              menuRef.current.style.transition = '';
+              buttons.forEach(btn => {
+                btn.style.opacity = '';
+                btn.style.backgroundColor = '';
+                btn.style.transition = '';
+              });
+            }
+          }, 150);
+          
+          return; // Exit early for scrollbar case
+        }
+        
+        // Original animation for non-scrollable dropdowns
+        // Add the standard closing animation class
         menuRef.current.classList.add('is-closing-with-selection');
         
         // Get the selected button's position relative to the menu
@@ -678,7 +778,8 @@ const CustomDropdown = ({
             position: 'fixed',
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
-            width: `${dropdownPosition.expandedWidth || dropdownPosition.width}px`,
+            // Start with button width, animation will expand it
+            width: `${dropdownPosition.width}px`,
             minWidth: `${dropdownPosition.width}px`,
             zIndex: 999999
           }}

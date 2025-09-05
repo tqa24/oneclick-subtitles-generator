@@ -152,6 +152,18 @@
   overflow: hidden !important; /* Prevent scrolling during animation */
 }
 
+/* Special closing state when scrollbar is present - simpler animation */
+.custom-dropdown-menu.is-closing-with-scrollbar {
+  transition: opacity 200ms cubic-bezier(0.4, 0, 0.2, 1),
+              width 200ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+  /* DO NOT set overflow:hidden to avoid layout shift */
+}
+
+.custom-dropdown-menu.is-closing-with-scrollbar .dropdown-options-list {
+  /* Keep overflow as is to prevent layout changes */
+  overflow-y: auto !important;
+}
+
 .custom-dropdown-menu.is-closing-with-selection .dropdown-option {
   transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
               opacity 300ms cubic-bezier(0.4, 0, 0.2, 1),
