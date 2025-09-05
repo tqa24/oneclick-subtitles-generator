@@ -1,21 +1,43 @@
-/* Auto-generate button styles */
+/* Auto-generate button styles - consistent with semi-auto button */
 .generate-btn.auto-generate {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* Use same base background as other generate buttons from App.css */
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  /* Add subtle gradient overlay for distinction */
+  background-image: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
   border: none;
   position: relative;
   overflow: hidden;
-  animation: pulse-glow 2s ease-in-out infinite;
+  /* Subtle pulse animation for auto distinction */
+  animation: subtle-pulse-glow 3s ease-in-out infinite;
 }
 
 .generate-btn.auto-generate:hover:not(:disabled) {
-  background: linear-gradient(135deg, #7c8ff5 0%, #8657b5 100%);
+  /* Exact same hover behavior as semi-auto button */
+  background-color: transparent !important;
+  background-image: none !important; /* Remove any gradient overlay on hover */
+  color: var(--md-primary);
+  text-shadow: none;
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+  box-shadow: var(--md-elevation-level3);
 }
 
 .generate-btn.auto-generate.processing {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* Use same processing state as other buttons */
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  background-image: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
   animation: auto-processing 1s ease-in-out infinite;
+}
+
+/* Subtle pulse glow to match other button styling */
+@keyframes subtle-pulse-glow {
+  0%, 100% {
+    box-shadow: var(--md-elevation-level2);
+  }
+  50% {
+    box-shadow: var(--md-elevation-level3);
+  }
 }
 
 @keyframes pulse-glow {
@@ -36,9 +58,12 @@
   }
 }
 
-/* Semi-automatic button adjustments */
+/* Semi-automatic button adjustments - ensure consistency */
 .generate-btn.semi-auto {
-  /* Keep existing styles */
+  /* Explicitly use the same base styling as defined in App.css */
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  /* No additional overlays for semi-auto - pure primary color */
 }
 
 /* Auto-flow toast notifications */
@@ -80,7 +105,7 @@
   max-width: 100%;
 }
 
-/* Gemini icons for auto-generate button */
+/* Gemini icons for auto-generate button - static like other buttons */
 .generate-btn.auto-generate .gemini-icon-container {
   position: absolute;
   top: 0;
@@ -93,36 +118,26 @@
 
 .generate-btn.auto-generate .gemini-mini-icon {
   position: absolute;
-  animation: sparkle-rotate 3s linear infinite;
+  /* Remove spinning animation to match other buttons */
   width: 20px;
   height: 20px;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
 }
 
 .generate-btn.auto-generate .gemini-mini-icon.random-2 {
-  animation-delay: -0.5s;
   top: 15%;
   left: 10%;
 }
 
 .generate-btn.auto-generate .gemini-mini-icon.random-4 {
-  animation-delay: -1.5s;
   bottom: 20%;
   right: 15%;
 }
 
-@keyframes sparkle-rotate {
-  0% {
-    transform: rotate(0deg) scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: rotate(180deg) scale(1.2);
-    opacity: 1;
-  }
-  100% {
-    transform: rotate(360deg) scale(1);
-    opacity: 0.8;
-  }
+/* Subtle hover effect without rotation */
+.generate-btn.auto-generate:hover .gemini-mini-icon {
+  opacity: 0.8;
 }
 
 /* Button container layout adjustments */
@@ -148,9 +163,16 @@
 }
 
 [data-theme="dark"] .generate-btn.auto-generate {
-  background: linear-gradient(135deg, #5a67d8 0%, #6b46a6 100%);
+  /* Use same base styling as other buttons with subtle overlay */
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  background-image: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%);
 }
 
 [data-theme="dark"] .generate-btn.auto-generate:hover:not(:disabled) {
-  background: linear-gradient(135deg, #6875e0 0%, #7850b5 100%);
+  /* Exact same hover behavior as semi-auto button in dark mode */
+  background-color: transparent !important;
+  background-image: none !important; /* Remove any gradient overlay on hover */
+  color: var(--md-primary);
+  text-shadow: none;
 }

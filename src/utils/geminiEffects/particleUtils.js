@@ -2,7 +2,7 @@
  * Particle utilities for Gemini button effects
  */
 
-import { createGeminiSVG, getSizeInPixels } from './renderUtils';
+import { createGeminiSVG, createSpecialStarSVG, getSizeInPixels } from './renderUtils';
 
 /**
  * Create a new particle
@@ -10,9 +10,10 @@ import { createGeminiSVG, getSizeInPixels } from './renderUtils';
  * @param {number} y - Y position (0-100)
  * @param {string} sizeClass - Size class name
  * @param {boolean} isFilled - Whether to use filled version
+ * @param {boolean} useSpecialStar - Whether to use special star instead of regular Gemini star
  * @returns {Object} - Particle object
  */
-export const createParticle = (x, y, sizeClass, isFilled = false) => {
+export const createParticle = (x, y, sizeClass, isFilled = false, useSpecialStar = false) => {
   // Randomize the color scheme - now with more color schemes
   const colorSchemeIndex = Math.floor(Math.random() * 8);
 
@@ -25,12 +26,13 @@ export const createParticle = (x, y, sizeClass, isFilled = false) => {
     sizeClass,
     isFilled: isFilled || Math.random() > 0.5, // 50% chance of filled version
     colorSchemeIndex,
-    svg: createGeminiSVG(isFilled || Math.random() > 0.5, colorSchemeIndex),
+    svg: useSpecialStar ? createSpecialStarSVG(isFilled || Math.random() > 0.5, colorSchemeIndex) : createGeminiSVG(isFilled || Math.random() > 0.5, colorSchemeIndex),
     isActive: true,
     opacity: 1,
     rotation: Math.random() * 360,
     rotationSpeed: (Math.random() - 0.5) * 0.5, // Slower rotation
-    returnToOrigin: false
+    returnToOrigin: false,
+    useSpecialStar
   };
 };
 
@@ -46,6 +48,7 @@ export const createParticles = (buttonElement, container, limit) => {
 
   // Determine button type to create different effects
   const isGenerateButton = buttonElement.classList.contains('generate-btn');
+  const isAutoGenerateButton = buttonElement.classList.contains('auto-generate');
   const isForceStopButton = buttonElement.classList.contains('force-stop-btn');
   const isVideoAnalysisButton = buttonElement.classList.contains('video-analysis-button');
 
@@ -88,11 +91,20 @@ export const createParticles = (buttonElement, container, limit) => {
     // Assign random size with weighted distribution based on button type
     let sizeClasses;
 
-    // Unified distribution for all buttons: small variety, no big stars
-    sizeClasses = [
-      { class: 'size-xs', weight: 0.70 },
-      { class: 'size-sm', weight: 0.30 },
-    ];
+    if (isAutoGenerateButton) {
+      // Auto-generate button gets larger special stars for better visibility
+      sizeClasses = [
+        { class: 'size-sm', weight: 0.30 },
+        { class: 'size-md', weight: 0.50 },
+        { class: 'size-lg', weight: 0.20 },
+      ];
+    } else {
+      // Other buttons: small variety, no big stars
+      sizeClasses = [
+        { class: 'size-xs', weight: 0.70 },
+        { class: 'size-sm', weight: 0.30 },
+      ];
+    }
 
     // Weighted random selection
     let randomWeight = Math.random();
@@ -128,7 +140,8 @@ export const createParticles = (buttonElement, container, limit) => {
     y = 10 + Math.random() * 80; // 10-90% of height
 
     // Create the particle object using our utility function
-    const particleObj = createParticle(x, y, sizeClass, isFilled);
+    // Use special star for auto-generate buttons
+    const particleObj = createParticle(x, y, sizeClass, isFilled, isAutoGenerateButton);
 
     // Add DOM element reference
     particleObj.element = particle;

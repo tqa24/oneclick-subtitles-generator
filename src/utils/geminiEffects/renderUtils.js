@@ -5,6 +5,18 @@
 import { COLOR_SCHEMES } from './constants';
 
 /**
+ * Create the special star HTML using the original SVG file
+ * @param {boolean} isFilled - Whether to use filled version (ignored)
+ * @param {number} colorSchemeIndex - Index of color scheme to use (ignored)
+ * @returns {string} - HTML markup using img tag
+ */
+export const createSpecialStarSVG = (isFilled, colorSchemeIndex = 0) => {
+  // Use the original specialStar.svg file directly as an image
+  // This ensures we get the exact same appearance as the floating settings button
+  return `<img src="/static/media/specialStar.b6c33e5e0da02ba2436528574cc26cff.svg" alt="Special Star" style="width: 100%; height: 100%; object-fit: contain;" />`;
+};
+
+/**
  * Create the Gemini SVG markup with option for filled version
  * @param {boolean} isFilled - Whether to use filled version
  * @param {number} colorSchemeIndex - Index of color scheme to use
