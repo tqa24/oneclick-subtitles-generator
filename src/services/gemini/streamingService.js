@@ -10,6 +10,7 @@ import { createSubtitleSchema, addResponseSchema } from '../../utils/schemaUtils
 import { addThinkingConfig } from '../../utils/thinkingBudgetUtils';
 import { autoSplitSubtitles } from '../../utils/subtitle/splitUtils';
 import { createRequestController, removeRequestController } from './requestManagement';
+import i18n from '../../i18n/i18n';
 
 /**
  * Stream content generation from Gemini API
@@ -138,7 +139,7 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
     }
     console.error('[StreamingService] Error:', error);
     if (error.name === 'AbortError') {
-      onError(new Error('Request was aborted'));
+      onError(new Error(i18n.t('errors.requestAborted', 'Request was cancelled')));
     } else {
       onError(error);
     }

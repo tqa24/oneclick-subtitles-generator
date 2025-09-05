@@ -530,7 +530,7 @@ export const callGeminiApiWithFilesApi = async (file, options = {}, retryCount =
         } catch (error) {
             removeRequestController(requestId);
             if (error.name === 'AbortError') {
-                throw new Error('Request was aborted');
+                throw new Error(i18n.t('errors.requestAborted', 'Request was cancelled'));
             }
             throw error;
         }
@@ -788,7 +788,7 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
                 // Check if this is an AbortError
                 if (error.name === 'AbortError') {
 
-                    throw new Error('Request was aborted');
+                    throw new Error(i18n.t('errors.requestAborted', 'Request was cancelled'));
                 } else {
                     console.error('Error calling Gemini API:', error);
                     // Remove this controller from the map on error
@@ -1001,10 +1001,10 @@ export const callGeminiApi = async (input, inputType, options = {}) => {
         removeRequestController(requestId);
         return parseGeminiResponse(data);
     } catch (error) {
-        // Check if this is an AbortError
-        if (error.name === 'AbortError') {
+                    // Check if this is an AbortError
+                    if (error.name === 'AbortError') {
 
-            throw new Error('Request was aborted');
+                        throw new Error(i18n.t('errors.requestAborted', 'Request was cancelled'));
         } else {
             console.error('Error calling Gemini API:', error);
 

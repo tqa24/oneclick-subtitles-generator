@@ -20,5 +20,8 @@
   "invalidJsonFile": "JSON file must contain an array of subtitles",
   "noNarrationResults": "No narration results to generate aligned audio",
   "invalidJsonFormat": "Invalid JSON format",
-  "invalidJsonStructure": "JSON subtitles must have start, end, and text properties"
+  "invalidJsonStructure": "JSON subtitles must have start, end, and text properties",
+  "requestAborted": "Request was cancelled",
+  "processingCancelled": "Processing was cancelled by user",
+  "allRequestsAborted": "All requests have been cancelled"
 }
