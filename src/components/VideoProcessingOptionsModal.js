@@ -377,19 +377,28 @@ const VideoProcessingOptionsModal = ({
     };
   }, [useTranscriptionRules]);
 
-  // Automatic token counting when modal opens or settings change
+  // Automatic token counting when modal opens or settings change - throttled to prevent excessive API calls
   useEffect(() => {
     if (isOpen && videoFile && selectedSegment) {
-      console.log('[TokenCounting] Auto-counting tokens due to modal open or settings change');
-      const performTokenCount = async () => {
-        const count = await countTokensWithGeminiAPI(videoFile);
-        if (count !== null) {
-          setRealTokenCount(count);
-        }
+      // Create a 1 second delay before making the API call
+      const timeoutId = setTimeout(() => {
+        console.log('[TokenCounting] Auto-counting tokens after throttle delay');
+        const performTokenCount = async () => {
+          const count = await countTokensWithGeminiAPI(videoFile);
+          if (count !== null) {
+            setRealTokenCount(count);
+          }
+        };
+        performTokenCount();
+      }, 1000); // 1 second throttle delay
+      
+      // Cleanup function to cancel pending API calls when dependencies change
+      return () => {
+        console.log('[TokenCounting] Canceling pending token count due to settings change');
+        clearTimeout(timeoutId);
       };
-      performTokenCount();
     }
-  }, [isOpen, videoFile, selectedSegment, fps, mediaResolution, selectedModel, selectedPromptPreset, customLanguage, useTranscriptionRules]);
+  }, [isOpen, videoFile, selectedSegment, fps, mediaResolution, selectedModel, selectedPromptPreset, customLanguage, useTranscriptionRules, maxDurationPerRequest]);
 
   // Get all available prompt presets
   const getPromptPresetOptions = () => {
@@ -759,7 +768,16 @@ const VideoProcessingOptionsModal = ({
     const frameTokens = resolution ? resolution.tokens : 256; // Default to medium resolution
     const audioTokens = 32; // tokens per second for audio (official documentation)
 
-    return Math.round(segmentDuration * (fps * frameTokens + audioTokens));
+    // Calculate total tokens for the segment
+    const totalSegmentTokens = Math.round(segmentDuration * (fps * frameTokens + audioTokens));
+    
+    // Account for parallel processing splitting (same logic as real token counting)
+    const numRequests = Math.ceil(segmentDuration / (maxDurationPerRequest * 60));
+    
+    // Return tokens per request when splitting, otherwise total
+    return numRequests > 1 
+      ? Math.round(totalSegmentTokens / numRequests)
+      : totalSegmentTokens;
   };
 
   const estimatedTokens = calculateEstimatedTokens();
