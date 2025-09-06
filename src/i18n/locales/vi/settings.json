@@ -125,6 +125,7 @@
   "modelBestAccuracy": "Gemini 2.5 Pro (Độ chính xác tốt nhất, dễ bị quá tải)",
   "modelSmartFast": "Gemini 2.5 Flash (Độ chính xác thứ hai)",
   "modelFlash25Lite": "Gemini 2.5 Flash Lite (Mô hình 2.5 nhanh nhất, dễ lỗi khi tạo sub)",
+  "modelFlash25LiteSettings": "Gemini 2.5 Flash Lite (Mô hình 2.5 nhanh nhất)",
   "modelThirdBest": "Gemini 2.0 Flash (Độ chính xác thứ ba, dễ bị sub dài)",
   "modelFastest": "Gemini 2.0 Flash Lite (Độ chính xác kém nhất, nhanh nhất, dễ bị sub dài)",
   "modelFlash25": "Gemini 2.5 Flash (Tốt nhất)",
