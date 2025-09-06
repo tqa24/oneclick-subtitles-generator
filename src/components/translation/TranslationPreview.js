@@ -42,17 +42,30 @@ const TranslationPreview = ({
 
   // Handler for individual subtitle retry
   const handleRetrySubtitle = React.useCallback(async (subtitleIndex) => {
-    // Create a single-subtitle segment for retry
-    const singleSubtitleSegment = {
-      segmentNumber: `subtitle-${subtitleIndex + 1}`,
-      startIndex: subtitleIndex,
-      endIndex: subtitleIndex,
-      subtitleCount: 1
-    };
+    // Add subtitle to retrying set with the correct ID format
+    const subtitleRetryId = `subtitle-${subtitleIndex + 1}`;
+    setRetryingSegments(prev => new Set(prev).add(subtitleRetryId));
 
-    // Use the same retry logic as segment retry
-    await handleRetrySegment(singleSubtitleSegment);
-  }, [handleRetrySegment]);
+    try {
+      // Create a single-subtitle segment for retry
+      const singleSubtitleSegment = {
+        segmentNumber: subtitleRetryId,
+        startIndex: subtitleIndex,
+        endIndex: subtitleIndex,
+        subtitleCount: 1
+      };
+
+      // Call the original retry handler directly (not the wrapped one)
+      await onRetrySegment(singleSubtitleSegment);
+    } finally {
+      // Remove subtitle from retrying set
+      setRetryingSegments(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(subtitleRetryId);
+        return newSet;
+      });
+    }
+  }, [onRetrySegment]);
 
   if (!translatedSubtitles || translatedSubtitles.length === 0) return null;
 

@@ -139,22 +139,21 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
       const isSingleSubtitleRetry = typeof segment.segmentNumber === 'string' && segment.segmentNumber.startsWith('subtitle-');
 
       if (isSingleSubtitleRetry) {
-        // For individual subtitle retry, include surrounding context
+        // For individual subtitle retry, just retry that single subtitle without extra context
+        // This ensures we get exactly one translation back
         const targetIndex = segment.startIndex; // The subtitle we want to retry
-        const contextBefore = 10; // Number of subtitles before
-        const contextAfter = 10;  // Number of subtitles after
+        
+        // Extract just the target subtitle
+        segmentSubtitles = [sourceSubtitles[targetIndex]];
+        
+        // Set context indices to match single subtitle
+        contextStartIndex = targetIndex;
+        contextEndIndex = targetIndex;
+        
+        // Track that we're updating just one subtitle
+        targetSubtitleIndices = [0]; // Index 0 in the result array
 
-        // Calculate context boundaries
-        contextStartIndex = Math.max(0, targetIndex - contextBefore);
-        contextEndIndex = Math.min(sourceSubtitles.length - 1, targetIndex + contextAfter);
-
-        // Extract subtitles with context
-        segmentSubtitles = sourceSubtitles.slice(contextStartIndex, contextEndIndex + 1);
-
-        // Track which subtitle index in the context array corresponds to our target
-        targetSubtitleIndices = [targetIndex - contextStartIndex];
-
-        console.log(`Retrying subtitle ${targetIndex + 1} with context: ${contextStartIndex + 1}-${contextEndIndex + 1} (${segmentSubtitles.length} subtitles)`);
+        console.log(`Retrying subtitle ${targetIndex + 1} (single subtitle)`);
       } else {
         // For segment retry, use the original logic
         segmentSubtitles = sourceSubtitles.slice(segment.startIndex, segment.endIndex + 1);
@@ -166,7 +165,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
       let statusMessage;
       if (isSingleSubtitleRetry) {
         const subtitleNumber = segment.startIndex + 1;
-        statusMessage = t('translation.retryingSubtitleWithContext', 'Retrying subtitle {{subtitle}} with surrounding context...', {
+        statusMessage = t('translation.retryingSubtitle', 'Retrying subtitle {{subtitle}}...', {
           subtitle: subtitleNumber
         });
       } else {
@@ -186,15 +185,25 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
 
       // Import the translation function
       const { translateSubtitles } = await import('../../services/gemini/translation');
+      const { getSimpleTranslationPrompt } = await import('../../services/gemini/promptManagement');
+
+      // For single subtitle retry, use a much simpler custom prompt to avoid instruction translation
+      let retryPrompt = customTranslationPrompt;
+      if (isSingleSubtitleRetry && !customTranslationPrompt) {
+        // Use the simple translation prompt for single subtitle
+        const subtitleText = segmentSubtitles[0].text; // Get the single subtitle text
+        const targetLang = languages.length === 1 ? languages[0] : languages;
+        retryPrompt = getSimpleTranslationPrompt(subtitleText, targetLang);
+      }
 
       // Translate just this segment
       const result = await translateSubtitles(
         segmentSubtitles,
         languages.length === 1 ? languages[0] : languages,
         selectedModel,
-        customTranslationPrompt,
+        retryPrompt, // Use retry prompt which might be simpler for single subtitle
         0, // No split duration for segment retry
-        includeRules,
+        includeRules && !isSingleSubtitleRetry, // Don't include rules for single subtitle retry
         ' ', // Default delimiter
         false, // No parentheses
         null, // No bracket style
@@ -213,21 +222,24 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
 
             // Replace the segment in the bulk translation
             if (isSingleSubtitleRetry) {
-              // For single subtitle retry with context, only update the target subtitle
-              targetSubtitleIndices.forEach(contextIndex => {
-                const actualIndex = contextStartIndex + contextIndex;
-                if (actualIndex < newTranslatedSubtitles.length && contextIndex < result.length) {
-                  newTranslatedSubtitles[actualIndex] = result[contextIndex];
-                }
-              });
+              // For single subtitle retry, we have exactly one result
+              if (result.length === 1 && segment.startIndex < newTranslatedSubtitles.length) {
+                newTranslatedSubtitles[segment.startIndex] = result[0];
+                console.log(`Updated subtitle ${segment.startIndex + 1} in bulk translation`);
+              } else {
+                console.warn(`Single subtitle retry returned ${result.length} results, expected 1`);
+              }
             } else {
               // For segment retry, update all subtitles in the segment
-              for (let i = 0; i < result.length; i++) {
+              // Only update up to the minimum of result length and segment size
+              const updateCount = Math.min(result.length, segment.endIndex - segment.startIndex + 1);
+              for (let i = 0; i < updateCount; i++) {
                 const targetIndex = segment.startIndex + i;
                 if (targetIndex < newTranslatedSubtitles.length) {
                   newTranslatedSubtitles[targetIndex] = result[i];
                 }
               }
+              console.log(`Updated ${updateCount} subtitles in segment ${segment.segmentNumber}`);
             }
 
             // Update the bulk translation result
@@ -244,21 +256,24 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
           const newTranslatedSubtitles = [...translatedSubtitles];
 
           if (isSingleSubtitleRetry) {
-            // For single subtitle retry with context, only update the target subtitle
-            targetSubtitleIndices.forEach(contextIndex => {
-              const actualIndex = contextStartIndex + contextIndex;
-              if (actualIndex < newTranslatedSubtitles.length && contextIndex < result.length) {
-                newTranslatedSubtitles[actualIndex] = result[contextIndex];
-              }
-            });
+            // For single subtitle retry, we have exactly one result
+            if (result.length === 1 && segment.startIndex < newTranslatedSubtitles.length) {
+              newTranslatedSubtitles[segment.startIndex] = result[0];
+              console.log(`Updated subtitle ${segment.startIndex + 1} in main translation`);
+            } else {
+              console.warn(`Single subtitle retry returned ${result.length} results, expected 1`);
+            }
           } else {
             // For segment retry, update all subtitles in the segment
-            for (let i = 0; i < result.length; i++) {
+            // Only update up to the minimum of result length and segment size
+            const updateCount = Math.min(result.length, segment.endIndex - segment.startIndex + 1);
+            for (let i = 0; i < updateCount; i++) {
               const targetIndex = segment.startIndex + i;
               if (targetIndex < newTranslatedSubtitles.length) {
                 newTranslatedSubtitles[targetIndex] = result[i];
               }
             }
+            console.log(`Updated ${updateCount} subtitles in segment ${segment.segmentNumber}`);
           }
 
           // Update the translated subtitles state

@@ -290,7 +290,21 @@ const getDefaultTranslationPromptImpl = (subtitleText, targetLanguage, multiLang
 
         return `Translate the following ${subtitleCount} subtitle texts to these languages: ${languageList}.
 
-Provide a translation for each subtitle in each requested language. Maintain the exact order of the subtitles.`;
+IMPORTANT INSTRUCTIONS:
+1. Translate each line of text separately for EACH language.
+2. DO NOT add any timestamps, SRT formatting, or other formatting.
+3. DO NOT include any explanations, comments, or additional text in your response.
+4. DO NOT include any SRT entry numbers, timestamps, or formatting in your translations.
+5. DO NOT include quotes around your translations.
+6. MAINTAIN exactly ${subtitleCount} lines in the same order for each language.
+7. Each line in your response should correspond to the same line in the input.
+8. If a line is empty, keep it empty in your response.
+9. Return your response in a structured format with each language's translations grouped together.
+10. For each subtitle, include BOTH the original text AND its translation to prevent mismatches.
+
+Format your response as a JSON object with this structure:
+${exampleJson}
+`;
     } else {
         // Updated single language prompt to include original text
         // Build a JSON example with the actual subtitle lines
@@ -308,7 +322,19 @@ Provide a translation for each subtitle in each requested language. Maintain the
 
         return `Translate the following ${subtitleCount} subtitle texts to ${targetLanguage}.
 
-Provide a translation for each subtitle. Maintain the exact order of the subtitles.
+IMPORTANT INSTRUCTIONS:
+1. Translate each line of text separately.
+2. DO NOT add any timestamps, SRT formatting, or other formatting.
+3. DO NOT include any explanations, comments, or additional text in your response.
+4. DO NOT include any SRT entry numbers, timestamps, or formatting in your translations.
+5. DO NOT include quotes around your translations.
+6. MAINTAIN exactly ${subtitleCount} lines in the same order.
+7. Each line in your response should correspond to the same line in the input.
+8. If a line is empty, keep it empty in your response.
+9. For each subtitle, include BOTH the original text AND its translation to prevent mismatches.
+
+Format your response as a JSON array with objects containing both original and translated text:
+${exampleJson}
 
 `;
     }
@@ -350,10 +376,25 @@ Here are the subtitles:\n\n${subtitlesText}
 ${languageInstruction}`;
 };
 
+// Simple translation prompt for single subtitle retry
+const getSimpleTranslationPromptImpl = (subtitleText, targetLanguage) => {
+    if (Array.isArray(targetLanguage)) {
+        const languageList = targetLanguage.join(', ');
+        return `Translate the following text to ${languageList}. Return ONLY the translations, nothing else.
+
+Text: ${subtitleText}`;
+    } else {
+        return `Translate the following text to ${targetLanguage}. Return ONLY the translation, nothing else.
+
+Text: ${subtitleText}`;
+    }
+};
+
 // Export all functions at the module level
 export const getUserPromptPresets = getUserPromptPresetsImpl;
 export const saveUserPromptPresets = saveUserPromptPresetsImpl;
 export const getTranscriptionPrompt = getTranscriptionPromptImpl;
 export const getDefaultTranslationPrompt = getDefaultTranslationPromptImpl;
+export const getSimpleTranslationPrompt = getSimpleTranslationPromptImpl;
 export const getDefaultConsolidatePrompt = getDefaultConsolidatePromptImpl;
 export const getDefaultSummarizePrompt = getDefaultSummarizePromptImpl;
