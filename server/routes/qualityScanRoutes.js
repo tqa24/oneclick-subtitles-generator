@@ -95,12 +95,12 @@ router.post('/get-video-info', async (req, res) => {
 
   try {
     console.log(`[VIDEO-INFO] Getting info for: ${url}`);
-    
+
     // Get video information
     const info = await getVideoInfo(url);
-    
+
     console.log(`[VIDEO-INFO] Retrieved info for: ${info.title}`);
-    
+
     res.json({
       success: true,
       info,
@@ -119,7 +119,7 @@ router.post('/get-video-info', async (req, res) => {
  * POST /api/download-video-quality - Download video with specific quality
  */
 router.post('/download-video-quality', async (req, res) => {
-  const { url, quality, videoId, useCookies = false } = req.body;
+  const { url, quality, videoId, useCookies = false, forceRetry = false } = req.body;
 
   if (!url || !quality) {
     return res.status(400).json({
@@ -138,12 +138,34 @@ router.post('/download-video-quality', async (req, res) => {
     if (isDownloadActive(progressVideoId)) {
       const downloadInfo = getDownloadInfo(progressVideoId);
       console.log(`[QUALITY-DOWNLOAD] Download blocked: ${progressVideoId} is already being downloaded by ${downloadInfo.route}`);
-      return res.status(409).json({
-        success: false,
-        error: 'Video is already being downloaded',
-        activeRoute: downloadInfo.route,
-        videoId: progressVideoId
-      });
+      
+      // If forceRetry is true, clean up the stuck download and proceed
+      if (forceRetry) {
+        console.log(`[QUALITY-DOWNLOAD] Force retry requested - cleaning up stuck download for ${progressVideoId}`);
+        unlockDownload(progressVideoId, downloadInfo.route);
+        // Clear any progress tracking
+        const { clearDownloadProgress } = require('../services/shared/progressTracker');
+        clearDownloadProgress(progressVideoId);
+        
+        // Clean up any active download tracking
+        for (const [key, vid] of activeQualityDownloads.entries()) {
+          if (vid === progressVideoId) {
+            activeQualityDownloads.delete(key);
+            console.log(`[QUALITY-DOWNLOAD] Cleaned up active download tracking for: ${key}`);
+            break;
+          }
+        }
+        
+        console.log(`[QUALITY-DOWNLOAD] Cleaned up stuck download, proceeding with retry`);
+      } else {
+        return res.status(409).json({
+          success: false,
+          error: 'Video is already being downloaded',
+          activeRoute: downloadInfo.route,
+          videoId: progressVideoId,
+          canRetry: true
+        });
+      }
     }
 
     // Create a unique key for this download request
@@ -199,6 +221,9 @@ router.post('/download-video-quality', async (req, res) => {
       throw new Error(`Download completed but file not found at: ${outputPath}`);
     }
 
+
+
+
     const stats = fs.statSync(outputPath);
     console.log(`[QUALITY-DOWNLOAD] Download completed: ${outputFilename}, size: ${stats.size} bytes`);
 
@@ -230,10 +255,28 @@ router.post('/download-video-quality', async (req, res) => {
     activeQualityDownloads.delete(cleanupKey);
     console.log(`[QUALITY-DOWNLOAD] Cleaned up download tracking after error for: ${cleanupKey}`);
 
+    // Clear progress tracking
+    const { clearDownloadProgress } = require('../services/shared/progressTracker');
+    clearDownloadProgress(progressVideoId);
+
+    // Clean up any partial files
+    const outputFilename = `${progressVideoId}_${quality}.mp4`;
+    const outputPath = path.join(VIDEOS_DIR, outputFilename);
+    try {
+      if (fs.existsSync(outputPath)) {
+        fs.unlinkSync(outputPath);
+        console.log(`[QUALITY-DOWNLOAD] Cleaned up partial file: ${outputPath}`);
+      }
+    } catch (cleanupErr) {
+      console.error(`[QUALITY-DOWNLOAD] Error cleaning up partial file: ${cleanupErr.message}`);
+    }
+
     console.error('[QUALITY-DOWNLOAD] Error downloading video:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Failed to download video'
+      error: error.message || 'Failed to download video',
+      videoId: progressVideoId,
+      canRetry: true
     });
   } finally {
     // Always release the global download lock
@@ -256,14 +299,14 @@ router.post('/scan-and-download', async (req, res) => {
 
   try {
     console.log(`[SCAN-AND-DOWNLOAD] Processing: ${url}`);
-    
+
     // First scan available qualities
     const qualities = await scanAvailableQualities(url);
-    
+
     if (selectedQuality) {
       // If quality is specified, download it
       const qualityExists = qualities.some(q => q.quality === selectedQuality);
-      
+
       if (!qualityExists) {
         return res.status(400).json({
           success: false,
@@ -271,19 +314,19 @@ router.post('/scan-and-download', async (req, res) => {
           availableQualities: qualities
         });
       }
-      
+
       // Generate output path
       const outputFilename = videoId ? `${videoId}_${selectedQuality}.mp4` : `video_${Date.now()}_${selectedQuality}.mp4`;
       const outputPath = path.join(VIDEOS_DIR, outputFilename);
-      
+
       // Ensure videos directory exists
       if (!fs.existsSync(VIDEOS_DIR)) {
         fs.mkdirSync(VIDEOS_DIR, { recursive: true });
       }
-      
+
       // Download with specific quality
       await downloadWithQuality(url, outputPath, selectedQuality);
-      
+
       res.json({
         success: true,
         qualities,
@@ -334,3 +377,41 @@ router.get('/quality-download-progress/:videoId', (req, res) => {
 });
 
 module.exports = router;
+
+
+/**
+ * POST /api/cancel-quality-download/:videoId - Cancel an ongoing quality download
+ */
+router.post('/cancel-quality-download/:videoId', (req, res) => {
+  const { videoId } = req.params;
+
+  if (!videoId) {
+    return res.status(400).json({ success: false, error: 'Video ID is required' });
+  }
+
+  try {
+    // Attempt to kill the process if tracked in qualityScanner
+    const { cancelQualityDownload } = require('../services/qualityScanner');
+    const killed = cancelQualityDownload(videoId);
+
+    // Release global download lock, update progress and broadcast cancellation
+    const { unlockDownload } = require('../services/shared/globalDownloadManager');
+    const { setDownloadProgress } = require('../services/shared/progressTracker');
+    unlockDownload(videoId, 'quality-scan-route');
+    setDownloadProgress(videoId, 0, 'cancelled');
+
+    try {
+      const { broadcastProgress } = require('../services/shared/progressWebSocket');
+      broadcastProgress(videoId, 0, 'cancelled', 'download');
+    } catch (error) {}
+
+    if (killed) {
+      return res.json({ success: true, message: `Download cancelled for ${videoId}` });
+    } else {
+      return res.status(404).json({ success: false, error: `No active download found for ${videoId}` });
+    }
+  } catch (error) {
+    console.error('[QUALITY-DOWNLOAD] Error cancelling download:', error);
+    return res.status(500).json({ success: false, error: 'Failed to cancel download' });
+  }
+});

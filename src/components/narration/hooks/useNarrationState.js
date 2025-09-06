@@ -190,7 +190,6 @@ const useNarrationState = (initialReferenceAudio) => {
     if (groupingIntensity) {
       try {
         localStorage.setItem('grouping_intensity', groupingIntensity);
-        console.log('Saved grouping intensity to localStorage:', groupingIntensity);
       } catch (error) {
         console.error('Error saving grouping intensity to localStorage:', error);
       }

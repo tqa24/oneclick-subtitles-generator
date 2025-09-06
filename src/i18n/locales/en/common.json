@@ -1,9 +1,15 @@
 {
   "cancel": "Cancel",
   "undo": "Undo",
+  "undoWithShortcut": "Undo (Ctrl+Z)",
+  "redo": "Redo",
+  "redoWithShortcut": "Redo (Ctrl+Y or Ctrl+Shift+Z)",
   "reset": "Reset",
+  "resetWithShortcut": "Reset to saved state",
   "resetToDefaults": "Reset to Defaults",
   "save": "Save",
+  "saveDisabled": "No changes to save",
+  "saveWithShortcut": "Save (Ctrl+S)",
   "close": "Close",
   "on": "On",
   "off": "Off",
@@ -11,5 +17,6 @@
   "recentVideos": "Recent Videos",
   "clearAll": "Clear All",
   "confirm": "Confirm",
-  "jumpToCheckpoint": "Jump to last checkpoint (undo multiple steps)"
+  "jumpToCheckpoint": "Jump to last checkpoint (undo multiple steps)",
+  "jumpToCheckpointWithShortcut": "Jump to last checkpoint (Ctrl+J)"
 }

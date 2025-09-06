@@ -21,5 +21,11 @@
   "addRelationship": "+ Thêm mối quan hệ",
   "notesDescription": "Thêm bất kỳ ghi chú nào khác để phiên âm nhất quán",
   "notePlaceholder": "Ghi chú bổ sung...",
-  "addNote": "+ Thêm ghi chú"
+  "addNote": "+ Thêm ghi chú",
+  "autoSaveCountdown": "Tự động lưu sau",
+  "seconds": "giây",
+  "clickToCancel": "(nhấn bất kỳ đâu để hủy)",
+  "waitingForAction": "Đang chờ hành động của bạn",
+  "clickToEdit": "(nhấn để bắt đầu chỉnh sửa)",
+  "saveContinue": "Lưu & Tiếp tục"
 }

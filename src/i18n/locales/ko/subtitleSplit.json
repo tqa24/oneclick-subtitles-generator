@@ -2,6 +2,7 @@
   "title": "자막 분할",
   "sliderTitle": "자막당 최대 단어 수",
   "description": "스마트 자막 분할 (이미 제한보다 작은 자막은 영향을 받지 않습니다)",
+  "descriptionRange": "선택한 범위에서 스마트 자막 분할 (이미 제한보다 작은 자막은 영향을 받지 않습니다)",
   "limitLabel": "제한: {{count}}{{unit}}",
   "wordUnit": "개",
   "wordsUnit": "개",

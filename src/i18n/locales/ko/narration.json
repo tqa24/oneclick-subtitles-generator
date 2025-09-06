@@ -266,5 +266,9 @@
   "autoRecognizeDescription": "녹음 또는 업로드 후 자동으로 오디오를 전사합니다",
 
   "settingsTooltip": "나레이션 설정",
-  "toggleSettings": "나레이션 설정"
+  "toggleSettings": "나레이션 설정",
+
+  "msVibeVoiceMethod": "MS VibeVoice",
+  "geminiNativeDialogMethod": "Gemini Native Dialog",
+  "comingSoon": "곧 출시"
 }

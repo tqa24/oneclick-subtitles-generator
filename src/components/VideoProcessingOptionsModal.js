@@ -29,11 +29,11 @@ const VideoProcessingOptionsModal = ({
   // Processing options state with localStorage persistence
   const [fps, setFps] = useState(() => {
     const saved = localStorage.getItem('video_processing_fps');
-    return saved ? parseFloat(saved) : 1;
+    return saved ? parseFloat(saved) : 0.25; // Default to 0.25 FPS for efficiency
   });
   const [mediaResolution, setMediaResolution] = useState(() => {
     const saved = localStorage.getItem('video_processing_media_resolution');
-    return saved || 'medium';
+    return saved || 'low'; // Default to low resolution for efficiency
   });
   const [selectedModel, setSelectedModel] = useState(() => {
     const saved = localStorage.getItem('video_processing_model');
@@ -73,7 +73,8 @@ const VideoProcessingOptionsModal = ({
   });
   const [useTranscriptionRules, setUseTranscriptionRules] = useState(() => {
     const saved = localStorage.getItem('video_processing_use_transcription_rules');
-    return saved !== 'false'; // Default to true, only false if explicitly set to 'false'
+    // Default to false - switch is OFF unless explicitly turned on
+    return saved !== null ? saved === 'true' : false;
   });
   const [transcriptionRulesAvailable, setTranscriptionRulesAvailable] = useState(false);
 
@@ -89,6 +90,24 @@ const VideoProcessingOptionsModal = ({
     const saved = localStorage.getItem('video_processing_outside_context_range');
     const num = saved ? parseInt(saved, 10) : 5;
     return Number.isFinite(num) ? num : 5;
+  });
+
+  // Maximum duration per request (in minutes) for parallel processing
+  const [maxDurationPerRequest, setMaxDurationPerRequest] = useState(() => {
+    const saved = localStorage.getItem('video_processing_max_duration');
+    return saved ? parseInt(saved, 10) : 10; // Default to 10 minutes
+  });
+
+  // Auto-split subtitles settings (synced with Settings modal)
+  const [autoSplitSubtitles, setAutoSplitSubtitles] = useState(() => {
+    // Use the same key as Settings modal for consistency
+    const saved = localStorage.getItem('show_favorite_max_length');
+    // Default to true (enabled) if not previously saved
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [maxWordsPerSubtitle, setMaxWordsPerSubtitle] = useState(() => {
+    const saved = localStorage.getItem('video_processing_max_words');
+    return saved ? parseInt(saved, 10) : 12;
   });
 
   const [customGeminiModels, setCustomGeminiModels] = useState([]);
@@ -126,6 +145,20 @@ const VideoProcessingOptionsModal = ({
     const val = outsideContextRange === 21 ? 21 : Math.max(1, Math.min(20, Number(outsideContextRange) || 5));
     localStorage.setItem('video_processing_outside_context_range', String(val));
   }, [outsideContextRange]);
+
+  // Persist max duration per request
+  useEffect(() => {
+    localStorage.setItem('video_processing_max_duration', maxDurationPerRequest.toString());
+  }, [maxDurationPerRequest]);
+
+  // Persist auto-split settings (synced with Settings modal)
+  useEffect(() => {
+    localStorage.setItem('show_favorite_max_length', autoSplitSubtitles.toString());
+  }, [autoSplitSubtitles]);
+
+  useEffect(() => {
+    localStorage.setItem('video_processing_max_words', maxWordsPerSubtitle.toString());
+  }, [maxWordsPerSubtitle]);
 
 
   // Keep availability and persisted toggle in sync
@@ -165,20 +198,43 @@ const VideoProcessingOptionsModal = ({
     { value: 'medium', label: t('processing.mediumRes', 'Medium (256 tokens/frame)'), tokens: 256 },
   ];
 
-  // Helper function to get FPS label for slider
-  const getFpsLabel = (value) => {
-    const option = fpsOptions.find(opt => opt.value === value);
-    return option ? option.label : `${value} FPS`;
+  // Helper function to get FPS value display
+  const getFpsValue = (value) => {
+    return `${value} FPS`;
+  };
+
+  // Helper function to get FPS interval description
+  const getFpsInterval = (value) => {
+    // Calculate the interval in seconds between frames
+    const interval = 1 / value;
+    
+    // Format the interval nicely - always in seconds
+    let formattedInterval;
+    if (interval >= 10) {
+      // For large intervals, use whole numbers
+      formattedInterval = interval.toFixed(0);
+    } else if (interval >= 1) {
+      // For intervals 1-10s, show one decimal if needed
+      formattedInterval = interval % 1 === 0 ? interval.toFixed(0) : interval.toFixed(1);
+    } else {
+      // For sub-second intervals, show appropriate decimals
+      if (interval >= 0.1) {
+        formattedInterval = interval.toFixed(1); // 0.1, 0.2, 0.5, etc.
+      } else {
+        formattedInterval = interval.toFixed(2); // 0.05, 0.04, etc.
+      }
+    }
+    
+    return `${formattedInterval}s intervals`;
   };
 
   // Helper function to get all available models (built-in + custom)
   const getAllAvailableModels = () => {
     const builtInModels = [
-      { value: 'gemini-2.5-pro', label: t('settings.modelBestAccuracy', 'Gemini 2.5 Pro - Nghe lời nhất, dễ ra sub ngắn, dễ bị quá tải'), maxTokens: 2000000 },
+      { value: 'gemini-2.5-pro', label: t('settings.modelBestAccuracy', 'Gemini 2.5 Pro (Độ chính xác tốt nhất, dễ bị quá tải)'), maxTokens: 2000000 },
       { value: 'gemini-2.5-flash', label: t('settings.modelSmartFast', 'Gemini 2.5 Flash (Độ chính xác thứ hai)'), maxTokens: 1048575 },
-      { value: 'gemini-2.5-flash-lite', label: t('settings.modelFlash25Lite', 'Gemini 2.5 Flash Lite (Mô hình 2.5 nhanh nhất, độ chính xác tốt)'), maxTokens: 1048575 },
-      { value: 'gemini-2.0-flash', label: t('settings.modelThirdBest', 'Gemini 2.0 Flash (Độ chính xác thứ ba, dễ bị sub dài)'), maxTokens: 1048575 },
-      { value: 'gemini-2.0-flash-lite', label: t('settings.modelFastest', 'Gemini 2.0 Flash Lite (Độ chính xác kém nhất, nhanh nhất, dễ bị sub dài)'), maxTokens: 1048575 }
+      { value: 'gemini-2.5-flash-lite', label: t('settings.modelFlash25Lite', 'Gemini 2.5 Flash Lite (Mô hình 2.5 nhanh nhất, dễ lỗi khi tạo sub)'), maxTokens: 1048575 }
+      // Note: Gemini 2.0 models removed as they don't support offset-style requests for timeline segments
     ];
 
     const customModels = customGeminiModels.map(model => ({
@@ -192,6 +248,22 @@ const VideoProcessingOptionsModal = ({
   };
 
   const modelOptions = getAllAvailableModels();
+
+  // Listen for storage changes to sync auto-split setting
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'show_favorite_max_length') {
+        const newValue = e.newValue === 'true';
+        setAutoSplitSubtitles(newValue);
+      } else if (e.key === 'video_processing_max_words') {
+        const newValue = parseInt(e.newValue, 10) || 10;
+        setMaxWordsPerSubtitle(newValue);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Load custom models on component mount
   useEffect(() => {
@@ -246,8 +318,28 @@ const VideoProcessingOptionsModal = ({
   // Check transcription rules availability
   useEffect(() => {
     const checkRulesAvailability = () => {
-      const transcriptionRules = localStorage.getItem('transcription_rules');
-      const hasRules = transcriptionRules && transcriptionRules.trim() !== '' && transcriptionRules !== 'null';
+      const transcriptionRulesStr = localStorage.getItem('transcription_rules');
+      let hasRules = false;
+      
+      if (transcriptionRulesStr && transcriptionRulesStr.trim() !== '' && transcriptionRulesStr !== 'null') {
+        try {
+          const rules = JSON.parse(transcriptionRulesStr);
+          // Check if rules object has any meaningful content
+          hasRules = rules && typeof rules === 'object' && 
+            (Object.keys(rules).length > 0) && 
+            // Make sure it's not just an empty object or only has empty arrays/strings
+            Object.values(rules).some(value => {
+              if (Array.isArray(value)) return value.length > 0;
+              if (typeof value === 'string') return value.trim() !== '';
+              if (typeof value === 'object' && value !== null) return Object.keys(value).length > 0;
+              return value !== null && value !== undefined;
+            });
+        } catch (e) {
+          // If it's not valid JSON, treat as no rules
+          hasRules = false;
+        }
+      }
+      
       setTranscriptionRulesAvailable(hasRules);
 
       // If rules are not available, disable the switch
@@ -285,19 +377,28 @@ const VideoProcessingOptionsModal = ({
     };
   }, [useTranscriptionRules]);
 
-  // Automatic token counting when modal opens or settings change
+  // Automatic token counting when modal opens or settings change - throttled to prevent excessive API calls
   useEffect(() => {
     if (isOpen && videoFile && selectedSegment) {
-      console.log('[TokenCounting] Auto-counting tokens due to modal open or settings change');
-      const performTokenCount = async () => {
-        const count = await countTokensWithGeminiAPI(videoFile);
-        if (count !== null) {
-          setRealTokenCount(count);
-        }
+      // Create a 1 second delay before making the API call
+      const timeoutId = setTimeout(() => {
+        console.log('[TokenCounting] Auto-counting tokens after throttle delay');
+        const performTokenCount = async () => {
+          const count = await countTokensWithGeminiAPI(videoFile);
+          if (count !== null) {
+            setRealTokenCount(count);
+          }
+        };
+        performTokenCount();
+      }, 1000); // 1 second throttle delay
+      
+      // Cleanup function to cancel pending API calls when dependencies change
+      return () => {
+        console.log('[TokenCounting] Canceling pending token count due to settings change');
+        clearTimeout(timeoutId);
       };
-      performTokenCount();
     }
-  }, [isOpen, videoFile, selectedSegment, fps, mediaResolution, selectedModel, selectedPromptPreset, customLanguage, useTranscriptionRules]);
+  }, [isOpen, videoFile, selectedSegment, fps, mediaResolution, selectedModel, selectedPromptPreset, customLanguage, useTranscriptionRules, maxDurationPerRequest]);
 
   // Get all available prompt presets
   const getPromptPresetOptions = () => {
@@ -488,7 +589,7 @@ const VideoProcessingOptionsModal = ({
     return basePrompt;
   };
 
-  // Real token counting using Gemini API with Files API
+  // Real token counting using Gemini API with Files API (only if file already uploaded)
   const countTokensWithGeminiAPI = async (videoFile) => {
     if (!videoFile || !selectedSegment) return null;
 
@@ -522,33 +623,22 @@ const VideoProcessingOptionsModal = ({
 
       let uploadedFile = JSON.parse(localStorage.getItem(fileKey) || 'null');
 
-      // If no cached file or file doesn't exist, upload it first
+      // Only use real token counting if file is already uploaded, otherwise use estimation
       if (!uploadedFile || !uploadedFile.uri) {
-        console.log('[TokenCounting] No cached file found, uploading for token counting...');
-
-        // Import and use the same upload function as the main processing
-        const { uploadFileToGemini } = await import('../services/gemini');
-        uploadedFile = await uploadFileToGemini(videoFile, `${videoFile.name}_${Date.now()}`);
-
-        // Cache the uploaded file info for reuse
-        localStorage.setItem(fileKey, JSON.stringify(uploadedFile));
-        console.log('[TokenCounting] File uploaded successfully:', uploadedFile.uri);
+        console.log('[TokenCounting] No cached file found, using estimation instead of uploading');
+        return null; // This will cause the UI to show estimation
       } else {
-        console.log('[TokenCounting] Using cached uploaded file:', uploadedFile.uri);
+        console.log('[TokenCounting] Using cached uploaded file for real token counting:', uploadedFile.uri);
       }
 
       // Create the request data using the uploaded file URI (matching countTokens API format)
-      // Note: countTokens API doesn't support media resolution, so we only count basic video metadata
+      // Note: countTokens API doesn't support offset parameters, so we count the whole video
       const filePart = {
         file_data: {
           file_uri: uploadedFile.uri,
           mime_type: uploadedFile.mimeType || videoFile.type || "video/mp4"
         }
       };
-
-      // Add video metadata to the file_data part if this is a video
-      // Note: video_metadata should be a sibling to file_data, not nested inside it
-      // This matches the structure used in the actual processing
 
       // If user-provided subtitles mode is active, append outside-context directly to the prompt
       const ctxText = buildOutsideContextText();
@@ -584,20 +674,54 @@ const VideoProcessingOptionsModal = ({
       }
 
       const data = await response.json();
-      console.log('[TokenCounting] Real token count (without media resolution):', data.totalTokens);
+      console.log('[TokenCounting] Whole video token count:', data.totalTokens);
 
-      // Note: The countTokens API doesn't support FPS or media resolution parameters,
-      // so this count is for the default settings. We need to adjust it based on our settings.
-      const baseTokens = data.totalTokens;
+      // Since countTokens API doesn't support offset, it returns tokens for the entire video.
+      // We need to calculate the proportion for the selected segment.
+      const wholeVideoTokens = data.totalTokens;
 
+      // Calculate segment proportion based on duration
+      const segmentDuration = selectedSegment.end - selectedSegment.start;
+
+      // Account for parallel processing splitting
+      const numRequests = Math.ceil(segmentDuration / (maxDurationPerRequest * 60));
+      
+      // Try to get total duration from video file or use segment duration as fallback
+      let totalDuration = segmentDuration; // Conservative fallback
+
+      if (videoFile) {
+        try {
+          // Try to get duration from video file metadata
+          const videoDuration = await new Promise((resolve) => {
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            video.onloadedmetadata = () => resolve(video.duration || 0);
+            video.onerror = () => resolve(0);
+            setTimeout(() => resolve(0), 2000); // 2 second timeout
+            video.src = URL.createObjectURL(videoFile);
+          });
+
+          if (videoDuration > 0) {
+            totalDuration = videoDuration;
+          }
+        } catch (error) {
+          console.warn('[TokenCounting] Could not get video duration, using segment duration as fallback');
+        }
+      }
+
+      const segmentProportion = segmentDuration / totalDuration;
+
+      console.log('[TokenCounting] Segment duration:', segmentDuration, 'Total duration:', totalDuration, 'Proportion:', segmentProportion);
+
+      // Calculate base tokens for the selected segment
+      const baseSegmentTokens = Math.round(wholeVideoTokens * segmentProportion);
+
+      // Apply FPS and resolution adjustments to the segment tokens
       // The API returns tokens for default FPS (likely 1 FPS) and default resolution (likely medium)
-      // We need to adjust for both our FPS and resolution settings
-
-      // First, adjust for FPS - assume API used 1 FPS as baseline
       const baseFps = 1; // Assumed baseline FPS used by the API
       const fpsAdjustmentFactor = fps / baseFps;
 
-      // Then adjust for media resolution based on official token counts
+      // Adjust for media resolution based on official token counts
       let resolutionAdjustmentFactor = 1;
       if (mediaResolution === 'low') {
         resolutionAdjustmentFactor = 64 / 256; // low vs medium ratio
@@ -605,11 +729,27 @@ const VideoProcessingOptionsModal = ({
         resolutionAdjustmentFactor = 256 / 256; // high vs medium ratio (same)
       }
 
-      // Apply both adjustments
-      const adjustedTokens = Math.round(baseTokens * fpsAdjustmentFactor * resolutionAdjustmentFactor);
-      console.log('[TokenCounting] Adjusted token count - FPS:', fps, 'Resolution:', mediaResolution, 'Final tokens:', adjustedTokens);
+      // Apply all adjustments to the segment tokens
+      const segmentTokensAdjusted = Math.round(baseSegmentTokens * fpsAdjustmentFactor * resolutionAdjustmentFactor);
+      
+      // For display, show the maximum tokens per request when splitting
+      const tokensPerRequest = numRequests > 1 
+        ? Math.round(segmentTokensAdjusted / numRequests)
+        : segmentTokensAdjusted;
 
-      return adjustedTokens;
+      console.log('[TokenCounting] Final calculation:');
+      console.log('  - Whole video tokens:', wholeVideoTokens);
+      console.log('  - Segment proportion:', segmentProportion.toFixed(3));
+      console.log('  - Base segment tokens:', baseSegmentTokens);
+      console.log('  - FPS adjustment (', fps, 'fps):', fpsAdjustmentFactor);
+      console.log('  - Resolution adjustment (', mediaResolution, '):', resolutionAdjustmentFactor);
+      console.log('  - Total segment tokens:', segmentTokensAdjusted);
+      if (numRequests > 1) {
+        console.log('  - Will split into', numRequests, 'requests');
+        console.log('  - Tokens per request:', tokensPerRequest);
+      }
+
+      return tokensPerRequest;
     } catch (error) {
       console.error('Error counting tokens with Gemini API:', error);
       setTokenCountError(error.message);
@@ -628,7 +768,16 @@ const VideoProcessingOptionsModal = ({
     const frameTokens = resolution ? resolution.tokens : 256; // Default to medium resolution
     const audioTokens = 32; // tokens per second for audio (official documentation)
 
-    return Math.round(segmentDuration * (fps * frameTokens + audioTokens));
+    // Calculate total tokens for the segment
+    const totalSegmentTokens = Math.round(segmentDuration * (fps * frameTokens + audioTokens));
+    
+    // Account for parallel processing splitting (same logic as real token counting)
+    const numRequests = Math.ceil(segmentDuration / (maxDurationPerRequest * 60));
+    
+    // Return tokens per request when splitting, otherwise total
+    return numRequests > 1 
+      ? Math.round(totalSegmentTokens / numRequests)
+      : totalSegmentTokens;
   };
 
   const estimatedTokens = calculateEstimatedTokens();
@@ -684,9 +833,12 @@ const VideoProcessingOptionsModal = ({
       customPrompt: getSelectedPromptText(), // Include the selected prompt
       promptPreset: selectedPromptPreset,
       customLanguage: selectedPromptPreset === 'translate-directly' ? customLanguage : undefined,
-      useTranscriptionRules // Include the transcription rules setting
+      useTranscriptionRules, // Include the transcription rules setting
+      maxDurationPerRequest: maxDurationPerRequest * 60, // Convert to seconds
+      autoSplitSubtitles,
+      maxWordsPerSubtitle
     };
-
+    
     onProcess(options);
   };
 
@@ -733,7 +885,10 @@ const VideoProcessingOptionsModal = ({
                 {/* Frame Rate Slider */}
                 <div className="combined-option-half">
                   <div className="label-with-help">
-                    <label>{t('processing.frameRate', 'Frame Rate')}</label>
+                    <label>
+                      {t('processing.frameRate', 'Frame Rate')}
+                      <span className="label-subtitle">({getFpsInterval(fps)})</span>
+                    </label>
                     {selectedModel === 'gemini-2.5-pro' && (
                       <div
                         className="help-icon-container"
@@ -747,7 +902,7 @@ const VideoProcessingOptionsModal = ({
                       </div>
                     )}
                   </div>
-                  <div className="slider-control">
+                  <div className="slider-with-value fps-slider-container">
                     <StandardSlider
                       value={fps}
                       onChange={(value) => setFps(parseFloat(value))}
@@ -765,7 +920,7 @@ const VideoProcessingOptionsModal = ({
                       ariaLabel={t('processing.frameRate', 'Frame Rate')}
                     />
                     <div className="slider-value-display">
-                      {getFpsLabel(fps)}
+                      {getFpsValue(fps)}
                     </div>
                   </div>
                 </div>
@@ -798,18 +953,84 @@ const VideoProcessingOptionsModal = ({
               </div>
             </div>
 
-            {/* Model Selection */}
+            {/* Model and Max Duration Combined Row */}
             <div className="option-group">
-              <label>{t('processing.model', 'Model')}</label>
-              <CustomDropdown
-                value={selectedModel}
-                onChange={(value) => setSelectedModel(value)}
-                options={modelOptions.map(option => ({
-                  value: option.value,
-                  label: option.label
-                }))}
-                placeholder={t('processing.selectModel', 'Select Model')}
-              />
+              <div className="combined-options-row">
+                {/* Left half: Model Selection */}
+                <div className="combined-option-half">
+                  <div className="label-with-help">
+                    <label>{t('processing.model', 'Model')}</label>
+                    <div
+                      className="help-icon-container"
+                      title={t('processing.gemini20Warning', 'Gemini 2.0 models do not work well with the new offset mechanism')}
+                    >
+                      <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                      </svg>
+                    </div>
+                  </div>
+                  <CustomDropdown
+                    value={selectedModel}
+                    onChange={(value) => setSelectedModel(value)}
+                    options={modelOptions.map(option => ({
+                      value: option.value,
+                      label: option.label
+                    }))}
+                    placeholder={t('processing.selectModel', 'Select Model')}
+                  />
+                </div>
+
+                {/* Right half: Max duration per request */}
+                <div className="combined-option-half">
+                  <div className="label-with-help">
+                    <label>{t('processing.maxDurationPerRequest', 'Max duration per request')}</label>
+                    <div
+                      className="help-icon-container"
+                      title={t('processing.maxDurationPerRequestDesc', 'Maximum duration for each Gemini request. Longer segments will be split into parallel requests.')}
+                    >
+                      <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="slider-with-value duration-slider-container">
+                    <StandardSlider
+                      value={maxDurationPerRequest}
+                      onChange={(value) => setMaxDurationPerRequest(parseInt(value))}
+                      min={1}
+                      max={20}
+                      step={1}
+                      orientation="Horizontal"
+                      size="XSmall"
+                      state="Enabled"
+                      showValueIndicator={false}
+                      showIcon={false}
+                      showStops={false}
+                      id="max-duration-slider"
+                      ariaLabel={t('processing.maxDurationPerRequest', 'Max duration per request')}
+                    />
+                    <div className="slider-value-display">
+                      {t('processing.minutesValue', '{{value}} minutes', { value: maxDurationPerRequest })}
+                      {selectedSegment && (() => {
+                        const segmentDuration = (selectedSegment.end - selectedSegment.start) / 60; // Convert to minutes
+                        const numRequests = Math.ceil(segmentDuration / maxDurationPerRequest);
+                        if (numRequests > 1) {
+                          return (
+                            <span className="parallel-info">
+                              {' '}({t('processing.parallelRequestsInfo', 'Will split into {{count}} parallel requests', { count: numRequests })})
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Prompt Preset and Settings Row */}
@@ -821,11 +1042,130 @@ const VideoProcessingOptionsModal = ({
                   <CustomDropdown
                     value={selectedPromptPreset}
                     onChange={(value) => setSelectedPromptPreset(value)}
-                    options={getPromptPresetOptions().map(option => ({
-                      value: option.id,
-                      label: option.title,
-                      disabled: option.disabled
-                    }))}
+                    options={getPromptPresetOptions().map(option => {
+                      // Create SVG icon based on preset type
+                      let IconComponent = null;
+                      
+                      if (option.id === 'settings') {
+                        // Settings/sliders icon for "Prompt from Settings"
+                        IconComponent = () => (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                            <line x1="4" y1="21" x2="4" y2="14"></line>
+                            <line x1="4" y1="10" x2="4" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12" y2="3"></line>
+                            <line x1="20" y1="21" x2="20" y2="16"></line>
+                            <line x1="20" y1="12" x2="20" y2="3"></line>
+                            <line x1="1" y1="14" x2="7" y2="14"></line>
+                            <line x1="9" y1="8" x2="15" y2="8"></line>
+                            <line x1="17" y1="16" x2="23" y2="16"></line>
+                          </svg>
+                        );
+                      } else if (option.id === 'timing-generation') {
+                        // Clock/timing icon for timing generation
+                        IconComponent = () => (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                          </svg>
+                        );
+                      } else if (option.isUserPreset) {
+                        // User icon for user presets
+                        IconComponent = () => (
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                          </svg>
+                        );
+                      } else {
+                        // Built-in preset icons
+                        switch (option.id) {
+                          case 'general':
+                            IconComponent = () => (
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                              </svg>
+                            );
+                            break;
+                          case 'extract-text':
+                            IconComponent = () => (
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10 9 9 9 8 9"></polyline>
+                              </svg>
+                            );
+                            break;
+                          case 'focus-lyrics':
+                            IconComponent = () => (
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                                <path d="M9 18V5l12-2v13"></path>
+                                <circle cx="6" cy="18" r="3"></circle>
+                                <circle cx="18" cy="16" r="3"></circle>
+                              </svg>
+                            );
+                            break;
+                          case 'describe-video':
+                            IconComponent = () => (
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                                <rect x="2" y="7" width="14" height="10" rx="2" ry="2"></rect>
+                                <path d="M16 7l5-3v10l-5-3z"></path>
+                              </svg>
+                            );
+                            break;
+                          case 'translate-directly':
+                            IconComponent = () => (
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="2" y1="12" x2="22" y2="12"></line>
+                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                              </svg>
+                            );
+                            break;
+                          case 'chaptering':
+                            IconComponent = () => (
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                              </svg>
+                            );
+                            break;
+                          case 'diarize-speakers':
+                            IconComponent = () => (
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                              </svg>
+                            );
+                            break;
+                          default:
+                            // Default clipboard icon
+                            IconComponent = () => (
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>
+                                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                              </svg>
+                            );
+                        }
+                      }
+                      
+                      return {
+                        value: option.id,
+                        label: IconComponent ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                            <IconComponent />
+                            {option.title}
+                          </span>
+                        ) : option.title,
+                        disabled: option.disabled
+                      };
+                    })}
                     placeholder={t('processing.selectPreset', 'Select Preset')}
                   />
                   <p className="option-description">
@@ -891,8 +1231,8 @@ const VideoProcessingOptionsModal = ({
               </div>
             </div>
 
-            {/* Third row: context switch + range slider in a single cell (1st column) */}
-            <div className="option-group" style={{ gridColumn: '1 / 2' }}>
+            {/* Surrounding context and Context coverage in left column */}
+            <div className="option-group">
               <div className="combined-options-row">
                 {/* Left half: Outside context switch */}
                 <div className="combined-option-half">
@@ -942,7 +1282,7 @@ const VideoProcessingOptionsModal = ({
                       </svg>
                     </div>
                   </div>
-                  <div className="slider-control">
+                  <div className="slider-with-value context-slider-container">
                     <StandardSlider
                       value={outsideContextRange}
                       onChange={(value) => setOutsideContextRange(Number(value))}
@@ -971,6 +1311,83 @@ const VideoProcessingOptionsModal = ({
               </div>
             </div>
 
+            {/* Auto-split subtitles and Max words per subtitle */}
+            <div className="option-group">
+              <div className="combined-options-row">
+                {/* Left half: Auto-split switch */}
+                <div className="combined-option-half">
+                  <div className="label-with-help">
+                    <label>{t('processing.autoSplitSubtitles', 'Auto-split subtitles')}</label>
+                    <div
+                      className="help-icon-container"
+                      title={t('processing.autoSplitHelp', 'Automatically split long subtitles into smaller segments for better readability. The splitting happens in real-time during streaming.')}
+                    >
+                      <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="material-switch-container">
+                    <MaterialSwitch
+                      id="auto-split-subtitles"
+                      checked={autoSplitSubtitles}
+                      onChange={(e) => setAutoSplitSubtitles(e.target.checked)}
+                      ariaLabel={t('processing.autoSplitSubtitles', 'Auto-split subtitles')}
+                      icons={true}
+                    />
+                    <label htmlFor="auto-split-subtitles" className="material-switch-label">
+                      {t('processing.enableAutoSplit', 'Enable auto-splitting')}
+                    </label>
+                  </div>
+                </div>
+
+                {/* Right half: Max words slider (always visible, disabled when switch is off) */}
+                <div className="combined-option-half">
+                  <div className="label-with-help">
+                    <label>{t('processing.maxWordsPerSubtitle', 'Max words per subtitle')}</label>
+                    <div
+                      className="help-icon-container"
+                      title={t('processing.maxWordsHelp', 'Maximum number of words allowed per subtitle. Longer subtitles will be split evenly.')}
+                    >
+                      <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="slider-with-value words-slider-container">
+                    <StandardSlider
+                      value={maxWordsPerSubtitle}
+                      onChange={(value) => setMaxWordsPerSubtitle(parseInt(value))}
+                      min={1}
+                      max={30}
+                      step={1}
+                      orientation="Horizontal"
+                      size="XSmall"
+                      state={autoSplitSubtitles ? 'Enabled' : 'Disabled'}
+                      showValueIndicator={false}
+                      showIcon={false}
+                      showStops={false}
+                      className="max-words-slider"
+                      id="max-words-slider"
+                      ariaLabel={t('processing.maxWordsPerSubtitle', 'Maximum words per subtitle')}
+                      disabled={!autoSplitSubtitles}
+                      showValueBadge={true}
+                      valueBadgeFormatter={(v) => Math.round(Number(v))}
+                    />
+                    <div className="slider-value-display">
+                      {t('processing.wordsLimit', '{{count}} {{unit}}', {
+                        count: maxWordsPerSubtitle,
+                        unit: maxWordsPerSubtitle === 1 ? t('processing.word', 'word') : t('processing.words', 'words')
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
 	          </div>
 

@@ -6,6 +6,7 @@ import LoadingIndicator from '../common/LoadingIndicator';
 import WavyProgressIndicator from '../common/WavyProgressIndicator';
 import { abortAllRequests } from '../../services/geminiService';
 import { hasValidDownloadedVideo } from '../../utils/videoUtils';
+import '../../styles/ButtonTextBalance.css';
 
 /**
  * Component for rendering the buttons container
@@ -34,8 +35,15 @@ const ButtonsContainer = ({
   uploadedFileData,
   isSrtOnlyMode,
   t,
-  onGenerateBackground
+  onGenerateBackground,
+  isProcessingSegment = false,
+  setIsProcessingSegment = () => {}
 }) => {
+  // State for auto-generation flow
+  const [isAutoGenerating, setIsAutoGenerating] = useState(false);
+  const [autoFlowStep, setAutoFlowStep] = useState('');
+  const autoFlowTimeoutRef = useRef(null);
+  const autoFlowAbortedRef = useRef(false);
   // State for tracking uploaded SRT files with localStorage persistence
   const [uploadedSrtInfo, setUploadedSrtInfo] = useState(() => {
     try {
@@ -56,6 +64,267 @@ const ButtonsContainer = ({
 
   // Ref for WavyProgressIndicator animations
   const wavyProgressRef = useRef(null);
+  
+  // Refs to track current state for autoflow (to avoid closure issues)
+  const currentStateRef = useRef({
+    uploadedFile: null,
+    uploadedFileData: null,
+    isDownloading: false,
+    downloadProgress: 0
+  });
+  
+  // Auto-generate flow implementation
+  const startAutoGenerateFlow = async () => {
+    if (isAutoGenerating) return;
+    
+    setIsAutoGenerating(true);
+    autoFlowAbortedRef.current = false;
+    
+    try {
+      // Step 0: Save current subtitle state (especially if cleared/empty)
+      console.log('[AutoFlow] Step 0: Saving current subtitle state...');
+      const lyricsSaveBtn = document.querySelector('.lyrics-save-btn');
+      if (lyricsSaveBtn) {
+        console.log('[AutoFlow] Triggering lyrics save to persist current state (including empty state)');
+        lyricsSaveBtn.click();
+        // Wait a moment for save to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      // Step 1: Trigger video loading (semi-automatic generate)
+      setAutoFlowStep('loading');
+      console.log('[AutoFlow] Step 1: Triggering video load...');
+      
+      // Click the semi-automatic generate button to trigger video loading
+      try {
+        console.log('[AutoFlow] Calling handleGenerateSubtitles...');
+        handleGenerateSubtitles();
+        console.log('[AutoFlow] handleGenerateSubtitles called successfully');
+      } catch (error) {
+        console.error('[AutoFlow] Error calling handleGenerateSubtitles:', error);
+        throw error;
+      }
+      
+      // Wait for video to be loaded (either uploaded or downloaded)
+      console.log('[AutoFlow] Waiting for video to be ready...');
+      await waitForVideoReady();
+      console.log('[AutoFlow] Video ready, continuing to step 2');
+      
+      if (autoFlowAbortedRef.current) return;
+      
+      // Step 2: Trigger video analysis
+      setAutoFlowStep('analyzing');
+      console.log('[AutoFlow] Step 2: Starting video analysis...');
+      
+      // Wait a moment for buttons to be ready after video load
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Find the video analysis button - check for either the button or its container
+      const analysisButton = document.querySelector('.video-analysis-button, .video-analysis-button-container button');
+      console.log('[AutoFlow] Found analysis button:', analysisButton);
+      
+      if (analysisButton && !analysisButton.disabled) {
+        // Check if it already has analysis (edit mode)
+        const hasAnalysis = analysisButton.classList.contains('has-analysis');
+        
+        if (!hasAnalysis) {
+          console.log('[AutoFlow] Triggering video analysis...');
+          analysisButton.click();
+          
+          // Wait for analysis to complete
+          await waitForAnalysisComplete();
+        } else {
+          console.log('[AutoFlow] Analysis already exists, skipping analysis step');
+          // Show temporary toast about using existing analysis
+          const toast = document.createElement('div');
+          toast.className = 'auto-flow-toast';
+          toast.textContent = t('autoFlow.usingExistingAnalysis', 'Using existing analysis rules');
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 2000);
+        }
+      } else {
+        console.log('[AutoFlow] Analysis button not found or disabled, continuing without analysis');
+        // Show temporary toast about skipping analysis
+        const toast = document.createElement('div');
+        toast.className = 'auto-flow-toast';
+        toast.textContent = t('autoFlow.analysisSkipped', 'Analysis skipped, continuing with default settings');
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+      }
+      
+      if (autoFlowAbortedRef.current) return;
+      
+      // Step 3: Trigger Ctrl+A to select all and open processing modal
+      setAutoFlowStep('processing');
+      console.log('[AutoFlow] Step 3: Selecting all timeline and opening processing modal...');
+      
+      // Dispatch Ctrl+A keyboard event
+      const ctrlAEvent = new KeyboardEvent('keydown', {
+        key: 'a',
+        code: 'KeyA',
+        ctrlKey: true,
+        bubbles: true
+      });
+      document.dispatchEvent(ctrlAEvent);
+      
+      // Wait a moment for modal to open
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (autoFlowAbortedRef.current) return;
+      
+      // Step 4: Click the process button in the modal
+      console.log('[AutoFlow] Step 4: Starting processing...');
+      const processBtn = document.querySelector('.video-processing-modal .process-btn');
+      if (processBtn && !processBtn.disabled) {
+        processBtn.click();
+      }
+      
+      // Auto-flow complete
+      setAutoFlowStep('complete');
+      console.log('[AutoFlow] Auto-generation flow completed successfully');
+      
+    } catch (error) {
+      console.error('[AutoFlow] Error during auto-generation:', error);
+      // Show error toast
+      const toast = document.createElement('div');
+      toast.className = 'auto-flow-toast error';
+      toast.textContent = t('autoFlow.error', 'Auto-generation encountered an error');
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    } finally {
+      setIsAutoGenerating(false);
+      setAutoFlowStep('');
+    }
+  };
+  
+  // Helper function to wait for video to be ready
+  const waitForVideoReady = () => {
+    console.log('[AutoFlow] waitForVideoReady started, initial state:', {
+      uploadedFile: !!currentStateRef.current.uploadedFile,
+      uploadedFileData: !!currentStateRef.current.uploadedFileData,
+      isDownloading: currentStateRef.current.isDownloading
+    });
+    
+    return new Promise((resolve) => {
+      let checkCount = 0;
+      const maxChecks = 300; // 5 minutes max wait
+      
+      const checkInterval = setInterval(() => {
+        checkCount++;
+        
+        // Get current state from ref (to avoid closure issues)
+        const currentState = currentStateRef.current;
+        
+        // Log current state every 5 checks
+        if (checkCount % 5 === 0) {
+          console.log('[AutoFlow] Check #' + checkCount + ', state:', {
+            uploadedFile: !!currentState.uploadedFile,
+            uploadedFileData: !!currentState.uploadedFileData,
+            isDownloading: currentState.isDownloading,
+            downloadProgress: currentState.downloadProgress
+          });
+        }
+        
+        // Check if video is ready (uploaded or downloaded)
+        // Also check that we're not still downloading
+        if ((currentState.uploadedFile || currentState.uploadedFileData) && !currentState.isDownloading) {
+          clearInterval(checkInterval);
+          console.log('[AutoFlow] Video is ready! File available:', !!currentState.uploadedFile, 'FileData available:', !!currentState.uploadedFileData);
+          resolve();
+        } else if (checkCount >= maxChecks || autoFlowAbortedRef.current) {
+          clearInterval(checkInterval);
+          console.log('[AutoFlow] Video loading timeout or aborted');
+          resolve();
+        } else if (currentState.isDownloading) {
+          // Still downloading, keep waiting
+          console.log('[AutoFlow] Still downloading video...', currentState.downloadProgress + '%');
+        } else {
+          // Not downloading but also no file - log this state
+          if (checkCount % 5 === 0) {
+            console.log('[AutoFlow] Waiting for video, but not downloading. File states:', {
+              uploadedFile: !!currentState.uploadedFile,
+              uploadedFileData: !!currentState.uploadedFileData
+            });
+          }
+        }
+      }, 1000); // Check every second
+    });
+  };
+  
+  // Helper function to wait for analysis to complete
+  const waitForAnalysisComplete = () => {
+    return new Promise((resolve) => {
+      let checkCount = 0;
+      const maxChecks = 120; // 2 minutes max wait for analysis
+      let modalDetected = false;
+      
+      const checkInterval = setInterval(() => {
+        checkCount++;
+        
+        // Check for the rules editor modal
+        const rulesModal = document.querySelector('.rules-editor-modal');
+        const hasRules = localStorage.getItem('transcription_rules');
+        
+        if (rulesModal) {
+          // Rules editor modal is open
+          if (!modalDetected) {
+            console.log('[AutoFlow] Rules editor modal detected with countdown');
+            modalDetected = true;
+            
+            // Check if countdown is enabled
+            const timeoutSetting = localStorage.getItem('video_analysis_timeout') || '10';
+            const showCountdown = sessionStorage.getItem('show_rules_editor_countdown') === 'true';
+            
+            if (timeoutSetting !== 'none' && showCountdown) {
+              const timeout = parseInt(timeoutSetting, 10);
+              if (!isNaN(timeout) && timeout > 0) {
+                console.log(`[AutoFlow] Rules editor has ${timeout}s countdown, waiting for it to complete or modal to close...`);
+              }
+            } else {
+              console.log('[AutoFlow] Rules editor opened without countdown or countdown disabled');
+            }
+          }
+          
+          // Just wait while the modal is open
+          // The countdown will auto-save or user will manually save/cancel
+          
+        } else if (modalDetected && !rulesModal) {
+          // Modal was open but now closed - analysis/editing is complete
+          clearInterval(checkInterval);
+          console.log('[AutoFlow] Rules editor modal closed');
+          
+          // Clean up the countdown flag
+          sessionStorage.removeItem('show_rules_editor_countdown');
+          
+          // Give a small delay to ensure everything is properly saved
+          setTimeout(() => {
+            resolve();
+          }, 500);
+          
+        } else if (!modalDetected && hasRules && checkCount > 10) {
+          // Rules exist but modal never opened (might happen if analysis was very fast)
+          clearInterval(checkInterval);
+          console.log('[AutoFlow] Analysis complete (rules saved without modal)');
+          resolve();
+          
+        } else if (autoFlowAbortedRef.current) {
+          clearInterval(checkInterval);
+          console.log('[AutoFlow] Analysis aborted');
+          resolve();
+        }
+      }, 500); // Check every 500ms for faster response
+    });
+  };
+  
+  // Stop auto-flow if user manually intervenes
+  const stopAutoFlow = () => {
+    if (isAutoGenerating) {
+      autoFlowAbortedRef.current = true;
+      setIsAutoGenerating(false);
+      setAutoFlowStep('');
+      console.log('[AutoFlow] Auto-generation stopped by user');
+    }
+  };
 
   // Persist uploadedSrtInfo to localStorage whenever it changes
   useEffect(() => {
@@ -66,6 +335,16 @@ const ButtonsContainer = ({
     }
   }, [uploadedSrtInfo]);
 
+  // Update current state ref whenever props change
+  useEffect(() => {
+    currentStateRef.current = {
+      uploadedFile,
+      uploadedFileData,
+      isDownloading,
+      downloadProgress
+    };
+  }, [uploadedFile, uploadedFileData, isDownloading, downloadProgress]);
+  
   // Handle entrance/disappear animations for WavyProgressIndicator
   useEffect(() => {
     if (isDownloading && wavyProgressRef.current) {
@@ -226,10 +505,12 @@ const ButtonsContainer = ({
 
       {/* Hide generate button when retrying segments, when isRetrying is true, or when any segment is being retried */}
       {validateInput() && retryingSegments.length === 0 && !isRetrying && !segmentsStatus.some(segment => segment.status === 'retrying') && (
-        <button
-          className={`generate-btn ${isGenerating || isDownloading ? 'processing' : ''}`}
-          onClick={handleGenerateSubtitles}
-          disabled={isGenerating || isDownloading}
+        <>
+          {/* Semi-automatic Generate Button */}
+          <button
+            className={`generate-btn semi-auto ${isGenerating || isDownloading ? 'processing' : ''}`}
+            onClick={handleGenerateSubtitles}
+            disabled={isGenerating || isDownloading || isAutoGenerating}
         >
           {/* Static Gemini icons for fallback */}
           <div className="gemini-icon-container">
@@ -268,9 +549,6 @@ const ButtonsContainer = ({
                     color={isDarkTheme ? '#FFFFFF' : '#FFFFFF'}
                     trackColor={isDarkTheme ? '#404659' : 'rgba(255,255,255,0.35)'}
                   />
-                  <span className="processing-text" style={{ flexShrink: 0, whiteSpace: 'nowrap', marginLeft: '8px' }}>
-                    {t('output.downloadingVideo', 'Downloading video...')}
-                  </span>
                 </div>
               ) : (
                 <span className="processing-text">
@@ -280,13 +558,45 @@ const ButtonsContainer = ({
             </span>
           ) : isSrtOnlyMode ? t('output.srtOnlyMode', 'Working with SRT only') :
             hasUrlAndSrtOnly ? t('output.downloadAndViewWithSrt', 'Download + View with Uploaded SRT') :
-            selectedVideo && !uploadedFile ? t('output.downloadAndGenerate', 'Download video + Generate timed subtitles with AI') :
-            t('header.tagline')}
-        </button>
+            selectedVideo && !uploadedFile ? t('output.downloadAndGenerateSemiAuto', 'Download + Generate (semi-auto)') :
+            t('output.semiAutoGenerate', 'Semi-auto')}
+          </button>
+          
+          {/* Auto Generate Button */}
+          <button
+            className={`generate-btn auto-generate ${isAutoGenerating ? 'processing' : ''}`}
+            onClick={startAutoGenerateFlow}
+            disabled={isGenerating || isDownloading || isAutoGenerating}
+            title={t('header.autoGenerateTooltip', 'Fully automatic subtitle generation with analysis and optimal settings')}
+          >
+            {/* Gemini stars container - populated by particle system */}
+            <div className="gemini-icon-container"></div>
+            {isAutoGenerating ? (
+              <span className="processing-text-container">
+                <LoadingIndicator
+                  theme={isDarkTheme ? 'light' : 'dark'}
+                  showContainer={false}
+                  size={16}
+                  className="buttons-processing-loading"
+                  color={isDarkTheme ? '#324574' : '#FFFFFF'}
+                />
+                <span className="processing-text">
+                  {/* Show download state when downloading, otherwise show autoflow step */}
+                  {isDownloading ? t('autoFlow.loading', 'Loading video...') :
+                   autoFlowStep === 'analyzing' ? t('autoFlow.analyzing', 'Analyzing...') :
+                   autoFlowStep === 'processing' ? t('autoFlow.processing', 'Processing...') :
+                   autoFlowStep === 'complete' ? t('autoFlow.complete', 'Complete!') :
+                   t('autoFlow.running', 'Running auto...')}
+                </span>
+              </span>
+            ) : <span className="button-text">{selectedVideo && !uploadedFile ? t('output.downloadAndGenerateAuto', 'Download + Generate subtitles (auto)') :
+            t('output.autoFlow', 'Generate subtitles (auto)')}</span>}
+          </button>
+        </>
       )}
 
       {/* Add cancel button as a proper member of the buttons-container */}
-      {isDownloading && currentDownloadId && validateInput() && retryingSegments.length === 0 && !isRetrying && !segmentsStatus.some(segment => segment.status === 'retrying') && (
+      {isDownloading && currentDownloadId && validateInput() && retryingSegments.length === 0 && !isRetrying && !segmentsStatus.some(segment => segment.status === 'retrying') && !isAutoGenerating && (
         <button
           className="cancel-download-btn"
           onClick={handleCancelDownload}
@@ -320,7 +630,7 @@ const ButtonsContainer = ({
         uploadedFileData={uploadedFileData}
       />
 
-      {(isGenerating || retryingSegments.length > 0 || isRetrying) && (
+      {(isGenerating || retryingSegments.length > 0 || isRetrying || isProcessingSegment) && (
         <button
           className="force-stop-btn"
           onClick={(e) => {
@@ -334,8 +644,11 @@ const ButtonsContainer = ({
               }
             }, 1000);
 
-            // Abort all ongoing Gemini API requests
-            abortAllRequests();
+            // Abort all ongoing Gemini API requests (including streaming)
+            const aborted = abortAllRequests();
+            if (aborted) {
+              console.log('[ButtonsContainer] Successfully aborted all Gemini requests');
+            }
 
             // Abort any active video analysis
             handleAbortVideoAnalysis();
@@ -344,6 +657,16 @@ const ButtonsContainer = ({
             if (isRetrying) {
               setIsRetrying(false);
             }
+            
+            // Also reset processing segment state
+            if (isProcessingSegment) {
+              setIsProcessingSegment(false);
+              // Clear processing ranges overlay
+              try {
+                window.dispatchEvent(new CustomEvent('processing-ranges', { detail: { ranges: [] } }));
+              } catch {}
+            }
+            
             // The state will be updated by the event listener in useSubtitles hook
           }}
           title={t('output.forceStopTooltip', 'Force stop all Gemini requests')}

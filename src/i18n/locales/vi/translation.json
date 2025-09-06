@@ -58,7 +58,7 @@
   "noRulesAvailable": "Không có quy tắc phiên âm nào. Tùy chọn này yêu cầu phân tích video với Gemini trước.",
   "customSubtitlesNoRules": "Tùy chọn này bị vô hiệu hóa vì bạn đã cung cấp phụ đề tùy chỉnh. Chế độ phụ đề tùy chỉnh bỏ qua phân tích video và tạo quy tắc.",
   "allSubtitles": "Tất cả {{count}} phụ đề",
-  "segment": "Phân đoạn",
+  "segment": "Đoạn",
   "addLanguage": "Thêm ngôn ngữ",
   "removeLanguage": "Xóa",
   "multiLanguageDescription": "Dịch sang nhiều ngôn ngữ cùng lúc",

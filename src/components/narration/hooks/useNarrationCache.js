@@ -110,7 +110,6 @@ const useNarrationCache = ({
           if (isGroupedNarrations) {
             window.groupedNarrations = [...enhancedNarrations];
             window.useGroupedSubtitles = true;
-            console.log(`Loaded ${enhancedNarrations.length} grouped F5-TTS narrations from cache`);
           } else {
             if (subtitleSource === 'original') {
               window.originalNarrations = [...enhancedNarrations];
@@ -214,7 +213,6 @@ const useNarrationCache = ({
           if (isGroupedNarrations) {
             window.groupedNarrations = [...cachedNarrations];
             window.useGroupedSubtitles = true;
-            console.log(`Loaded ${cachedNarrations.length} grouped gTTS narrations from cache`);
           } else {
             if (subtitleSource === 'original') {
               window.originalNarrations = [...cachedNarrations];

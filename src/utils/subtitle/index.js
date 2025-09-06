@@ -70,10 +70,36 @@ export const parseGeminiResponse = (response) => {
 
     const text = response.candidates[0].content.parts[0].text;
 
+    // Ensure text is a string before processing
+    if (typeof text !== 'string') {
+        console.error('Text is not a string:', typeof text, text);
+        // Try to convert to string or handle the unexpected type
+        if (text === null || text === undefined) {
+            throw new Error('Response text is null or undefined');
+        }
+        // If it's an object or array, try to stringify it
+        if (typeof text === 'object') {
+            console.warn('Received object instead of string, attempting to parse directly');
+            // Check if it's already parsed JSON data
+            if (Array.isArray(text)) {
+                // It's already an array of subtitles
+                return text;
+            }
+            // Try to stringify and continue
+            try {
+                const stringified = JSON.stringify(text);
+                console.warn('Stringified object:', stringified.substring(0, 200));
+                // Continue with stringified version
+                text = stringified;
+            } catch (e) {
+                throw new Error(`Cannot process non-string text: ${typeof text}`);
+            }
+        }
+    }
 
     // Check if the text is a JSON string (be more lenient for streaming)
     // Handle both direct JSON arrays and JSON wrapped in markdown code blocks
-    let jsonText = text.trim();
+    let jsonText = (typeof text === 'string' ? text : String(text)).trim();
 
     // Extract JSON from markdown code blocks if present
     if (jsonText.includes('```json') || jsonText.includes('```')) {

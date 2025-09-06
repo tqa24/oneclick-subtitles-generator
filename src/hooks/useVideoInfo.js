@@ -17,15 +17,7 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
       let info = null;
       let versions = [];
 
-      // Debug logging
-      console.log('[useVideoInfo] Debug info:', {
-        selectedVideo,
-        uploadedFile: uploadedFile ? { name: uploadedFile.name, type: uploadedFile.type } : null,
-        actualVideoUrl,
-        currentVideoUrl: localStorage.getItem('current_video_url'),
-        currentFileUrl: localStorage.getItem('current_file_url'),
-        splitResult: localStorage.getItem('split_result') ? 'exists' : 'none'
-      });
+
 
       // Priority 1: Check if we have a selectedVideo (downloaded video) - this is the original source
       if (selectedVideo) {
@@ -259,13 +251,19 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
     } else if (actualVideoUrl && !actualVideoUrl.startsWith('blob:')) {
       // Try to extract video ID from the file path or URL
       if (actualVideoUrl.includes('/videos/')) {
-        videoIdToFetch = actualVideoUrl.split('/videos/')[1].replace('.mp4', '');
+        let fullVideoId = actualVideoUrl.split('/videos/')[1].replace('.mp4', '');
+        // Remove timestamp suffix if present (e.g., _1757126832233)
+        const timestampMatch = fullVideoId.match(/(.+)_\d{13}$/);
+        if (timestampMatch) {
+          videoIdToFetch = timestampMatch[1];
+        } else {
+          videoIdToFetch = fullVideoId;
+        }
       }
     }
 
     // Only fetch if we don't already have dimensions for this video ID
     if (videoIdToFetch && (!actualDimensions || actualDimensions.videoId !== videoIdToFetch)) {
-      console.log('[useVideoInfo] Fetching dimensions for video ID:', videoIdToFetch);
       fetchActualDimensions(`http://localhost:3031/videos/${videoIdToFetch}.mp4`);
     }
   }, [selectedVideo?.id, uploadedFile?.name, actualVideoUrl]);
@@ -273,7 +271,6 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
   // Update video info when actual dimensions are fetched
   useEffect(() => {
     if (actualDimensions) {
-      console.log('[useVideoInfo] Updating videoInfo with actual dimensions:', actualDimensions.quality);
       setVideoInfo(prev => {
         // Only update if we have previous videoInfo and the quality is different
         if (prev && prev.quality !== actualDimensions.quality) {
@@ -291,51 +288,43 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
    * Fetch actual video dimensions from the server
    */
   const fetchActualDimensions = async (videoUrl) => {
-    console.log('[useVideoInfo] fetchActualDimensions called with URL:', videoUrl);
-
     // Extract video ID from URL
     let videoId = null;
 
     if (videoUrl && videoUrl.includes('/videos/')) {
       const urlParts = videoUrl.split('/videos/');
       if (urlParts.length > 1) {
-        videoId = urlParts[1].replace('.mp4', '');
+        let fullVideoId = urlParts[1].replace('.mp4', '');
+        // Remove timestamp suffix if present (e.g., _1757126832233)
+        const timestampMatch = fullVideoId.match(/(.+)_\d{13}$/);
+        if (timestampMatch) {
+          videoId = timestampMatch[1];
+        } else {
+          videoId = fullVideoId;
+        }
       }
     }
 
-    console.log('[useVideoInfo] Extracted video ID:', videoId);
-
     if (!videoId) {
-      console.warn('[useVideoInfo] Could not extract video ID from URL:', videoUrl);
       return null;
     }
 
     // Check if we already have dimensions for this video ID
     if (actualDimensions && actualDimensions.videoId === videoId) {
-      console.log('[useVideoInfo] Already have dimensions for video ID:', videoId);
       return actualDimensions;
     }
 
     try {
-
-      console.log('[useVideoInfo] Making API call to fetch dimensions for video ID:', videoId);
-
       const response = await fetch(`http://localhost:3031/api/video-dimensions/${videoId}`);
-      console.log('[useVideoInfo] API response status:', response.status);
-
       const data = await response.json();
-      console.log('[useVideoInfo] API response data:', data);
 
       if (data.success) {
-        console.log('[useVideoInfo] Setting actual dimensions:', data);
         setActualDimensions(data);
         return data;
       } else {
-        console.warn('[useVideoInfo] API returned error:', data.error);
         return null;
       }
     } catch (error) {
-      console.error('[useVideoInfo] Error fetching dimensions:', error);
       return null;
     }
   };
@@ -347,10 +336,7 @@ export const useVideoInfo = (selectedVideo, uploadedFile, actualVideoUrl) => {
     // Use actual dimensions if available, otherwise fall back to stored quality
     const currentQuality = actualDimensions?.quality || videoInfo?.quality || '360p';
 
-    console.log('[useVideoInfo] getVideoInfoForModal called:');
-    console.log('  - actualDimensions:', actualDimensions);
-    console.log('  - videoInfo.quality:', videoInfo?.quality);
-    console.log('  - final currentQuality:', currentQuality);
+
 
     return {
       videoInfo: {

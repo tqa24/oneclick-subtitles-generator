@@ -1,0 +1,223 @@
+/* Auto-generate button styles - clean mesh gradient */
+.generate-btn.auto-generate {
+  /* Simple animated gradient base */
+  background: linear-gradient(90deg, #2979FF, #F50057, #7B1FA2, #2979FF);
+  background-size: 200% 100%;
+  animation: gradient-shift 15s ease infinite, subtle-pulse-glow 4s ease-in-out infinite;
+  color: #FFFFFF;
+  border: none;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Add mesh overlay with proper clipping */
+.generate-btn.auto-generate::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 30% 50%, rgba(245, 0, 87, 0.3), transparent 40%),
+    radial-gradient(circle at 70% 50%, rgba(41, 121, 255, 0.3), transparent 40%);
+  border-radius: inherit;
+  z-index: 1;
+  pointer-events: none;
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+
+
+.generate-btn.auto-generate:hover:not(:disabled) {
+  /* Hover behavior - transparent background with blue text like other buttons */
+  background: transparent !important;
+  animation: none !important;
+  /* Use primary blue for text on hover */
+  color: #2979FF !important;
+  text-shadow: none;
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level3);
+}
+
+/* Hide the overlay on hover */
+.generate-btn.auto-generate:hover:not(:disabled)::before {
+  display: none;
+}
+
+.generate-btn.auto-generate.processing {
+  /* Processing state - medium speed animation */
+  background: linear-gradient(90deg, #2979FF, #F50057, #7B1FA2, #2979FF);
+  background-size: 200% 100%;
+  animation: gradient-shift 8s ease infinite, auto-processing 1s ease-in-out infinite;
+  color: #FFFFFF;
+}
+
+/* Subtle pulse glow to match other button styling */
+@keyframes subtle-pulse-glow {
+  0%, 100% {
+    box-shadow: var(--md-elevation-level2);
+  }
+  50% {
+    box-shadow: var(--md-elevation-level3);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+  }
+}
+
+@keyframes auto-processing {
+  0%, 100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Semi-automatic button adjustments - ensure consistency */
+.generate-btn.semi-auto {
+  /* Explicitly use the same base styling as defined in App.css */
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+  /* No additional overlays for semi-auto - pure primary color */
+}
+
+/* Auto-flow toast notifications */
+.auto-flow-toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(66, 66, 66, 0.95);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 10000;
+  animation: toast-slide-up 0.3s ease-out;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.auto-flow-toast.error {
+  background: rgba(220, 53, 69, 0.95);
+}
+
+@keyframes toast-slide-up {
+  from {
+    transform: translateX(-50%) translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Text balancing for button text */
+.generate-btn .button-text {
+  text-wrap: balance;
+  display: inline-block;
+  max-width: 100%;
+}
+
+/* Gemini icons for auto-generate button - static like other buttons */
+.generate-btn.auto-generate .gemini-icon-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.generate-btn.auto-generate .gemini-mini-icon {
+  position: absolute;
+  /* Remove spinning animation to match other buttons */
+  width: 20px;
+  height: 20px;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.generate-btn.auto-generate .gemini-mini-icon.random-2 {
+  top: 15%;
+  left: 10%;
+}
+
+.generate-btn.auto-generate .gemini-mini-icon.random-4 {
+  bottom: 20%;
+  right: 15%;
+}
+
+/* Subtle hover effect without rotation */
+.generate-btn.auto-generate:hover .gemini-mini-icon {
+  opacity: 0.8;
+}
+
+/* Button container layout adjustments */
+.buttons-container {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Ensure both generate buttons have proper spacing */
+.buttons-container > button.generate-btn {
+  min-width: 200px;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .auto-flow-toast {
+  background: rgba(44, 44, 44, 0.95);
+}
+
+[data-theme="dark"] .auto-flow-toast.error {
+  background: rgba(180, 43, 59, 0.95);
+}
+
+[data-theme="dark"] .generate-btn.auto-generate {
+  /* Clean gradient for dark mode */
+  background: linear-gradient(90deg, #82B1FF, #FF80AB, #AB47BC, #82B1FF);
+  background-size: 200% 100%;
+  animation: gradient-shift 15s ease infinite, subtle-pulse-glow 4s ease-in-out infinite;
+  color: #1A1A1A;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+[data-theme="dark"] .generate-btn.auto-generate::before {
+  background: 
+    radial-gradient(circle at 30% 50%, rgba(255, 128, 171, 0.25), transparent 40%),
+    radial-gradient(circle at 70% 50%, rgba(130, 177, 255, 0.25), transparent 40%);
+}
+
+[data-theme="dark"] .generate-btn.auto-generate:hover:not(:disabled) {
+  /* Hover behavior in dark mode - transparent with blue text */
+  background: transparent !important;
+  animation: none !important;
+  /* Use light blue for text in dark mode */
+  color: #82B1FF !important;
+  text-shadow: none;
+}
+
+/* Hide overlay on hover in dark mode */
+[data-theme="dark"] .generate-btn.auto-generate:hover:not(:disabled)::before {
+  display: none;
+}

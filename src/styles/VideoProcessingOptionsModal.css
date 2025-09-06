@@ -100,7 +100,6 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
-  margin-bottom: 1.5rem;
 }
 
 .segment-info {
@@ -439,26 +438,66 @@
   }
 }
 
-/* Slider control styles - default horizontal layout */
-.slider-control {
+/* Slider with value - horizontal layout with value on the right */
+.video-processing-modal .slider-with-value {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 0.5rem;
+  gap: 12px;
+  width: 100%;
 }
 
-/* Video processing modal specific - vertical layout for FPS slider */
-.video-processing-modal .slider-control {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
+/* Ensure the slider component container takes all available width */
+.video-processing-modal .slider-with-value .standard-slider-container {
+  flex: 1 1 auto;
+  min-width: 0; /* Allow shrinking */
 }
 
-.slider-value-display {
-  font-size: 0.8rem;
+/* Value display stays on the right with minimum width only */
+.video-processing-modal .slider-value-display {
+  font-size: 0.875rem;
   color: var(--md-on-surface-variant);
   font-weight: 500;
-  text-align: center;
+  text-align: right;
+  flex: 0 0 auto; /* Don't grow or shrink */
+  white-space: nowrap;
+}
+
+/* FPS slider - now simpler, just "0.25 FPS" */
+.video-processing-modal .fps-slider-container .slider-value-display {
+  min-width: 60px;
+}
+
+/* Context coverage slider - "Unlimited" or "20 lines" */
+.video-processing-modal .context-slider-container .slider-value-display {
+  min-width: 45px;
+}
+
+/* Max duration slider - "20 minutes" plus potential parallel info */
+.video-processing-modal .duration-slider-container .slider-value-display {
+  min-width: 90px;
+  white-space: normal; /* Allow wrapping for parallel info */
+  line-height: 1.3;
+}
+
+/* Max words slider - "30 words" */
+.video-processing-modal .words-slider-container .slider-value-display {
+  min-width: 30px;
+}
+
+/* Model dropdown in combined row - limit width */
+.video-processing-modal .combined-option-half:first-child .custom-dropdown {
+  max-width: 200px;
+}
+
+/* Additional info (like parallel requests) should be on its own line */
+.video-processing-modal .slider-value-display .parallel-info {
+  font-size: 0.7rem;
+  color: var(--md-on-surface-variant);
+  opacity: 0.8;
+  white-space: normal; /* Allow wrapping for long parallel request info */
+  text-align: right;
+  max-width: 200px;
 }
 
 /* Helper icon styles */
@@ -494,6 +533,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* Label subtitle for additional info like intervals */
+.label-subtitle {
+  font-size: 0.75rem;
+  color: var(--md-on-surface-variant);
+  opacity: 0.8;
+  font-weight: normal;
+  margin-left: 6px;
 }
 
 /* Modal footer styles */

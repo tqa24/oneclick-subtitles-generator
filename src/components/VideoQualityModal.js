@@ -4,12 +4,15 @@ import { FiInfo } from 'react-icons/fi';
 import CloseButton from './common/CloseButton';
 import '../styles/VideoQualityModal.css';
 // import progressWebSocketClient from '../utils/progressWebSocketClient'; // DISABLED - using polling instead
+import LoadingIndicator from './common/LoadingIndicator';
+import WavyProgressIndicator from './common/WavyProgressIndicator';
 
 const VideoQualityModal = ({
   isOpen,
   onClose,
   onConfirm,
   videoInfo,
+  actualDimensions,
   availableVersions = []
 }) => {
   const { t } = useTranslation();
@@ -19,6 +22,8 @@ const VideoQualityModal = ({
   const [isRedownloading, setIsRedownloading] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [availableQualities, setAvailableQualities] = useState([]);
+  const [qualityVideoId, setQualityVideoId] = useState(null);
+
   const [downloadProgress, setDownloadProgress] = useState(0);
   const progressIntervalRef = useRef(null);
 
@@ -27,9 +32,23 @@ const VideoQualityModal = ({
     localStorage.getItem('use_cookies_for_download') === 'true'
   );
 
+  // Ref for WavyProgressIndicator animations
+  const wavyProgressRef = useRef(null);
+
+  // Detect current theme from data-theme attribute (light/dark)
+  const isDarkTheme = (typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark');
+
+  // Handle entrance/disappear animations for WavyProgressIndicator
+  useEffect(() => {
+    if (isRedownloading && wavyProgressRef.current) {
+      wavyProgressRef.current.startEntranceAnimation();
+    } else if (!isRedownloading && wavyProgressRef.current) {
+      wavyProgressRef.current.startDisappearanceAnimation();
+    }
+  }, [isRedownloading]);
+
   // Wrapper function for onClose to ensure cleanup
   const handleClose = () => {
-    console.log(`[VideoQualityModal] Modal closing, cleaning up progress interval`);
     if (progressIntervalRef.current) {
       clearInterval(progressIntervalRef.current);
       progressIntervalRef.current = null;
@@ -40,8 +59,6 @@ const VideoQualityModal = ({
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-      console.log('[VideoQualityModal] Modal opened with videoInfo:', videoInfo);
-      console.log('[VideoQualityModal] Available versions:', availableVersions);
 
       setSelectedOption('current');
       setSelectedVersion(null);
@@ -58,7 +75,6 @@ const VideoQualityModal = ({
       }
 
       // Don't scan qualities automatically - only when redownload is selected
-      console.log('[VideoQualityModal] Modal opened, waiting for user to select redownload option');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, videoInfo]);
@@ -68,7 +84,6 @@ const VideoQualityModal = ({
     if (selectedOption === 'redownload' && videoInfo && videoInfo.url &&
         ['youtube', 'douyin', 'douyin-playwright', 'all-sites'].includes(videoInfo.source) &&
         availableQualities.length === 0 && !isScanning) {
-      console.log('[VideoQualityModal] Redownload selected, starting quality scan for:', videoInfo.source);
       scanVideoQualities();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -107,6 +122,23 @@ const VideoQualityModal = ({
   };
 
 
+  // Cancel an in-progress quality re-download
+  const handleCancelRedownload = async () => {
+    try {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+      if (qualityVideoId) {
+        await fetch(`http://localhost:3031/api/cancel-quality-download/${encodeURIComponent(qualityVideoId)}`, { method: 'POST' });
+      }
+    } catch (e) {
+      // ignore
+    } finally {
+      setIsRedownloading(false);
+    }
+  };
+
 
   // Start quality download with pre-generated video ID
   const startQualityDownloadWithId = async (quality, url, videoId) => {
@@ -133,26 +165,17 @@ const VideoQualityModal = ({
 
   // Start progress tracking using polling (WebSocket disabled to prevent duplicates)
   const startProgressTracking = (videoId, quality, url) => {
-    console.log(`[VideoQualityModal] Using polling instead of WebSocket to prevent duplicates`);
-    console.log(`[VideoQualityModal] Setting up polling for videoId: ${videoId}`);
-
     // Clear any existing interval first
     if (progressIntervalRef.current) {
-      console.log(`[VideoQualityModal] Clearing existing progress interval`);
       clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
     }
 
     // Use polling instead of WebSocket
-    console.log(`[VideoQualityModal] About to set up interval for videoId: ${videoId}`);
     const newProgressInterval = setInterval(async () => {
-      console.log(`[VideoQualityModal] INTERVAL FIRED! Polling for videoId: ${videoId}`);
       try {
-        console.log(`[VideoQualityModal] Making fetch request...`);
         const response = await fetch(`http://localhost:3031/api/quality-download-progress/${videoId}`);
-        console.log(`[VideoQualityModal] Response status:`, response.status, response.statusText);
         const data = await response.json();
-
-        console.log(`[VideoQualityModal] Polling response:`, data);
 
         if (data.success) {
           const newProgress = data.progress || 0;
@@ -163,7 +186,6 @@ const VideoQualityModal = ({
           }
 
           if (data.status === 'completed') {
-            console.log(`[VideoQualityModal] Download completed! Proceeding to render...`);
             clearInterval(newProgressInterval);
             progressIntervalRef.current = null;
             setIsRedownloading(false);
@@ -183,15 +205,16 @@ const VideoQualityModal = ({
                 handleClose();
               }
             }, 1000);
+          } else if (data.status === 'cancelled') {
+            clearInterval(newProgressInterval);
+            progressIntervalRef.current = null;
+            setIsRedownloading(false);
           } else if (data.status === 'error') {
-            console.log(`[VideoQualityModal] Download error detected:`, data.error);
             clearInterval(newProgressInterval);
             progressIntervalRef.current = null;
             setIsRedownloading(false);
             console.error('[VideoQualityModal] Download error:', data.error);
           }
-        } else {
-          console.log(`[VideoQualityModal] Polling failed:`, data);
         }
       } catch (error) {
         console.error('Error fetching download progress:', error);
@@ -200,7 +223,6 @@ const VideoQualityModal = ({
 
     // Store interval in ref for cleanup
     progressIntervalRef.current = newProgressInterval;
-    console.log(`[VideoQualityModal] Progress interval set up successfully for videoId: ${videoId}`);
   };
 
 
@@ -209,7 +231,6 @@ const VideoQualityModal = ({
   React.useEffect(() => {
     return () => {
       if (progressIntervalRef.current) {
-        console.log(`[VideoQualityModal] Cleaning up progress interval on unmount`);
         clearInterval(progressIntervalRef.current);
         progressIntervalRef.current = null;
       }
@@ -259,6 +280,9 @@ const VideoQualityModal = ({
         // Generate video ID first
         const videoId = `quality_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
+        // Save the quality videoId so cancel button can use it
+        setQualityVideoId(videoId);
+
         // Start progress tracking BEFORE starting download
         startProgressTracking(videoId, selectedQuality.quality, videoInfo.url);
 
@@ -291,7 +315,7 @@ const VideoQualityModal = ({
 
   const getVideoSourceDisplay = () => {
     if (!videoInfo) return t('videoQuality.unknownSource', 'Unknown source');
-    
+
     switch (videoInfo.source) {
       case 'youtube':
         return t('videoQuality.youtubeVideo', 'YouTube Video');
@@ -312,17 +336,28 @@ const VideoQualityModal = ({
     if (!videoInfo) return t('videoQuality.unknownQuality', 'Unknown quality');
 
     if (videoInfo.source === 'upload') {
+      const quality = videoInfo.quality || '360p';
+      const qualityWithDimensions = actualDimensions?.dimensions 
+        ? `${quality} (${actualDimensions.dimensions})`
+        : quality;
+      
       return videoInfo.isOptimized
-        ? t('videoQuality.optimizedQuality', 'Optimized ({{quality}})', { quality: videoInfo.quality || '360p' })
+        ? t('videoQuality.optimizedQuality', 'Optimized ({{quality}})', { quality: qualityWithDimensions })
         : t('videoQuality.originalQuality', 'Original Quality');
     }
 
-    // Show actual dimensions if available, otherwise just the quality
-    if (videoInfo.quality && videoInfo.quality.includes('×')) {
-      return videoInfo.quality; // Already includes dimensions like "720p (1080×1920)"
+    // Show actual dimensions if available
+    const baseQuality = videoInfo.quality || '360p';
+    if (actualDimensions?.dimensions) {
+      return `${baseQuality} (${actualDimensions.dimensions})`;
     }
 
-    return videoInfo.quality || '360p';
+    // Show quality as-is if it already includes dimensions
+    if (videoInfo.quality && videoInfo.quality.includes('×')) {
+      return videoInfo.quality;
+    }
+
+    return baseQuality;
   };
 
   const showRedownloadOption = videoInfo?.source &&
@@ -368,8 +403,8 @@ const VideoQualityModal = ({
               <div className="info-row">
                 <span className="label">{t('videoQuality.title', 'Title')}:</span>
                 <span className="value" title={videoInfo.title}>
-                  {videoInfo.title.length > 50 
-                    ? `${videoInfo.title.substring(0, 50)}...` 
+                  {videoInfo.title.length > 50
+                    ? `${videoInfo.title.substring(0, 50)}...`
                     : videoInfo.title}
                 </span>
               </div>
@@ -393,7 +428,7 @@ const VideoQualityModal = ({
                   {t('videoQuality.useCurrent', 'Use current video quality')}
                 </div>
                 <div className="option-description">
-                  {t('videoQuality.useCurrentDesc', 'Render with the video currently playing in the preview ({{quality}})', 
+                  {t('videoQuality.useCurrentDesc', 'Render with the video currently playing in the preview ({{quality}})',
                     { quality: getCurrentQuality() })}
                 </div>
               </div>
@@ -471,7 +506,7 @@ const VideoQualityModal = ({
                   <div className="option-description">
                     {t('videoQuality.selectVersionDesc', 'Choose from available video versions')}
                   </div>
-                  
+
                   {selectedOption === 'version' && (
                     <div className="version-selector">
                       {availableVersions.map((version, index) => (
@@ -506,13 +541,21 @@ const VideoQualityModal = ({
         </div>
 
         <div className="modal-actions">
-          <button
-            className="cancel-button"
-            onClick={handleClose}
-            disabled={isRedownloading}
-          >
-            {t('common.cancel', 'Cancel')}
-          </button>
+          {isRedownloading ? (
+            <button
+              className="cancel-button"
+              onClick={handleCancelRedownload}
+            >
+              {t('download.downloadOnly.cancelDownload', 'Cancel Download')}
+            </button>
+          ) : (
+            <button
+              className="cancel-button"
+              onClick={handleClose}
+            >
+              {t('common.cancel', 'Cancel')}
+            </button>
+          )}
           <button
             className="confirm-button"
             onClick={handleConfirm}
@@ -523,11 +566,37 @@ const VideoQualityModal = ({
               (selectedOption === 'redownload' && !selectedQuality)
             }
           >
-            {isRedownloading
-              ? `${t('videoQuality.redownloading', 'Redownloading...')} ${downloadProgress}%`
-              : isScanning
-              ? t('videoQuality.scanning', 'Scanning...')
-              : t('common.confirm', 'Confirm')}
+            {isRedownloading ? (
+              <span className="processing-text-container">
+                <LoadingIndicator
+                  theme={isDarkTheme ? 'light' : 'dark'}
+                  showContainer={false}
+                  size={16}
+                  className="buttons-processing-loading"
+                  color={isDarkTheme ? '#324574' : '#FFFFFF'}
+                />
+                <div className="processing-wavy" style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+                  <WavyProgressIndicator
+                    ref={wavyProgressRef}
+                    progress={Math.max(0, Math.min(1, (downloadProgress || 0) / 100))}
+                    animate={true}
+                    showStopIndicator={true}
+                    waveSpeed={1.2}
+                    width={140}
+                    autoAnimateEntrance={false}
+                    color={isDarkTheme ? '#FFFFFF' : '#FFFFFF'}
+                    trackColor={isDarkTheme ? '#404659' : 'rgba(255,255,255,0.35)'}
+                  />
+                  <span className="processing-text" style={{ flexShrink: 0, whiteSpace: 'nowrap', marginLeft: '8px' }}>
+                    {t('videoQuality.redownloading', 'Redownloading...')}
+                  </span>
+                </div>
+              </span>
+            ) : isScanning ? (
+              t('videoQuality.scanning', 'Scanning...')
+            ) : (
+              t('common.confirm', 'Confirm')
+            )}
           </button>
         </div>
       </div>

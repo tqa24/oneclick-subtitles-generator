@@ -326,6 +326,8 @@ const AppLayout = ({
               isSrtOnlyMode={isSrtOnlyMode}
               t={t}
               onGenerateBackground={handleGenerateBackground}
+              isProcessingSegment={isProcessingSegment}
+              setIsProcessingSegment={appState.setIsProcessingSegment}
             />
 
             <OutputContainer
@@ -461,6 +463,7 @@ const AppLayout = ({
           onClose={() => setShowVideoQualityModal(false)}
           onConfirm={handleVideoQualityConfirm}
           videoInfo={getVideoInfoForModal()?.videoInfo || videoInfo}
+          actualDimensions={getVideoInfoForModal()?.actualDimensions}
           availableVersions={availableVersions}
         />
       )}

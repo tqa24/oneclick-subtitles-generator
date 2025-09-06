@@ -37,7 +37,8 @@ const TimelineVisualization = ({
   onBeginMoveRange = null, // Start live move preview
   onPreviewMoveRange = null, // Update live move preview with delta seconds
   onCommitMoveRange = null, // Commit the live move on mouse up
-  onCancelMoveRange = null // Cancel live move preview
+  onCancelMoveRange = null, // Cancel live move preview
+  onSelectedRangeChange = null // Callback to notify parent of selected range changes
 }) => {
   const { t } = useTranslation();
 
@@ -126,19 +127,28 @@ const TimelineVisualization = ({
     }
   }, [onSegmentSelect, hasDraggedInSession]);
   
-  // Listen for streaming events
+  // Listen for streaming events and processing ranges
   useEffect(() => {
     const handleStreamingStart = () => {
-      console.log('[Timeline] Streaming started - enabling segment animations');
+      // console.log('[Timeline] Streaming started - enabling segment animations');
       setIsStreamingActive(true);
     };
     
+    const handleProcessingRanges = (e) => {
+      const ranges = (e.detail && e.detail.ranges) || [];
+      setProcessingRanges(ranges);
+      if (ranges.length > 1) {
+        console.log('[Timeline] Parallel processing ranges set:', ranges);
+      }
+    };
+    
     const handleStreamingComplete = () => {
-      console.log('[Timeline] Streaming complete - disabling segment animations');
+      // console.log('[Timeline] Streaming complete - disabling segment animations');
       // Keep animations active for a bit after streaming completes
       setTimeout(() => {
         setIsStreamingActive(false);
         setNewSegments(new Map());
+        setProcessingRanges([]);
       }, 1000);
     };
     
@@ -146,11 +156,13 @@ const TimelineVisualization = ({
     window.addEventListener('streaming-update', handleStreamingStart);
     window.addEventListener('streaming-complete', handleStreamingComplete);
     window.addEventListener('save-after-streaming', handleStreamingComplete);
+    window.addEventListener('processing-ranges', handleProcessingRanges);
     
     return () => {
       window.removeEventListener('streaming-update', handleStreamingStart);
       window.removeEventListener('streaming-complete', handleStreamingComplete);
       window.removeEventListener('save-after-streaming', handleStreamingComplete);
+      window.removeEventListener('processing-ranges', handleProcessingRanges);
     };
   }, []);
   
@@ -279,38 +291,15 @@ const TimelineVisualization = ({
   // No longer need to enforce minimum zoom
   // Users can zoom out to see the entire timeline
 
-  // Calculate visible time range with playhead-centered zoom
+  // Calculate visible time range - simplified without zoom centering logic
   const getTimeRange = useCallback(() => {
     const { start, end, total: timelineEnd, effectiveZoom } = getVisibleTimeRange(lyrics, duration, panOffset, zoom, currentZoomRef.current);
 
     // Update currentZoomRef to match effective zoom
-    const prevZoom = currentZoomRef.current;
     currentZoomRef.current = effectiveZoom;
 
-    // If zoom changed, recalculate panOffset to keep playhead centered
-    if (prevZoom !== effectiveZoom && duration > 0) {
-      const prevVisibleDuration = timelineEnd / prevZoom;
-      const newVisibleDuration = timelineEnd / effectiveZoom;
-
-      // Calculate relative position of playhead in previous view (0-1)
-      const relativePlayheadPos = (currentTime - panOffset) / prevVisibleDuration;
-
-      // Apply the relative position to the new visible duration
-      const newPanOffset = Math.max(0, currentTime - (relativePlayheadPos * newVisibleDuration));
-
-      // Ensure we don't go past the end
-      const maxPanOffset = Math.max(0, timelineEnd - newVisibleDuration);
-
-      // Use requestAnimationFrame to avoid state update during render
-      if (panOffset !== Math.min(newPanOffset, maxPanOffset)) {
-        requestAnimationFrame(() => {
-          setPanOffset(Math.min(newPanOffset, maxPanOffset));
-        });
-      }
-    }
-
     return { start, end, total: timelineEnd };
-  }, [lyrics, duration, panOffset, zoom, currentTime, setPanOffset]);
+  }, [lyrics, duration, panOffset, zoom]);
 
   // Store the playhead position before zooming
   // This effect is no longer needed since we removed the playhead animation
@@ -343,6 +332,24 @@ const TimelineVisualization = ({
     return calculateVisibleTimeRange(lyrics, duration, tempPanOffset, currentZoomRef.current);
   }, [lyrics, duration]);
 
+  const [processingRanges, setProcessingRanges] = useState([]);
+
+  // Store the last selected range to show action bar when it includes existing subtitles
+  const [actionBarRange, setActionBarRange] = useState(null); // { start, end }
+  const [moveDragOffsetPx, setMoveDragOffsetPx] = useState(0);
+  const rangePreviewDeltaRef = useRef(0); // seconds delta during move drag
+  const [hiddenActionBarRange, setHiddenActionBarRange] = useState(null); // Store range when action bar is hidden
+  const isClickingInsideRef = useRef(false); // Track if we're clicking inside the range
+  
+  // Notify parent component when selected range changes
+  useEffect(() => {
+    if (onSelectedRangeChange) {
+      // Report the active range (either actionBarRange or hiddenActionBarRange)
+      const activeRange = actionBarRange || hiddenActionBarRange || selectedSegment;
+      onSelectedRangeChange(activeRange);
+    }
+  }, [actionBarRange, hiddenActionBarRange, selectedSegment, onSelectedRangeChange]);
+
   // Draw the timeline visualization with optimizations
   const renderTimeline = useCallback((tempPanOffset = null) => {
     const canvas = timelineRef.current;
@@ -362,8 +369,10 @@ const TimelineVisualization = ({
       : getTimeRange();
 
     // Prepare segment data for drawing
-    const effectiveSelected = actionBarRange
-      ? { start: actionBarRange.start + (rangePreviewDeltaRef.current || 0), end: actionBarRange.end + (rangePreviewDeltaRef.current || 0) }
+    // Show selection for both actionBarRange and hiddenActionBarRange
+    const activeRange = actionBarRange || hiddenActionBarRange;
+    const effectiveSelected = activeRange
+      ? { start: activeRange.start + (rangePreviewDeltaRef.current || 0), end: activeRange.end + (rangePreviewDeltaRef.current || 0) }
       : selectedSegment;
     const segmentData = {
       selectedSegment: effectiveSelected,
@@ -372,7 +381,8 @@ const TimelineVisualization = ({
       dragCurrentTime,
       isProcessing: isProcessingSegment,
       animationTime,
-      newSegments: newSegments // Pass new segments for animation
+      newSegments: newSegments, // Pass new segments for animation
+      processingRanges: processingRanges
     };
 
     // Draw the timeline
@@ -391,7 +401,7 @@ const TimelineVisualization = ({
       timeFormat,
       segmentData
     );
-  }, [lyrics, currentTime, duration, getTimeRange, panOffset, getVisibleRangeWithTempOffset, timeFormat, selectedSegment, isDraggingSegment, dragStartTime, dragCurrentTime, isProcessingSegment, animationTime, newSegments]);
+  }, [lyrics, currentTime, duration, getTimeRange, panOffset, getVisibleRangeWithTempOffset, timeFormat, selectedSegment, isDraggingSegment, dragStartTime, dragCurrentTime, isProcessingSegment, animationTime, newSegments, actionBarRange, hiddenActionBarRange]);
   
   // Animate new segments - must be after renderTimeline definition
   useEffect(() => {
@@ -451,24 +461,15 @@ const TimelineVisualization = ({
     };
   }, [renderTimeline]);
 
-  // Simplified zoom animation function - just set zoom and let getTimeRange handle panOffset
-  const animateZoom = useCallback((targetZoom) => {
-    animateZoomTo(
-      targetZoom,
-      animationFrameRef,
-      lyrics,
-      duration,
-      currentZoomRef,
-      renderTimeline
-    );
-  }, [renderTimeline, lyrics, duration]);
-
-  // Update zoom with animation when zoom prop changes
+  // Simple zoom update for programmatic changes (non-user initiated)
   useEffect(() => {
     if (zoom !== currentZoomRef.current) {
-      animateZoom(zoom);
+      // Just update zoom without centering for programmatic changes
+      // User-initiated zoom centering is handled directly in the mouse move handler
+      currentZoomRef.current = zoom;
+      renderTimeline();
     }
-  }, [zoom, animateZoom]);
+  }, [zoom, renderTimeline]);
 
 
 
@@ -537,7 +538,7 @@ const TimelineVisualization = ({
     }
   }, [renderTimeline]);
 
-  // Add keyboard shortcut to toggle auto-scrolling
+  // Add keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
       // Alt+S to toggle auto-scrolling
@@ -568,13 +569,68 @@ const TimelineVisualization = ({
           }, 1500);
         }
       }
+      
+      // Ctrl+A to select entire video range
+      if (e.ctrlKey && e.key === 'a' && onSegmentSelect && duration) {
+        e.preventDefault(); // Prevent default browser select all
+        
+        console.log('[Timeline] Ctrl+A pressed - selecting entire video range');
+        
+        // Set drag state to simulate range selection from 0 to duration
+        const startTime = 0;
+        const endTime = duration;
+        
+        // Mark that dragging has been done in this session
+        setHasDraggedInSession(true);
+        
+        // Set drag state to show visual selection
+        setIsDraggingSegment(true);
+        setDragStartTime(startTime);
+        setDragCurrentTime(endTime);
+        dragStartRef.current = startTime;
+        dragCurrentRef.current = endTime;
+        isDraggingRef.current = true;
+        
+        // Force re-render to show selection
+        renderTimeline();
+        
+        console.log('[Timeline] Ctrl+A selection:', startTime.toFixed(2), '-', endTime.toFixed(2), 's');
+        
+        // Show selection for 500ms, then open modal
+        setTimeout(() => {
+          // Clean up drag state
+          setIsDraggingSegment(false);
+          setDragStartTime(null);
+          setDragCurrentTime(null);
+          dragStartRef.current = null;
+          dragCurrentRef.current = null;
+          isDraggingRef.current = false;
+          
+          // Helper function to check if there are subtitles in the range
+          const checkForSubtitles = (start, end) => {
+            if (!lyrics || lyrics.length === 0) return false;
+            // Only consider subtitles fully contained within the range
+            return lyrics.some(l => l.start >= start && l.end <= end);
+          };
+          
+          // Check if there are subtitles in the range
+          if (checkForSubtitles(startTime, endTime)) {
+            // Show action bar instead of opening modal
+            setActionBarRange({ start: startTime, end: endTime });
+            setHiddenActionBarRange({ start: startTime, end: endTime });
+          } else {
+            // Open video processing modal for entire range
+            onSegmentSelect({ start: startTime, end: endTime });
+          }
+        }, 500); // 0.5 second delay to show blue highlight
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [renderTimeline]);
+  }, [renderTimeline, onSegmentSelect, duration, lyrics]);
 
   // Handle timeline updates
   useEffect(() => {
@@ -703,17 +759,89 @@ const TimelineVisualization = ({
       }
     }
   };
-  
-  // Store the last selected range to show action bar when it includes existing subtitles
-  const [actionBarRange, setActionBarRange] = useState(null); // { start, end }
-  const [moveDragOffsetPx, setMoveDragOffsetPx] = useState(0);
-  const rangePreviewDeltaRef = useRef(0); // seconds delta during move drag
+
+  // Enable Delete key to trigger clear-in-range when action bar is visible
+  useEffect(() => {
+    if (!actionBarRange) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Delete') {
+        e.preventDefault();
+        if (onClearRange) {
+          onClearRange(actionBarRange.start, actionBarRange.end);
+          setActionBarRange(null);
+          setHiddenActionBarRange(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [actionBarRange, onClearRange]);
 
   const hasSubtitlesInRange = useCallback((start, end) => {
     if (!lyrics || lyrics.length === 0) return false;
     // Only consider subtitles fully contained within the range
     return lyrics.some(l => l.start >= start && l.end <= end);
   }, [lyrics]);
+
+  // Handle mouse move to detect hovering over the hidden range or selectedSegment
+  const handleMouseMoveForRange = useCallback((e) => {
+    // Check both hiddenActionBarRange and selectedSegment
+    if (!hiddenActionBarRange && !actionBarRange && !selectedSegment) return;
+    
+    const canvas = timelineRef.current;
+    const effectiveDuration = duration || 60;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const relativeX = e.clientX - rect.left;
+    const timeRange = getTimeRange();
+    const timePerPixel = (timeRange.end - timeRange.start) / canvas.clientWidth;
+    const hoverTime = Math.max(0, Math.min(effectiveDuration, timeRange.start + (relativeX * timePerPixel)));
+    
+    // Check if hovering within the hidden action bar range
+    const range = hiddenActionBarRange || actionBarRange;
+    if (range && hoverTime >= range.start && hoverTime <= range.end) {
+      // Show the action bar if it was hidden
+      if (hiddenActionBarRange && !actionBarRange) {
+        setActionBarRange(hiddenActionBarRange);
+      }
+    }
+    
+    // Check if hovering within the persistent selectedSegment (from subtitle generation)
+    if (selectedSegment && !actionBarRange && 
+        hoverTime >= selectedSegment.start && hoverTime <= selectedSegment.end) {
+      // Check if there are subtitles in this segment
+      if (hasSubtitlesInRange(selectedSegment.start, selectedSegment.end)) {
+        // Show action bar for the selected segment
+        setActionBarRange(selectedSegment);
+        setHiddenActionBarRange(selectedSegment);
+      }
+    }
+  }, [hiddenActionBarRange, actionBarRange, selectedSegment, duration, getTimeRange, hasSubtitlesInRange]);
+
+  // Add mouse move listener for hover detection
+  useEffect(() => {
+    if (hiddenActionBarRange || actionBarRange || selectedSegment) {
+      const canvas = timelineRef.current;
+      if (canvas) {
+        canvas.addEventListener('mousemove', handleMouseMoveForRange);
+        return () => {
+          canvas.removeEventListener('mousemove', handleMouseMoveForRange);
+        };
+      }
+    }
+  }, [handleMouseMoveForRange, hiddenActionBarRange, actionBarRange, selectedSegment]);
+
+  // When selectedSegment changes (e.g., after subtitle generation), prepare for action bar
+  useEffect(() => {
+    if (selectedSegment && !actionBarRange && !hiddenActionBarRange) {
+      // Check if the selected segment has subtitles
+      if (hasSubtitlesInRange(selectedSegment.start, selectedSegment.end)) {
+        // Pre-set hiddenActionBarRange so hovering will immediately show the action bar
+        setHiddenActionBarRange(selectedSegment);
+      }
+    }
+  }, [selectedSegment, actionBarRange, hiddenActionBarRange, hasSubtitlesInRange]);
 
 
 
@@ -737,6 +865,7 @@ const TimelineVisualization = ({
       dragCurrentRef.current = startTime;
       // Reset any previous action bar until selection decision
       setActionBarRange(null);
+      setHiddenActionBarRange(null);
       setMoveDragOffsetPx(0);
     }
 
@@ -783,6 +912,7 @@ const TimelineVisualization = ({
             if (hasSubtitlesInRange(start, end)) {
               // Show action bar instead of opening modal
               setActionBarRange({ start, end });
+              setHiddenActionBarRange({ start, end });
             } else {
               onSegmentSelect({ start, end });
             }
@@ -794,6 +924,36 @@ const TimelineVisualization = ({
         // This was a click - handle timeline seeking
         const clickTime = pixelToTime(upEvent.clientX);
         console.log('[Timeline] Click detected - seeking to:', clickTime.toFixed(2), 's');
+        
+        // Check if click is inside any active range
+        const activeRange = actionBarRange || hiddenActionBarRange || selectedSegment;
+        const isInsideRange = activeRange && 
+          clickTime >= activeRange.start && 
+          clickTime <= activeRange.end;
+        
+        if (isInsideRange) {
+          // Click inside range - set flag to prevent hiding
+          isClickingInsideRef.current = true;
+          
+          // Ensure action bar is shown
+          if (!actionBarRange && activeRange) {
+            if (hasSubtitlesInRange(activeRange.start, activeRange.end)) {
+              setActionBarRange(activeRange);
+              setHiddenActionBarRange(activeRange);
+            }
+          }
+          
+          // Reset flag after a short delay
+          setTimeout(() => {
+            isClickingInsideRef.current = false;
+          }, 100);
+        } else {
+          // Click outside - clear everything
+          setActionBarRange(null);
+          setHiddenActionBarRange(null);
+        }
+        
+        // Always handle click as seek
         handleClick(
           upEvent,
           timelineRef.current,
@@ -802,8 +962,6 @@ const TimelineVisualization = ({
           getTimeRange(),
           lastManualPanTime
         );
-        // Hide action bar on simple click outside
-        setActionBarRange(null);
       }
 
       // Clean up drag state
@@ -865,6 +1023,7 @@ const TimelineVisualization = ({
             setMoveDragOffsetPx(0);
             rangePreviewDeltaRef.current = 0;
             setActionBarRange(null);
+            setHiddenActionBarRange(null);
           };
           document.addEventListener('mousemove', onMove);
           document.addEventListener('mouseup', onUp);
@@ -907,6 +1066,25 @@ const TimelineVisualization = ({
                 color: 'var(--md-on-surface)',
                 pointerEvents: 'auto'
               }}
+              onMouseLeave={() => {
+                // Don't hide if we're clicking inside the range
+                if (isClickingInsideRef.current) {
+                  return;
+                }
+                
+                // Hide the action bar when mouse leaves, but keep the range stored
+                // If this is for a selectedSegment, we want to be able to show it again
+                if (selectedSegment && 
+                    actionBarRange.start === selectedSegment.start && 
+                    actionBarRange.end === selectedSegment.end) {
+                  // For selectedSegment, just hide the bar but keep tracking
+                  setHiddenActionBarRange(actionBarRange);
+                } else {
+                  // For manually selected ranges
+                  setHiddenActionBarRange(actionBarRange);
+                }
+                setActionBarRange(null);
+              }}
             >
               <button
                 className="btn-base btn-primary btn-small"
@@ -914,17 +1092,19 @@ const TimelineVisualization = ({
                   e.stopPropagation();
                   onSegmentSelect && onSegmentSelect(actionBarRange);
                   setActionBarRange(null);
+                  setHiddenActionBarRange(null);
                 }}
               >
                 {t('timeline.generateReplace', 'Regenerate subtitles')}
               </button>
               <button
                 className="btn-base btn-primary btn-small"
-                title={t('timeline.clearInRange', 'Clear subtitles in range')}
+                title={t('timeline.clearInRangeWithShortcut', 'Clear subtitles in range (Del)')}
                 onClick={(e) => {
                   e.stopPropagation();
                   onClearRange && onClearRange(actionBarRange.start, actionBarRange.end);
                   setActionBarRange(null);
+                  setHiddenActionBarRange(null);
                 }}
                 style={{ width: 36, height: 36, minWidth: 36, padding: 0, borderRadius: '50%' }}
               >
@@ -982,6 +1162,9 @@ const TimelineVisualization = ({
             transform: 'translateY(-50%)',
             pointerEvents: 'none',
             zIndex: 5,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
             opacity: (() => {
               const cycleTime = 4000; // 4 seconds per cycle
               const progress = (dragHintAnimationTime % cycleTime) / cycleTime;
@@ -1019,6 +1202,24 @@ const TimelineVisualization = ({
           >
             <path d="M445-80q-29 0-56-12t-45-35L143-383q-7-9-7-20t8-19l4-4q14-15 34.5-18.5T221-438l99 53v-365q0-12.75 8.68-21.38 8.67-8.62 21.5-8.62 12.82 0 21.32 8.62 8.5 8.63 8.5 21.38v415q0 17-14.5 25.5t-29.5.5l-100-53 156 198q10 12 23.76 18 13.76 6 29.24 6h205q38 0 64-26t26-64v-170q0-25.5-17.25-42.75T680-460H490q-12.75 0-21.37-8.68-8.63-8.67-8.63-21.5 0-12.82 8.63-21.32 8.62-8.5 21.37-8.5h190q50 0 85 35t35 85v170q0 63-43.5 106.5T650-80H445Zm43-250Zm-16.7-320q-13.3 0-21.8-8.63-8.5-8.62-8.5-21.37 0-1.5 4-15 7-12 11-26t4-29.48Q460-796 427.88-828q-32.12-32-78-32T272-827.92q-32 32.09-32 77.92 0 15 4 29t11 26q2 3 3 6.5t1 8.5q0 12.75-8.58 21.37-8.58 8.63-21.84 8.63-8.58 0-15.58-4t-11.17-11.84Q191-685 185.5-706.25q-5.5-21.25-5.5-44.2 0-70.55 49.73-120.05Q279.45-920 350-920t120.27 49.5Q520-821 520-750.31q0 22.99-5.7 44.28-5.71 21.29-16.3 40.03-4 8-11.04 12-7.05 4-15.66 4Z"/>
           </svg>
+          <span
+            style={{
+              color: 'var(--md-on-surface-variant)',
+              fontSize: 14,
+              fontWeight: 600,
+              userSelect: 'none',
+              transform: `translateX(${(() => {
+                const cycleTime = 4000;
+                const progress = (dragHintAnimationTime % cycleTime) / cycleTime;
+                const easeInOutCubic = progress < 0.5
+                  ? 4 * progress * progress * progress
+                  : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+                return easeInOutCubic * 500; // match SVG motion
+              })()}px)`,
+            }}
+          >
+            {t('lyrics.dragHintOrShortcut', '(or Ctrl+A)')}
+          </span>
         </div>
       )}
 
@@ -1058,12 +1259,46 @@ const TimelineVisualization = ({
             onMouseDown={(e) => {
               const startX = e.clientX;
               const startZoom = zoom;
-              // No minimum zoom restriction - allow zoom out to 1 (100%)
+              
+              // Mark this as a manual interaction to prevent auto-scroll interference
+              lastManualPanTime.current = performance.now();
+              
               const handleMouseMove = (moveEvent) => {
                 const deltaX = moveEvent.clientX - startX;
                 // Increased sensitivity for more responsive zooming
                 // Allow zoom from 1 (100% - full timeline) to 200 (very detailed view)
                 const newZoom = Math.max(1, Math.min(200, startZoom + (deltaX * 0.05)));
+                
+                // Get real-time playhead position during drag
+                const videoElement = document.querySelector('video');
+                const realTimeCurrentTime = videoElement && !isNaN(videoElement.currentTime) 
+                  ? videoElement.currentTime 
+                  : currentTime;
+                
+                // Apply zoom centering immediately with real-time playhead position
+                if (duration && setPanOffset) {
+                  // Calculate timeline end
+                  const maxLyricTime = lyrics.length > 0
+                    ? Math.max(...lyrics.map(lyric => lyric.end))
+                    : duration;
+                  const timelineEnd = Math.max(maxLyricTime, duration) * 1.05;
+                
+                  // Calculate new visible duration based on zoom
+                  const newVisibleDuration = timelineEnd / newZoom;
+                  const halfVisibleDuration = newVisibleDuration / 2;
+                
+                  // Center the view on the real-time playhead position
+                  const newPanOffset = Math.max(0, Math.min(
+                    realTimeCurrentTime - halfVisibleDuration,
+                    timelineEnd - newVisibleDuration
+                  ));
+                
+                  // Update zoom and pan offset immediately
+                  currentZoomRef.current = newZoom;
+                  setPanOffset(newPanOffset);
+                }
+                
+                // Also update the zoom state
                 setZoom(newZoom);
               };
 

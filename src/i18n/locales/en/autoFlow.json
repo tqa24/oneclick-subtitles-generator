@@ -1,0 +1,10 @@
+{
+  "loading": "Downloading video...",
+  "analyzing": "Analyzing...",
+  "processing": "Processing...",
+  "complete": "Complete!",
+  "running": "Running auto...",
+  "usingExistingAnalysis": "Using existing analysis rules",
+  "analysisSkipped": "Analysis skipped, continuing with default settings",
+  "error": "Auto-generation encountered an error"
+}

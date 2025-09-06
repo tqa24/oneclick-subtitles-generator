@@ -27,6 +27,7 @@
   flex-direction: column;
   overflow: hidden;
   animation: modal-appear 0.3s var(--md-easing-emphasized);
+  transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Specific adjustments for light theme */
@@ -163,9 +164,11 @@
 }
 
 .voice-modal-content {
-  flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 0 1.75rem 1.5rem 1.75rem;
+  background-color: var(--md-surface-1);
+  max-height: calc(85vh - 160px); /* Account for header and controls */
 }
 
 .voice-category-section {
@@ -401,6 +404,7 @@
   .voice-modal {
     width: 95vw;
     max-height: 90vh;
+    height: auto;
     margin: 1rem;
   }
 
@@ -442,10 +446,11 @@
 @media (max-width: 480px) {
   .voice-modal {
     width: 100vw;
-    height: 100vh;
+    height: 100vh !important;
     max-height: 100vh;
     border-radius: 0;
     margin: 0;
+    transition: none;
   }
 
   .voice-modal-header {

@@ -8,8 +8,6 @@ import { useAppEffects } from './AppEffects';
 import OnboardingBanner from '../OnboardingBanner';
 import OnboardingFooterReveal from '../OnboardingFooterReveal';
 import AutoDismissErrorToast from '../common/AutoDismissErrorToast';
-import { initializeAudioAlignmentNotifications } from '../../utils/audioAlignmentNotification';
-
 // Import CSS files
 import '../../styles/App.css';
 import '../../styles/GeminiButtonAnimations.css';
@@ -18,6 +16,7 @@ import '../../styles/SrtUploadButton.css';
 import '../../styles/VideoAnalysisModal.css';
 import '../../styles/TranscriptionRulesEditor.css';
 import '../../styles/OnboardingBanner.css';
+import '../../styles/AutoGenerate.css'; // Auto-generate button and flow styles
 // Removed spinner-fix.css - now using LoadingIndicator component
 import '../../styles/lyrics/save-message.css'; // Audio alignment notification styles
 import '../../styles/common/auto-dismiss-error-toast.css'; // Auto-dismiss error toast styles
@@ -45,11 +44,6 @@ function App() {
     handleDownloadAndPrepareYouTubeVideo: appHandlers.handleDownloadAndPrepareYouTubeVideo,
     t
   });
-
-  // Initialize audio alignment notification system
-  useEffect(() => {
-    initializeAudioAlignmentNotifications();
-  }, []);
 
   // State change effects removed to reduce console logs
 

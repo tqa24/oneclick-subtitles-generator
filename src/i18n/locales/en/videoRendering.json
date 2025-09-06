@@ -39,7 +39,7 @@
   "renderingFrames": "Processing video frames...",
   "renderingFramesDetailed": "Rendering frames: {{rendered}}/{{total}}",
   "encodingFrames": "Encoding and stitching frames...",
-  "downloadingChrome": "First-time setup: Downloading Chrome browser... {{progress}}%",
+  "downloadingChrome": "Downloading Chrome for Testing (first time only)",
   "bundling": "Preparing video components...",
   "selectingComposition": "Setting up video composition...",
   "complete": "Render complete!",
@@ -159,5 +159,8 @@
   "fps30": "30 FPS (Standard)",
   "fps50": "50 FPS (PAL High)",
   "fps60": "60 FPS (Smooth)",
-  "fps120": "120 FPS (High Speed)"
+  "fps120": "120 FPS (High Speed)",
+  "upcomingFeatures": "Upcoming features: crop, add text, logo, images, background music, ...",
+  "networkError": "Network error occurred",
+  "reconnecting": "Reconnecting to render..."
 }

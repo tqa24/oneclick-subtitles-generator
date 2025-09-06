@@ -5,7 +5,6 @@ import PositionSettings from './PositionSettings';
 import StyleSettings from './StyleSettings';
 import { fontOptions, fontWeightOptions, textAlignOptions, getTextTransformOptions } from '../constants';
 import { groupFontsByCategory } from '../utils/fontUtils';
-import CloseButton from '../../common/CloseButton';
 import CustomDropdown from '../../common/CustomDropdown';
 
 /**
@@ -39,12 +38,47 @@ const SubtitleSettingsPanel = ({
   // Group fonts for the select element
   const fontGroups = groupFontsByCategory(fontOptions);
 
+  // Handle click outside to close
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (event) => {
+      // Check if click is outside the panel
+      const panel = document.querySelector('.subtitle-settings-panel');
+      const toggleButton = document.querySelector('.subtitle-settings-toggle');
+      
+      if (panel && !panel.contains(event.target) && 
+          toggleButton && !toggleButton.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    // Add event listeners
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen, setIsOpen]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="subtitle-settings-panel">
-
-      <div className="settings-content">
+    <>
+      {/* Invisible backdrop for click detection */}
+      <div className="subtitle-settings-backdrop" onClick={() => setIsOpen(false)} />
+      
+      <div className="subtitle-settings-panel">
+        <div className="settings-content">
         {/* Subtitle Language Selector - Always shown at the top */}
         <div className="setting-group subtitle-language-group">
           <label htmlFor="subtitle-language">{t('subtitleSettings.subtitleLanguage', 'Subtitle Language')}</label>
@@ -99,6 +133,7 @@ const SubtitleSettingsPanel = ({
         </button>
       </div>
     </div>
+    </>
   );
 };
 

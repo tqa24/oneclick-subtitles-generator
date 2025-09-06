@@ -9,8 +9,8 @@ export const PHYSICS = {
   gravity: 0.02,        // Reduced gravity for gentler center pull (was 0.05)
   maxVelocity: 1.5,     // Lower max velocity for more controlled movement (was 3)
   collisionDistance: 15,
-  cursorForce: 0.4,     // Reduced cursor force for subtler interactions (was 0.8)
-  cursorRadius: 60,     // Larger radius for smoother influence (was 40)
+  cursorForce: 0.15,     // Balanced cursor force for subtle but noticeable interactions (average of 0.05 and 0.15)
+  cursorRadius: 60,     // Medium radius for balanced interaction area (average of 30 and 60)
   damping: 0.92         // Additional damping to slow down movements
 };
 

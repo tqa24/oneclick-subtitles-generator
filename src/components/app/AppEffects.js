@@ -142,6 +142,15 @@ export const useAppEffects = (props) => {
       }
     };
 
+    // Handle show video analysis modal event (new event from analysisUtils)
+    const handleShowVideoAnalysisModal = (event) => {
+      // This event is dispatched after analysis completes with the result
+      if (event.detail && event.detail.analysisResult) {
+        setVideoAnalysisResult(event.detail.analysisResult);
+        setShowVideoAnalysis(true);
+      }
+    };
+
     // Handle video analysis complete
     const handleVideoAnalysisComplete = (event) => {
       // Video analysis is always enabled
@@ -154,11 +163,13 @@ export const useAppEffects = (props) => {
 
     // Add event listeners
     window.addEventListener('videoAnalysisStarted', handleVideoAnalysisStarted);
+    window.addEventListener('showVideoAnalysisModal', handleShowVideoAnalysisModal);
     window.addEventListener('videoAnalysisComplete', handleVideoAnalysisComplete);
 
     // Clean up
     return () => {
       window.removeEventListener('videoAnalysisStarted', handleVideoAnalysisStarted);
+      window.removeEventListener('showVideoAnalysisModal', handleShowVideoAnalysisModal);
       window.removeEventListener('videoAnalysisComplete', handleVideoAnalysisComplete);
     };
   }, [setShowVideoAnalysis, setVideoAnalysisResult]);
@@ -345,7 +356,6 @@ export const useAppEffects = (props) => {
       if (uploadedFile) {
         // No need to prepare video segments when using cached subtitles
         // The new simplified processing workflow doesn't require video splitting
-        console.log('Cached subtitles loaded successfully for uploaded file');
       }
       // For YouTube tab, we need to download the video first
       else if (handleDownloadAndPrepareYouTubeVideo) {

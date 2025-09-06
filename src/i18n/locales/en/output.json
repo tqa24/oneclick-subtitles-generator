@@ -98,5 +98,9 @@
   "subtitleUploadSuccess": "Subtitle file uploaded successfully!",
   "downloadAndViewWithSrt": "Download + View with Uploaded SRT",
   "downloadAndGenerate": "Download video + Generate timed subtitles with AI",
-  "preparingProcessing": "Preparing video for processing..."
+  "preparingProcessing": "Preparing video for processing...",
+  "semiAutoGenerate": "Generate subtitles\u00a0(semi-auto)",
+  "downloadAndGenerateSemiAuto": "Download +\u00a0Generate\u00a0subtitles (semi-auto)",
+  "autoFlow": "Generate subtitles\u00a0(auto)",
+  "downloadAndGenerateAuto": "Download +\u00a0Generate\u00a0subtitles (auto)"
 }

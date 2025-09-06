@@ -107,6 +107,10 @@ function initializeProgressWebSocket(server) {
  */
 function broadcastProgress(videoId, progress, status, phase = null) {
   if (!progressConnections.has(videoId)) {
+    // Log when there are no subscribers
+    if (progress % 10 === 0) {  // Only log every 10% to avoid spam
+      console.log(`[WebSocket] No subscribers for video ${videoId} (${progress}%)`); 
+    }
     return;
   }
 
@@ -122,10 +126,12 @@ function broadcastProgress(videoId, progress, status, phase = null) {
   const connections = progressConnections.get(videoId);
   const deadConnections = new Set();
 
+  let sentCount = 0;
   for (const ws of connections) {
     try {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(message);
+        sentCount++;
       } else {
         deadConnections.add(ws);
       }
@@ -133,6 +139,11 @@ function broadcastProgress(videoId, progress, status, phase = null) {
       console.error('Error sending progress update:', error);
       deadConnections.add(ws);
     }
+  }
+  
+  // Log successful broadcasts (only at intervals to avoid spam)
+  if (sentCount > 0 && (progress % 10 === 0 || progress === 100)) {
+    console.log(`[WebSocket] Sent progress ${progress}% to ${sentCount} clients for video ${videoId}`);
   }
 
   // Clean up dead connections

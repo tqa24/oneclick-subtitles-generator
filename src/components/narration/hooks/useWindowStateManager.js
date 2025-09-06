@@ -153,7 +153,6 @@ const useWindowStateManager = ({
 
     // Don't load cache if we're dealing with translated subtitles but they're null (translation was reset)
     if (subtitleSource === 'translated' && (!translatedSubtitles || translatedSubtitles.length === 0)) {
-      console.log('Translation was reset or no translated subtitles, not loading grouped cache');
       return;
     }
 
@@ -220,7 +219,6 @@ const useWindowStateManager = ({
     if (subtitleSource) {
       try {
         localStorage.setItem('subtitle_source', subtitleSource);
-        console.log('Saved subtitle source to localStorage:', subtitleSource);
       } catch (error) {
         console.error('Error saving subtitle source to localStorage:', error);
       }
@@ -247,7 +245,6 @@ const useWindowStateManager = ({
   // Listen for translation reset to clear grouped subtitles cache
   useEffect(() => {
     const handleTranslationReset = () => {
-      console.log('Translation reset detected, clearing grouped subtitles cache and state');
 
       // Clear the grouped subtitles cache from localStorage
       try {

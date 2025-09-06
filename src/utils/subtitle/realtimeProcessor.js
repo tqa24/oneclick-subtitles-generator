@@ -4,6 +4,7 @@
  */
 
 import { parseGeminiResponse } from './index';
+import { autoSplitSubtitles } from './splitUtils';
 
 /**
  * Real-time subtitle processor class
@@ -27,7 +28,11 @@ export class RealtimeSubtitleProcessor {
     this.parseAttemptInterval = 3; // Try to parse every 3 chunks
     this.minTextLength = 100; // Minimum text length before attempting parse
     
-    console.log('[RealtimeProcessor] Initialized');
+    // Auto-split options
+    this.autoSplitEnabled = options.autoSplitEnabled || false;
+    this.maxWordsPerSubtitle = options.maxWordsPerSubtitle || 8;
+    
+    console.log('[RealtimeProcessor] Initialized with auto-split:', this.autoSplitEnabled, 'max words:', this.maxWordsPerSubtitle);
   }
 
   /**
@@ -46,6 +51,35 @@ export class RealtimeSubtitleProcessor {
     this.chunkCount++;
     this.accumulatedText = chunk.accumulatedText || '';
     
+    // If upstream provided parsed subtitles (e.g., from parallel aggregator), use them directly
+    if (Array.isArray(chunk.subtitles) && chunk.subtitles.length > 0) {
+      let processedSubtitles = chunk.subtitles;
+      
+      // Apply auto-split if enabled
+      if (this.autoSplitEnabled && this.maxWordsPerSubtitle > 0) {
+        processedSubtitles = autoSplitSubtitles(processedSubtitles, this.maxWordsPerSubtitle);
+        console.log(`[RealtimeProcessor] Auto-split: ${chunk.subtitles.length} -> ${processedSubtitles.length} subtitles`);
+      }
+      
+      this.currentSubtitles = processedSubtitles;
+      this.lastValidSubtitles = [...processedSubtitles];
+
+      // Notify UI immediately with provided subtitles (avoids reparsing joined text)
+      this.onSubtitleUpdate({
+        subtitles: processedSubtitles,
+        isStreaming: true,
+        chunkCount: this.chunkCount,
+        textLength: this.accumulatedText.length
+      });
+
+      // Update status with progress
+      this.onStatusUpdate({
+        message: `Processing... (${this.chunkCount} chunks, ${this.currentSubtitles.length} subtitles found)`,
+        type: 'loading'
+      });
+      return;
+    }
+
     console.log(`[RealtimeProcessor] Processing chunk ${this.chunkCount}, text length: ${this.accumulatedText.length}`);
 
     // Try to parse subtitles periodically or if we have enough text
@@ -86,21 +120,28 @@ export class RealtimeSubtitleProcessor {
       const parsedSubtitles = parseGeminiResponse(mockResponse);
 
       if (parsedSubtitles && parsedSubtitles.length > 0) {
-        // Check if we have new subtitles
-        if (parsedSubtitles.length > this.currentSubtitles.length) {
-          console.log(`[RealtimeProcessor] Found ${parsedSubtitles.length} subtitles (was ${this.currentSubtitles.length})`);
+      // Check if we have new subtitles
+      if (parsedSubtitles.length > 0) {
+        console.log(`[RealtimeProcessor] Found ${parsedSubtitles.length} subtitles (was ${this.currentSubtitles.length})`);
 
-          this.currentSubtitles = parsedSubtitles;
-          this.lastValidSubtitles = [...parsedSubtitles]; // Keep a backup
-
-          // Notify about subtitle updates
-          this.onSubtitleUpdate({
-            subtitles: parsedSubtitles,
-            isStreaming: true,
-            chunkCount: this.chunkCount,
-            textLength: this.accumulatedText.length
-          });
+        // Apply auto-split if enabled
+        let processedSubtitles = parsedSubtitles;
+        if (this.autoSplitEnabled && this.maxWordsPerSubtitle > 0) {
+          processedSubtitles = autoSplitSubtitles(parsedSubtitles, this.maxWordsPerSubtitle);
+          console.log(`[RealtimeProcessor] Auto-split: ${parsedSubtitles.length} -> ${processedSubtitles.length} subtitles`);
         }
+
+        this.currentSubtitles = processedSubtitles;
+        this.lastValidSubtitles = [...processedSubtitles]; // Keep a backup
+
+        // Notify about subtitle updates
+        this.onSubtitleUpdate({
+          subtitles: processedSubtitles,
+          isStreaming: true,
+          chunkCount: this.chunkCount,
+          textLength: this.accumulatedText.length
+        });
+      }
       } else {
         console.log('[RealtimeProcessor] No valid subtitles parsed yet');
       }
@@ -165,12 +206,19 @@ export class RealtimeSubtitleProcessor {
 
     // Process the final subtitles (either from early stop or parsed)
     if (finalSubtitles && finalSubtitles.length > 0) {
-      this.currentSubtitles = finalSubtitles;
+      // Apply auto-split if enabled
+      let processedSubtitles = finalSubtitles;
+      if (this.autoSplitEnabled && this.maxWordsPerSubtitle > 0) {
+        processedSubtitles = autoSplitSubtitles(finalSubtitles, this.maxWordsPerSubtitle);
+        console.log(`[RealtimeProcessor] Final auto-split: ${finalSubtitles.length} -> ${processedSubtitles.length} subtitles`);
+      }
+      
+      this.currentSubtitles = processedSubtitles;
 
-      console.log(`[RealtimeProcessor] Final result: ${finalSubtitles.length} subtitles`);
+      console.log(`[RealtimeProcessor] Final result: ${processedSubtitles.length} subtitles`);
 
       this.onSubtitleUpdate({
-        subtitles: finalSubtitles,
+        subtitles: processedSubtitles,
         isStreaming: false,
         isComplete: true,
         chunkCount: this.chunkCount,

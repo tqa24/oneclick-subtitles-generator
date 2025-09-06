@@ -331,7 +331,15 @@ const LiquidGlass = ({
   useEffect(() => {
     if (width === 'auto' && containerRef.current) {
       const updateDimensions = () => {
-        const rect = containerRef.current.getBoundingClientRect();
+        const el = containerRef.current;
+        if (!el) return;
+        let rect;
+        try {
+          rect = el.getBoundingClientRect && el.getBoundingClientRect();
+        } catch (e) {
+          return; // element might be detached; ignore
+        }
+        if (!rect || typeof rect.width !== 'number') return;
         if (rect.width > 0) {
           // Round dimensions to avoid fractional pixel issues with ImageData
           setActualDimensions({

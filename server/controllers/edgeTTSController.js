@@ -42,7 +42,7 @@ try:
                 'gender': voice['Gender'],
                 'locale': voice['Locale'],
                 'language': voice['Locale'].split('-')[0],
-                'display_name': f"{voice['FriendlyName']} ({voice['Locale']})"
+                'display_name': f"{voice['DisplayName']} ({voice['Locale']})"
             })
         return formatted_voices
     

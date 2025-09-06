@@ -1,9 +1,15 @@
 {
   "cancel": "취소",
   "undo": "실행 취소",
+  "undoWithShortcut": "실행 취소 (Ctrl+Z)",
+  "redo": "다시 실행",
+  "redoWithShortcut": "다시 실행 (Ctrl+Y 또는 Ctrl+Shift+Z)",
   "reset": "초기화",
+  "resetWithShortcut": "저장된 상태로 초기화",
   "resetToDefaults": "기본값으로 초기화",
   "save": "저장",
+  "saveDisabled": "저장할 변경 사항이 없습니다",
+  "saveWithShortcut": "저장 (Ctrl+S)",
   "close": "닫기",
   "on": "켜기",
   "off": "끄기",
@@ -11,5 +17,6 @@
   "clearAll": "모두 지우기",
   "confirm": "확인",
   "done": "완료",
-  "jumpToCheckpoint": "마지막 체크포인트로 이동 (여러 단계 실행 취소)"
+  "jumpToCheckpoint": "마지막 체크포인트로 이동 (여러 단계 실행 취소)",
+  "jumpToCheckpointWithShortcut": "마지막 체크포인트로 이동 (Ctrl+J)"
 }

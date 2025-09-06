@@ -306,53 +306,28 @@ export const useSubtitles = (t) => {
 
                 // Import the streaming segment processing function and subtitle merger
                 const { processSegmentWithStreaming } = await import('../utils/videoProcessing/processingUtils');
-                const { mergeSegmentSubtitles, mergeStreamingSubtitlesProgressively } = await import('../utils/subtitle/subtitleMerger');
+                const { mergeStreamingSubtitlesProgressively } = await import('../utils/subtitle/subtitleMerger');
 
-                // IMPORTANT: Load the saved state from cache AFTER save completes
-                // This ensures we merge with the saved state (including manual edits), not the old React state
+                // IMPORTANT: Use the current React state directly instead of loading from cache
+                // The save operation above should have already persisted any manual edits
+                // Loading from cache can introduce stale data if the save hasn't fully propagated
                 let currentSubtitles = [];
-                try {
-                    // Determine which cache ID to use based on whether this is a downloaded video or uploaded file
-                    const currentVideoUrl = localStorage.getItem('current_video_url');
-                    let cacheIdToUse = null;
-
-                    if (currentVideoUrl) {
-                        // Downloaded video - use URL-based cache ID
-                        cacheIdToUse = await generateUrlBasedCacheId(currentVideoUrl);
-                        console.log('[Subtitle Generation] Using URL-based cache ID for downloaded video:', cacheIdToUse);
-                    } else {
-                        // Uploaded file - use file-based cache ID
-                        cacheIdToUse = localStorage.getItem('current_file_cache_id');
-                        console.log('[Subtitle Generation] Using file-based cache ID for uploaded file:', cacheIdToUse);
-                    }
-
-                    if (cacheIdToUse) {
-                        const response = await fetch(`http://localhost:3031/api/subtitle-exists/${cacheIdToUse}`);
-                        const result = await response.json();
-                        if (result.exists && result.subtitles) {
-                            currentSubtitles = result.subtitles;
-                            console.log('[Subtitle Generation] Loaded saved state from cache for merging:', currentSubtitles.length, 'subtitles');
-                        } else {
-                            console.warn('[Subtitle Generation] Could not load saved state, falling back to React state');
-                            setSubtitlesData(current => {
-                                currentSubtitles = current || [];
-                                return current;
-                            });
-                        }
-                    } else {
-                        console.warn('[Subtitle Generation] No cache ID found, using React state');
-                        setSubtitlesData(current => {
-                            currentSubtitles = current || [];
-                            return current;
-                        });
-                    }
-                } catch (error) {
-                    console.error('[Subtitle Generation] Error loading saved state:', error);
+                
+                // Get the current subtitles from React state
+                // This ensures we're using the most up-to-date data that's currently displayed
+                await new Promise((resolve) => {
                     setSubtitlesData(current => {
                         currentSubtitles = current || [];
-                        return current;
+                        console.log('[Subtitle Generation] Using current React state for merging:', currentSubtitles.length, 'subtitles');
+                        resolve();
+                        return current; // Don't modify the state
                     });
-                }
+                });
+                
+                // Log the subtitles we're about to merge with
+                console.log('[Subtitle Generation] Current subtitles sample:', 
+                    currentSubtitles.slice(0, 3).map(s => `${s.start}-${s.end}: ${s.text.substring(0, 20)}...`)
+                );
 
                 console.log('[Subtitle Generation] Before streaming (using saved state):', {
                     existingCount: currentSubtitles.length,
@@ -368,38 +343,132 @@ export const useSubtitles = (t) => {
                         fps,
                         mediaResolution,
                         model,
-                        userProvidedSubtitles
+                        userProvidedSubtitles,
+                        maxDurationPerRequest: options.maxDurationPerRequest,
+                        autoSplitSubtitles: options.autoSplitSubtitles,
+                        maxWordsPerSubtitle: options.maxWordsPerSubtitle
                     },
                     setStatus,
-                    (streamingSubtitles, isStreaming) => {
-                        // Real-time subtitle updates during streaming
-                        if (streamingSubtitles && streamingSubtitles.length > 0) {
-                            console.log(`[Subtitle Generation] Streaming update: ${streamingSubtitles.length} subtitles`);
+                    (() => {
+                        // Create a throttled version of the streaming update handler
+                        let lastMergeTime = 0;
+                        let pendingUpdate = null;
+                        let updateTimer = null;
+                        const MERGE_THROTTLE_MS = 500; // Throttle merges to once every 500ms
+                        const CAPTURE_THROTTLE_MS = 2000; // Capture undo state less frequently
+                        let lastCaptureTime = 0;
+                        
+                        return (streamingSubtitles, isStreaming, chunkInfo) => {
+                            // Real-time subtitle updates during streaming
+                            if (streamingSubtitles && streamingSubtitles.length > 0) {
+                                // console.log(`[Subtitle Generation] Streaming update: ${streamingSubtitles.length} subtitles`);
 
-                            // Capture state before progressive merging for undo/redo
-                            window.dispatchEvent(new CustomEvent('capture-before-merge', {
-                                detail: {
-                                    type: 'progressive-merge',
-                                    source: 'streaming-update',
-                                    segment: segment
+                                const now = Date.now();
+                                const timeSinceMerge = now - lastMergeTime;
+                                const timeSinceCapture = now - lastCaptureTime;
+                                
+                                // Store the pending update
+                                pendingUpdate = { streamingSubtitles, isStreaming, chunkInfo };
+                                
+                                // Clear any existing timer
+                                if (updateTimer) {
+                                    clearTimeout(updateTimer);
                                 }
-                            }));
+                                
+                                // Throttle the merge operations
+                                if (timeSinceMerge >= MERGE_THROTTLE_MS) {
+                                    // Enough time has passed, perform the merge immediately
+                                    lastMergeTime = now;
+                                    
+                                    // Only capture state for undo/redo occasionally, not on every merge
+                                    if (timeSinceCapture >= CAPTURE_THROTTLE_MS) {
+                                        lastCaptureTime = now;
+                                        window.dispatchEvent(new CustomEvent('capture-before-merge', {
+                                            detail: {
+                                                type: 'progressive-merge',
+                                                source: 'streaming-update',
+                                                segment: segment
+                                            }
+                                        }));
+                                    }
 
-                            // Use progressive merging for streaming updates (clears left to right)
-                            const mergedStreamingSubtitles = mergeStreamingSubtitlesProgressively(currentSubtitles, streamingSubtitles, segment);
+                                    // CRITICAL FIX: Merge streaming subtitles with existing timeline
+                                    // Get current subtitles and filter out those in the segment range
+                                    setSubtitlesData(current => {
+                                        const existingSubtitles = current || [];
+                                        
+                                        // Filter out existing subtitles that overlap with this segment
+                                        const nonOverlappingSubtitles = existingSubtitles.filter(sub => {
+                                            // Keep subtitles that are completely outside the segment boundaries
+                                            return sub.end <= segment.start || sub.start >= segment.end;
+                                        });
+                                        
+                                        // Merge: existing non-overlapping + new streaming subtitles
+                                        const mergedStreamingSubtitles = [...nonOverlappingSubtitles, ...streamingSubtitles]
+                                            .sort((a, b) => a.start - b.start);
+                                        
+                                        return mergedStreamingSubtitles;
+                                    });
 
-                            // Update the UI with streaming results
-                            setSubtitlesData(mergedStreamingSubtitles);
-
-                            // Update status to show streaming progress
-                            if (isStreaming) {
-                                setStatus({
-                                    message: `Streaming... ${streamingSubtitles.length} subtitles generated for segment`,
-                                    type: 'loading'
-                                });
+                                    // Update status to show streaming progress
+                                    if (isStreaming) {
+                                        setStatus({
+                                            message: `Streaming... ${streamingSubtitles.length} subtitles generated for segment`,
+                                            type: 'loading'
+                                        });
+                                    }
+                                } else {
+                                    // Schedule the update for later
+                                    const delay = MERGE_THROTTLE_MS - timeSinceMerge;
+                                    updateTimer = setTimeout(() => {
+                                        if (pendingUpdate) {
+                                            const { streamingSubtitles: pending, isStreaming: pendingStreaming } = pendingUpdate;
+                                            lastMergeTime = Date.now();
+                                            
+                                            // Check if we should capture state
+                                            if (Date.now() - lastCaptureTime >= CAPTURE_THROTTLE_MS) {
+                                                lastCaptureTime = Date.now();
+                                                window.dispatchEvent(new CustomEvent('capture-before-merge', {
+                                                    detail: {
+                                                        type: 'progressive-merge',
+                                                        source: 'streaming-update',
+                                                        segment: segment
+                                                    }
+                                                }));
+                                            }
+                                            
+                                            // CRITICAL FIX: Merge streaming subtitles with existing timeline
+                                            setSubtitlesData(current => {
+                                                const existingSubtitles = current || [];
+                                                
+                                                // Filter out existing subtitles that overlap with this segment
+                                                const nonOverlappingSubtitles = existingSubtitles.filter(sub => {
+                                                    // Keep subtitles that are completely outside the segment boundaries
+                                                    return sub.end <= segment.start || sub.start >= segment.end;
+                                                });
+                                                
+                                                // Merge: existing non-overlapping + new streaming subtitles
+                                                const mergedStreamingSubtitles = [...nonOverlappingSubtitles, ...pending]
+                                                    .sort((a, b) => a.start - b.start);
+                                                
+                                                return mergedStreamingSubtitles;
+                                            });
+                                            
+                                            // Update status to show streaming progress
+                                            if (pendingStreaming) {
+                                                setStatus({
+                                                    message: `Streaming... ${pending.length} subtitles generated for segment`,
+                                                    type: 'loading'
+                                                });
+                                            }
+                                            
+                                            pendingUpdate = null;
+                                        }
+                                    }, delay);
+                                }
                             }
-                        }
-                    },
+                        };
+                    })(),
                     t
                 );
 
@@ -408,21 +477,64 @@ export const useSubtitles = (t) => {
                     segmentRange: `${segment.start}s - ${segment.end}s`
                 });
 
-                // Capture state before final merging for undo/redo
-                window.dispatchEvent(new CustomEvent('capture-before-merge', {
-                    detail: {
-                        type: 'final-merge',
-                        source: 'streaming-complete',
-                        segment: segment
-                    }
-                }));
+                // CRITICAL FIX: For single segment processing, we need to MERGE with existing subtitles
+                // NOT replace the entire timeline
+                if (segmentSubtitles && segmentSubtitles.length > 0) {
+                    // Get current subtitles from React state (not the stale closure variable)
+                    // Use a callback to get the most up-to-date state value
+                    await new Promise((resolve) => {
+                        setSubtitlesData(current => {
+                            const currentSubtitles = current || [];
+                            
+                            console.log('[DEBUG] Before merge - current subtitles:', {
+                                count: currentSubtitles.length,
+                                beforeSegment: currentSubtitles.filter(s => s.end <= segment.start).length,
+                                inSegment: currentSubtitles.filter(s => s.start < segment.end && s.end > segment.start).length,
+                                afterSegment: currentSubtitles.filter(s => s.start >= segment.end).length,
+                                segment: `${segment.start}s-${segment.end}s`
+                            });
+                            
+                            // Filter out existing subtitles that overlap with this segment
+                            const nonOverlappingSubtitles = currentSubtitles.filter(sub => {
+                                // Keep subtitles that are completely outside the segment boundaries
+                                return sub.end <= segment.start || sub.start >= segment.end;
+                            });
+                            
+                            // Merge: existing non-overlapping + new segment subtitles
+                            const mergedSubtitles = [...nonOverlappingSubtitles, ...segmentSubtitles]
+                                .sort((a, b) => a.start - b.start);
+                            
+                            console.log('[Subtitle Generation] Merging single segment result:', {
+                                existingCount: currentSubtitles.length,
+                                nonOverlappingCount: nonOverlappingSubtitles.length,
+                                segmentCount: segmentSubtitles.length,
+                                finalCount: mergedSubtitles.length,
+                                segmentRange: `${segment.start}s-${segment.end}s`,
+                                removedCount: currentSubtitles.length - nonOverlappingSubtitles.length
+                            });
+                            
+                            // Store for use outside the callback
+                            subtitles = mergedSubtitles;
+                            resolve();
+                            
+                            // Return the merged result to update state
+                            return mergedSubtitles;
+                        });
+                    });
+                } else {
+                    // No new subtitles from segment - get current state
+                    await new Promise((resolve) => {
+                        setSubtitlesData(current => {
+                            subtitles = current;
+                            resolve();
+                            return current; // Don't modify state
+                        });
+                    });
+                }
 
-                // Final merge with existing subtitles
-                subtitles = mergeSegmentSubtitles(currentSubtitles, segmentSubtitles, segment);
-
-                console.log('[Subtitle Generation] Final merge:', {
-                    totalCount: subtitles.length,
-                    mergedSubtitles: subtitles.map(s => `${s.start}-${s.end}: ${s.text.substring(0, 20)}...`)
+                console.log('[Subtitle Generation] Using final streaming result:', {
+                    totalCount: subtitles?.length || 0,
+                    finalSubtitles: subtitles?.map(s => `${s.start}-${s.end}: ${s.text.substring(0, 20)}...`) || []
                 });
             }
             // Check if this is a long media file (video or audio) that needs special processing
@@ -466,9 +578,8 @@ export const useSubtitles = (t) => {
             // For segment processing, the final result is already set during streaming
             // For non-segment processing, trigger save before updating with new results
             if (segment) {
-                // For segment processing, just update the final result
-                // (the save was already triggered before streaming started)
-                setSubtitlesData(subtitles);
+                // For segment processing, the final result is already set via progressive merging
+                // No need to call setSubtitlesData again since subtitles = subtitlesData (current state)
 
                 // Auto-save after streaming completion to preserve the new results
                 if (subtitles && subtitles.length > 0) {

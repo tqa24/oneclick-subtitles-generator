@@ -109,7 +109,7 @@ export const drawTimeline = (
 
   // Draw segment selection overlay
   if (segmentData) {
-    const { selectedSegment, isDraggingSegment, dragStartTime, dragCurrentTime, isProcessing, animationTime } = segmentData;
+    const { selectedSegment, isDraggingSegment, dragStartTime, dragCurrentTime, isProcessing, animationTime, processingRanges } = segmentData;
 
     // Draw selected segment
     if (selectedSegment && !isDraggingSegment) {
@@ -218,6 +218,81 @@ export const drawTimeline = (
           ctx.lineTo(endX, displayHeight);
         }
         ctx.stroke();
+      }
+    }
+
+    // Draw parallel processing ranges if available
+    if (Array.isArray(processingRanges) && processingRanges.length > 1) {
+      // Iterate and draw each processing range
+      for (const range of processingRanges) {
+        const rangeStart = typeof range.start === 'number' ? range.start : 0;
+        const rangeEnd = typeof range.end === 'number' ? range.end : rangeStart;
+        const startX = timeToX(rangeStart, visibleStart, visibleDuration, displayWidth);
+        const endX = timeToX(rangeEnd, visibleStart, visibleDuration, displayWidth);
+
+        if (startX < displayWidth && endX > 0) {
+          // Use a slightly different styling to distinguish from the main selected segment
+          let opacity = 0.12;
+          let borderOpacity = 0.6;
+
+          if (isProcessing && animationTime !== undefined) {
+            const pulse = Math.sin(animationTime * 0.003 + (range.index || 0)) * 0.5 + 0.5;
+            opacity = 0.1 + pulse * 0.2;
+            borderOpacity = 0.4 + pulse * 0.4;
+
+            const segmentWidth = endX - startX;
+            const shimmerWidth = 80;
+            const totalCycleWidth = segmentWidth + shimmerWidth;
+            const shimmerProgress = (animationTime * 0.07) % totalCycleWidth;
+            const shimmerX = shimmerProgress - shimmerWidth / 2;
+
+            const gradient = ctx.createLinearGradient(startX, 0, endX, 0);
+            const shimmerPos = shimmerX / segmentWidth;
+            const shimmerStart = Math.max(0, Math.min(1, shimmerPos - 0.08));
+            const shimmerMid = Math.max(0, Math.min(1, shimmerPos));
+            const shimmerEnd = Math.max(0, Math.min(1, shimmerPos + 0.08));
+
+            if (isDark) {
+              gradient.addColorStop(0, `rgba(99, 170, 255, ${opacity + 0.1})`);
+              gradient.addColorStop(shimmerStart, `rgba(59, 130, 246, ${opacity})`);
+              gradient.addColorStop(shimmerMid, `rgba(99, 170, 255, ${opacity + 0.15})`);
+              gradient.addColorStop(shimmerEnd, `rgba(59, 130, 246, ${opacity})`);
+              gradient.addColorStop(1, `rgba(59, 130, 246, ${opacity})`);
+            } else {
+              const baseOpacity = opacity * 1.2;
+              gradient.addColorStop(0, `rgba(37, 99, 235, ${baseOpacity})`);
+              gradient.addColorStop(shimmerStart, `rgba(37, 99, 235, ${baseOpacity})`);
+              gradient.addColorStop(shimmerMid, `rgba(59, 130, 246, ${baseOpacity + 0.18})`);
+              gradient.addColorStop(shimmerEnd, `rgba(37, 99, 235, ${baseOpacity})`);
+              gradient.addColorStop(1, `rgba(37, 99, 235, ${baseOpacity})`);
+            }
+            ctx.fillStyle = gradient;
+          } else {
+            // Static fill when not processing
+            if (isDark) {
+              ctx.fillStyle = `rgba(59, 130, 246, ${opacity})`;
+            } else {
+              ctx.fillStyle = `rgba(37, 99, 235, ${opacity * 1.2})`;
+            }
+          }
+
+          // Draw full height background
+          ctx.fillRect(Math.max(0, startX), 0, Math.min(displayWidth, endX) - Math.max(0, startX), displayHeight);
+
+          // Draw border
+          if (isDark) {
+            ctx.strokeStyle = `rgba(99, 170, 255, ${borderOpacity})`;
+          } else {
+            ctx.strokeStyle = `rgba(59, 130, 246, ${borderOpacity})`;
+          }
+          ctx.lineWidth = 1;
+          ctx.strokeRect(
+            Math.max(0, startX),
+            0,
+            Math.min(displayWidth, endX) - Math.max(0, startX),
+            displayHeight
+          );
+        }
       }
     }
 

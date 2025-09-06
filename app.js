@@ -27,6 +27,7 @@ const testAudioRoute = require('./server/routes/testAudioRoute');
 const qualityScanRoutes = require('./server/routes/qualityScanRoutes');
 const videoCompatibilityRoutes = require('./server/routes/videoCompatibilityRoutes');
 const downloadOnlyRoutes = require('./server/routes/downloadOnlyRoutes');
+const downloadManagementRoutes = require('./server/routes/downloadManagementRoutes');
 const diagnosticsRoutes = require('./server/routes/diagnostics');
 const { scanModels } = require('./server/utils/scan-models');
 
@@ -321,13 +322,25 @@ app.get('/api/startup-mode', (req, res) => {
 // Endpoint to save localStorage data for server-side use
 app.post('/api/save-local-storage', express.json(), (req, res) => {
   try {
-    const localStorageData = req.body;
+    const incomingData = req.body || {};
+    const localStoragePath = path.join(process.cwd(), 'localStorage.json');
 
+    // Read existing server-side storage if present
+    let existingData = {};
+    try {
+      if (fs.existsSync(localStoragePath)) {
+        const raw = fs.readFileSync(localStoragePath, 'utf-8');
+        existingData = JSON.parse(raw || '{}');
+      }
+    } catch (_) {
+      existingData = {};
+    }
+
+    // Merge: incoming keys override existing; unspecified keys (like background_* models) are preserved
+    const merged = { ...existingData, ...incomingData };
 
     // Save to a file
-    const localStoragePath = path.join(__dirname, 'localStorage.json');
-    fs.writeFileSync(localStoragePath, JSON.stringify(localStorageData, null, 2));
-
+    fs.writeFileSync(localStoragePath, JSON.stringify(merged, null, 2));
 
     res.json({ success: true, message: 'localStorage data saved successfully' });
   } catch (error) {
@@ -348,6 +361,7 @@ app.use('/api', douyinPlaywrightRoutes);
 app.use('/api', allSitesRoutes);
 app.use('/api', qualityScanRoutes);
 app.use('/api', downloadOnlyRoutes);
+app.use('/api/download-management', downloadManagementRoutes);
 app.use('/api/video', videoCompatibilityRoutes);
 app.use('/api/gemini', geminiImageRoutes);
 app.use('/api/narration', narrationRoutes);

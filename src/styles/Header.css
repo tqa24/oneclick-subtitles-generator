@@ -167,76 +167,7 @@
   transform: scale(0.8) !important;
 }
 
-/* Material Design 3 pill-shaped language selector */
-.language-selector {
-  position: relative;
-  overflow: hidden;
-}
-
-.language-selector select {
-  appearance: none;
-  background-color: var(--md-surface-1);
-  border: 1px solid var(--md-outline-variant);
-  border-radius: var(--md-shape-pill);
-  color: var(--md-on-surface);
-  cursor: pointer;
-  font-size: var(--md-label-medium-size);
-  line-height: var(--md-label-medium-height);
-  font-weight: 500; /* Medium weight for consistency */
-  /* Font family inherited from global styles */
-  padding: 8px 32px 8px 16px;
-  transition: background-color var(--md-duration-medium2) var(--md-easing-standard),
-              color var(--md-duration-medium2) var(--md-easing-standard),
-              border-color var(--md-duration-medium2) var(--md-easing-standard),
-              transform var(--md-duration-medium2) var(--md-easing-emphasized);
-  height: 40px; /* Fixed height for consistency */
-  position: relative;
-  z-index: 1; /* Ensure it's above the state layer */
-}
-
-/* State layer for hover effect */
-.language-selector::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: transparent;
-  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
-  pointer-events: none;
-  border-radius: var(--md-shape-pill);
-  z-index: 0;
-}
-
-.language-selector:hover::before {
-  background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
-}
-
-/* Material Design 3 dropdown arrow */
-.language-selector::after {
-  content: '';
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 5px solid var(--md-on-surface);
-  pointer-events: none;
-  transition: transform var(--md-duration-medium2) var(--md-easing-standard);
-}
-
-/* State layer for hover effect */
-.language-selector select:hover {
-  border-color: var(--md-primary);
-}
-
-.language-selector:hover::after {
-  transform: translateY(-50%) rotate(180deg);
-}
+/* Language selector styles removed - now using CustomDropdown component */
 
 /* Material Design 3 theme toggle button */
 .theme-toggle {

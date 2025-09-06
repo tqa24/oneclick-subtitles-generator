@@ -383,6 +383,280 @@ input:focus {
   background-color: var(--md-surface-container-highest);
 }
 
+/* Countdown banner styling for autoflow */
+.rules-editor-modal.with-countdown {
+  position: relative;
+  padding-top: 60px;
+}
+
+.countdown-banner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: linear-gradient(135deg, var(--md-primary-container) 0%, var(--md-secondary-container) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-radius: 32px 32px 0 0;
+  overflow: hidden;
+  z-index: 10;
+  animation: slideDown 0.3s ease;
+}
+
+.countdown-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--md-on-primary-container);
+  padding: 0 24px;
+}
+
+.countdown-text {
+  color: var(--md-on-primary-container);
+  opacity: 0.9;
+}
+
+.countdown-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--md-on-primary-container);
+  min-width: 30px;
+  text-align: center;
+  display: inline-block;
+  position: relative;
+  animation: numberPulse 1s infinite;
+  text-shadow: 
+    0 0 5px currentColor,
+    0 0 10px currentColor,
+    0 0 15px currentColor;
+  z-index: 2;
+}
+
+/* Particle system container */
+.countdown-number::before,
+.countdown-number::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 80px;
+  height: 80px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: -1;
+  border-radius: 50%;
+}
+
+/* First particle wave - shooting outward */
+.countdown-number::before {
+  background: 
+    radial-gradient(circle at 45% 15%, #ff6b6b 0.5px, transparent 1px),
+    radial-gradient(circle at 85% 30%, #4ecdc4 0.5px, transparent 1px),
+    radial-gradient(circle at 25% 75%, #45b7d1 0.5px, transparent 1px),
+    radial-gradient(circle at 75% 85%, #f9ca24 0.5px, transparent 1px),
+    radial-gradient(circle at 15% 45%, #6c5ce7 0.5px, transparent 1px),
+    radial-gradient(circle at 65% 25%, #fd79a8 0.5px, transparent 1px),
+    radial-gradient(circle at 35% 65%, #00b894 0.5px, transparent 1px),
+    radial-gradient(circle at 55% 85%, #fdcb6e 0.5px, transparent 1px);
+  animation: particleShoot1 3s infinite ease-out;
+}
+
+/* Second particle wave - different timing and positions */
+.countdown-number::after {
+  background: 
+    radial-gradient(circle at 70% 20%, #e17055 0.5px, transparent 1px),
+    radial-gradient(circle at 20% 40%, #00cec9 0.5px, transparent 1px),
+    radial-gradient(circle at 80% 70%, #0984e3 0.5px, transparent 1px),
+    radial-gradient(circle at 40% 90%, #e84393 0.5px, transparent 1px),
+    radial-gradient(circle at 90% 50%, #a29bfe 0.5px, transparent 1px),
+    radial-gradient(circle at 30% 10%, #fd79a8 0.5px, transparent 1px),
+    radial-gradient(circle at 60% 40%, #00b894 0.5px, transparent 1px),
+    radial-gradient(circle at 10% 80%, #fdcb6e 0.5px, transparent 1px);
+  animation: particleShoot2 3.5s infinite ease-out 1.2s;
+}
+
+.countdown-hint {
+  margin-left: 8px;
+  font-size: 0.85rem;
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.countdown-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.countdown-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--md-primary) 0%, var(--md-secondary) 100%);
+  transition: width 1s linear;
+  box-shadow: 0 0 8px rgba(var(--md-primary-rgb), 0.4);
+}
+
+/* Adjust modal header when countdown is shown */
+.rules-editor-modal.with-countdown .modal-header {
+  border-radius: 0;
+  background-color: var(--md-surface-container-high);
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .countdown-banner {
+  background: linear-gradient(135deg, 
+    rgba(var(--md-primary-rgb), 0.2) 0%, 
+    rgba(var(--md-secondary-rgb), 0.2) 100%);
+}
+
+[data-theme="dark"] .countdown-content,
+[data-theme="dark"] .countdown-text,
+[data-theme="dark"] .countdown-number {
+  color: var(--md-on-surface);
+}
+
+/* Dark theme number pulse animation */
+[data-theme="dark"] .countdown-number {
+  animation: numberPulseDark 1s infinite;
+}
+
+/* Dark theme particles - matching glow colors */
+[data-theme="dark"] .countdown-number::before {
+  background: 
+    radial-gradient(circle at 45% 15%, rgba(96, 125, 255, 0.9) 0.5px, transparent 1px),
+    radial-gradient(circle at 85% 30%, rgba(255, 107, 107, 0.8) 0.5px, transparent 1px),
+    radial-gradient(circle at 25% 75%, rgba(78, 205, 196, 0.9) 0.5px, transparent 1px),
+    radial-gradient(circle at 75% 85%, rgba(69, 183, 209, 0.8) 0.5px, transparent 1px),
+    radial-gradient(circle at 15% 45%, rgba(249, 202, 36, 0.7) 0.5px, transparent 1px),
+    radial-gradient(circle at 65% 25%, rgba(108, 92, 231, 0.8) 0.5px, transparent 1px),
+    radial-gradient(circle at 35% 65%, rgba(253, 121, 168, 0.9) 0.5px, transparent 1px),
+    radial-gradient(circle at 55% 85%, rgba(0, 184, 148, 0.8) 0.5px, transparent 1px);
+}
+
+[data-theme="dark"] .countdown-number::after {
+  background: 
+    radial-gradient(circle at 70% 20%, rgba(253, 203, 110, 0.8) 0.5px, transparent 1px),
+    radial-gradient(circle at 20% 40%, rgba(108, 92, 231, 0.7) 0.5px, transparent 1px),
+    radial-gradient(circle at 80% 70%, rgba(255, 107, 107, 0.9) 0.5px, transparent 1px),
+    radial-gradient(circle at 40% 90%, rgba(78, 205, 196, 0.8) 0.5px, transparent 1px),
+    radial-gradient(circle at 90% 50%, rgba(96, 125, 255, 0.9) 0.5px, transparent 1px),
+    radial-gradient(circle at 30% 10%, rgba(249, 202, 36, 0.8) 0.5px, transparent 1px),
+    radial-gradient(circle at 60% 40%, rgba(253, 121, 168, 0.7) 0.5px, transparent 1px),
+    radial-gradient(circle at 10% 80%, rgba(69, 183, 209, 0.8) 0.5px, transparent 1px);
+}
+
+@keyframes numberPulseDark {
+  0%, 100% {
+    transform: scale(1);
+    text-shadow: 
+      0 0 2px rgba(var(--md-primary-rgb), 0.3),
+      0 0 8px rgba(var(--md-primary-rgb), 0.5),
+      0 0 16px rgba(var(--md-primary-rgb), 0.7),
+      0 0 24px rgba(var(--md-primary-rgb), 0.6),
+      0 0 32px rgba(var(--md-primary-rgb), 0.5),
+      0 0 40px rgba(var(--md-primary-rgb), 0.4),
+      0 0 60px rgba(var(--md-primary-rgb), 0.3);
+    filter: brightness(1) saturate(1.2);
+  }
+  25% {
+    transform: scale(1.05) rotate(0.5deg);
+    filter: brightness(1.1) saturate(1.4) hue-rotate(15deg);
+  }
+  50% {
+    transform: scale(1.15) rotate(-0.5deg);
+    text-shadow: 
+      0 0 3px rgba(var(--md-primary-rgb), 0.5),
+      0 0 12px rgba(var(--md-primary-rgb), 0.8),
+      0 0 24px rgba(var(--md-primary-rgb), 1),
+      0 0 36px rgba(var(--md-primary-rgb), 0.9),
+      0 0 48px rgba(var(--md-primary-rgb), 0.7),
+      0 0 60px rgba(var(--md-primary-rgb), 0.6),
+      0 0 80px rgba(var(--md-primary-rgb), 0.5),
+      0 0 120px rgba(var(--md-primary-rgb), 0.4),
+      0 0 160px rgba(var(--md-primary-rgb), 0.3);
+    filter: brightness(1.4) saturate(1.8) hue-rotate(-15deg);
+  }
+  75% {
+    transform: scale(1.05) rotate(0.3deg);
+    filter: brightness(1.2) saturate(1.5) hue-rotate(8deg);
+  }
+}
+
+[data-theme="dark"] .countdown-progress {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .countdown-progress-bar {
+  background: linear-gradient(90deg, var(--md-primary) 0%, var(--md-tertiary) 100%);
+}
+
+/* Animations */
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+@keyframes numberPulse {
+  0%, 100% {
+    transform: scale(1);
+    text-shadow: 
+      0 0 2px rgba(96, 125, 255, 0.3),
+      0 0 8px rgba(255, 107, 107, 0.4),
+      0 0 16px rgba(78, 205, 196, 0.5),
+      0 0 24px rgba(69, 183, 209, 0.4),
+      0 0 32px rgba(249, 202, 36, 0.4),
+      0 0 40px rgba(108, 92, 231, 0.3),
+      0 0 60px rgba(253, 121, 168, 0.2);
+    filter: brightness(1) saturate(1.2);
+  }
+  25% {
+    transform: scale(1.05) rotate(0.5deg);
+    filter: brightness(1.1) saturate(1.4) hue-rotate(10deg);
+  }
+  50% {
+    transform: scale(1.15) rotate(-0.5deg);
+    text-shadow: 
+      0 0 3px rgba(96, 125, 255, 0.6),
+      0 0 12px rgba(255, 107, 107, 0.8),
+      0 0 24px rgba(78, 205, 196, 1),
+      0 0 36px rgba(69, 183, 209, 0.9),
+      0 0 48px rgba(249, 202, 36, 0.8),
+      0 0 60px rgba(108, 92, 231, 0.7),
+      0 0 80px rgba(253, 121, 168, 0.6),
+      0 0 120px rgba(0, 184, 148, 0.4),
+      0 0 160px rgba(253, 203, 110, 0.3);
+    filter: brightness(1.3) saturate(1.6) hue-rotate(-10deg);
+  }
+  75% {
+    transform: scale(1.05) rotate(0.3deg);
+    filter: brightness(1.1) saturate(1.3) hue-rotate(5deg);
+  }
+}
+
 .save-button {
   background-color: var(--md-primary);
   color: var(--md-on-primary);
@@ -408,6 +682,108 @@ input:focus {
   opacity: 0.6;
   transform: none;
   box-shadow: none;
+}
+
+/* Special styling for Save & Continue button during autoflow */
+.save-button.autoflow-active {
+  background: linear-gradient(135deg, var(--md-primary) 0%, var(--md-secondary) 100%);
+  color: var(--md-on-primary);
+  font-weight: 600;
+  padding: 10px 24px;
+  box-shadow: 0 2px 8px rgba(var(--md-primary-rgb), 0.3);
+  animation: pulseGlow 2s infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.save-button.autoflow-active::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, var(--md-primary), var(--md-secondary), var(--md-tertiary));
+  border-radius: 20px;
+  opacity: 0;
+  z-index: -1;
+  animation: shimmer 3s infinite;
+}
+
+.save-button.autoflow-active:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(var(--md-primary-rgb), 0.4);
+}
+
+/* Dark theme adjustments for autoflow button */
+[data-theme="dark"] .save-button.autoflow-active {
+  background: linear-gradient(135deg, var(--md-primary) 0%, var(--md-tertiary) 100%);
+  box-shadow: 0 2px 12px rgba(var(--md-primary-rgb), 0.5);
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(var(--md-primary-rgb), 0.3);
+  }
+  50% {
+    box-shadow: 0 2px 16px rgba(var(--md-primary-rgb), 0.5);
+  }
+}
+
+@keyframes shimmer {
+  0%, 100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Particle shooting animations */
+@keyframes particleShoot1 {
+  0% {
+    transform: translate(-50%, -50%) scale(0.3);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 1;
+  }
+  40% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.8;
+  }
+  70% {
+    transform: translate(-50%, -50%) scale(1.8);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.5);
+    opacity: 0;
+  }
+}
+
+@keyframes particleShoot2 {
+  0% {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(-50%, -50%) scale(0.6);
+    opacity: 1;
+  }
+  45% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.9;
+  }
+  75% {
+    transform: translate(-50%, -50%) scale(1.6);
+    opacity: 0.2;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.2);
+    opacity: 0;
+  }
 }
 
 /* Animations */

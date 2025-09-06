@@ -105,6 +105,70 @@ async function getOrCreateBundle(entryPoint: string): Promise<string> {
   return bundleResult;
 }
 
+// Lightweight ffprobe-based video info probe to avoid legacy deps
+async function probeVideoInfo(filePath: string): Promise<{ width: number; height: number; duration: number; codec: string; fps?: number; }> {
+  return new Promise((resolve, reject) => {
+    try {
+      const { spawn } = require('child_process');
+      const { getFfprobePath } = require('../../../server/services/shared/ffmpegUtils');
+      const ffprobePath: string = getFfprobePath();
+
+      const args = [
+        '-v', 'error',
+        '-print_format', 'json',
+        '-show_streams',
+        '-show_format',
+        filePath
+      ];
+
+      const proc = spawn(ffprobePath, args);
+      let stdout = '';
+      let stderr = '';
+
+      proc.stdout.on('data', (d: Buffer) => { stdout += d.toString(); });
+      proc.stderr.on('data', (d: Buffer) => { stderr += d.toString(); });
+
+      proc.on('close', (code: number) => {
+        if (code !== 0) {
+          return reject(new Error(`ffprobe exited with code ${code}: ${stderr}`));
+        }
+        try {
+          const meta = JSON.parse(stdout);
+          const videoStream = (meta.streams || []).find((s: any) => s.codec_type === 'video');
+          const width = videoStream?.width || 1920;
+          const height = videoStream?.height || 1080;
+          const codec = videoStream?.codec_name || 'h264';
+
+          // Duration can be on format or on stream; prefer format
+          const rawDuration = (meta.format && meta.format.duration) || videoStream?.duration || '0';
+          const duration = Math.max(0, parseFloat(rawDuration)) || 0;
+
+          // FPS if available
+          let fps: number | undefined;
+          const rFrameRate: string | undefined = videoStream?.r_frame_rate;
+          if (rFrameRate && rFrameRate.includes('/')) {
+            const [num, den] = rFrameRate.split('/').map((v: string) => parseFloat(v));
+            if (num && den) fps = num / den;
+          }
+
+          resolve({ width, height, duration, codec, fps });
+        } catch (e) {
+          reject(e);
+        }
+      });
+
+      // Safety timeout
+      setTimeout(() => {
+        try { proc.kill(); } catch {}
+        reject(new Error('ffprobe timeout'));
+      }, 10000);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
+
 // Ensure directories exist
 const uploadsDir = path.join(__dirname, '../uploads');
 const outputDir = path.join(__dirname, '../output');
@@ -322,6 +386,9 @@ function verifyServerAssets(
 
 // Render video endpoint
 app.post('/render', async (req, res) => {
+  // Store original console.log at the render handler scope
+  let originalConsoleLog = console.log;
+  
   // Generate unique render ID
   const renderId = `render_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
   console.log('=== NEW RENDER STARTED ===');
@@ -395,78 +462,56 @@ app.post('/render', async (req, res) => {
     // Store the final audio/video file path (may be converted for compatibility)
     let finalAudioFile = audioFile;
 
-    // If we have a video file, get its actual dimensions to preserve aspect ratio
+    // If we have a video file, get its actual dimensions and duration via ffprobe
     if (isVideoFile && audioFile) {
       try {
-        // Legacy video utilities are deprecated - using fallback values
-        // const { getVideoInfo, ensureVideoCompatibility } = require('../../../server/services/videoProcessing/durationUtils');
-
         // Check if the video file exists in the video-renderer server's uploads directory
         const localVideoPath = path.join(__dirname, '../uploads', audioFile);
-
         console.log(`[RENDER] Looking for video file at: ${localVideoPath}`);
 
-        // Check if the file exists
         const fs = require('fs');
         if (!fs.existsSync(localVideoPath)) {
           throw new Error(`Video file not found: ${localVideoPath}`);
         }
 
         console.log(`[RENDER] Found video file: ${localVideoPath}`);
-        console.log(`[RENDER] Processing video compatibility and getting info...`);
 
-        // Legacy video compatibility checking is deprecated - using original file
-        const compatibleVideoPath = localVideoPath;
+        // Probe with ffprobe (fast, no conversion)
+        const info = await probeVideoInfo(localVideoPath);
 
-        // Update the final audio file to use the original version
-        finalAudioFile = path.basename(compatibleVideoPath);
-        console.log(`[RENDER] Using original video file: ${finalAudioFile}`);
+        // Use original file as-is
+        finalAudioFile = path.basename(localVideoPath);
+        console.log(`[RENDER] Using video file: ${finalAudioFile}`);
 
-        // Legacy video info is deprecated - using fallback values
-        const videoInfo = { width: 1920, height: 1080, duration: 0, codec: 'h264' };
-
-        const videoWidth = videoInfo.width;
-        const videoHeight = videoInfo.height;
-        const aspectRatio = videoWidth / videoHeight;
+        const videoWidth = info.width;
+        const videoHeight = info.height;
+        const aspectRatio = videoWidth / Math.max(1, videoHeight);
 
         // Update duration to match the actual video duration
-        durationInSeconds = videoInfo.duration;
+        durationInSeconds = info.duration > 0 ? info.duration : durationInSeconds;
+
+        // Use fps from metadata if available, otherwise keep existing fps
+        const effectiveFps = info.fps ? Math.round(info.fps) : fps;
 
         // Recalculate frames with the actual video duration
         const finalDuration = durationInSeconds; // No buffer for video files
-        durationInFrames = Math.max(60, Math.ceil(finalDuration * fps));
+        durationInFrames = Math.max(60, Math.ceil(finalDuration * effectiveFps));
 
-        console.log(`[RENDER] Video info - Duration: ${durationInSeconds}s, Codec: ${videoInfo.codec}`);
-        console.log(`[RENDER] Recalculated frames: ${durationInFrames} at ${fps}fps`);
-        console.log(`[RENDER] Using video file: ${compatibleVideoPath}`);
-
+        console.log(`[RENDER] Video info - Duration: ${durationInSeconds}s, Codec: ${info.codec}, FPS: ${info.fps ?? 'unknown'}`);
+        console.log(`[RENDER] Recalculated frames: ${durationInFrames} at ${effectiveFps}fps`);
         console.log(`[RENDER] Video dimensions: ${videoWidth}x${videoHeight} (aspect ratio: ${aspectRatio.toFixed(2)})`);
 
         // Calculate target dimensions based on resolution while preserving aspect ratio
         let targetHeight: number;
         switch (resolution) {
-          case '360p':
-            targetHeight = 360;
-            break;
-          case '480p':
-            targetHeight = 480;
-            break;
-          case '720p':
-            targetHeight = 720;
-            break;
-          case '1440p':
-            targetHeight = 1440;
-            break;
-          case '4K':
-            targetHeight = 2160;
-            break;
-          case '8K':
-            targetHeight = 4320;
-            break;
+          case '360p': targetHeight = 360; break;
+          case '480p': targetHeight = 480; break;
+          case '720p': targetHeight = 720; break;
+          case '1440p': targetHeight = 1440; break;
+          case '4K': targetHeight = 2160; break;
+          case '8K': targetHeight = 4320; break;
           case '1080p':
-          default:
-            targetHeight = 1080;
-            break;
+          default: targetHeight = 1080; break;
         }
 
         // Calculate width based on aspect ratio
@@ -480,72 +525,30 @@ app.post('/render', async (req, res) => {
         console.log(`[RENDER] Calculated composition dimensions: ${width}x${height} (preserving aspect ratio)`);
 
       } catch (error) {
-        console.warn(`[RENDER] Could not get video dimensions, falling back to default 16:9: ${error instanceof Error ? error.message : String(error)}`);
+        console.warn(`[RENDER] Could not probe video info, falling back to default 16:9: ${error instanceof Error ? error.message : String(error)}`);
         // Fall back to default 16:9 dimensions
         switch (resolution) {
-          case '360p':
-            width = 640;
-            height = 360;
-            break;
-          case '480p':
-            width = 854;
-            height = 480;
-            break;
-          case '720p':
-            width = 1280;
-            height = 720;
-            break;
-          case '1440p':
-            width = 2560;
-            height = 1440;
-            break;
-          case '4K':
-            width = 3840;
-            height = 2160;
-            break;
-          case '8K':
-            width = 7680;
-            height = 4320;
-            break;
+          case '360p': width = 640; height = 360; break;
+          case '480p': width = 854; height = 480; break;
+          case '720p': width = 1280; height = 720; break;
+          case '1440p': width = 2560; height = 1440; break;
+          case '4K': width = 3840; height = 2160; break;
+          case '8K': width = 7680; height = 4320; break;
           case '1080p':
-          default:
-            width = 1920;
-            height = 1080;
-            break;
+          default: width = 1920; height = 1080; break;
         }
       }
     } else {
       // For audio files, use default 16:9 dimensions
       switch (resolution) {
-        case '360p':
-          width = 640;
-          height = 360;
-          break;
-        case '480p':
-          width = 854;
-          height = 480;
-          break;
-        case '720p':
-          width = 1280;
-          height = 720;
-          break;
-        case '1440p':
-          width = 2560;
-          height = 1440;
-          break;
-        case '4K':
-          width = 3840;
-          height = 2160;
-          break;
-        case '8K':
-          width = 7680;
-          height = 4320;
-          break;
+        case '360p': width = 640; height = 360; break;
+        case '480p': width = 854; height = 480; break;
+        case '720p': width = 1280; height = 720; break;
+        case '1440p': width = 2560; height = 1440; break;
+        case '4K': width = 3840; height = 2160; break;
+        case '8K': width = 7680; height = 4320; break;
         case '1080p':
-        default:
-          width = 1920;
-          height = 1080;
-          break;
+        default: width = 1920; height = 1080; break;
       }
     }
 
@@ -591,9 +594,33 @@ app.post('/render', async (req, res) => {
     console.log('Video resolution:', `${resolution} (${width}x${height})`);
     console.log('Video settings:', `${metadata.videoType}, ${fps}fps, ${resolution}`);
 
+    // Note: originalConsoleLog already declared at render handler scope
+    
+    // IMPORTANT: Intercept console.log BEFORE selectComposition to catch Chrome download progress
+    console.log = (...args: any[]) => {
+      const message = args.join(' ');
+      
+      // Check for Chrome download progress messages from Remotion (both Chrome for Testing and Headless Shell)
+      const chromeDownloadMatch = message.match(/Downloading Chrome (?:for Testing|Headless Shell) - ([\d.]+) Mb\/([\d.]+) Mb/);
+      if (chromeDownloadMatch) {
+        const downloaded = parseFloat(chromeDownloadMatch[1]);
+        const total = parseFloat(chromeDownloadMatch[2]);
+        
+        // Send Chrome download progress to client
+        const activeRenderForChrome = activeRenders.get(renderId);
+        if (activeRenderForChrome && !activeRenderForChrome.response.writableEnded) {
+          activeRenderForChrome.response.write(`data: ${JSON.stringify({ chromeDownload: { downloaded, total } })}\n\n`);
+        }
+      }
+      
+      // Call original console.log
+      originalConsoleLog(...args);
+    };
+
     const composition = await selectComposition({
       serveUrl: bundleResult,
       id: compositionId,
+      chromeMode: "chrome-for-testing",  // Use same Chrome mode as renderMedia to avoid double download
       inputProps: {
         audioUrl: audioUrl,
         lyrics,
@@ -623,33 +650,16 @@ app.post('/render', async (req, res) => {
     console.log(`- Resolution: ${width}x${height} (${resolution})`);
     console.log(`- Frame rate: ${fps} fps`);
 
-    // Store original console.log for restoration
-    const originalConsoleLog = console.log;
+    // Note: console.log interception already set up before selectComposition
+    // to catch Chrome download messages
+
+    // Throttle console progress logs to 1% increments across render + retry
+    let lastLoggedPercent = -1;
 
     try {
       // Double-check that temp directories exist right before rendering
       ensureRemotionTempDirs();
 
-      // Intercept console.log to catch Chrome download progress
-      console.log = (...args: any[]) => {
-        const message = args.join(' ');
-
-        // Check for Chrome download progress
-        const chromeDownloadMatch = message.match(/Downloading Chrome Headless Shell - ([\d.]+) Mb\/([\d.]+) Mb/);
-        if (chromeDownloadMatch) {
-          const downloaded = parseFloat(chromeDownloadMatch[1]);
-          const total = parseFloat(chromeDownloadMatch[2]);
-
-          // Use the current response object (which may have been updated on reconnection)
-          const activeRenderForChrome = activeRenders.get(renderId);
-          if (activeRenderForChrome && !activeRenderForChrome.response.writableEnded) {
-            activeRenderForChrome.response.write(`data: ${JSON.stringify({ chromeDownload: { downloaded, total } })}\n\n`);
-          }
-        }
-
-        // Call original console.log
-        originalConsoleLog(...args);
-      };
 
       await renderMedia({
         composition,
@@ -697,24 +707,25 @@ app.post('/render', async (req, res) => {
         puppeteerInstance: undefined, // Let Remotion manage browser instances efficiently
         cancelSignal,
         onProgress: ({ renderedFrames, encodedFrames }) => {
-          console.log(`Progress: ${renderedFrames}/${durationInFrames} frames`);
           const progress = renderedFrames / durationInFrames;
+          const percent = Math.floor(progress * 100);
+          if (percent > lastLoggedPercent) {
+            lastLoggedPercent = percent;
+            console.log(`Progress: ${percent}% (${renderedFrames}/${durationInFrames})`);
+          }
 
           // Update progress in activeRenders
           const activeRender = activeRenders.get(renderId);
           if (activeRender) {
             activeRender.progress = progress;
 
-            // Determine the current phase based on progress
+            // Determine phase: show 'encoding' only after frames are fully rendered
             let phase = 'rendering';
             let phaseDescription = 'Rendering video frames';
 
-            if (encodedFrames !== undefined && renderedFrames > 0) {
-              const encodingRatio = encodedFrames / renderedFrames;
-              if (encodingRatio < 0.8 && progress > 0.8) {
-                phase = 'encoding';
-                phaseDescription = 'Encoding and stitching frames';
-              }
+            if (renderedFrames >= durationInFrames) {
+              phase = 'encoding';
+              phaseDescription = 'Encoding and stitching frames';
             }
 
             // Use the current response object (which may have been updated on reconnection)
@@ -797,24 +808,25 @@ app.post('/render', async (req, res) => {
               puppeteerInstance: undefined, // Let Remotion manage browser instances efficiently
               cancelSignal,
               onProgress: ({ renderedFrames, encodedFrames }) => {
-                console.log(`Retry Progress: ${renderedFrames}/${durationInFrames} frames`);
                 const progress = renderedFrames / durationInFrames;
+                const percent = Math.floor(progress * 100);
+                if (percent > lastLoggedPercent) {
+                  lastLoggedPercent = percent;
+                  console.log(`Retry Progress: ${percent}% (${renderedFrames}/${durationInFrames})`);
+                }
 
                 // Update progress in activeRenders
                 const activeRender = activeRenders.get(renderId);
                 if (activeRender) {
                   activeRender.progress = progress;
 
-                  // Determine the current phase based on progress
+                  // Determine phase: show 'encoding' only after frames are fully rendered
                   let phase = 'rendering';
                   let phaseDescription = 'Rendering video frames';
 
-                  if (encodedFrames !== undefined && renderedFrames > 0) {
-                    const encodingRatio = encodedFrames / renderedFrames;
-                    if (encodingRatio < 0.8 && progress > 0.8) {
-                      phase = 'encoding';
-                      phaseDescription = 'Encoding and stitching frames';
-                    }
+                  if (renderedFrames >= durationInFrames) {
+                    phase = 'encoding';
+                    phaseDescription = 'Encoding and stitching frames';
                   }
 
                   // Use the current response object (which may have been updated on reconnection)
@@ -902,6 +914,9 @@ app.post('/render', async (req, res) => {
     setTimeout(() => {
       activeRenders.delete(renderId);
     }, 300000); // Keep for 5 minutes
+  } finally {
+    // IMPORTANT: Restore original console.log to prevent affecting other renders
+    console.log = originalConsoleLog;
   }
 });
 

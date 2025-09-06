@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { FiVideo, FiMusic, FiDownload, FiInfo } from 'react-icons/fi';
 import CloseButton from './common/CloseButton';
 import '../styles/DownloadOnlyModal.css';
 import { scanVideoQualities } from '../utils/qualityScanner';
-import progressWebSocketClient from '../utils/progressWebSocketClient';
+
 import { cancelDownloadOnly } from '../utils/downloadOnlyUtils';
+import LoadingIndicator from './common/LoadingIndicator';
+import WavyProgressIndicator from './common/WavyProgressIndicator';
 
 // Global singleton to prevent multiple download modals
 let activeDownloadModal = null;
@@ -22,6 +24,8 @@ const DownloadOnlyModal = ({
   const [isScanning, setIsScanning] = useState(false);
   const [availableQualities, setAvailableQualities] = useState([]);
   const [isDownloading, setIsDownloading] = useState(false);
+  const pollingIntervalRef = useRef(null);
+
   const [downloadProgress, setDownloadProgress] = useState(0);
   // eslint-disable-next-line no-unused-vars
   const [downloadVideoId, setDownloadVideoId] = useState(null);
@@ -30,6 +34,21 @@ const DownloadOnlyModal = ({
   const [useCookiesEnabled, setUseCookiesEnabled] = useState(
     localStorage.getItem('use_cookies_for_download') === 'true'
   );
+
+  // Ref for WavyProgressIndicator animations
+  const wavyProgressRef = useRef(null);
+
+  // Detect current theme (light/dark)
+  const isDarkTheme = (typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark');
+
+  // Handle entrance/disappear animations for WavyProgressIndicator
+  useEffect(() => {
+    if (isDownloading && wavyProgressRef.current) {
+      wavyProgressRef.current.startEntranceAnimation();
+    } else if (!isDownloading && wavyProgressRef.current) {
+      wavyProgressRef.current.startDisappearanceAnimation();
+    }
+  }, [isDownloading]);
 
   // Prevent multiple modal instances
   useEffect(() => {
@@ -106,7 +125,7 @@ const DownloadOnlyModal = ({
     try {
       const qualities = await scanVideoQualities(videoInfo.url);
       setAvailableQualities(qualities);
-      
+
       // Auto-select 360p if available, otherwise select the first quality
       const preferred360p = qualities.find(q => q.quality === '360p');
       if (preferred360p) {
@@ -164,6 +183,12 @@ const DownloadOnlyModal = ({
   };
 
   const pollDownloadProgress = (videoId) => {
+    // Clear any existing polling before starting a new one
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+
     const interval = setInterval(async () => {
       try {
         const response = await fetch(`http://localhost:3031/api/download-only-progress/${videoId}`);
@@ -172,10 +197,11 @@ const DownloadOnlyModal = ({
         if (data.success) {
           setDownloadProgress(data.progress || 0);
 
-          if (data.status === 'completed' || data.status === 'error') {
+          if (['completed', 'error', 'cancelled'].includes(data.status)) {
             clearInterval(interval);
+            pollingIntervalRef.current = null;
             setIsDownloading(false);
-            
+
             if (data.status === 'completed') {
               // Trigger download using the download endpoint
               const downloadUrl = `http://localhost:3031/api/download-only-file/${videoId}`;
@@ -185,18 +211,28 @@ const DownloadOnlyModal = ({
               document.body.appendChild(a);
               a.click();
               document.body.removeChild(a);
-              onClose();
             }
+
+            // Close modal on any terminal state
+            onClose();
           }
         }
       } catch (error) {
         console.error('Error polling download progress:', error);
       }
     }, 1000);
+
+    // Save interval ref so we can clear on cancel/unmount
+    pollingIntervalRef.current = interval;
   };
 
   const handleClose = () => {
     if (!isDownloading) {
+      // Clear any polling if present
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
       onClose();
     }
   };
@@ -204,6 +240,12 @@ const DownloadOnlyModal = ({
   const handleCancel = async () => {
     if (isDownloading && downloadVideoId) {
       console.log('[DownloadOnlyModal] Cancelling download:', downloadVideoId);
+
+      // Clear polling interval immediately
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
 
       // Cancel the download on the server
       const success = await cancelDownloadOnly(downloadVideoId);
@@ -226,6 +268,16 @@ const DownloadOnlyModal = ({
     if (selectedType === 'video') return selectedQuality !== null;
     return false;
   };
+
+  // Clear any interval when component unmounts
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, []);
 
   if (!isOpen) return null;
 
@@ -370,11 +422,38 @@ const DownloadOnlyModal = ({
             onClick={handleDownload}
             disabled={!canDownload() || isDownloading}
           >
-            <FiDownload size={16} />
-            {isDownloading ?
-              `${t('download.downloadOnly.downloading', 'Downloading...')} ${downloadProgress}%` :
-              t('download.downloadOnly.download', 'Download')
-            }
+            {isDownloading ? (
+              <span className="processing-text-container">
+                <LoadingIndicator
+                  theme={isDarkTheme ? 'light' : 'dark'}
+                  showContainer={false}
+                  size={16}
+                  className="buttons-processing-loading"
+                  color={isDarkTheme ? '#324574' : '#FFFFFF'}
+                />
+                <div className="processing-wavy" style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+                  <WavyProgressIndicator
+                    ref={wavyProgressRef}
+                    progress={Math.max(0, Math.min(1, (downloadProgress || 0) / 100))}
+                    animate={true}
+                    showStopIndicator={true}
+                    waveSpeed={1.2}
+                    width={140}
+                    autoAnimateEntrance={false}
+                    color={isDarkTheme ? '#FFFFFF' : '#FFFFFF'}
+                    trackColor={isDarkTheme ? '#404659' : 'rgba(255,255,255,0.35)'}
+                  />
+                  <span className="processing-text" style={{ flexShrink: 0, whiteSpace: 'nowrap', marginLeft: '8px' }}>
+                    {t('download.downloadOnly.downloading', 'Downloading...')}
+                  </span>
+                </div>
+              </span>
+            ) : (
+              <>
+                <FiDownload size={16} />
+                {t('download.downloadOnly.download', 'Download')}
+              </>
+            )}
           </button>
         </div>
       </div>

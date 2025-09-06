@@ -58,9 +58,9 @@ export const isThinkingSupported = (modelId) => {
  */
 export const getDefaultThinkingBudget = (modelId) => {
   const defaults = {
-    'gemini-2.5-pro': -1, // Dynamic thinking (model decides when and how much to think)
-    'gemini-2.5-flash': -1, // Dynamic thinking (model decides when and how much to think)
-    'gemini-2.5-flash-lite': 0 // Model does not think by default
+    'gemini-2.5-pro': 128, // Custom thinking with 128 tokens
+    'gemini-2.5-flash': 0, // Thinking disabled by default
+    'gemini-2.5-flash-lite': 0 // Thinking disabled by default
   };
 
   return defaults[modelId] || null;

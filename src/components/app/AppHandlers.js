@@ -580,6 +580,9 @@ export const useAppHandlers = (appState) => {
         fps: options.fps,
         mediaResolution: options.mediaResolution,
         model: options.model,
+        maxDurationPerRequest: options.maxDurationPerRequest,
+        autoSplitSubtitles: options.autoSplitSubtitles,
+        maxWordsPerSubtitle: options.maxWordsPerSubtitle,
       };
 
       // Add custom prompt if provided
@@ -597,8 +600,22 @@ export const useAppHandlers = (appState) => {
         subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
       }
 
-      // Start processing with the selected segment and options
+      // Before starting, if parallel requested, inform UI of processing ranges
       try {
+        try {
+          if (options.maxDurationPerRequest && options.segment) {
+            const { splitSegmentForParallelProcessing } = await import('../../utils/parallelProcessingUtils');
+            const subSegments = splitSegmentForParallelProcessing(options.segment, options.maxDurationPerRequest);
+            if (subSegments && subSegments.length > 1) {
+              window.dispatchEvent(new CustomEvent('processing-ranges', {
+                detail: { ranges: subSegments }
+              }));
+            }
+          }
+        } catch (e) {
+          console.warn('[ProcessWithOptions] Could not compute processing ranges:', e);
+        }
+
         await generateSubtitles(
           uploadedFileData,
           "file-upload",
@@ -614,6 +631,10 @@ export const useAppHandlers = (appState) => {
 
         // Clear processing state when done
         setIsProcessingSegment(false);
+        // Clear processing ranges overlay
+        try {
+          window.dispatchEvent(new CustomEvent('processing-ranges', { detail: { ranges: [] } }));
+        } catch {}
         console.log(
           "[ProcessWithOptions] Processing complete, animation should stop"
         );

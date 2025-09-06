@@ -21,5 +21,11 @@
   "notesDescription": "Add any other notes for consistent transcription",
   "notePlaceholder": "Additional note...",
   "addNote": "+ Add Note",
-  "currentPrompt": "Current Prompt Preset"
+  "currentPrompt": "Current Prompt Preset",
+  "autoSaveCountdown": "Auto-saving in",
+  "seconds": "seconds",
+  "clickToCancel": "(click anywhere to cancel)",
+  "waitingForAction": "Waiting for your action",
+  "clickToEdit": "(click to start editing)",
+  "saveContinue": "Save & Continue"
 }

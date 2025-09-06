@@ -14,9 +14,11 @@ export const formatTime = (timeInSeconds, format = 'seconds') => {
   }
 
   if (format === 'seconds') {
-    // Format as seconds with 2 decimal places for lyric items
-    // but without decimals for timeline display (cleaner look)
-    return timeInSeconds.toFixed(2) + 's';
+    // Format as seconds, removing redundant .00 for whole numbers
+    const formatted = timeInSeconds.toFixed(2);
+    // Remove .00 if it's a whole number, but keep other decimals
+    const cleanFormatted = formatted.replace(/\.00$/, '');
+    return cleanFormatted + 's';
   } else if (format === 'hms') {
     // Format as HH:MM:SS without milliseconds for cleaner look
     const hours = Math.floor(timeInSeconds / 3600);
@@ -45,7 +47,10 @@ export const formatTime = (timeInSeconds, format = 'seconds') => {
   }
 
   // Default fallback
-  return timeInSeconds.toFixed(2) + 's';
+  const formatted = timeInSeconds.toFixed(2);
+  // Remove .00 if it's a whole number, but keep other decimals
+  const cleanFormatted = formatted.replace(/\.00$/, '');
+  return cleanFormatted + 's';
 };
 
 /**

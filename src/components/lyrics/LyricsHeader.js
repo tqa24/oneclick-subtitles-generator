@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import SubtitleSplitModal from './SubtitleSplitModal';
 
@@ -19,10 +19,90 @@ const LyricsHeader = ({
   autoScrollEnabled,
   setAutoScrollEnabled,
   lyrics,
-  onSplitSubtitles
+  onSplitSubtitles,
+  selectedRange = null
 }) => {
   const { t } = useTranslation();
   const [showSplitModal, setShowSplitModal] = useState(false);
+  
+  // Check if there are subtitles in the selected range
+  const hasSubtitlesInRange = () => {
+    if (!selectedRange || !lyrics || lyrics.length === 0) return false;
+    // Check if any subtitle is fully contained within the selected range
+    return lyrics.some(lyric => 
+      lyric.start >= selectedRange.start && 
+      lyric.end <= selectedRange.end
+    );
+  };
+  
+  const canSplitSubtitles = selectedRange && hasSubtitlesInRange();
+
+  // Global keyboard shortcuts for editor actions
+  useEffect(() => {
+    const shouldIgnore = (e) => {
+      const el = document.activeElement;
+      if (!el) return false;
+      const tag = el.tagName;
+      const editable = el.isContentEditable;
+      return editable || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+    };
+
+    const onKeyDown = (e) => {
+      if (!allowEditing) return;
+      if (shouldIgnore(e)) return;
+
+      // Normalize key
+      const key = e.key.toLowerCase();
+      const isCtrl = e.ctrlKey || e.metaKey; // support Cmd on macOS
+
+      // Undo: Ctrl+Z
+      if (isCtrl && key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        if (canUndo && typeof onUndo === 'function') onUndo();
+        return;
+      }
+
+      // Redo: Ctrl+Shift+Z or Ctrl+Y
+      if ((isCtrl && key === 'y') || (isCtrl && key === 'z' && e.shiftKey)) {
+        e.preventDefault();
+        if (canRedo && typeof onRedo === 'function') onRedo();
+        return;
+      }
+
+      // Save: Ctrl+S
+      if (isCtrl && key === 's') {
+        e.preventDefault();
+        if (typeof onSave === 'function') onSave();
+        return;
+      }
+
+      // Open Split modal: Ctrl+Shift+X (only if range is selected)
+      if (isCtrl && e.shiftKey && key === 'x') {
+        e.preventDefault();
+        if (canSplitSubtitles) {
+          setShowSplitModal(true);
+        }
+        return;
+      }
+
+      // Jump to checkpoint: Ctrl+J
+      if (isCtrl && key === 'j') {
+        e.preventDefault();
+        if (canJumpToCheckpoint && typeof onJumpToCheckpoint === 'function') onJumpToCheckpoint();
+        return;
+      }
+
+      // Toggle sticky timings: Ctrl+Shift+T
+      if (isCtrl && e.shiftKey && key === 't') {
+        e.preventDefault();
+        if (typeof setIsSticky === 'function') setIsSticky(!isSticky);
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [allowEditing, canUndo, canRedo, canJumpToCheckpoint, onUndo, onRedo, onSave, onJumpToCheckpoint, setIsSticky, isSticky, canSplitSubtitles]);
 
   return (
     <div className="combined-controls">
@@ -53,7 +133,7 @@ const LyricsHeader = ({
           <div
             className={`sticky-toggle ${isSticky ? 'active' : ''}`}
             onClick={() => setIsSticky(!isSticky)}
-            title={t('lyrics.stickyTimingsToggle', isSticky ? 'Disable sticky timings' : 'Enable sticky timings')}
+            title={t('lyrics.stickyTimingsToggleWithShortcut', isSticky ? 'Disable sticky timings (Ctrl+Shift+T)' : 'Enable sticky timings (Ctrl+Shift+T)')}
           >
             {isSticky ? (
               <svg className="sticky-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2.5" fill="none">
@@ -78,7 +158,15 @@ const LyricsHeader = ({
             <button
               className="split-sub-btn"
               onClick={() => setShowSplitModal(true)}
-              title="Chia sub"
+              disabled={!canSplitSubtitles}
+              title={canSplitSubtitles 
+                ? t('lyrics.splitWithShortcut', 'Split subtitles in selected range (Ctrl+Shift+X)')
+                : t('lyrics.splitDisabled', 'Select a range with subtitles to split')
+              }
+              style={{
+                opacity: canSplitSubtitles ? 1 : 0.4,
+                cursor: canSplitSubtitles ? 'pointer' : 'not-allowed'
+              }}
             >
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
                 {/* Left rectangle (before cut) */}
@@ -100,7 +188,7 @@ const LyricsHeader = ({
               className="lyrics-save-btn"
               onClick={onSave}
               disabled={isAtSavedState}
-              title={isAtSavedState ? t('common.saveDisabled', 'No changes to save') : t('common.save', 'Save progress')}
+              title={isAtSavedState ? t('common.saveDisabled', 'No changes to save') : t('common.saveWithShortcut', 'Save (Ctrl+S)')}
             >
               <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
@@ -113,7 +201,7 @@ const LyricsHeader = ({
               className="reset-btn"
               onClick={onReset}
               disabled={isAtSavedState}
-              title={t('common.reset', 'Reset to saved state')}
+              title={t('common.resetWithShortcut', 'Reset to saved state')}
             >
               <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" preserveAspectRatio="xMidYMid meet">
                 <path d="M23 4v6h-6"/>
@@ -132,7 +220,7 @@ const LyricsHeader = ({
               className="checkpoint-btn"
               onClick={onJumpToCheckpoint}
               disabled={!canJumpToCheckpoint}
-              title={t('common.jumpToCheckpoint', 'Jump to last checkpoint (undo multiple steps)')}
+              title={t('common.jumpToCheckpointWithShortcut', 'Jump to last checkpoint (Ctrl+J)')}
             >
               {/* Flag with curved arrow icon - active */}
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
@@ -154,7 +242,7 @@ const LyricsHeader = ({
               className="undo-btn"
               onClick={onUndo}
               disabled={!canUndo}
-              title={t('common.undo', 'Undo')}
+              title={t('common.undoWithShortcut', 'Undo (Ctrl+Z)')}
             >
               <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
                 <path d="M3 10h10c4.42 0 8 3.58 8 8v2M3 10l6-6M3 10l6 6"/>
@@ -165,7 +253,7 @@ const LyricsHeader = ({
               className="redo-btn"
               onClick={onRedo}
               disabled={!canRedo}
-              title={t('common.redo', 'Redo')}
+              title={t('common.redoWithShortcut', 'Redo (Ctrl+Y or Ctrl+Shift+Z)')}
             >
               <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
                 <path d="M21 10h-10c-4.42 0-8 3.58-8 8v2M21 10l-6-6M21 10l-6 6"/>
@@ -181,6 +269,7 @@ const LyricsHeader = ({
         onClose={() => setShowSplitModal(false)}
         lyrics={lyrics}
         onSplitSubtitles={onSplitSubtitles}
+        selectedRange={selectedRange}
       />
     </div>
   );

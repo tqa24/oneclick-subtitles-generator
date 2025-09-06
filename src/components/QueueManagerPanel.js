@@ -292,17 +292,27 @@ const QueueManagerPanel = ({
                       waveSpeed={1.2}
                       height={12}
                       autoAnimateEntrance={true}
-                      color={theme === 'dark'
-                        ? (item.status === 'processing' ? '#4CAF50' : '#FFC107')
-                        : (item.status === 'processing' ? '#2E7D32' : '#F57C00')
+                      color={
+                        // Use special blue color for Chrome download phase
+                        item.phase === 'chrome-download' 
+                          ? (theme === 'dark' ? '#2196F3' : '#1976D2')
+                          : (theme === 'dark'
+                              ? (item.status === 'processing' ? '#4CAF50' : '#FFC107')
+                              : (item.status === 'processing' ? '#2E7D32' : '#F57C00')
+                            )
                       }
                       trackColor={theme === 'dark'
                         ? 'rgba(255, 255, 255, 0.15)'
                         : 'rgba(0, 0, 0, 0.15)'
                       }
-                      stopIndicatorColor={theme === 'dark'
-                        ? (item.status === 'processing' ? '#4CAF50' : '#FFC107')
-                        : (item.status === 'processing' ? '#2E7D32' : '#F57C00')
+                      stopIndicatorColor={
+                        // Use same special blue color for Chrome download phase
+                        item.phase === 'chrome-download' 
+                          ? (theme === 'dark' ? '#2196F3' : '#1976D2')
+                          : (theme === 'dark'
+                              ? (item.status === 'processing' ? '#4CAF50' : '#FFC107')
+                              : (item.status === 'processing' ? '#2E7D32' : '#F57C00')
+                            )
                       }
                       style={{
                         width: '100%'

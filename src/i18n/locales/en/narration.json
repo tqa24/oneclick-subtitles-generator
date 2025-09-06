@@ -256,5 +256,9 @@
   "gttsGeneratingProgress": "Generating {{current}} of {{total}} narrations with gTTS...",
 
   "concurrentClients": "Ultra Fast Mode",
-  "concurrentClientsHelp": "Open multiple parallel conversations with Gemini simultaneously, WARNING: may quickly exhaust quota"
+  "concurrentClientsHelp": "Open multiple parallel conversations with Gemini simultaneously, WARNING: may quickly exhaust quota",
+
+  "msVibeVoiceMethod": "MS VibeVoice",
+  "geminiNativeDialogMethod": "Gemini Native Dialog",
+  "comingSoon": "coming soon"
 }

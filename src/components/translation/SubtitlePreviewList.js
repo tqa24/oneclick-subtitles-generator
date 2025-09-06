@@ -1,6 +1,7 @@
 import React, { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { VariableSizeList as List } from 'react-window';
+import LoadingIndicator from '../common/LoadingIndicator';
 import formatTimeString from './utils/formatTimeString';
 
 /**
@@ -106,28 +107,39 @@ const SubtitleRow = ({ index, style, data }) => {
   }
 
   return (
-    <div style={style} className={`preview-subtitle-row ${isRetrying || isSubtitleRetrying ? 'retrying' : ''}`}>
+    <div 
+      style={style} 
+      className={`preview-subtitle-row ${isRetrying || isSubtitleRetrying ? 'retrying' : ''}`}
+      role="row"
+      aria-label={`${t('translation.subtitle', 'Subtitle')} ${index + 1}`}
+      data-segment-number={currentSegment?.segmentNumber}
+      data-segment-odd={currentSegment?.segmentNumber ? (currentSegment.segmentNumber % 2 === 1).toString() : 'true'}
+      data-is-first-in-segment={isFirstInSegment ? 'true' : 'false'}
+    >
       {/* Segment column - always present for consistent layout */}
-      <div className="preview-segment-sticky">
+      <div className="preview-segment-sticky" role="gridcell">
         {/* Only show segment content for first subtitle in segment */}
         {isFirstInSegment && (
           <div className="segment-content">
             <div className="segment-label">
-              {t('translation.segment', 'Segment')} {currentSegment.segmentNumber}
+              {t('translation.segment', 'Seg')} {currentSegment.segmentNumber}
             </div>
             <button 
               className={`segment-retry-btn ${isRetrying ? 'loading' : ''}`}
               onClick={() => onRetrySegment && onRetrySegment(currentSegment)}
               title={t('translation.retrySegment', 'Retry Segment')}
               disabled={isRetrying}
+              aria-label={t('translation.retrySegment', 'Retry Segment')}
             >
               {isRetrying ? (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="spinning">
-                  <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-                  <path d="M8 12a4 4 0 0 1 8 0c0 1.1-.4 2.1-1 2.8L12 18"/>
-                </svg>
+                <LoadingIndicator 
+                  size={14}
+                  showContainer={false} 
+                  theme="light"
+                  className="segment-loading"
+                />
               ) : (
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="retry-icon">
                   <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
                   <path d="M21 3v5h-5"/>
                   <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
@@ -145,21 +157,26 @@ const SubtitleRow = ({ index, style, data }) => {
         )}
       </div>
       
-      <div className="preview-number-sticky">
-        <span className="subtitle-number">{index + 1}</span>
+      <div className="preview-number-sticky" role="gridcell">
+        <span className="subtitle-number" aria-label={`${t('translation.subtitleNumber', 'Subtitle number')} ${index + 1}`}>
+          {index + 1}
+        </span>
         <button 
           className={`subtitle-retry-btn ${isSubtitleRetrying ? 'loading' : ''}`}
           onClick={() => onRetrySubtitle && onRetrySubtitle(index)}
           title={t('translation.retrySubtitle', 'Retry this subtitle')}
           disabled={isSubtitleRetrying}
+          aria-label={t('translation.retrySubtitle', 'Retry this subtitle')}
         >
           {isSubtitleRetrying ? (
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="spinning">
-              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-              <path d="M8 12a4 4 0 0 1 8 0c0 1.1-.4 2.1-1 2.8L12 18"/>
-            </svg>
+            <LoadingIndicator 
+              size={10} 
+              showContainer={false} 
+              theme="light"
+              className="subtitle-loading"
+            />
           ) : (
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="retry-icon">
               <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
               <path d="M21 3v5h-5"/>
               <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
@@ -168,11 +185,11 @@ const SubtitleRow = ({ index, style, data }) => {
           )}
         </button>
       </div>
-      <div className="preview-content">
-        <span className="preview-time">
+      <div className="preview-content" role="gridcell">
+        <span className="preview-time" aria-label={`${t('translation.timeRange', 'Time range')}: ${startTimeDisplay} ${t('common.to', 'to')} ${endTimeDisplay}`}>
           {startTimeDisplay} → {endTimeDisplay}
         </span>
-        <span className="preview-text">
+        <span className="preview-text" aria-label={`${t('translation.subtitleText', 'Subtitle text')}`}>
           {subtitle.text.split('\n').map((line, lineIndex) => (
             <React.Fragment key={lineIndex}>
               {lineIndex > 0 && <br />}
@@ -182,7 +199,12 @@ const SubtitleRow = ({ index, style, data }) => {
         </span>
         {(isRetrying || isSubtitleRetrying) && (
           <div className="retry-overlay">
-            <div className="retry-spinner"></div>
+            <LoadingIndicator 
+              size={20} 
+              showContainer={false} 
+              theme="dark"
+              className="retry-overlay-loading"
+            />
           </div>
         )}
       </div>
@@ -209,6 +231,7 @@ const SubtitlePreviewList = ({
   retryingSegments = new Set(),
   fileId = null
 }) => {
+  const { t } = useTranslation();
   const listRef = useRef(null);
 
   // Calculate segments based on split duration
@@ -256,7 +279,11 @@ const SubtitlePreviewList = ({
   if (!translatedSubtitles || translatedSubtitles.length === 0) return null;
 
   return (
-    <div className="translation-preview-virtualized">
+    <div 
+      className="translation-preview-virtualized"
+      role="grid"
+      aria-label={t('translation.subtitleList', 'Subtitle list')}
+    >
       <List
         ref={listRef}
         className="translation-preview-list"

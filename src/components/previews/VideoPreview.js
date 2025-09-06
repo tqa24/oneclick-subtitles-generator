@@ -342,7 +342,22 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
           if (onVideoUrlReady) onVideoUrlReady(urlToUse);
           return;
         }
-        // Convert server URL to blob to avoid CORS/decoding issues
+        
+        // Check if this is an external URL that will cause CORS issues
+        const isExternalUrl = (urlToUse.startsWith('http://') || urlToUse.startsWith('https://')) && 
+                            !urlToUse.startsWith('http://localhost') && 
+                            !urlToUse.startsWith('http://127.0.0.1');
+        
+        if (isExternalUrl) {
+          // For external URLs, skip blob conversion to avoid CORS errors
+          console.log('[VideoPreview] Skipping blob conversion for external URL to avoid CORS');
+          // Still notify with the original URL for components that can handle it
+          localStorage.setItem('current_file_url', urlToUse);
+          if (onVideoUrlReady) onVideoUrlReady(urlToUse);
+          return;
+        }
+        
+        // Convert server URL to blob to avoid CORS/decoding issues (only for local URLs)
         const resp = await fetch(urlToUse, { cache: 'no-cache', mode: 'cors' });
         if (!resp.ok) throw new Error(`Failed to fetch video for blob: ${resp.status}`);
         const blob = await resp.blob();
@@ -362,6 +377,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
         window.dispatchEvent(new CustomEvent('currentFileUrlChanged', { detail: { url: objectUrl } }));
       } catch (e) {
         // Non-fatal: keep using direct URL; waveform may still work if server sends proper CORS
+        console.log('[VideoPreview] Failed to convert to blob, using direct URL:', e.message);
       }
     })();
 
@@ -620,11 +636,6 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
               // Update fullscreen subtitle if in fullscreen mode
               const container = document.getElementById('fullscreen-subtitle-overlay');
-              console.log('ðŸŽ¬ SUBTITLE - Updating subtitle text:', {
-                text: currentSub.text,
-                containerExists: !!container,
-                isFullscreen
-              });
 
               if (container) {
                 // Clear existing content
@@ -2111,7 +2122,6 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       setTimeout(() => {
                         const actuallyPlaying = !videoRef.current.paused;
                         if (actuallyPlaying !== isPlaying) {
-                          console.log('[VideoPreview] Force syncing UI state after video click:', { actuallyPlaying, uiState: isPlaying });
                           setIsPlaying(actuallyPlaying);
                         }
                       }, 50);

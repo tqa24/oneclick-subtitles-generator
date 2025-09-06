@@ -321,64 +321,93 @@ export const downloadAndPrepareYouTubeVideo = async (
             blob = file;
           }
         } else {
-          // For regular URLs, fetch as normal
-          // Add a timestamp to avoid caching issues
-          const fetchUrl = videoUrl.includes('?')
-            ? `${videoUrl}&t=${Date.now()}`
-            : `${videoUrl}?t=${Date.now()}`;
+          // Check if this is an external URL that might cause CORS issues
+          const isExternalUrl = videoUrl.startsWith('http://') || videoUrl.startsWith('https://') && 
+                              !videoUrl.startsWith('http://localhost') && 
+                              !videoUrl.startsWith('http://127.0.0.1');
+          
+          // For all-sites videos with external URLs, skip direct fetch and go straight to server fallback
+          if (selectedVideo.source === 'all-sites' && isExternalUrl) {
+            console.log('[VideoProcessingHandlers] Skipping direct fetch of external URL to avoid CORS, using server fallback');
+            
+            // Extract the video ID from the URL or use the selectedVideo.id
+            const videoId = selectedVideo.id;
 
-
-
-          try {
-            const response = await fetch(fetchUrl, {
+            // Fetch the video directly from the server - using unified port configuration
+            const serverUrl = 'http://localhost:3031';
+            const serverResponse = await fetch(`${serverUrl}/videos/${videoId}.mp4?t=${Date.now()}`, {
               method: 'GET',
-              cache: 'no-cache' // Ensure we don't get a cached response
+              cache: 'no-cache'
             });
 
-            // Check if the response is ok
-            if (!response.ok) {
-              throw new Error(`Failed to fetch video: ${response.status} ${response.statusText}`);
+            if (!serverResponse.ok) {
+              throw new Error(`Failed to fetch video from server: ${serverResponse.status} ${serverResponse.statusText}`);
             }
 
+            const serverBlob = await serverResponse.blob();
 
-            blob = await response.blob();
+            // Check if the blob has a reasonable size
+            if (serverBlob.size < 100 * 1024) { // Less than 100KB
+              throw new Error(`Downloaded blob is too small (${serverBlob.size} bytes), likely not a valid video`);
+            }
 
-          } catch (error) {
-            console.error('Error fetching video:', error);
+            // Create a File object from the blob
+            const file = new File([serverBlob], `${videoId}.mp4`, { type: 'video/mp4' });
+            window.downloadedVideoFile = file;
+            blob = file;
+          } else {
+            // For local URLs or non-all-sites videos, fetch as normal
+            // Add a timestamp to avoid caching issues
+            const fetchUrl = videoUrl.includes('?')
+              ? `${videoUrl}&t=${Date.now()}`
+              : `${videoUrl}?t=${Date.now()}`;
 
-            // If this is an all-sites video, try to fetch it directly from the server
-            if (selectedVideo.source === 'all-sites') {
-
-
-              // Extract the video ID from the URL or use the selectedVideo.id
-              const videoId = selectedVideo.id;
-
-              // Fetch the video directly from the server - using unified port configuration
-              const serverUrl = 'http://localhost:3031';
-              const retryResponse = await fetch(`${serverUrl}/videos/${videoId}.mp4?t=${Date.now()}`, {
+            try {
+              const response = await fetch(fetchUrl, {
                 method: 'GET',
-                cache: 'no-cache'
+                cache: 'no-cache' // Ensure we don't get a cached response
               });
 
-              if (!retryResponse.ok) {
-                throw new Error(`Failed to fetch video from server: ${retryResponse.status} ${retryResponse.statusText}`);
+              // Check if the response is ok
+              if (!response.ok) {
+                throw new Error(`Failed to fetch video: ${response.status} ${response.statusText}`);
               }
 
+              blob = await response.blob();
 
-              const retryBlob = await retryResponse.blob();
+            } catch (error) {
+              console.error('Error fetching video:', error);
 
+              // If this is an all-sites video, try to fetch it directly from the server
+              if (selectedVideo.source === 'all-sites') {
+                // Extract the video ID from the URL or use the selectedVideo.id
+                const videoId = selectedVideo.id;
 
-              // Check if the blob has a reasonable size
-              if (retryBlob.size < 100 * 1024) { // Less than 100KB
-                throw new Error(`Downloaded blob is too small (${retryBlob.size} bytes), likely not a valid video`);
+                // Fetch the video directly from the server - using unified port configuration
+                const serverUrl = 'http://localhost:3031';
+                const retryResponse = await fetch(`${serverUrl}/videos/${videoId}.mp4?t=${Date.now()}`, {
+                  method: 'GET',
+                  cache: 'no-cache'
+                });
+
+                if (!retryResponse.ok) {
+                  throw new Error(`Failed to fetch video from server: ${retryResponse.status} ${retryResponse.statusText}`);
+                }
+
+                const retryBlob = await retryResponse.blob();
+
+                // Check if the blob has a reasonable size
+                if (retryBlob.size < 100 * 1024) { // Less than 100KB
+                  throw new Error(`Downloaded blob is too small (${retryBlob.size} bytes), likely not a valid video`);
+                }
+
+                // Create a File object from the blob
+                const file = new File([retryBlob], `${videoId}.mp4`, { type: 'video/mp4' });
+                window.downloadedVideoFile = file;
+                blob = file;
+              } else {
+                throw error;
               }
-
-              // Create a File object from the blob
-              const file = new File([retryBlob], `${videoId}.mp4`, { type: 'video/mp4' });
-              window.downloadedVideoFile = file;
-              blob = file;
-            } else {
-              throw error;
             }
           }
         }
@@ -453,7 +482,6 @@ export const downloadAndPrepareYouTubeVideo = async (
         // This is crucial to avoid creating duplicate videos during splitting
         file.isCopiedToServer = true;
         file.serverPath = `/videos/${videoId}.mp4`;
-        console.log('[DOWNLOAD-AND-PREPARE] Marked file as already on server:', file.serverPath);
 
         // Log the file details
 
@@ -494,7 +522,6 @@ export const downloadAndPrepareYouTubeVideo = async (
 
       // Skip segment preparation here - let the main subtitle generation process handle it
       // This prevents duplicate splitting when generateSubtitles() is called later
-      console.log('[DOWNLOAD-AND-PREPARE] Skipping segment preparation to prevent duplicate splitting');
 
       // Update status to show that video is ready
       setStatus({ message: t('output.videoReady', 'Video is ready for processing!'), type: 'success' });
