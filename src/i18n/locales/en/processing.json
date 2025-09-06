@@ -43,7 +43,7 @@
   "maxDurationPerRequest": "Max duration per request",
   "maxDurationPerRequestDesc": "Maximum duration for each Gemini request. Longer segments will be split into parallel requests.",
   "minutesValue": "{{value}} minutes",
-  "parallelRequestsInfo": "Will split into {{count}} parallel requests",
+  "parallelRequestsInfo": "{{count}} parts",
   "autoSplitSubtitles": "Auto-split subtitles",
   "autoSplitHelp": "Automatically split long subtitles into smaller segments for better readability. The splitting happens in real-time during streaming.",
   "enableAutoSplit": "Enable auto-splitting",

@@ -43,7 +43,7 @@
   "maxDurationPerRequest": "요청당 최대 시간",
   "maxDurationPerRequestDesc": "각 Gemini 요청의 최대 시간. 더 긴 구간은 병렬 요청으로 분할됩니다.",
   "minutesValue": "{{value}}분",
-  "parallelRequestsInfo": "{{count}}개의 병렬 요청으로 분할됩니다",
+  "parallelRequestsInfo": "{{count}} 부분",
   "autoSplitSubtitles": "자막 자동 분할",
   "autoSplitHelp": "긴 자막을 더 읽기 쉽도록 작은 세그먼트로 자동으로 분할합니다. 분할은 스트리밍 중에 실시간으로 발생합니다.",
   "enableAutoSplit": "자동 분할 활성화",

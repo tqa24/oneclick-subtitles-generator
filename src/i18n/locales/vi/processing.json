@@ -43,7 +43,7 @@
   "maxDurationPerRequest": "Thời lượng tối đa mỗi yêu cầu",
   "maxDurationPerRequestDesc": "Thời lượng tối đa cho mỗi yêu cầu Gemini. Các phân đoạn dài hơn sẽ được chia thành nhiều yêu cầu song song.",
   "minutesValue": "{{value}} phút",
-  "parallelRequestsInfo": "Sẽ chia thành {{count}} yêu cầu song song",
+  "parallelRequestsInfo": "{{count}} phần",
   "autoSplitSubtitles": "Tự động chia nhỏ phụ đề",
   "autoSplitHelp": "Tự động chia phụ đề dài thành các phân đoạn nhỏ hơn để dễ đọc hơn. Việc chia nhỏ diễn ra theo thời gian thực trong quá trình xử lý.",
   "enableAutoSplit": "Bật tự động chia nhỏ",
