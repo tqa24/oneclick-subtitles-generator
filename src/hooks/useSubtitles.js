@@ -480,32 +480,56 @@ export const useSubtitles = (t) => {
                 // CRITICAL FIX: For single segment processing, we need to MERGE with existing subtitles
                 // NOT replace the entire timeline
                 if (segmentSubtitles && segmentSubtitles.length > 0) {
-                    // Get current subtitles from state
-                    const currentSubtitles = subtitlesData || [];
-                    
-                    // Filter out existing subtitles that overlap with this segment
-                    const nonOverlappingSubtitles = currentSubtitles.filter(sub => {
-                        // Keep subtitles that are completely outside the segment boundaries
-                        return sub.end <= segment.start || sub.start >= segment.end;
+                    // Get current subtitles from React state (not the stale closure variable)
+                    // Use a callback to get the most up-to-date state value
+                    await new Promise((resolve) => {
+                        setSubtitlesData(current => {
+                            const currentSubtitles = current || [];
+                            
+                            console.log('[DEBUG] Before merge - current subtitles:', {
+                                count: currentSubtitles.length,
+                                beforeSegment: currentSubtitles.filter(s => s.end <= segment.start).length,
+                                inSegment: currentSubtitles.filter(s => s.start < segment.end && s.end > segment.start).length,
+                                afterSegment: currentSubtitles.filter(s => s.start >= segment.end).length,
+                                segment: `${segment.start}s-${segment.end}s`
+                            });
+                            
+                            // Filter out existing subtitles that overlap with this segment
+                            const nonOverlappingSubtitles = currentSubtitles.filter(sub => {
+                                // Keep subtitles that are completely outside the segment boundaries
+                                return sub.end <= segment.start || sub.start >= segment.end;
+                            });
+                            
+                            // Merge: existing non-overlapping + new segment subtitles
+                            const mergedSubtitles = [...nonOverlappingSubtitles, ...segmentSubtitles]
+                                .sort((a, b) => a.start - b.start);
+                            
+                            console.log('[Subtitle Generation] Merging single segment result:', {
+                                existingCount: currentSubtitles.length,
+                                nonOverlappingCount: nonOverlappingSubtitles.length,
+                                segmentCount: segmentSubtitles.length,
+                                finalCount: mergedSubtitles.length,
+                                segmentRange: `${segment.start}s-${segment.end}s`,
+                                removedCount: currentSubtitles.length - nonOverlappingSubtitles.length
+                            });
+                            
+                            // Store for use outside the callback
+                            subtitles = mergedSubtitles;
+                            resolve();
+                            
+                            // Return the merged result to update state
+                            return mergedSubtitles;
+                        });
                     });
-                    
-                    // Merge: existing non-overlapping + new segment subtitles
-                    const mergedSubtitles = [...nonOverlappingSubtitles, ...segmentSubtitles]
-                        .sort((a, b) => a.start - b.start);
-                    
-                    console.log('[Subtitle Generation] Merging single segment result:', {
-                        existingCount: currentSubtitles.length,
-                        nonOverlappingCount: nonOverlappingSubtitles.length,
-                        segmentCount: segmentSubtitles.length,
-                        finalCount: mergedSubtitles.length
-                    });
-                    
-                    // Update with merged result
-                    subtitles = mergedSubtitles;
-                    setSubtitlesData(mergedSubtitles);
                 } else {
-                    // No new subtitles from segment
-                    subtitles = subtitlesData;
+                    // No new subtitles from segment - get current state
+                    await new Promise((resolve) => {
+                        setSubtitlesData(current => {
+                            subtitles = current;
+                            resolve();
+                            return current; // Don't modify state
+                        });
+                    });
                 }
 
                 console.log('[Subtitle Generation] Using final streaming result:', {
