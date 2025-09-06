@@ -386,18 +386,18 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                     if (lastValidSubtitleEndTime > 0) {
                       const timeDiff = Math.abs(subtitle.start - lastValidSubtitleEndTime);
                       // Only check for stuck timestamps if they're EXTREMELY close (< 0.1 seconds)
-                      // AND the text repeats many times (5+), not just 3
-                      if (timeDiff < 0.1 && recentTextBlocks.length > 5) {
-                        const lastFewTexts = recentTextBlocks.slice(-5);
+                      // AND the text repeats many times (10+), not just 5
+                      if (timeDiff < 0.1 && recentTextBlocks.length > 10) {
+                        const lastFewTexts = recentTextBlocks.slice(-10);
                         const uniqueTexts = [...new Set(lastFewTexts)];
-                        // Only flag if ALL 5 recent texts are identical AND timestamps barely moved
-                        if (uniqueTexts.length === 1 && lastFewTexts.length === 5 && timeDiff < 0.05) {
+                        // Only flag if ALL 10 recent texts are identical AND timestamps barely moved
+                        if (uniqueTexts.length === 1 && lastFewTexts.length === 10 && timeDiff < 0.05) {
                           // Check if it looks like music/vocal content
                           const hasMusicalPattern = /[\p{L}]{2,}/u.test(uniqueTexts[0]);
                           if (!hasMusicalPattern) {
                             // Only flag non-musical content as hallucination
                             foundHallucination = true;
-                            console.log(`[StreamingService] Detected hallucination: 5+ identical non-musical subtitles at stuck timestamp`);
+                            console.log(`[StreamingService] Detected hallucination: 10+ identical non-musical subtitles at stuck timestamp`);
                             console.log(`[StreamingService] Text: "${uniqueTexts[0]}" at ~${subtitle.start.toFixed(1)}s with time diff ${timeDiff.toFixed(3)}s`);
                             break;
                           } else {
@@ -480,18 +480,46 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                     }
                     
                     // Check for uniform durations (all subtitles have exact same duration)
+                    // NOTE: This check should be careful not to flag legitimate cases
+                    // Some transcription systems might use fixed-duration segments
+                    // IMPORTANT: Skip this check if subtitle is marked as auto-split
                     const duration = subtitle.end - subtitle.start;
-                    if (lastDuration !== null && Math.abs(duration - lastDuration) < 0.01) {
-                      uniformDurationCount++;
-                      if (uniformDurationCount >= 10) {
-                        foundHallucination = true;
-                        console.log(`[StreamingService] Detected hallucination: ${uniformDurationCount + 1} subtitles with identical duration ${duration.toFixed(2)}s`);
-                        break;
+                    
+                    // Skip uniform duration check for auto-split subtitles (they're expected to have similar durations)
+                    if (!subtitle.isSplit) {
+                      // Only check for EXTREMELY uniform durations (less than 0.001s difference)
+                      // and only flag if duration is suspiciously round (like exactly 1.0s, 2.0s, etc.)
+                      if (lastDuration !== null && Math.abs(duration - lastDuration) < 0.001) {
+                        uniformDurationCount++;
+                        
+                        // Debug logging for uniform durations
+                        if (uniformDurationCount === 5) {
+                          console.log(`[StreamingService] Notice: ${uniformDurationCount + 1} subtitles with nearly identical duration ${duration.toFixed(3)}s`);
+                        }
+                        
+                        // Only flag as hallucination if:
+                        // 1. We have 15+ subtitles with identical duration (raised from 10)
+                        // 2. AND the duration is suspiciously round or very short
+                        const isSuspiciousDuration = 
+                          (duration % 1.0 < 0.01 || duration % 1.0 > 0.99) || // Round numbers like 1.0, 2.0
+                          (duration < 0.1); // Very short durations
+                        
+                        if (uniformDurationCount >= 15 && isSuspiciousDuration) {
+                          foundHallucination = true;
+                          console.log(`[StreamingService] Detected hallucination: ${uniformDurationCount + 1} subtitles with identical duration ${duration.toFixed(3)}s`);
+                          console.log(`[StreamingService] Uniform duration reason: Suspiciously uniform duration detected`);
+                          console.log(`[StreamingService] Duration pattern: All ${uniformDurationCount + 1} subtitles have exactly ${duration.toFixed(3)}s duration`);
+                          console.log(`[StreamingService] Last few subtitle texts:`, validSubtitles.slice(-3).map(s => s.text.substring(0, 30)));
+                          break;
+                        }
+                      } else {
+                        // Reset only if duration difference is significant (> 0.1s)
+                        if (lastDuration === null || Math.abs(duration - lastDuration) > 0.1) {
+                          uniformDurationCount = 0;
+                        }
                       }
-                    } else {
-                      uniformDurationCount = 0;
+                      lastDuration = duration;
                     }
-                    lastDuration = duration;
                     
                     // Check if subtitle exceeds segment end
                     if (subtitle.start > segmentEndOffset) {
@@ -531,7 +559,12 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                     
                     // Terminate the stream
                     if (foundHallucination) {
+                      // Log detailed reason for hallucination termination
+                      const lastSubtitle = validSubtitles[validSubtitles.length - 1] || {};
                       console.log(`[StreamingService] Terminating stream - detected hallucination patterns`);
+                      console.log(`[StreamingService] Hallucination reason: Check logs above for specific pattern detected`);
+                      console.log(`[StreamingService] Last valid subtitle timestamp: ${lastSubtitle.start?.toFixed(1) || 0}s - ${lastSubtitle.end?.toFixed(1) || 0}s`);
+                      console.log(`[StreamingService] Total valid subtitles before termination: ${validSubtitles.length}`);
                     } else {
                       console.log(`[StreamingService] Terminating stream - reached segment end offset at ${segmentEndOffset}`);
                     }

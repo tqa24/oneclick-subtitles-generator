@@ -281,11 +281,12 @@ export const coordinateParallelStreaming = async (
           
           if (shouldRetry) {
             const errorType = is429Error ? '429 (rate limit)' : '503 (overload)';
-            // TODO: MAKE THIS CONFIGURABLE IN SETTINGS MODAL - ALLOW USERS TO TUNE RETRY DELAY
-            const retryDelaySeconds = 5; // Fixed 5 second delay between retries for both 503 and 429 errors
+            // Progressive retry delays: 5, 10, 15, 20, 25 seconds
+            const retryDelays = [5, 10, 15, 20, 25];
+            const retryDelaySeconds = retryDelays[Math.min(retryCount, retryDelays.length - 1)];
             console.warn(`[ParallelCoordinator] Segment ${index + 1}/${subSegments.length} got ${errorType} error, retrying in ${retryDelaySeconds} seconds (attempt ${retryCount + 1}/${maxRetries})...`);
             
-            // Wait with fixed delay (will be configurable in settings later)
+            // Wait with progressive delay
             await new Promise(wait => setTimeout(wait, 1000 * retryDelaySeconds));
             
             // Retry the segment
@@ -339,7 +340,7 @@ export const coordinateParallelStreaming = async (
 
   // Create a promise for each segment
   const segmentPromises = subSegments.map((subSegment, index) => {
-    return streamWithRetry(subSegment, index, 0, 3);
+    return streamWithRetry(subSegment, index, 0, 5); // Increased from 3 to 5 retry attempts
   });
 
   try {
