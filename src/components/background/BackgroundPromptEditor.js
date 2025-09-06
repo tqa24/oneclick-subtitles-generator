@@ -225,8 +225,8 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
                 value={promptModel}
                 onChange={(value) => setPromptModel(value)}
                 options={[
-                  { value: 'gemini-2.0-flash-lite', label: 'gemini-2.0-flash-lite' },
-                  { value: 'gemini-2.5-flash-lite', label: 'gemini-2.5-flash-lite' }
+                  { value: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' },
+                  { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' }
                 ]}
                 placeholder={t('promptEditor.selectModel', 'Select Model')}
               />
@@ -265,8 +265,8 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
                 value={imageModel}
                 onChange={(value) => setImageModel(value)}
                 options={[
-                  { value: 'gemini-2.5-flash-image-preview', label: 'gemini-2.5-flash-image-preview' },
-                  { value: 'gemini-2.0-flash-preview-image-generation', label: 'gemini-2.0-flash-preview-image-generation' }
+                  { value: 'gemini-2.5-flash-image-preview', label: 'Nano Banana' },
+                  { value: 'gemini-2.0-flash-preview-image-generation', label: 'Gemini 2.0 Flash Preview (Image Generation)' }
                 ]}
                 placeholder={t('promptEditor.selectImageModel', 'Select Image Model')}
               />
