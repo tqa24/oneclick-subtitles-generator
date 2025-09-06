@@ -888,6 +888,16 @@ try {
             .replace('"transformers==4.46.3"', '"transformers>=4.40.0,<4.47.0"')
             .replace('"diffusers==0.29.0"', '"diffusers>=0.25.0,<0.30.0"');
         
+        // Remove or comment out pkuseg on Windows (requires MSVC compiler)
+        if (process.platform === 'win32') {
+            logger.info('Removing pkuseg dependency on Windows (requires MSVC compiler)...');
+            // Remove pkuseg line entirely (commenting causes TOML parse issues)
+            pyprojectContent = pyprojectContent.replace(
+                /^\s*"pkuseg\s*==\s*[^"]+",?\s*$/gm,
+                ''  // Remove the line entirely
+            );
+        }
+        
         fs.writeFileSync(pyprojectPath, pyprojectContent, 'utf8');
         logger.success('Chatterbox dependencies updated for compatibility');
     } else {

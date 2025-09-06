@@ -55,17 +55,23 @@ function startChatterboxService() {
     };
 
     // Start the Chatterbox service using the same pattern as F5-TTS
+    // Run from the project root to ensure the virtual environment is found
+    const projectRoot = path.dirname(chatterboxDir);
+    const startApiPath = path.join('chatterbox-fastapi', 'start_api.py');
+    
     const chatterboxProcess = spawn(UV_EXECUTABLE, [
       'run',
+      '--python', '.venv',  // Explicitly use the .venv virtual environment
+      '--',
       'python',
-      'start_api.py',  // Run from chatterbox-fastapi directory
+      startApiPath,  // Use relative path from project root
       '--host', '0.0.0.0',
       '--port', CHATTERBOX_PORT.toString(),
       '--reload'
     ], {
       env,
       stdio: 'inherit',
-      cwd: chatterboxDir  // Set working directory to chatterbox-fastapi
+      cwd: projectRoot  // Run from project root where .venv is located
     });
 
     // Handle process events
@@ -87,7 +93,8 @@ function startChatterboxService() {
     }
 
     console.log(`✅ Chatterbox API service starting...`);
-    console.log(`📁 Working directory: ${chatterboxDir}`);
+    console.log(`📁 Working directory: ${projectRoot}`);
+    console.log(`📁 Script path: ${startApiPath}`);
     console.log(`🌐 Will be available at: http://localhost:${CHATTERBOX_PORT}`);
     console.log(`📖 API documentation: http://localhost:${CHATTERBOX_PORT}/docs`);
 
@@ -182,11 +189,17 @@ print(f'CUDA device name: {torch.cuda.get_device_name(0) if torch.cuda.is_availa
 
     // Spawn the Python process using uv
     const narrationAppPath = path.join(__dirname, 'narrationApp.py');
+    const projectRoot = path.dirname(__dirname);
 
-
-    const narrationProcess = spawn(UV_EXECUTABLE, ['run', narrationAppPath], {
+    const narrationProcess = spawn(UV_EXECUTABLE, [
+      'run',
+      '--python', '.venv',  // Explicitly use the .venv virtual environment
+      '--',
+      narrationAppPath
+    ], {
       env,
-      stdio: 'inherit'
+      stdio: 'inherit',
+      cwd: projectRoot  // Run from project root where .venv is located
     });
 
     // Handle process events
