@@ -307,9 +307,9 @@ const ButtonsContainer = ({
           console.log('[AutoFlow] Analysis complete (rules saved without modal)');
           resolve();
           
-        } else if (checkCount >= maxChecks || autoFlowAbortedRef.current) {
+        } else if (autoFlowAbortedRef.current) {
           clearInterval(checkInterval);
-          console.log('[AutoFlow] Analysis timeout or aborted');
+          console.log('[AutoFlow] Analysis aborted');
           resolve();
         }
       }, 500); // Check every 500ms for faster response
