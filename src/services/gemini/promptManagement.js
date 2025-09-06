@@ -50,7 +50,45 @@ Ensure titles are concise (5-7 words max) and summaries are brief (1-2 sentences
 {
 id: 'diarize-speakers',
 title: 'Identify Speakers',
-prompt: `Transcribe speech and identify speakers in this ${'{contentType}'}. Use consistent labels (Speaker 1, Speaker 2, etc.) throughout. Include the exact start and end times for each speaker's segment. Each entry should represent one speaker's continuous segment.`
+prompt: `Transcribe all speech in this ${'{contentType}'} and identify different speakers.
+
+IMPORTANT INSTRUCTIONS:
+1. Label each speaker consistently as "Speaker 1", "Speaker 2", "Speaker 3", etc.
+2. The SAME person must ALWAYS have the SAME speaker number throughout the entire ${'{contentType}'}
+3. Format EVERY subtitle with the speaker label: "Speaker X: [actual spoken text]"
+4. Include exact start and end times for each segment
+5. Create a new subtitle entry whenever the speaker changes
+6. Each subtitle should contain one continuous speech segment from one speaker
+7. Even if the same speaker continues talking, break long speeches into reasonable subtitle lengths
+
+Output format - EVERY subtitle must follow this structure:
+{
+  "startTime": "00m00s500ms",
+  "endTime": "00m03s200ms",
+  "text": "Speaker 1: Hello, how are you today?"
+}
+{
+  "startTime": "00m03s500ms",
+  "endTime": "00m06s800ms",
+  "text": "Speaker 2: I'm doing great, thanks for asking."
+}
+{
+  "startTime": "00m07s000ms",
+  "endTime": "00m10s500ms",
+  "text": "Speaker 1: That's wonderful to hear. Let me tell you about our plans."
+}
+{
+  "startTime": "00m10s800ms",
+  "endTime": "00m15s200ms",
+  "text": "Speaker 3: May I join the conversation? I have something to add."
+}
+
+CRITICAL RULES:
+- EVERY subtitle MUST start with "Speaker X: " (where X is a number)
+- NEVER omit the speaker label
+- Keep the same speaker number for the same voice throughout
+- If unsure about speaker identity, still use "Speaker X: " format
+- Do not use actual names unless provided in transcription rules`
 }
 ];
 
@@ -77,23 +115,41 @@ const saveUserPromptPresetsImpl = (presets) => {
 };
 
 const getTranscriptionPromptImpl = (contentType, userProvidedSubtitles = null, options = {}) => {
-    // Check for video processing prompt first (set by Video Processing Options Modal)
-    // This takes precedence to avoid interference with Rules Editor
-    const videoProcessingPrompt = sessionStorage.getItem('video_processing_prompt');
+    // Check if a specific preset was selected in the Video Processing Options Modal
+    const selectedPresetId = localStorage.getItem('video_processing_prompt_preset');
     
-    // Fall back to the main transcription prompt from settings
-    const customPrompt = videoProcessingPrompt || localStorage.getItem('transcription_prompt');
-
     // Get the transcription rules if available and enabled (using sync version)
     const useTranscriptionRules = localStorage.getItem('video_processing_use_transcription_rules') !== 'false';
     const transcriptionRules = useTranscriptionRules ? getTranscriptionRulesSync() : null;
 
-    // Base prompt (either session-specific, custom, or default)
+    // Determine the base prompt based on the selected preset
     let basePrompt;
-    if (customPrompt && customPrompt.trim() !== '') {
-        basePrompt = customPrompt.replace('{contentType}', contentType);
+    
+    if (selectedPresetId && selectedPresetId !== 'settings') {
+        // A specific preset was selected - use its prompt
+        const preset = PROMPT_PRESETS.find(p => p.id === selectedPresetId);
+        if (preset) {
+            basePrompt = preset.prompt.replace('{contentType}', contentType);
+            
+            // Handle translate-directly preset with custom language
+            if (selectedPresetId === 'translate-directly') {
+                const customLanguage = localStorage.getItem('video_processing_custom_language');
+                if (customLanguage && customLanguage.trim()) {
+                    basePrompt = basePrompt.replace(/TARGET_LANGUAGE/g, customLanguage.trim());
+                }
+            }
+        } else {
+            // Preset not found, fall back to default
+            basePrompt = PROMPT_PRESETS[0].prompt.replace('{contentType}', contentType);
+        }
     } else {
-        basePrompt = PROMPT_PRESETS[0].prompt.replace('{contentType}', contentType);
+        // Use the prompt from settings (either 'settings' was selected or no preset specified)
+        const settingsPrompt = localStorage.getItem('transcription_prompt');
+        if (settingsPrompt && settingsPrompt.trim() !== '') {
+            basePrompt = settingsPrompt.replace('{contentType}', contentType);
+        } else {
+            basePrompt = PROMPT_PRESETS[0].prompt.replace('{contentType}', contentType);
+        }
     }
 
     // Removed session prompt logging since we're not using it directly anymore
@@ -217,10 +273,21 @@ Numbered subtitle list (all ${subtitleCount} must be timed):\n${numberedSubtitle
 
         // Add speaker identification if available
         if (transcriptionRules.speakerIdentification && transcriptionRules.speakerIdentification.length > 0) {
-            rulesText += '\n- Speaker Identification:\n';
-            transcriptionRules.speakerIdentification.forEach(speaker => {
-                rulesText += `  * ${speaker.speakerId}: ${speaker.description}\n`;
-            });
+            // Check if we're using the diarize-speakers preset
+            const currentPreset = localStorage.getItem('video_processing_prompt_preset');
+            if (currentPreset === 'diarize-speakers') {
+                rulesText += '\n- Speaker Identification (IMPORTANT - Use these names instead of generic "Speaker X" labels):\n';
+                transcriptionRules.speakerIdentification.forEach(speaker => {
+                    rulesText += `  * When you identify ${speaker.speakerId}, label them as "${speaker.speakerId}: " in the subtitle\n`;
+                    rulesText += `    Description: ${speaker.description}\n`;
+                });
+                rulesText += '  * For any unidentified speakers not listed above, use "Speaker X: " format\n';
+            } else {
+                rulesText += '\n- Speaker Identification:\n';
+                transcriptionRules.speakerIdentification.forEach(speaker => {
+                    rulesText += `  * ${speaker.speakerId}: ${speaker.description}\n`;
+                });
+            }
         }
 
         // Add formatting conventions if available

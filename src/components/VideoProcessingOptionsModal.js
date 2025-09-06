@@ -482,121 +482,10 @@ const VideoProcessingOptionsModal = ({
 
   // Get the selected prompt text for processing
   const getSelectedPromptText = () => {
-    let basePrompt = '';
-
-    if (selectedPromptPreset === 'settings') {
-      // Use prompt from settings
-      basePrompt = localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
-    } else if (selectedPromptPreset === 'timing-generation') {
-      // Handle timing generation preset (special case for user-provided subtitles)
-      // Return a placeholder - the actual prompt will be generated in promptManagement.js
-      // when userProvidedSubtitles is detected
-      basePrompt = DEFAULT_TRANSCRIPTION_PROMPT;
-    } else {
-      // Find the preset
-      const allPresets = [...PROMPT_PRESETS, ...getUserPromptPresets()];
-      const preset = allPresets.find(p => p.id === selectedPromptPreset);
-
-      if (!preset) {
-        // Fallback to settings prompt
-        basePrompt = localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
-      } else {
-        // Handle translate-directly preset with custom language
-        if (preset.id === 'translate-directly' && customLanguage.trim()) {
-          basePrompt = preset.prompt.replace(/TARGET_LANGUAGE/g, customLanguage.trim());
-        } else {
-          basePrompt = preset.prompt;
-        }
-      }
-    }
-
-    // IMPORTANT: Save the selected preset's prompt to a temporary key for processing
-    // Don't overwrite the main transcription_prompt to avoid affecting the Rules Editor
-    if (selectedPromptPreset !== 'settings') {
-      // Store temporarily for the current processing session
-      sessionStorage.setItem('video_processing_prompt', basePrompt);
-    } else {
-      // Clear the temporary prompt to use settings prompt
-      sessionStorage.removeItem('video_processing_prompt');
-    }
-
-    // Add transcription rules if enabled
-    if (useTranscriptionRules) {
-      const transcriptionRules = localStorage.getItem('transcription_rules');
-      if (transcriptionRules) {
-        try {
-          const rules = JSON.parse(transcriptionRules);
-          let rulesText = '';
-
-          // Add atmosphere if available
-          if (rules.atmosphere) {
-            rulesText += `\n- Atmosphere: ${rules.atmosphere}\n`;
-          }
-
-          // Add terminology if available
-          if (rules.terminology && rules.terminology.length > 0) {
-            rulesText += '\n- Terminology and Proper Nouns:\n';
-            rules.terminology.forEach(term => {
-              rulesText += `  * ${term.term}: ${term.definition}\n`;
-            });
-          }
-
-          // Add speaker identification if available
-          if (rules.speakerIdentification && rules.speakerIdentification.length > 0) {
-            rulesText += '\n- Speaker Identification:\n';
-            rules.speakerIdentification.forEach(speaker => {
-              rulesText += `  * ${speaker.speakerId}: ${speaker.description}\n`;
-            });
-          }
-
-          // Add formatting conventions if available
-          if (rules.formattingConventions && rules.formattingConventions.length > 0) {
-            rulesText += '\n- Formatting and Style Conventions:\n';
-            rules.formattingConventions.forEach(convention => {
-              rulesText += `  * ${convention}\n`;
-            });
-          }
-
-          // Add spelling and grammar rules if available
-          if (rules.spellingAndGrammar && rules.spellingAndGrammar.length > 0) {
-            rulesText += '\n- Spelling, Grammar, and Punctuation:\n';
-            rules.spellingAndGrammar.forEach(rule => {
-              rulesText += `  * ${rule}\n`;
-            });
-          }
-
-          // Add relationships if available
-          if (rules.relationships && rules.relationships.length > 0) {
-            rulesText += '\n- Relationships and Social Hierarchy:\n';
-            rules.relationships.forEach(relationship => {
-              rulesText += `  * ${relationship}\n`;
-            });
-          }
-
-          // Add additional notes if available
-          if (rules.additionalNotes && rules.additionalNotes.length > 0) {
-            rulesText += '\n- Additional Notes:\n';
-            rules.additionalNotes.forEach(note => {
-              rulesText += `  * ${note}\n`;
-            });
-          }
-
-          if (rulesText.trim()) {
-            basePrompt += '\n\nAdditional transcription rules to follow:' + rulesText;
-          }
-        } catch (error) {
-          console.warn('[VideoProcessingModal] Error parsing transcription rules:', error);
-        }
-      }
-    }
-
-    // New: Add outside-range subtitles context if enabled and available
-    const ctxText = buildOutsideContextText();
-    if (ctxText) {
-      basePrompt += '\n\nContextual subtitles outside the selected range (for consistency):' + ctxText;
-    }
-
-    return basePrompt;
+    // The prompt selection is now handled in promptManagement.js
+    // This function just returns a placeholder for backward compatibility
+    // The actual prompt will be determined based on the preset ID stored in localStorage
+    return '';
   };
 
   // Real token counting using Gemini API with Files API (only if file already uploaded)
@@ -796,18 +685,6 @@ const VideoProcessingOptionsModal = ({
   const isWithinLimit = displayTokens <= (selectedModelData?.maxTokens || 1048575);
 
   // Format time for display
-    // Persist outside context text for user-provided mode (consumed by promptManagement)
-    try {
-      const ctxText = buildOutsideContextText();
-      if (useOutsideResultsContext && ctxText) {
-        localStorage.setItem('video_processing_outside_context_text', ctxText);
-      } else {
-        localStorage.removeItem('video_processing_outside_context_text');
-      }
-    } catch (e) {
-      // ignore localStorage failures
-    }
-
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -850,12 +727,6 @@ const VideoProcessingOptionsModal = ({
     };
     
     onProcess(options);
-    
-    // Clean up the video processing prompt after initiating processing
-    // This ensures it doesn't interfere with other operations
-    setTimeout(() => {
-      sessionStorage.removeItem('video_processing_prompt');
-    }, 100);
   };
 
   // Handle escape key and outside clicks
