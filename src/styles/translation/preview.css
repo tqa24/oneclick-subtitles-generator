@@ -98,14 +98,39 @@
   display: flex;
   align-items: flex-start;
   border-bottom: 1px solid var(--border-color);
-  transition: background-color 0.2s ease;
+  transition: all 0.3s var(--md-easing-emphasized);
   width: 100%;
   box-sizing: border-box;
   position: relative;
+  cursor: default;
+}
+
+/* Alternating segment background colors for better distinction */
+.preview-subtitle-row[data-segment-odd="true"] {
+  background-color: var(--md-surface-1);
+}
+
+.preview-subtitle-row[data-segment-odd="false"] {
+  background-color: var(--md-surface-2);
 }
 
 .preview-subtitle-row:hover {
-  background-color: var(--md-surface-2);
+  background-color: var(--md-surface-3) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(var(--md-primary-rgb), 0.05);
+}
+
+.preview-subtitle-row:hover .preview-segment-sticky {
+  background-color: color-mix(in srgb, var(--md-surface-4), var(--md-primary) 5%);
+  border-right-color: color-mix(in srgb, var(--md-primary), white 10%);
+}
+
+.preview-subtitle-row:hover .preview-number-sticky {
+  background-color: var(--md-surface-4);
+}
+
+.preview-subtitle-row:hover .subtitle-retry-btn {
+  opacity: 0.7;
 }
 
 .preview-subtitle-row:last-child {
@@ -128,6 +153,23 @@
   min-height: 100%;
 }
 
+/* Add visual break between segments */
+.preview-subtitle-row[data-is-first-in-segment="true"]:not(:first-child) {
+  border-top: 3px solid var(--md-primary);
+  margin-top: 2px;
+}
+
+.preview-subtitle-row[data-is-first-in-segment="true"]:not(:first-child)::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--md-primary) 0%, var(--md-primary-variant) 100%);
+  z-index: 1;
+}
+
 .segment-content {
   display: flex;
   flex-direction: column;
@@ -143,6 +185,11 @@
   text-align: center;
   line-height: 1.2;
   writing-mode: horizontal-tb;
+  background: var(--md-primary-container);
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--md-primary);
+  box-shadow: 0 1px 3px rgba(var(--md-primary-rgb), 0.2);
 }
 
 .segment-retry-btn {
@@ -156,34 +203,68 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s var(--md-easing-emphasized);
   font-size: 0;
+  box-shadow: var(--md-elevation-level2);
+  position: relative;
+  overflow: hidden;
+}
+
+.segment-retry-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(0);
+  transition: transform 0.3s var(--md-easing-emphasized);
+  border-radius: 50%;
 }
 
 .segment-retry-btn:hover {
-  background: var(--md-primary-dark);
-  transform: scale(1.1);
+  background: color-mix(in srgb, var(--md-primary), black 10%);
+  transform: scale(1.05);
+  box-shadow: var(--md-elevation-level3);
+}
+
+.segment-retry-btn:hover::before {
+  transform: scale(1);
 }
 
 .segment-retry-btn:active {
   transform: scale(0.95);
+  box-shadow: var(--md-elevation-level1);
 }
 
 .segment-retry-btn:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .segment-retry-btn.loading {
   background: var(--md-secondary);
+  cursor: wait;
 }
 
-.segment-retry-btn svg {
+.segment-retry-btn .retry-icon {
   stroke: currentColor;
+  transition: transform 0.2s ease;
 }
 
-.segment-retry-btn svg.spinning {
-  animation: spin 1s linear infinite;
+.segment-retry-btn:hover .retry-icon {
+  transform: rotate(15deg);
+}
+
+.segment-loading {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.subtitle-loading {
+  filter: drop-shadow(0 1px 2px rgba(var(--md-primary-rgb), 0.3));
 }
 
 /* Segment indicator for non-first rows */
@@ -244,79 +325,122 @@
 .subtitle-retry-btn {
   background: transparent;
   border: none;
-  border-radius: 3px;
-  width: 18px;
-  height: 18px;
+  border-radius: 6px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   opacity: 0.4;
-  transition: all 0.2s ease;
+  transition: all 0.3s var(--md-easing-emphasized);
   color: var(--text-secondary);
   padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.subtitle-retry-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--md-primary-container);
+  opacity: 0;
+  transition: opacity 0.3s var(--md-easing-emphasized);
+  border-radius: 6px;
 }
 
 .subtitle-retry-btn:hover {
-  opacity: 0.8;
-  background: var(--md-surface-4);
+  opacity: 1;
   color: var(--md-primary);
   transform: scale(1.1);
+}
+
+.subtitle-retry-btn:hover::before {
+  opacity: 0.12;
 }
 
 .subtitle-retry-btn:active {
   transform: scale(0.9);
 }
 
+.subtitle-retry-btn:active::before {
+  opacity: 0.2;
+}
+
 .subtitle-retry-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.38;
   cursor: not-allowed;
+  transform: none;
 }
 
 .subtitle-retry-btn.loading {
-  opacity: 0.8;
-  background: var(--md-surface-4);
+  opacity: 1;
   color: var(--md-primary);
+  cursor: wait;
 }
 
-.subtitle-retry-btn svg {
+.subtitle-retry-btn.loading::before {
+  opacity: 0.12;
+}
+
+.subtitle-retry-btn .retry-icon {
   stroke: currentColor;
+  transition: transform 0.2s ease;
 }
 
-.subtitle-retry-btn svg.spinning {
-  animation: spin 1s linear infinite;
+.subtitle-retry-btn:hover .retry-icon {
+  transform: rotate(10deg);
 }
+
 
 /* Content area (time + text) */
 .preview-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem; /* Reduced gap */
-  padding: 0.5rem 1rem; /* Reduced vertical padding */
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
   min-width: 0; /* Allow text to wrap properly */
   position: relative; /* For retry overlay positioning */
   justify-content: flex-start; /* Align content to top */
+  transition: all 0.2s ease;
 }
 
 .preview-time {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-secondary);
   font-family: 'Roboto Mono', monospace;
   font-weight: 500;
+  letter-spacing: 0.02em;
+  opacity: 0.9;
+  transition: color 0.2s ease;
+}
+
+.preview-subtitle-row:hover .preview-time {
+  color: var(--md-primary);
+  opacity: 1;
 }
 
 .preview-text {
   color: var(--text-primary);
-  line-height: 1.4; /* 0.95rem * 1.4 ≈ 20px per line */
+  line-height: 1.5;
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;
   font-size: 0.95rem;
-  opacity: 0.9;
+  opacity: 0.95;
   font-weight: 400;
-  margin: 0; /* Remove any default margins */
-  padding: 0; /* Remove any default padding */
+  margin: 0;
+  padding: 0;
+  transition: opacity 0.2s ease;
+}
+
+.preview-subtitle-row:hover .preview-text {
+  opacity: 1;
 }
 
 /* Bulk preview file selector */
@@ -395,20 +519,23 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(var(--md-primary-rgb), 0.1);
+  background: linear-gradient(135deg, 
+    rgba(var(--md-primary-rgb), 0.08) 0%, 
+    rgba(var(--md-secondary-rgb), 0.06) 100%);
+  backdrop-filter: blur(1px);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
   pointer-events: none;
+  border-radius: 8px;
+  margin: 2px;
+  animation: retryOverlayFade 0.3s ease-in;
 }
 
-.retry-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--md-primary);
-  border-top: 2px solid transparent;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+.retry-overlay-loading {
+  filter: drop-shadow(0 2px 4px rgba(var(--md-primary-rgb), 0.2));
 }
 
 /* Keyframe animations */
@@ -425,6 +552,17 @@
 @keyframes retryPulse {
   0%, 100% { background-color: var(--md-surface-2); }
   50% { background-color: var(--md-surface-3); }
+}
+
+@keyframes retryOverlayFade {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Legacy styles for backward compatibility */
