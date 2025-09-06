@@ -99,6 +99,7 @@ const LyricsDisplay = ({
     // Get the split duration from localStorage or use default (0 = no split)
     return parseInt(localStorage.getItem('consolidation_split_duration') || '0');
   });
+  const [selectedRange, setSelectedRange] = useState(null); // Track selected range for subtitle split
 
   // Get naming information for downloads
   const getNamingInfo = () => {
@@ -823,6 +824,7 @@ const LyricsDisplay = ({
           setAutoScrollEnabled={setAutoScrollEnabled}
           lyrics={lyrics}
           onSplitSubtitles={handleSplitSubtitles}
+          selectedRange={selectedRange}
         />
 
         <TimelineVisualization
@@ -847,6 +849,7 @@ const LyricsDisplay = ({
           onPreviewMoveRange={previewRangeMove}
           onCommitMoveRange={commitRangeMove}
           onCancelMoveRange={cancelRangeMove}
+          onSelectedRangeChange={setSelectedRange}
         />
       </div>
 

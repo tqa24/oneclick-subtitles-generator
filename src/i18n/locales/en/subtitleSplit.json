@@ -2,6 +2,7 @@
   "title": "Split Subtitles",
   "sliderTitle": "Maximum words per subtitle",
   "description": "Smart subtitle splitting (subtitles already smaller than the limit will not be affected)",
+  "descriptionRange": "Smart subtitle splitting in selected range (subtitles already smaller than the limit will not be affected)",
   "limitLabel": "Limit: {{count}} {{unit}}",
   "wordUnit": "word",
   "wordsUnit": "words",

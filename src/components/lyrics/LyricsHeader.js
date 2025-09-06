@@ -19,10 +19,23 @@ const LyricsHeader = ({
   autoScrollEnabled,
   setAutoScrollEnabled,
   lyrics,
-  onSplitSubtitles
+  onSplitSubtitles,
+  selectedRange = null
 }) => {
   const { t } = useTranslation();
   const [showSplitModal, setShowSplitModal] = useState(false);
+  
+  // Check if there are subtitles in the selected range
+  const hasSubtitlesInRange = () => {
+    if (!selectedRange || !lyrics || lyrics.length === 0) return false;
+    // Check if any subtitle is fully contained within the selected range
+    return lyrics.some(lyric => 
+      lyric.start >= selectedRange.start && 
+      lyric.end <= selectedRange.end
+    );
+  };
+  
+  const canSplitSubtitles = selectedRange && hasSubtitlesInRange();
 
   // Global keyboard shortcuts for editor actions
   useEffect(() => {
@@ -63,10 +76,12 @@ const LyricsHeader = ({
         return;
       }
 
-      // Open Split modal: Ctrl+Shift+X
+      // Open Split modal: Ctrl+Shift+X (only if range is selected)
       if (isCtrl && e.shiftKey && key === 'x') {
         e.preventDefault();
-        setShowSplitModal(true);
+        if (canSplitSubtitles) {
+          setShowSplitModal(true);
+        }
         return;
       }
 
@@ -87,7 +102,7 @@ const LyricsHeader = ({
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [allowEditing, canUndo, canRedo, canJumpToCheckpoint, onUndo, onRedo, onSave, onJumpToCheckpoint, setIsSticky, isSticky]);
+  }, [allowEditing, canUndo, canRedo, canJumpToCheckpoint, onUndo, onRedo, onSave, onJumpToCheckpoint, setIsSticky, isSticky, canSplitSubtitles]);
 
   return (
     <div className="combined-controls">
@@ -143,7 +158,15 @@ const LyricsHeader = ({
             <button
               className="split-sub-btn"
               onClick={() => setShowSplitModal(true)}
-              title={t('lyrics.splitWithShortcut', 'Split subtitles (Ctrl+Shift+X)')}
+              disabled={!canSplitSubtitles}
+              title={canSplitSubtitles 
+                ? t('lyrics.splitWithShortcut', 'Split subtitles in selected range (Ctrl+Shift+X)')
+                : t('lyrics.splitDisabled', 'Select a range with subtitles to split')
+              }
+              style={{
+                opacity: canSplitSubtitles ? 1 : 0.4,
+                cursor: canSplitSubtitles ? 'pointer' : 'not-allowed'
+              }}
             >
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
                 {/* Left rectangle (before cut) */}
@@ -246,6 +269,7 @@ const LyricsHeader = ({
         onClose={() => setShowSplitModal(false)}
         lyrics={lyrics}
         onSplitSubtitles={onSplitSubtitles}
+        selectedRange={selectedRange}
       />
     </div>
   );

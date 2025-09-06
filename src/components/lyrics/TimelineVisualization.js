@@ -37,7 +37,8 @@ const TimelineVisualization = ({
   onBeginMoveRange = null, // Start live move preview
   onPreviewMoveRange = null, // Update live move preview with delta seconds
   onCommitMoveRange = null, // Commit the live move on mouse up
-  onCancelMoveRange = null // Cancel live move preview
+  onCancelMoveRange = null, // Cancel live move preview
+  onSelectedRangeChange = null // Callback to notify parent of selected range changes
 }) => {
   const { t } = useTranslation();
 
@@ -339,6 +340,15 @@ const TimelineVisualization = ({
   const rangePreviewDeltaRef = useRef(0); // seconds delta during move drag
   const [hiddenActionBarRange, setHiddenActionBarRange] = useState(null); // Store range when action bar is hidden
   const isClickingInsideRef = useRef(false); // Track if we're clicking inside the range
+  
+  // Notify parent component when selected range changes
+  useEffect(() => {
+    if (onSelectedRangeChange) {
+      // Report the active range (either actionBarRange or hiddenActionBarRange)
+      const activeRange = actionBarRange || hiddenActionBarRange || selectedSegment;
+      onSelectedRangeChange(activeRange);
+    }
+  }, [actionBarRange, hiddenActionBarRange, selectedSegment, onSelectedRangeChange]);
 
   // Draw the timeline visualization with optimizations
   const renderTimeline = useCallback((tempPanOffset = null) => {
