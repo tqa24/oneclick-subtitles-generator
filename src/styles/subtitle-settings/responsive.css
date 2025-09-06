@@ -5,7 +5,7 @@
   .subtitle-settings-panel {
     width: 300px;
     right: 0;
-    max-height: 70vh;
+    max-height: 60vh;
   }
 
   .action-buttons {
@@ -22,7 +22,6 @@
 
   .settings-content {
     padding: 1rem;
-    max-height: 60vh;
   }
 
   .setting-group {
