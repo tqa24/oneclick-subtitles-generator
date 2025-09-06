@@ -30,7 +30,12 @@ prompt: `Describe significant visual events and scene changes in this ${'{conten
 {
 id: 'translate-directly',
 title: 'Translate directly',
-prompt: `Identify the spoken language(s) and translate all speech directly into TARGET_LANGUAGE. Include the exact start and end times for each translated segment.`
+prompt: `Transcribe all spoken content in this ${'{contentType}'} and translate each segment directly into TARGET_LANGUAGE. For each segment:
+1. Identify when speech occurs (start and end times)
+2. Transcribe what is being said
+3. Return ONLY the translation in TARGET_LANGUAGE (not the original language)
+
+IMPORTANT: The 'text' field in your response must contain the TRANSLATED text in TARGET_LANGUAGE, not the original language.`
 },
 {
 // Chaptering prompt remains unchanged as requested
@@ -72,12 +77,9 @@ const saveUserPromptPresetsImpl = (presets) => {
 };
 
 const getTranscriptionPromptImpl = (contentType, userProvidedSubtitles = null, options = {}) => {
-    // First check if there's a session-specific prompt (from video analysis)
-    // This allows using the recommended preset for the current session only
-    const sessionPrompt = sessionStorage.getItem('current_session_prompt');
-
-    // If no session prompt, get custom prompt from localStorage or use default
-    const customPrompt = sessionPrompt || localStorage.getItem('transcription_prompt');
+    // Get custom prompt from localStorage - don't automatically use session prompt
+    // The session prompt should only be used for pre-selection in the UI, not forced
+    const customPrompt = localStorage.getItem('transcription_prompt');
 
     // Get the transcription rules if available and enabled (using sync version)
     const useTranscriptionRules = localStorage.getItem('video_processing_use_transcription_rules') !== 'false';
@@ -91,10 +93,7 @@ const getTranscriptionPromptImpl = (contentType, userProvidedSubtitles = null, o
         basePrompt = PROMPT_PRESETS[0].prompt.replace('{contentType}', contentType);
     }
 
-    // Log which prompt is being used
-    if (sessionPrompt) {
-
-    }
+    // Removed session prompt logging since we're not using it directly anymore
 
     // If we have user-provided subtitles, replace the entire prompt with a simplified version
     if (userProvidedSubtitles && userProvidedSubtitles.trim() !== '') {

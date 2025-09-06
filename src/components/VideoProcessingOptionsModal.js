@@ -510,6 +510,12 @@ const VideoProcessingOptionsModal = ({
       }
     }
 
+    // IMPORTANT: Save the selected preset's prompt to localStorage so it's used during processing
+    // This ensures the selected preset is actually used, not just the settings prompt
+    if (selectedPromptPreset !== 'settings') {
+      localStorage.setItem('transcription_prompt', basePrompt);
+    }
+
     // Add transcription rules if enabled
     if (useTranscriptionRules) {
       const transcriptionRules = localStorage.getItem('transcription_rules');
