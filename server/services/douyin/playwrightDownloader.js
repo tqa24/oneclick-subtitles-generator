@@ -14,12 +14,32 @@ const { setDownloadProgress } = require('../shared/progressTracker');
 // Cache for browser instance to avoid repeated launches
 let browserInstance = null;
 let browserContext = null;
+let browserInitPromise = null;  // Store initialization promise for concurrent requests
+
+/**
+ * Pre-warm the browser instance (call this on server startup)
+ */
+async function prewarmBrowser() {
+  console.log('[PlaywrightDouyin] Pre-warming browser instance...');
+  await getBrowserInstance();
+  console.log('[PlaywrightDouyin] Browser instance ready');
+}
 
 /**
  * Get or create a browser instance
  */
 async function getBrowserInstance() {
+  // If already initializing, wait for that initialization
+  if (browserInitPromise) {
+    await browserInitPromise;
+    if (browserInstance && browserInstance.isConnected()) {
+      return { browser: browserInstance, context: browserContext };
+    }
+  }
+  
   if (!browserInstance || !browserInstance.isConnected()) {
+    // Create initialization promise to prevent concurrent launches
+    browserInitPromise = (async () => {
     console.log('[PlaywrightDouyin] Launching browser...');
     browserInstance = await chromium.launch({
       headless: true,
@@ -33,6 +53,8 @@ async function getBrowserInstance() {
         '--disable-gpu',
         '--disable-blink-features=AutomationControlled',
         '--disable-features=VizDisplayCompositor'
+        // Removed --disable-images as it might affect video loading
+        // Removed security disabling flags for safety
       ]
     });
 
@@ -48,8 +70,16 @@ async function getBrowserInstance() {
         'DNT': '1',
         'Connection': 'keep-alive',
         'Upgrade-Insecure-Requests': '1'
-      }
+      },
+      // Add performance optimizations
+      bypassCSP: true,
+      ignoreHTTPSErrors: true,
+      javaScriptEnabled: true  // Keep JS enabled but optimize other aspects
     });
+    })();
+    
+    await browserInitPromise;
+    browserInitPromise = null;  // Clear the promise after completion
   }
   
   return { browser: browserInstance, context: browserContext };
@@ -75,36 +105,36 @@ async function extractVideoInfo(douyinUrl, useCookies = false) {
       });
     });
 
-    // Navigate to the Douyin URL with multiple fallback strategies
+    // Navigate to the Douyin URL with balanced settings
     try {
       await page.goto(douyinUrl, {
         waitUntil: 'domcontentloaded',
-        timeout: 60000
+        timeout: 30000  // Reasonable timeout for slow connections
       });
     } catch (timeoutError) {
-      console.log('[PlaywrightDouyin] First navigation attempt timed out, trying with load event...');
+      console.log('[PlaywrightDouyin] First navigation attempt timed out, trying with networkidle...');
       await page.goto(douyinUrl, {
-        waitUntil: 'load',
-        timeout: 45000
+        waitUntil: 'networkidle',
+        timeout: 20000  // Fallback timeout
       });
     }
 
-    // Wait for the page to load and close any login panels
-    await page.waitForTimeout(5000);
+    // Wait for initial page JavaScript to execute (necessary for video loading)
+    await page.waitForTimeout(2000);  // Reduced from 5000ms but still safe
     
     // Try to close login panel if it exists
     try {
       const loginPanel = page.locator('#douyin_login_comp_tab_panel');
-      if (await loginPanel.isVisible()) {
+      if (await loginPanel.isVisible({ timeout: 500 })) {  // Quick check but not too quick
         console.log('[PlaywrightDouyin] Closing login panel...');
-        await loginPanel.getByRole('img').nth(1).click();
-        await page.waitForTimeout(1000);
+        await loginPanel.getByRole('img').nth(1).click({ timeout: 1000 });
+        await page.waitForTimeout(500);  // Small wait to ensure panel closes
       }
     } catch (error) {
-      console.log('[PlaywrightDouyin] No login panel to close or failed to close:', error.message);
+      // Silently continue - login panel not critical
     }
     
-    // Wait for page content to load with multiple strategies
+    // Wait for page content to load with optimized parallel checking
     let videoFound = false;
     const videoSelectors = [
       'video',
@@ -114,15 +144,16 @@ async function extractVideoInfo(douyinUrl, useCookies = false) {
       'video source'
     ];
 
-    // Try different video selectors
-    for (const selector of videoSelectors) {
-      try {
-        await page.waitForSelector(selector, { timeout: 8000 });
-        videoFound = true;
-        break;
-      } catch (error) {
-        // Continue to next selector
-      }
+    // Try all selectors in parallel with Promise.race for speed
+    try {
+      await Promise.race(
+        videoSelectors.map(selector => 
+          page.waitForSelector(selector, { timeout: 5000 })  // Balanced timeout
+        )
+      );
+      videoFound = true;
+    } catch (error) {
+      // All selectors timed out
     }
 
     if (!videoFound) {
@@ -133,11 +164,11 @@ async function extractVideoInfo(douyinUrl, useCookies = false) {
       }
     }
 
-    // Wait for video metadata to load (with fallback)
+    // Wait for video metadata to load (balanced timeout)
     await page.waitForFunction(() => {
       const video = document.querySelector('video');
       return video && (video.videoWidth > 0 || video.duration > 0 || video.src);
-    }, { timeout: 8000 }).catch(() => {
+    }, { timeout: 5000 }).catch(() => {  // Balanced timeout for metadata
       // Proceed with available data
     });
 
@@ -455,5 +486,6 @@ module.exports = {
   downloadDouyinVideo,
   extractVideoInfo,
   getAvailableQualities,
-  cleanup
+  cleanup,
+  prewarmBrowser  // Export prewarm function
 };

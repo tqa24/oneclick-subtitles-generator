@@ -20,6 +20,9 @@ const { initializeProgressWebSocket } = require('./server/services/shared/progre
 // Import port management
 const { killProcessesOnPorts, trackProcess, cleanupTrackingFile } = require('./server/utils/portManager');
 
+// Import Playwright downloader for pre-warming
+const { prewarmBrowser } = require('./server/services/douyin/playwrightDownloader');
+
 // Startup initialization
 async function initializeServer() {
   console.log('🚀 Initializing server...');
@@ -35,6 +38,12 @@ async function initializeServer() {
   } else {
     console.log('ℹ️  Port cleanup handled by dev-server, skipping...');
   }
+
+  // Pre-warm the Playwright browser for instant Douyin downloads
+  console.log('🔥 Pre-warming Playwright browser for lightning-fast downloads...');
+  prewarmBrowser().catch(err => {
+    console.warn('⚠️  Browser pre-warming failed (non-critical):', err.message);
+  });
 
   console.log('✅ Server initialization complete');
 }
