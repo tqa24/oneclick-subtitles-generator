@@ -27,9 +27,10 @@ def main():
     
     args = parser.parse_args()
     
-    # Check if api.py exists
-    if not Path("api.py").exists():
-        print("Error: api.py not found in current directory")
+    # Check if api.py exists - handle both running from project root and from chatterbox-fastapi dir
+    api_path = Path(__file__).parent / "api.py"
+    if not api_path.exists():
+        print(f"Error: api.py not found at {api_path}")
         sys.exit(1)
     
     print(f"Starting Chatterbox API server...")
@@ -40,6 +41,10 @@ def main():
     print(f"Reload: {args.reload}")
     print(f"API docs will be available at: http://{args.host}:{args.port}/docs")
     print("-" * 50)
+    
+    # Change to the chatterbox-fastapi directory for uvicorn to find the api module
+    import os
+    os.chdir(Path(__file__).parent)
     
     uvicorn.run(
         "api:app",

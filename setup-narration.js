@@ -888,6 +888,16 @@ try {
             .replace('"transformers==4.46.3"', '"transformers>=4.40.0,<4.47.0"')
             .replace('"diffusers==0.29.0"', '"diffusers>=0.25.0,<0.30.0"');
         
+        // Remove or comment out pkuseg on Windows (requires MSVC compiler)
+        if (process.platform === 'win32') {
+            logger.info('Removing pkuseg dependency on Windows (requires MSVC compiler)...');
+            // Remove pkuseg line entirely (commenting causes TOML parse issues)
+            pyprojectContent = pyprojectContent.replace(
+                /^\s*"pkuseg\s*==\s*[^"]+",?\s*$/gm,
+                ''  // Remove the line entirely
+            );
+        }
+        
         fs.writeFileSync(pyprojectPath, pyprojectContent, 'utf8');
         logger.success('Chatterbox dependencies updated for compatibility');
     } else {
@@ -901,13 +911,23 @@ try {
     
     // Install chatterbox from the local modified directory
     logger.progress('Installing chatterbox from local modified directory');
-    const installChatterboxCmd = `uv pip install --python ${VENV_DIR} --no-build-isolation -e ./${CHATTERBOX_DIR}`;
+    // Don't use -e flag, we want it copied to site-packages
+    const installChatterboxCmd = `uv pip install --python ${VENV_DIR} --no-build-isolation ./${CHATTERBOX_DIR}`;
     logger.command(installChatterboxCmd);
-    logger.info(`Installing chatterbox in editable mode from local directory`);
+    logger.info(`Installing chatterbox (will be installed to site-packages)`);
 
     const env = { ...process.env, UV_HTTP_TIMEOUT: '600' }; // 10 minutes for installation
     execSync(installChatterboxCmd, { stdio: 'inherit', env });
     logger.success('Chatterbox installation completed');
+    
+    // Clean up the temporary directory after installation
+    logger.progress('Cleaning up temporary directory');
+    try {
+        fs.rmSync(CHATTERBOX_DIR, { recursive: true, force: true });
+        logger.success('Temporary directory removed');
+    } catch (err) {
+        logger.warning('Could not remove temporary directory');
+    }
     
     // Verify PyTorch versions are correct
     logger.progress('Verifying PyTorch compatibility after chatterbox installation');
