@@ -12,6 +12,7 @@ const VideoQualityModal = ({
   onClose,
   onConfirm,
   videoInfo,
+  actualDimensions,
   availableVersions = []
 }) => {
   const { t } = useTranslation();
@@ -48,7 +49,6 @@ const VideoQualityModal = ({
 
   // Wrapper function for onClose to ensure cleanup
   const handleClose = () => {
-    console.log(`[VideoQualityModal] Modal closing, cleaning up progress interval`);
     if (progressIntervalRef.current) {
       clearInterval(progressIntervalRef.current);
       progressIntervalRef.current = null;
@@ -59,8 +59,6 @@ const VideoQualityModal = ({
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-      console.log('[VideoQualityModal] Modal opened with videoInfo:', videoInfo);
-      console.log('[VideoQualityModal] Available versions:', availableVersions);
 
       setSelectedOption('current');
       setSelectedVersion(null);
@@ -77,7 +75,6 @@ const VideoQualityModal = ({
       }
 
       // Don't scan qualities automatically - only when redownload is selected
-      console.log('[VideoQualityModal] Modal opened, waiting for user to select redownload option');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, videoInfo]);
@@ -87,7 +84,6 @@ const VideoQualityModal = ({
     if (selectedOption === 'redownload' && videoInfo && videoInfo.url &&
         ['youtube', 'douyin', 'douyin-playwright', 'all-sites'].includes(videoInfo.source) &&
         availableQualities.length === 0 && !isScanning) {
-      console.log('[VideoQualityModal] Redownload selected, starting quality scan for:', videoInfo.source);
       scanVideoQualities();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -169,27 +165,17 @@ const VideoQualityModal = ({
 
   // Start progress tracking using polling (WebSocket disabled to prevent duplicates)
   const startProgressTracking = (videoId, quality, url) => {
-    console.log(`[VideoQualityModal] Using polling instead of WebSocket to prevent duplicates`);
-    console.log(`[VideoQualityModal] Setting up polling for videoId: ${videoId}`);
-
     // Clear any existing interval first
     if (progressIntervalRef.current) {
-      console.log(`[VideoQualityModal] Clearing existing progress interval`);
       clearInterval(progressIntervalRef.current);
       progressIntervalRef.current = null;
     }
 
     // Use polling instead of WebSocket
-    console.log(`[VideoQualityModal] About to set up interval for videoId: ${videoId}`);
     const newProgressInterval = setInterval(async () => {
-      console.log(`[VideoQualityModal] INTERVAL FIRED! Polling for videoId: ${videoId}`);
       try {
-        console.log(`[VideoQualityModal] Making fetch request...`);
         const response = await fetch(`http://localhost:3031/api/quality-download-progress/${videoId}`);
-        console.log(`[VideoQualityModal] Response status:`, response.status, response.statusText);
         const data = await response.json();
-
-        console.log(`[VideoQualityModal] Polling response:`, data);
 
         if (data.success) {
           const newProgress = data.progress || 0;
@@ -200,7 +186,6 @@ const VideoQualityModal = ({
           }
 
           if (data.status === 'completed') {
-            console.log(`[VideoQualityModal] Download completed! Proceeding to render...`);
             clearInterval(newProgressInterval);
             progressIntervalRef.current = null;
             setIsRedownloading(false);
@@ -221,19 +206,15 @@ const VideoQualityModal = ({
               }
             }, 1000);
           } else if (data.status === 'cancelled') {
-            console.log(`[VideoQualityModal] Download cancelled: ${videoId}`);
             clearInterval(newProgressInterval);
             progressIntervalRef.current = null;
             setIsRedownloading(false);
           } else if (data.status === 'error') {
-            console.log(`[VideoQualityModal] Download error detected:`, data.error);
             clearInterval(newProgressInterval);
             progressIntervalRef.current = null;
             setIsRedownloading(false);
             console.error('[VideoQualityModal] Download error:', data.error);
           }
-        } else {
-          console.log(`[VideoQualityModal] Polling failed:`, data);
         }
       } catch (error) {
         console.error('Error fetching download progress:', error);
@@ -242,7 +223,6 @@ const VideoQualityModal = ({
 
     // Store interval in ref for cleanup
     progressIntervalRef.current = newProgressInterval;
-    console.log(`[VideoQualityModal] Progress interval set up successfully for videoId: ${videoId}`);
   };
 
 
@@ -251,7 +231,6 @@ const VideoQualityModal = ({
   React.useEffect(() => {
     return () => {
       if (progressIntervalRef.current) {
-        console.log(`[VideoQualityModal] Cleaning up progress interval on unmount`);
         clearInterval(progressIntervalRef.current);
         progressIntervalRef.current = null;
       }
@@ -357,17 +336,28 @@ const VideoQualityModal = ({
     if (!videoInfo) return t('videoQuality.unknownQuality', 'Unknown quality');
 
     if (videoInfo.source === 'upload') {
+      const quality = videoInfo.quality || '360p';
+      const qualityWithDimensions = actualDimensions?.dimensions 
+        ? `${quality} (${actualDimensions.dimensions})`
+        : quality;
+      
       return videoInfo.isOptimized
-        ? t('videoQuality.optimizedQuality', 'Optimized ({{quality}})', { quality: videoInfo.quality || '360p' })
+        ? t('videoQuality.optimizedQuality', 'Optimized ({{quality}})', { quality: qualityWithDimensions })
         : t('videoQuality.originalQuality', 'Original Quality');
     }
 
-    // Show actual dimensions if available, otherwise just the quality
-    if (videoInfo.quality && videoInfo.quality.includes('×')) {
-      return videoInfo.quality; // Already includes dimensions like "720p (1080×1920)"
+    // Show actual dimensions if available
+    const baseQuality = videoInfo.quality || '360p';
+    if (actualDimensions?.dimensions) {
+      return `${baseQuality} (${actualDimensions.dimensions})`;
     }
 
-    return videoInfo.quality || '360p';
+    // Show quality as-is if it already includes dimensions
+    if (videoInfo.quality && videoInfo.quality.includes('×')) {
+      return videoInfo.quality;
+    }
+
+    return baseQuality;
   };
 
   const showRedownloadOption = videoInfo?.source &&

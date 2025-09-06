@@ -463,6 +463,7 @@ const AppLayout = ({
           onClose={() => setShowVideoQualityModal(false)}
           onConfirm={handleVideoQualityConfirm}
           videoInfo={getVideoInfoForModal()?.videoInfo || videoInfo}
+          actualDimensions={getVideoInfoForModal()?.actualDimensions}
           availableVersions={availableVersions}
         />
       )}

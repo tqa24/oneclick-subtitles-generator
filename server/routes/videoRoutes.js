@@ -535,12 +535,22 @@ router.get('/video-dimensions/:videoId', async (req, res) => {
     // If exact match doesn't exist, look for files starting with videoId
     if (!fs.existsSync(videoPath)) {
       const files = fs.readdirSync(VIDEOS_DIR);
+      
       const matchingFile = files.find(file =>
         file.startsWith(`${videoId}_`) && file.endsWith('.mp4')
       );
 
       if (matchingFile) {
         videoPath = path.join(VIDEOS_DIR, matchingFile);
+      } else {
+        // Try to find files that contain the videoId (more flexible matching)
+        const flexibleMatch = files.find(file => 
+          file.includes(videoId) && file.endsWith('.mp4')
+        );
+        
+        if (flexibleMatch) {
+          videoPath = path.join(VIDEOS_DIR, flexibleMatch);
+        }
       }
     }
 
@@ -559,7 +569,8 @@ router.get('/video-dimensions/:videoId', async (req, res) => {
       width: dimensions.width,
       height: dimensions.height,
       quality: dimensions.quality,
-      resolution: dimensions.resolution
+      resolution: dimensions.resolution,
+      dimensions: `${dimensions.width}x${dimensions.height}`
     });
   } catch (error) {
     console.error('Error getting video dimensions:', error);
