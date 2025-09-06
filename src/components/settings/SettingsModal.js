@@ -177,7 +177,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [enableYoutubeSearch, setEnableYoutubeSearch] = useState(false); // Default to disabling YouTube search
   const [favoriteMaxSubtitleLength, setFavoriteMaxSubtitleLength] = useState(() => {
     const saved = localStorage.getItem('video_processing_max_words');
-    return saved ? parseInt(saved, 10) : 10; // Default to 10 words
+    return saved ? parseInt(saved, 10) : 12; // Default to 12 words
   }); // Favorite max subtitle length
   const [showFavoriteMaxLength, setShowFavoriteMaxLength] = useState(() => {
     const saved = localStorage.getItem('show_favorite_max_length');
@@ -257,7 +257,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     },
     useCookiesForDownload: false,
     enableYoutubeSearch: false,
-    favoriteMaxSubtitleLength: 10,
+    favoriteMaxSubtitleLength: 12,
     showFavoriteMaxLength: true,
     customGeminiModels: []
   });
@@ -302,7 +302,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedUseOptimizedPreview = localStorage.getItem('use_optimized_preview') === 'true'; // Default to false if not set
       const savedUseCookiesForDownload = localStorage.getItem('use_cookies_for_download') === 'true';
       const savedEnableYoutubeSearch = localStorage.getItem('enable_youtube_search') === 'true'; // Default to false
-      const savedFavoriteMaxSubtitleLength = parseInt(localStorage.getItem('video_processing_max_words') || '10');
+      const savedFavoriteMaxSubtitleLength = parseInt(localStorage.getItem('video_processing_max_words') || '12');
       const savedShowFavoriteMaxLength = localStorage.getItem('show_favorite_max_length') === null ? true : localStorage.getItem('show_favorite_max_length') === 'true';
 
       // Load custom Gemini models

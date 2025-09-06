@@ -73,8 +73,8 @@ const VideoProcessingOptionsModal = ({
   });
   const [useTranscriptionRules, setUseTranscriptionRules] = useState(() => {
     const saved = localStorage.getItem('video_processing_use_transcription_rules');
-    // Default to true - switch is ON unless explicitly turned off
-    return saved !== null ? saved === 'true' : true;
+    // Default to false - switch is OFF unless explicitly turned on
+    return saved !== null ? saved === 'true' : false;
   });
   const [transcriptionRulesAvailable, setTranscriptionRulesAvailable] = useState(false);
 
@@ -107,7 +107,7 @@ const VideoProcessingOptionsModal = ({
   });
   const [maxWordsPerSubtitle, setMaxWordsPerSubtitle] = useState(() => {
     const saved = localStorage.getItem('video_processing_max_words');
-    return saved ? parseInt(saved, 10) : 10;
+    return saved ? parseInt(saved, 10) : 12;
   });
 
   const [customGeminiModels, setCustomGeminiModels] = useState([]);
