@@ -510,10 +510,14 @@ const VideoProcessingOptionsModal = ({
       }
     }
 
-    // IMPORTANT: Save the selected preset's prompt to localStorage so it's used during processing
-    // This ensures the selected preset is actually used, not just the settings prompt
+    // IMPORTANT: Save the selected preset's prompt to a temporary key for processing
+    // Don't overwrite the main transcription_prompt to avoid affecting the Rules Editor
     if (selectedPromptPreset !== 'settings') {
-      localStorage.setItem('transcription_prompt', basePrompt);
+      // Store temporarily for the current processing session
+      sessionStorage.setItem('video_processing_prompt', basePrompt);
+    } else {
+      // Clear the temporary prompt to use settings prompt
+      sessionStorage.removeItem('video_processing_prompt');
     }
 
     // Add transcription rules if enabled
@@ -846,6 +850,12 @@ const VideoProcessingOptionsModal = ({
     };
     
     onProcess(options);
+    
+    // Clean up the video processing prompt after initiating processing
+    // This ensures it doesn't interfere with other operations
+    setTimeout(() => {
+      sessionStorage.removeItem('video_processing_prompt');
+    }, 100);
   };
 
   // Handle escape key and outside clicks

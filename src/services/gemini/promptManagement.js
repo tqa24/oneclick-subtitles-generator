@@ -77,9 +77,12 @@ const saveUserPromptPresetsImpl = (presets) => {
 };
 
 const getTranscriptionPromptImpl = (contentType, userProvidedSubtitles = null, options = {}) => {
-    // Get custom prompt from localStorage - don't automatically use session prompt
-    // The session prompt should only be used for pre-selection in the UI, not forced
-    const customPrompt = localStorage.getItem('transcription_prompt');
+    // Check for video processing prompt first (set by Video Processing Options Modal)
+    // This takes precedence to avoid interference with Rules Editor
+    const videoProcessingPrompt = sessionStorage.getItem('video_processing_prompt');
+    
+    // Fall back to the main transcription prompt from settings
+    const customPrompt = videoProcessingPrompt || localStorage.getItem('transcription_prompt');
 
     // Get the transcription rules if available and enabled (using sync version)
     const useTranscriptionRules = localStorage.getItem('video_processing_use_transcription_rules') !== 'false';

@@ -140,31 +140,25 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
   
   // Effect to determine the current preset and set initial state - run only once on mount
   useEffect(() => {
-    // First check if there's a session-specific preset (from analysis)
-    const sessionPresetId = sessionStorage.getItem('current_session_preset_id');
-    let detectedPresetId = 'custom';
-
-    if (sessionPresetId) {
-      console.log('[TranscriptionRulesEditor] Using analysis-recommended preset:', sessionPresetId);
-      detectedPresetId = sessionPresetId;
-      setCurrentPresetId(sessionPresetId);
+    // Check if Rules Editor has its own saved preset
+    const rulesEditorPresetId = sessionStorage.getItem('rules_editor_preset_id');
+    
+    if (rulesEditorPresetId) {
+      // Use the previously selected preset in Rules Editor
+      console.log('[TranscriptionRulesEditor] Using previously selected preset:', rulesEditorPresetId);
+      setCurrentPresetId(rulesEditorPresetId);
     } else {
-      // If no session preset, try to determine from the stored prompt
-      const storedPrompt = localStorage.getItem('transcription_prompt');
-
-      // Get current presets (PROMPT_PRESETS + user presets)
-      const currentPresets = [...PROMPT_PRESETS, ...getUserPromptPresets()];
-
-      // Find a preset that matches the stored prompt
-      const matchingPreset = currentPresets.find(preset => preset.prompt === storedPrompt);
-
-      if (matchingPreset) {
-        console.log('[TranscriptionRulesEditor] Using preset from stored prompt:', matchingPreset.id);
-        detectedPresetId = matchingPreset.id;
-        setCurrentPresetId(matchingPreset.id);
+      // Check if there's an analysis-recommended preset
+      const sessionPresetId = sessionStorage.getItem('current_session_preset_id');
+      
+      if (sessionPresetId) {
+        console.log('[TranscriptionRulesEditor] Using analysis-recommended preset:', sessionPresetId);
+        setCurrentPresetId(sessionPresetId);
+        // Save it as the Rules Editor preset
+        sessionStorage.setItem('rules_editor_preset_id', sessionPresetId);
       } else {
-        // If no matching preset, it's a custom prompt
-        console.log('[TranscriptionRulesEditor] Using custom prompt');
+        // Default to custom (settings prompt)
+        console.log('[TranscriptionRulesEditor] Using custom prompt from settings');
         setCurrentPresetId('custom');
       }
     }
@@ -284,13 +278,16 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
     // Find the preset
     const preset = allPresets.find(p => p.id === newPresetId);
     if (preset && onChangePrompt) {
-      // If it's a session preset, update session storage
-      if (sessionStorage.getItem('current_session_preset_id')) {
+      // Store the Rules Editor's preset separately from Video Processing Options
+      // This prevents the two modals from interfering with each other
+      sessionStorage.setItem('rules_editor_preset_id', newPresetId);
+      sessionStorage.setItem('rules_editor_prompt', preset.prompt);
+      
+      // Also update the recommended preset if it was from analysis
+      const analysisPresetId = sessionStorage.getItem('current_session_preset_id');
+      if (analysisPresetId === newPresetId) {
+        // Keep the analysis recommendation updated
         sessionStorage.setItem('current_session_preset_id', newPresetId);
-        sessionStorage.setItem('current_session_prompt', preset.prompt);
-      } else {
-        // Otherwise update localStorage
-        localStorage.setItem('transcription_prompt', preset.prompt);
       }
 
       // Call the callback to update the prompt in the parent component
