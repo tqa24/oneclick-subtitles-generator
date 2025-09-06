@@ -33,31 +33,83 @@ function clearDownloadProgress(videoId) {
 }
 
 /**
- * Parse yt-dlp progress output - CLEAN VERSION
+ * Parse yt-dlp progress output - ENHANCED VERSION
  * @param {string} output - Raw output from yt-dlp
  * @returns {Object|null} - Parsed progress info or null
  */
 function parseYtdlpProgress(output) {
-  // yt-dlp progress format: [download]  45.2% of 123.45MiB at 1.23MiB/s ETA 00:30
-  const progressMatch = output.match(/\[download\]\s+(\d+\.?\d*)%/);
+  // Remove ANSI escape codes if present
+  const cleanOutput = output.replace(/\x1b\[[0-9;]*m/g, '').trim();
+  
+  // Match various progress formats
+  // Format 1: [download]  45.2% of 123.45MiB at 1.23MiB/s ETA 00:30
+  // Format 2: [download] 100% of   50.07MiB in 00:00:46 at 1.08MiB/s
+  // Format 3: download  45.2% of ...
+  const progressMatch = cleanOutput.match(/(?:\[download\]|download)\s+(\d+\.?\d*)%/);
   if (progressMatch) {
     const progress = parseFloat(progressMatch[1]);
 
     // Only return valid progress values
     if (progress >= 0 && progress <= 100) {
+      // Determine phase from output
+      let phase = 'downloading';
+      let details = '';
+      
+      // Extract additional info
+      const sizeMatch = cleanOutput.match(/of\s+([\d.]+\w+)/);  // e.g., "of 50.07MiB"
+      const speedMatch = cleanOutput.match(/at\s+([\d.]+\w+\/s)/); // e.g., "at 1.08MiB/s"
+      const etaMatch = cleanOutput.match(/ETA\s+(\d+:\d+)/); // e.g., "ETA 00:30"
+      
+      if (sizeMatch) details += `Size: ${sizeMatch[1]}`;
+      if (speedMatch) details += ` Speed: ${speedMatch[1]}`;
+      if (etaMatch) details += ` ETA: ${etaMatch[1]}`;
+      
+      // Check file type
+      if (cleanOutput.includes('.f8.') || cleanOutput.includes('video')) {
+        phase = 'video';
+      } else if (cleanOutput.includes('.f2.') || cleanOutput.includes('audio')) {
+        phase = 'audio';
+      }
+      
       return {
         progress: progress,
-        status: 'downloading'
+        status: 'downloading',
+        phase: phase,
+        details: details.trim()
       };
     }
   }
 
+  // Check for merging phase
+  if (cleanOutput.includes('[Merger]') || 
+      cleanOutput.includes('Merging') || 
+      cleanOutput.includes('ffmpeg command line')) {
+    return {
+      progress: 95,
+      status: 'merging',
+      phase: 'merge'
+    };
+  }
+
   // Check for completion
-  if (output.includes('[download] 100%') ||
-      output.includes('has already been downloaded')) {
+  if (cleanOutput.includes('[download] 100%') ||
+      cleanOutput.includes('has already been downloaded') ||
+      cleanOutput.includes('Deleting original file')) {
     return {
       progress: 100,
-      status: 'completed'
+      status: 'completed',
+      phase: 'completed'
+    };
+  }
+
+  // Check for extracting/starting phase
+  if (cleanOutput.includes('Extracting') || 
+      cleanOutput.includes('Downloading webpage') ||
+      cleanOutput.includes('Downloading video formats')) {
+    return {
+      progress: 1,
+      status: 'downloading',
+      phase: 'extracting'
     };
   }
 
@@ -76,10 +128,15 @@ function updateProgressFromYtdlpOutput(videoId, output) {
   if (progressInfo) {
     setDownloadProgress(videoId, progressInfo.progress, progressInfo.status);
 
-    // Broadcast to WebSocket clients
+    // Broadcast to WebSocket clients with phase information
     try {
       const { broadcastProgress } = require('./progressWebSocket');
-      broadcastProgress(videoId, progressInfo.progress, progressInfo.status);
+      broadcastProgress(videoId, progressInfo.progress, progressInfo.status, progressInfo.phase);
+      
+      // Log progress only at intervals to reduce spam
+      if (progressInfo.progress % 5 === 0 || progressInfo.progress === 100) {
+        console.log(`[Progress] ${videoId}: ${progressInfo.progress}% - ${progressInfo.phase} ${progressInfo.details || ''}`);
+      }
     } catch (error) {
       // WebSocket module might not be initialized yet, that's okay
     }

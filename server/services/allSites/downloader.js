@@ -7,11 +7,9 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const { VIDEOS_DIR } = require('../../config');
 const { safeMoveFile } = require('../../utils/fileOperations');
-const { getYtDlpPath, getYtDlpArgs, getOptimizedYtDlpArgs } = require('../shared/ytdlpUtils');
-const {
-  setDownloadProgress,
-  updateProgressFromYtdlpOutput
-} = require('../shared/progressTracker');
+const { getYtDlpPath, getYtDlpArgs } = require('../shared/ytdlpUtils');
+const progressTracker = require('../shared/progressTracker');
+const { setDownloadProgress } = progressTracker;
 
 
 
@@ -88,7 +86,9 @@ async function downloadVideoWithYtDlp(videoId, videoURL, quality = '360p', useCo
     // Use yt-dlp with site-appropriate format options and conditional cookie support
     const args = [
       ...getYtDlpArgs(useCookies),
-      '--verbose',
+      '--progress',        // Enable progress output
+      '--newline',         // Output progress on new lines
+      '--no-colors',       // Disable ANSI colors for cleaner parsing
       '--format', formatString,
       '--merge-output-format', 'mp4',
       '--output', tempPath,
@@ -99,21 +99,54 @@ async function downloadVideoWithYtDlp(videoId, videoURL, quality = '360p', useCo
     ];
 
     console.log(`[allSites] Running yt-dlp with args:`, args);
-    const ytdlpProcess = spawn(ytDlpPath, args);
+    
+    // Spawn with unbuffered output for real-time progress
+    const ytdlpProcess = spawn(ytDlpPath, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],  // stdin, stdout, stderr
+      env: {
+        ...process.env,
+        PYTHONUNBUFFERED: '1'  // Force Python to use unbuffered output
+      }
+    });
+
+    // Initialize progress tracking
+    setDownloadProgress(videoId, 0, 'starting');
 
     let errorOutput = '';
     let stdoutData = '';
+    let stdoutBuffer = ''; // Buffer for line-by-line processing
 
     ytdlpProcess.stdout.on('data', (data) => {
       const dataStr = data.toString();
       stdoutData += dataStr;
-
+      stdoutBuffer += dataStr;
+      
+      // Process complete lines
+      const lines = stdoutBuffer.split('\n');
+      stdoutBuffer = lines.pop(); // Keep incomplete line in buffer
+      
+      for (const line of lines) {
+        if (line.trim()) {
+          console.log(`[allSites stdout] ${line.trim()}`);
+          // Update progress from output
+          progressTracker.updateProgressFromYtdlpOutput(videoId, line);
+        }
+      }
     });
 
     ytdlpProcess.stderr.on('data', (data) => {
       const dataStr = data.toString();
       errorOutput += dataStr;
-      console.error(`yt-dlp stderr: ${dataStr}`);
+      
+      // Process stderr line by line too
+      const lines = dataStr.split('\n');
+      for (const line of lines) {
+        if (line.trim()) {
+          console.log(`[allSites stderr] ${line.trim()}`);
+          // yt-dlp sometimes outputs progress to stderr
+          progressTracker.updateProgressFromYtdlpOutput(videoId, line);
+        }
+      }
     });
 
     ytdlpProcess.on('close', (code) => {
@@ -128,10 +161,12 @@ async function downloadVideoWithYtDlp(videoId, videoURL, quality = '360p', useCo
             return;
           }
 
+          // Set progress to 100% before moving
+          setDownloadProgress(videoId, 100, 'completed');
+          
           // Move the temp file to the final location
           safeMoveFile(tempPath, outputPath)
             .then(() => {
-
               resolve({
                 success: true,
                 path: outputPath,
@@ -142,22 +177,26 @@ async function downloadVideoWithYtDlp(videoId, videoURL, quality = '360p', useCo
             })
             .catch(err => {
               console.error(`Error moving downloaded file: ${err.message}`);
+              setDownloadProgress(videoId, 0, 'error');
               reject(err);
             });
         } else {
           console.error(`Download completed but video file was not found at ${tempPath}`);
+          setDownloadProgress(videoId, 0, 'error');
           reject(new Error('Download completed but video file was not found'));
         }
       } else {
         console.error(`yt-dlp process exited with code ${code}`);
         console.error(`Error output: ${errorOutput}`);
         console.error(`Standard output: ${stdoutData}`);
+        setDownloadProgress(videoId, 0, 'error');
         reject(new Error(`yt-dlp process failed with code ${code}: ${errorOutput}`));
       }
     });
 
     ytdlpProcess.on('error', (error) => {
       console.error(`Error spawning yt-dlp process: ${error.message}`);
+      setDownloadProgress(videoId, 0, 'error');
       reject(error);
     });
   });

@@ -2,6 +2,8 @@
  * Utility functions for downloading and handling videos from any site using yt-dlp
  */
 
+import progressWebSocketClient from './progressWebSocketClient';
+
 // Global download queue to track video download status
 const downloadQueue = {};
 
@@ -26,6 +28,49 @@ const isVideoAlreadyDownloaded = async (videoId) => {
     console.error('Error checking if video is downloaded:', error);
     return false;
   }
+};
+
+/**
+ * Fetch video file as blob and convert to File object
+ * @param {string} videoId - The video ID
+ * @returns {Promise<File>} - File object for the video
+ */
+const fetchVideoAsFile = async (videoId) => {
+  const response = await fetch(`${SERVER_URL}/videos/${videoId}.mp4?t=${Date.now()}`, {
+    method: 'GET',
+    cache: 'no-cache'
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error fetching video file: ${response.status} ${response.statusText}`);
+  }
+
+  const blob = await response.blob();
+
+  // Check if the blob has a reasonable size
+  if (blob.size < 100 * 1024) { // Less than 100KB
+    console.error(`Downloaded blob is too small (${blob.size} bytes), likely not a valid video`);
+    
+    // Try one more time
+    const retryResponse = await fetch(`${SERVER_URL}/videos/${videoId}.mp4?t=${Date.now()}`, {
+      method: 'GET',
+      cache: 'no-cache'
+    });
+
+    if (!retryResponse.ok) {
+      throw new Error(`Error fetching video file on retry: ${retryResponse.status} ${retryResponse.statusText}`);
+    }
+
+    const retryBlob = await retryResponse.blob();
+    
+    if (retryBlob.size < 100 * 1024) {
+      throw new Error(`Downloaded blob is too small (${retryBlob.size} bytes), likely not a valid video`);
+    }
+
+    return new File([retryBlob], `${videoId}.mp4`, { type: 'video/mp4' });
+  }
+
+  return new File([blob], `${videoId}.mp4`, { type: 'video/mp4' });
 };
 
 /**
@@ -137,71 +182,36 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
   if (downloadQueue[videoId]) {
     // If it's already completed, return the URL
     if (downloadQueue[videoId].status === 'completed') {
-      // Create a File object for the downloaded video
+      // Return the cached video file
       try {
-        // Use a direct URL to the server to avoid any caching issues
-        const response = await fetch(`${SERVER_URL}/videos/${videoId}.mp4?t=${Date.now()}`, {
-          method: 'GET',
-          cache: 'no-cache' // Ensure we don't get a cached response
-        });
-
-        if (response.ok) {
-
-          const blob = await response.blob();
-
-
-          // Check if the blob has a reasonable size
-          if (blob.size < 100 * 1024) { // Less than 100KB
-            console.error(`Downloaded blob is too small (${blob.size} bytes), likely not a valid video`);
-
-            // Try one more time with a direct server URL
-
-
-            const retryResponse = await fetch(`${SERVER_URL}/videos/${videoId}.mp4?t=${Date.now()}`, {
-              method: 'GET',
-              cache: 'no-cache'
-            });
-
-            if (retryResponse.ok) {
-
-              const retryBlob = await retryResponse.blob();
-
-
-              // Final check on the blob size
-              if (retryBlob.size < 100 * 1024) { // Less than 100KB
-                throw new Error(`Downloaded blob is too small (${retryBlob.size} bytes), likely not a valid video`);
-              }
-
-              const file = new File([retryBlob], `${videoId}.mp4`, { type: 'video/mp4' });
-
-              return file;
-            } else {
-              throw new Error(`Error fetching video file on retry: ${retryResponse.status} ${retryResponse.statusText}`);
-            }
-          }
-
-          const file = new File([blob], `${videoId}.mp4`, { type: 'video/mp4' });
-
-          return file;
-        } else {
-          console.error(`Error fetching video file: ${response.status} ${response.statusText}`);
-          throw new Error(`Error fetching video file: ${response.status} ${response.statusText}`);
-        }
+        return await fetchVideoAsFile(videoId);
       } catch (error) {
-        console.error('Error creating File object:', error);
+        console.error('Error fetching cached video:', error);
         throw error;
       }
     }
 
     // If it's downloading, set up progress reporting
     if (downloadQueue[videoId].status === 'downloading') {
-      // Set up progress reporting if not already set
+      // Subscribe to WebSocket for real-time progress
+      progressWebSocketClient.subscribe(videoId, (progressData) => {
+        if (downloadQueue[videoId]) {
+          downloadQueue[videoId].progress = progressData.progress || 0;
+          downloadQueue[videoId].status = progressData.status || 'downloading';
+          onProgress(progressData.progress || 0);
+          console.log(`[WebSocket] ${videoId}: ${progressData.progress}% - ${progressData.status}`);
+        }
+      }).catch(err => {
+        console.warn('Failed to subscribe to WebSocket:', err);
+      });
+      
+      // Set up fallback polling if not already set
       if (!activeDownloadIntervals[videoId]) {
         activeDownloadIntervals[videoId] = setInterval(() => {
           checkDownloadProgress(videoId).then(progress => {
             onProgress(progress);
           });
-        }, 1000);
+        }, 5000); // Poll less frequently since we have WebSocket
       }
 
       // Return a promise that resolves when the download is complete
@@ -218,11 +228,29 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
   }
 
   // Initialize the download queue entry
-  downloadQueue[videoId] = {
-    status: 'checking',
-    progress: 0,
-    forceRefresh
-  };
+    downloadQueue[videoId] = {
+      status: 'downloading',
+      progress: 0,
+      error: null
+    };
+    
+    // Subscribe to WebSocket immediately for real-time progress
+    progressWebSocketClient.subscribe(videoId, (progressData) => {
+      if (downloadQueue[videoId]) {
+        downloadQueue[videoId].progress = progressData.progress || 0;
+        downloadQueue[videoId].status = progressData.status || 'downloading';
+        onProgress(progressData.progress || 0);
+        console.log(`[WebSocket] ${videoId}: ${progressData.progress}% - ${progressData.phase || 'downloading'}`);
+        
+        // If completed, clean up polling
+        if (progressData.status === 'completed' && activeDownloadIntervals[videoId]) {
+          clearInterval(activeDownloadIntervals[videoId]);
+          delete activeDownloadIntervals[videoId];
+        }
+      }
+    }).catch(err => {
+      console.warn('[allSitesDownloader] WebSocket subscription failed:', err);
+    });
 
   try {
     // Check if the video is already downloaded
@@ -234,58 +262,11 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
       downloadQueue[videoId].progress = 100;
       onProgress(100);
 
-      // Create a File object for the downloaded video
+      // Return the already downloaded video file
       try {
-        // Use a direct URL to the server to avoid any caching issues
-        const response = await fetch(`${SERVER_URL}/videos/${videoId}.mp4?t=${Date.now()}`, {
-          method: 'GET',
-          cache: 'no-cache' // Ensure we don't get a cached response
-        });
-
-        if (response.ok) {
-
-          const blob = await response.blob();
-
-
-          // Check if the blob has a reasonable size
-          if (blob.size < 100 * 1024) { // Less than 100KB
-            console.error(`Downloaded blob is too small (${blob.size} bytes), likely not a valid video`);
-
-            // Try one more time with a direct server URL
-
-
-            const retryResponse = await fetch(`${SERVER_URL}/videos/${videoId}.mp4?t=${Date.now()}`, {
-              method: 'GET',
-              cache: 'no-cache'
-            });
-
-            if (retryResponse.ok) {
-
-              const retryBlob = await retryResponse.blob();
-
-
-              // Final check on the blob size
-              if (retryBlob.size < 100 * 1024) { // Less than 100KB
-                throw new Error(`Downloaded blob is too small (${retryBlob.size} bytes), likely not a valid video`);
-              }
-
-              const file = new File([retryBlob], `${videoId}.mp4`, { type: 'video/mp4' });
-
-              return file;
-            } else {
-              throw new Error(`Error fetching video file on retry: ${retryResponse.status} ${retryResponse.statusText}`);
-            }
-          }
-
-          const file = new File([blob], `${videoId}.mp4`, { type: 'video/mp4' });
-
-          return file;
-        } else {
-          console.error(`Error fetching video file: ${response.status} ${response.statusText}`);
-          throw new Error(`Error fetching video file: ${response.status} ${response.statusText}`);
-        }
+        return await fetchVideoAsFile(videoId);
       } catch (error) {
-        console.error('Error creating File object:', error);
+        console.error('Error fetching existing video:', error);
         throw error;
       }
     }
@@ -351,19 +332,8 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
 
               // Resolve any pending promises with a File object
               if (downloadQueue[videoId].resolve) {
-                // Create a File object for the downloaded video
-                fetch(`/videos/${videoId}.mp4`)
-                  .then(response => {
-                    if (response.ok) {
-                      return response.blob();
-                    } else {
-                      throw new Error(`Error fetching video file: ${response.status} ${response.statusText}`);
-                    }
-                  })
-                  .then(blob => {
-                    const file = new File([blob], `${videoId}.mp4`, { type: 'video/mp4' });
-                    downloadQueue[videoId].resolve(file);
-                  })
+                fetchVideoAsFile(videoId)
+                  .then(file => downloadQueue[videoId].resolve(file))
                   .catch(error => {
                     console.error('Error creating File object:', error);
                     downloadQueue[videoId].reject(error);
@@ -404,19 +374,8 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
 
               // Resolve any pending promises with a File object
               if (downloadQueue[videoId].resolve) {
-                // Create a File object for the downloaded video
-                fetch(`/videos/${videoId}.mp4`)
-                  .then(response => {
-                    if (response.ok) {
-                      return response.blob();
-                    } else {
-                      throw new Error(`Error fetching video file: ${response.status} ${response.statusText}`);
-                    }
-                  })
-                  .then(blob => {
-                    const file = new File([blob], `${videoId}.mp4`, { type: 'video/mp4' });
-                    downloadQueue[videoId].resolve(file);
-                  })
+                fetchVideoAsFile(videoId)
+                  .then(file => downloadQueue[videoId].resolve(file))
                   .catch(error => {
                     console.error('Error creating File object:', error);
                     downloadQueue[videoId].reject(error);
@@ -444,55 +403,9 @@ export const downloadGenericVideo = async (url, onProgress = () => {}, forceRefr
           downloadQueue[videoId].progress = 100;
           onProgress(100);
 
-          // Create a File object for the downloaded video
-          // Use a direct URL to the server to avoid any caching issues
-          fetch(`${SERVER_URL}/videos/${videoId}.mp4?t=${Date.now()}`, {
-            method: 'GET',
-            cache: 'no-cache' // Ensure we don't get a cached response
-          })
-            .then(response => {
-              if (response.ok) {
-
-                return response.blob();
-              } else {
-                throw new Error(`Error fetching video file: ${response.status} ${response.statusText}`);
-              }
-            })
-            .then(blob => {
-
-
-              // Check if the blob has a reasonable size
-              if (blob.size < 100 * 1024) { // Less than 100KB
-                console.error(`Downloaded blob is too small (${blob.size} bytes), likely not a valid video`);
-
-                // Try one more time with a direct server URL
-
-
-                return fetch(`${SERVER_URL}/videos/${videoId}.mp4?t=${Date.now()}`, {
-                  method: 'GET',
-                  cache: 'no-cache'
-                }).then(retryResponse => {
-                  if (retryResponse.ok) {
-
-                    return retryResponse.blob();
-                  } else {
-                    throw new Error(`Error fetching video file on retry: ${retryResponse.status} ${retryResponse.statusText}`);
-                  }
-                });
-              }
-
-              return blob;
-            })
-            .then(blob => {
-              // Final check on the blob size
-              if (blob.size < 100 * 1024) { // Less than 100KB
-                throw new Error(`Downloaded blob is too small (${blob.size} bytes), likely not a valid video`);
-              }
-
-              const file = new File([blob], `${videoId}.mp4`, { type: 'video/mp4' });
-
-              resolve(file);
-            })
+          // Fetch and resolve with the video file
+          fetchVideoAsFile(videoId)
+            .then(file => resolve(file))
             .catch(error => {
               console.error('Error creating File object:', error);
               reject(error);
