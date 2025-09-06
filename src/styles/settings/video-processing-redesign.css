@@ -95,15 +95,31 @@
 }
 
 .settings-card.analysis-card::before {
-  background-color: var(--md-tertiary);
+  background-color: #2196F3; /* Blue - Intelligence & Analysis */
+}
+
+.settings-card.processing-card::before {
+  background-color: #4CAF50; /* Green - Processing & Transformation */
+}
+
+.settings-card.display-card::before {
+  background-color: #FF9800; /* Orange - Visual Display */
+}
+
+.settings-card.download-card::before {
+  background-color: #673AB7; /* Deep Purple - Network & Data Flow */
+}
+
+.settings-card.thinking-card::before {
+  background-color: #FFC107; /* Amber - AI Thinking & Resources */
+}
+
+.settings-card.custom-gemini-models-card::before {
+  background-color: #009688; /* Teal - Customization & Tools */
 }
 
 .settings-card.optimization-card::before {
   background-color: #00BFA5; /* Teal */
-}
-
-.settings-card.display-card::before {
-  background-color: #FF9800; /* Orange */
 }
 
 /* Compact setting item */
