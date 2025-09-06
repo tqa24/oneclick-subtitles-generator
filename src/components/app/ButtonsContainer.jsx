@@ -6,6 +6,7 @@ import LoadingIndicator from '../common/LoadingIndicator';
 import WavyProgressIndicator from '../common/WavyProgressIndicator';
 import { abortAllRequests } from '../../services/geminiService';
 import { hasValidDownloadedVideo } from '../../utils/videoUtils';
+import { showInfoToast, showErrorToast } from '../../utils/toastUtils';
 import '../../styles/ButtonTextBalance.css';
 
 /**
@@ -135,21 +136,13 @@ const ButtonsContainer = ({
           await waitForAnalysisComplete();
         } else {
           console.log('[AutoFlow] Analysis already exists, skipping analysis step');
-          // Show temporary toast about using existing analysis
-          const toast = document.createElement('div');
-          toast.className = 'auto-flow-toast';
-          toast.textContent = t('autoFlow.usingExistingAnalysis', 'Using existing analysis rules');
-          document.body.appendChild(toast);
-          setTimeout(() => toast.remove(), 2000);
+          // Show info toast about using existing analysis
+          showInfoToast(t('autoFlow.usingExistingAnalysis', 'Using existing analysis rules'), 2000);
         }
       } else {
         console.log('[AutoFlow] Analysis button not found or disabled, continuing without analysis');
-        // Show temporary toast about skipping analysis
-        const toast = document.createElement('div');
-        toast.className = 'auto-flow-toast';
-        toast.textContent = t('autoFlow.analysisSkipped', 'Analysis skipped, continuing with default settings');
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
+        // Show info toast about skipping analysis
+        showInfoToast(t('autoFlow.analysisSkipped', 'Analysis skipped, continuing with default settings'), 3000);
       }
       
       if (autoFlowAbortedRef.current) return;
@@ -185,12 +178,8 @@ const ButtonsContainer = ({
       
     } catch (error) {
       console.error('[AutoFlow] Error during auto-generation:', error);
-      // Show error toast
-      const toast = document.createElement('div');
-      toast.className = 'auto-flow-toast error';
-      toast.textContent = t('autoFlow.error', 'Auto-generation encountered an error');
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
+      // Show error toast but continue gracefully  
+      showErrorToast(t('autoFlow.error', 'Auto-generation encountered an error: {{message}}', { message: error.message }), 4000);
     } finally {
       setIsAutoGenerating(false);
       setAutoFlowStep('');
@@ -257,9 +246,23 @@ const ButtonsContainer = ({
       let checkCount = 0;
       const maxChecks = 120; // 2 minutes max wait for analysis
       let modalDetected = false;
+      let errorDetected = false;
       
       const checkInterval = setInterval(() => {
         checkCount++;
+        
+        // Check for error toasts that might have appeared
+        const errorToast = document.querySelector('.custom-toast.error');
+        if (errorToast && !errorDetected) {
+          errorDetected = true;
+          console.log('[AutoFlow] Analysis error detected via toast, continuing with flow');
+          clearInterval(checkInterval);
+          // Continue with the flow even if analysis failed
+          setTimeout(() => {
+            resolve();
+          }, 1000);
+          return;
+        }
         
         // Check for the rules editor modal
         const rulesModal = document.querySelector('.rules-editor-modal');
@@ -305,6 +308,13 @@ const ButtonsContainer = ({
           // Rules exist but modal never opened (might happen if analysis was very fast)
           clearInterval(checkInterval);
           console.log('[AutoFlow] Analysis complete (rules saved without modal)');
+          resolve();
+          
+        } else if (checkCount >= maxChecks) {
+          // Timeout reached - continue without analysis
+          clearInterval(checkInterval);
+          console.log('[AutoFlow] Analysis timeout reached, continuing without analysis');
+          showInfoToast(t('autoFlow.analysisTimeout', 'Analysis taking too long, continuing without it'), 3000);
           resolve();
           
         } else if (autoFlowAbortedRef.current) {

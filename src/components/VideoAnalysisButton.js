@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiEdit, FiX } from 'react-icons/fi';
-import LoadingIndicator from './common/LoadingIndicator';
 import TranscriptionRulesEditor from './TranscriptionRulesEditor';
 import { analyzeVideoAndWaitForUserChoice } from '../utils/videoProcessing/analysisUtils';
-import { getTranscriptionRulesSync, setTranscriptionRules, clearTranscriptionRules, getCurrentCacheId } from '../utils/transcriptionRulesStore';
+import { setTranscriptionRules, getTranscriptionRulesSync, clearTranscriptionRules } from '../utils/transcriptionRulesStore';
+import LoadingIndicator from './common/LoadingIndicator';
+import { showErrorToast, showWarningToast } from '../utils/toastUtils';
 import '../styles/VideoAnalysisButton.css';
 
 
@@ -180,7 +181,7 @@ const VideoAnalysisButton = ({ disabled = false, uploadedFile = null, uploadedFi
   const handleAnalyzeVideo = async () => {
     const videoFile = getCurrentVideoFile();
     if (!videoFile) {
-      alert(t('videoAnalysis.noVideoFile', 'No video file available for analysis. Please upload or download a video first.'));
+      showWarningToast(t('videoAnalysis.noVideoFile', 'No video file available for analysis. Please upload or download a video first.'), 4000);
       return;
     }
 
@@ -203,7 +204,7 @@ const VideoAnalysisButton = ({ disabled = false, uploadedFile = null, uploadedFi
       }
     } catch (error) {
       console.error('Error during video analysis:', error);
-      alert(t('videoAnalysis.error', 'Video analysis failed: {{message}}', { message: error.message }));
+      showErrorToast(t('videoAnalysis.error', 'Video analysis failed: {{message}}', { message: error.message }), 5000);
     } finally {
       setIsAnalyzing(false);
     }
