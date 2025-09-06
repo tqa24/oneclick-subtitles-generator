@@ -142,10 +142,12 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
   useEffect(() => {
     // Check if Rules Editor has its own saved preset
     const rulesEditorPresetId = sessionStorage.getItem('rules_editor_preset_id');
+    let detectedPresetId = 'custom'; // Initialize the variable
     
     if (rulesEditorPresetId) {
       // Use the previously selected preset in Rules Editor
       console.log('[TranscriptionRulesEditor] Using previously selected preset:', rulesEditorPresetId);
+      detectedPresetId = rulesEditorPresetId;
       setCurrentPresetId(rulesEditorPresetId);
     } else {
       // Check if there's an analysis-recommended preset
@@ -153,12 +155,14 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
       
       if (sessionPresetId) {
         console.log('[TranscriptionRulesEditor] Using analysis-recommended preset:', sessionPresetId);
+        detectedPresetId = sessionPresetId;
         setCurrentPresetId(sessionPresetId);
         // Save it as the Rules Editor preset
         sessionStorage.setItem('rules_editor_preset_id', sessionPresetId);
       } else {
         // Default to custom (settings prompt)
         console.log('[TranscriptionRulesEditor] Using custom prompt from settings');
+        detectedPresetId = 'custom';
         setCurrentPresetId('custom');
       }
     }
