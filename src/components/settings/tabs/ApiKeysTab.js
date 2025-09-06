@@ -74,6 +74,8 @@ const ApiKeysTab = ({
   const [activeKeyIndex, setActiveKeyIndexState] = useState(0);
   const [visibleKeyIndices, setVisibleKeyIndices] = useState({});
   const [showGeminiPausedMessage, setShowGeminiPausedMessage] = useState(true);
+  const [showUDBMMessage, setShowUDBMMessage] = useState(true);
+  const [showUpcomingFeaturesMessage, setShowUpcomingFeaturesMessage] = useState(true);
 
   // Load all Gemini API keys on mount
   useEffect(() => {
@@ -81,10 +83,20 @@ const ApiKeysTab = ({
     setGeminiApiKeys(keys);
     setActiveKeyIndexState(getActiveKeyIndex());
 
-    // Check if the message has been closed before
+    // Check if the messages have been closed before
     const messageClosedBefore = localStorage.getItem('gemini25ProPausedMessageClosed') === 'true';
     if (messageClosedBefore) {
       setShowGeminiPausedMessage(false);
+    }
+    
+    const udbmMessageClosed = localStorage.getItem('udbmMessageClosed') === 'true';
+    if (udbmMessageClosed) {
+      setShowUDBMMessage(false);
+    }
+    
+    const upcomingFeaturesMessageClosed = localStorage.getItem('upcomingFeaturesMessageClosed') === 'true';
+    if (upcomingFeaturesMessageClosed) {
+      setShowUpcomingFeaturesMessage(false);
     }
   }, []);
 
@@ -92,6 +104,18 @@ const ApiKeysTab = ({
   const handleCloseGeminiPausedMessage = () => {
     setShowGeminiPausedMessage(false);
     localStorage.setItem('gemini25ProPausedMessageClosed', 'true');
+  };
+  
+  // Handle closing the UDBM message
+  const handleCloseUDBMMessage = () => {
+    setShowUDBMMessage(false);
+    localStorage.setItem('udbmMessageClosed', 'true');
+  };
+  
+  // Handle closing the upcoming features message
+  const handleCloseUpcomingFeaturesMessage = () => {
+    setShowUpcomingFeaturesMessage(false);
+    localStorage.setItem('upcomingFeaturesMessageClosed', 'true');
   };
 
   // Update the active key when it changes
@@ -264,18 +288,66 @@ const ApiKeysTab = ({
 
   return (
     <div className="settings-section api-key-section">
-      {/* Gemini 2.5 Pro API Pause Message */}
-      {showGeminiPausedMessage && (
-        <div className="gemini-paused-message">
-          <div className="message-content">
-            <span>{t('settings.gemini25ProPaused')}</span>
-          </div>
-          <CloseButton
-            onClick={handleCloseGeminiPausedMessage}
-            variant="default"
-            size="small"
-            ariaLabel={t('settings.closeMessage')}
-          />
+      {/* Notification Messages Container */}
+      {(showGeminiPausedMessage || showUDBMMessage || showUpcomingFeaturesMessage) && (
+        <div className="notification-messages-container">
+          {/* Gemini 2.5 Pro API Pause Message */}
+          {showGeminiPausedMessage && (
+            <div className="gemini-paused-message">
+              <div className="message-content">
+                <span>{t('settings.gemini25ProPaused')}</span>
+              </div>
+              <CloseButton
+                onClick={handleCloseGeminiPausedMessage}
+                variant="default"
+                size="small"
+                ariaLabel={t('settings.closeMessage')}
+              />
+            </div>
+          )}
+          
+          {/* UDBM Announcement Message */}
+          {showUDBMMessage && (
+            <div className="gemini-paused-message udbm-message">
+              <div className="message-content">
+                <span className="message-icon">🎉</span>
+                <span>
+                  {t('settings.udbmIntroduction')}
+                  {' '}
+                  <a 
+                    href="https://github.com/nganlinh4/udbm/releases" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="message-link"
+                  >
+                    {t('settings.udbmDownloadHere')}
+                  </a>
+                </span>
+              </div>
+              <CloseButton
+                onClick={handleCloseUDBMMessage}
+                variant="default"
+                size="small"
+                ariaLabel={t('settings.closeMessage')}
+              />
+            </div>
+          )}
+          
+          {/* Upcoming Features Message */}
+          {showUpcomingFeaturesMessage && (
+            <div className="gemini-paused-message upcoming-features-message">
+              <div className="message-content">
+                <span className="message-icon">🚀</span>
+                <span>{t('settings.upcomingFeaturesOSG')}</span>
+              </div>
+              <CloseButton
+                onClick={handleCloseUpcomingFeaturesMessage}
+                variant="default"
+                size="small"
+                ariaLabel={t('settings.closeMessage')}
+              />
+            </div>
+          )}
         </div>
       )}
 
