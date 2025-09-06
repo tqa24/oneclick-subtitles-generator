@@ -6,3 +6,6 @@
 
 // Re-export everything from the modular structure
 export * from './videoProcessing';
+
+// Also export the new simplified processing as the recommended approach
+export { processMediaFile as processVideo } from './videoProcessing';

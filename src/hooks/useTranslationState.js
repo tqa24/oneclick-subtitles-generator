@@ -212,7 +212,30 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
       }
     };
 
+    // Initial check
     checkRulesAvailability();
+
+    // Listen for transcription rules updates
+    const handleRulesUpdate = () => {
+      checkRulesAvailability();
+    };
+
+    // Listen for video analysis completion
+    const handleAnalysisComplete = () => {
+      checkRulesAvailability();
+    };
+
+    // Add event listeners
+    window.addEventListener('transcriptionRulesUpdated', handleRulesUpdate);
+    window.addEventListener('videoAnalysisComplete', handleAnalysisComplete);
+    window.addEventListener('videoAnalysisUserChoice', handleAnalysisComplete);
+
+    // Cleanup event listeners
+    return () => {
+      window.removeEventListener('transcriptionRulesUpdated', handleRulesUpdate);
+      window.removeEventListener('videoAnalysisComplete', handleAnalysisComplete);
+      window.removeEventListener('videoAnalysisUserChoice', handleAnalysisComplete);
+    };
   }, []);
 
   // Load user-provided subtitles

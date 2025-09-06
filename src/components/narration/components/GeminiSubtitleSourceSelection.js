@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import MaterialSwitch from '../../common/MaterialSwitch';
+import CustomDropdown from '../../common/CustomDropdown';
 import '../../../styles/common/material-switch.css';
 import { detectSubtitleLanguage } from '../../../services/gemini/languageDetectionService';
 import { FiRefreshCw } from 'react-icons/fi';
@@ -333,65 +334,67 @@ const GeminiSubtitleSourceSelection = ({
               <label htmlFor="grouping-intensity" className="grouping-intensity-label">
                 {t('narration.groupingIntensity', 'Grouping Intensity')}:
               </label>
-              <select
-                id="grouping-intensity"
-                className="grouping-intensity-select"
+              <CustomDropdown
                 value={groupingIntensity}
-                onChange={(e) => setGroupingIntensity(e.target.value)}
+                onChange={(value) => setGroupingIntensity(value)}
                 disabled={isGenerating || !subtitleSource || isGroupingSubtitles || !hasSubtitles || useGroupedSubtitles}
-              >
-                <option value="minimal">{t('narration.intensityMinimal', 'Minimal')}</option>
-                <option value="light">{t('narration.intensityLight', 'Light')}</option>
-                <option value="balanced">{t('narration.intensityBalanced', 'Balanced')}</option>
-                <option value="moderate">{t('narration.intensityModerate', 'Moderate')}</option>
-                <option value="enhanced">{t('narration.intensityEnhanced', 'Enhanced')}</option>
-                <option value="aggressive">{t('narration.intensityAggressive', 'Aggressive')}</option>
-              </select>
-            </div>
-
-            {/* Material Web Switch */}
-            <div className="material-switch-container">
-              <MaterialSwitch
-                id="subtitle-grouping"
-                checked={useGroupedSubtitles}
-                onChange={(e) => handleGroupingToggle(e.target.checked)}
-                disabled={isGenerating || !subtitleSource || isGroupingSubtitles || !hasSubtitles}
-                ariaLabel={t('narration.groupSubtitles', 'Smartly group subtitles into fuller sentences for narration')}
-                icons={true}
+                options={[
+                  { value: 'minimal', label: t('narration.intensityMinimal', 'Minimal') },
+                  { value: 'light', label: t('narration.intensityLight', 'Light') },
+                  { value: 'balanced', label: t('narration.intensityBalanced', 'Balanced') },
+                  { value: 'moderate', label: t('narration.intensityModerate', 'Moderate') },
+                  { value: 'enhanced', label: t('narration.intensityEnhanced', 'Enhanced') },
+                  { value: 'aggressive', label: t('narration.intensityAggressive', 'Aggressive') }
+                ]}
+                placeholder={t('narration.selectIntensity', 'Select Intensity')}
               />
-              <label htmlFor="subtitle-grouping" className="material-switch-label">
-                {t('narration.groupSubtitles', 'Smartly group subtitles into fuller sentences for narration')}
-                {isGroupingSubtitles && (
-                  <span className="loading-animation" style={{ marginLeft: '10px', display: 'inline-flex', alignItems: 'center' }}>
-                    <span className="spinner-circle" style={{ width: '14px', height: '14px' }}></span>
-                    <span style={{ marginLeft: '5px' }}>{t('narration.groupingSubtitles', 'Grouping...')}</span>
-                  </span>
-                )}
-              </label>
             </div>
 
-            {/* Show comparison button when grouped subtitles are available */}
-            {useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0 && (
-              <div className="grouping-info-container">
-                <button
-                  className="pill-button view-grouping-button"
-                  onClick={openModal}
-                >
-                  <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="16" x2="12" y2="12" />
-                    <line x1="12" y1="8" x2="12.01" y2="8" />
-                  </svg>
-                  {t('narration.viewGrouping', 'View Grouping')}
-                </button>
-                <span className="grouping-stats">
-                  {t('narration.groupedSubtitlesCount', 'Grouped {{original}} subtitles into {{grouped}} sentences', {
-                    original: originalSubtitles?.length || 0,
-                    grouped: groupedSubtitles?.length || 0
-                  })}
-                </span>
+            {/* Material Web Switch and Grouping Info */}
+            <div className="grouping-controls-wrapper">
+              <div className="material-switch-container">
+                <MaterialSwitch
+                  id="subtitle-grouping"
+                  checked={useGroupedSubtitles}
+                  onChange={(e) => handleGroupingToggle(e.target.checked)}
+                  disabled={isGenerating || !subtitleSource || isGroupingSubtitles || !hasSubtitles}
+                  ariaLabel={t('narration.groupSubtitles', 'Smartly group subtitles into fuller sentences for narration')}
+                  icons={true}
+                />
+                <label htmlFor="subtitle-grouping" className="material-switch-label">
+                  {t('narration.groupSubtitles', 'Smartly group subtitles into fuller sentences for narration')}
+                  {isGroupingSubtitles && (
+                    <span className="loading-animation" style={{ marginLeft: '10px', display: 'inline-flex', alignItems: 'center' }}>
+                      <span className="spinner-circle" style={{ width: '14px', height: '14px' }}></span>
+                      <span style={{ marginLeft: '5px' }}>{t('narration.groupingSubtitles', 'Grouping...')}</span>
+                    </span>
+                  )}
+                </label>
               </div>
-            )}
+
+              {/* Show comparison button when grouped subtitles are available */}
+              {useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0 && (
+                <div className="grouping-info-container">
+                  <button
+                    className="pill-button view-grouping-button"
+                    onClick={openModal}
+                  >
+                    <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="16" x2="12" y2="12" />
+                      <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                    {t('narration.viewGrouping', 'View Grouping')}
+                  </button>
+                  <span className="grouping-stats">
+                    {t('narration.groupedSubtitlesCount', 'Grouped {{original}} subtitles into {{grouped}} sentences', {
+                      original: originalSubtitles?.length || 0,
+                      grouped: groupedSubtitles?.length || 0
+                    })}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

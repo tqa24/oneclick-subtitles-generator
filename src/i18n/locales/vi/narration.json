@@ -276,5 +276,9 @@
   "gttsGeneratingProgress": "Đang tạo {{current}} trên {{total}} thuyết minh với gTTS...",
 
   "concurrentClients": "Chế độ cực nhanh",
-  "concurrentClientsHelp": "Mở nhiều hội thoại song song với Gemini cùng lúc, CHÚ Ý: có thể gây cạn kiệt quota nhanh chóng"
+  "concurrentClientsHelp": "Mở nhiều hội thoại song song với Gemini cùng lúc, CHÚ Ý: có thể gây cạn kiệt quota nhanh chóng",
+
+  "msVibeVoiceMethod": "MS VibeVoice",
+  "geminiNativeDialogMethod": "Gemini Native Dialog",
+  "comingSoon": "sắp ra mắt"
 }

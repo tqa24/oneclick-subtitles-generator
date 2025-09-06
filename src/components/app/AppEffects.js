@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { hasValidTokens } from '../../services/youtubeApiService';
-import { initGeminiButtonEffects, resetAllGeminiButtonEffects } from '../../utils/geminiEffects';
+import { initGeminiButtonEffects, resetAllGeminiButtonEffects, disableGeminiButtonEffects } from '../../utils/geminiEffects';
 import { syncLocalStorageToServer } from '../../services/localStorageService';
 import initTabPillAnimation from '../../utils/tabPillAnimation';
 import { getThemeWithFallback } from '../../utils/systemDetection';
@@ -17,7 +17,7 @@ export const useAppEffects = (props) => {
     setApiKeysSet,
     setStatus,
     setTheme,
-    setShowWaveform,
+    setShowWaveformLongVideos,
     setTimeFormat,
     setOptimizeVideos,
     setOptimizedResolution,
@@ -25,7 +25,6 @@ export const useAppEffects = (props) => {
     subtitlesData,
     status,
     handleDownloadAndPrepareYouTubeVideo,
-    prepareVideoForSegments,
     uploadedFile,
     t
   } = props;
@@ -34,8 +33,14 @@ export const useAppEffects = (props) => {
   useEffect(() => {
     // Small delay to ensure DOM is fully rendered
     const timer = setTimeout(() => {
-      // Initialize Gemini button effects
-      initGeminiButtonEffects();
+      const effectsEnabled = localStorage.getItem('enable_gemini_effects') !== 'false';
+      if (effectsEnabled) {
+        // Initialize Gemini button effects
+        initGeminiButtonEffects();
+      } else {
+        // Ensure any residual effects are disabled
+        disableGeminiButtonEffects();
+      }
 
       // Initialize tab pill sliding animation
       initTabPillAnimation();
@@ -57,7 +62,8 @@ export const useAppEffects = (props) => {
     if (subtitlesData && subtitlesData.length > 0) {
       // Use a small delay to ensure the DOM is updated
       const timer = setTimeout(() => {
-        initGeminiButtonEffects();
+        const effectsEnabled = localStorage.getItem('enable_gemini_effects') !== 'false';
+        if (effectsEnabled) initGeminiButtonEffects();
       }, 500);
 
       return () => clearTimeout(timer);
@@ -130,18 +136,25 @@ export const useAppEffects = (props) => {
   useEffect(() => {
     // Handle video analysis started
     const handleVideoAnalysisStarted = () => {
-      // Only show the modal if the flag is set in localStorage AND video analysis is enabled
-      const useVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false';
-      if (localStorage.getItem('show_video_analysis') === 'true' && useVideoAnalysis) {
+      // Video analysis is always enabled
+      if (localStorage.getItem('show_video_analysis') === 'true') {
+        setShowVideoAnalysis(true);
+      }
+    };
+
+    // Handle show video analysis modal event (new event from analysisUtils)
+    const handleShowVideoAnalysisModal = (event) => {
+      // This event is dispatched after analysis completes with the result
+      if (event.detail && event.detail.analysisResult) {
+        setVideoAnalysisResult(event.detail.analysisResult);
         setShowVideoAnalysis(true);
       }
     };
 
     // Handle video analysis complete
     const handleVideoAnalysisComplete = (event) => {
-      // Only update the result if the flag is set in localStorage AND video analysis is enabled
-      const useVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false';
-      if (event.detail && localStorage.getItem('show_video_analysis') === 'true' && useVideoAnalysis) {
+      // Video analysis is always enabled
+      if (event.detail && localStorage.getItem('show_video_analysis') === 'true') {
         setVideoAnalysisResult(event.detail);
         // Store current timestamp to allow for stale data detection
         localStorage.setItem('video_analysis_timestamp', Date.now().toString());
@@ -150,11 +163,13 @@ export const useAppEffects = (props) => {
 
     // Add event listeners
     window.addEventListener('videoAnalysisStarted', handleVideoAnalysisStarted);
+    window.addEventListener('showVideoAnalysisModal', handleShowVideoAnalysisModal);
     window.addEventListener('videoAnalysisComplete', handleVideoAnalysisComplete);
 
     // Clean up
     return () => {
       window.removeEventListener('videoAnalysisStarted', handleVideoAnalysisStarted);
+      window.removeEventListener('showVideoAnalysisModal', handleShowVideoAnalysisModal);
       window.removeEventListener('videoAnalysisComplete', handleVideoAnalysisComplete);
     };
   }, [setShowVideoAnalysis, setVideoAnalysisResult]);
@@ -167,14 +182,24 @@ export const useAppEffects = (props) => {
         setTheme(newTheme);
       }
 
-      if (event.key === 'show_waveform' || !event.key) {
-        const newShowWaveform = localStorage.getItem('show_waveform') !== 'false';
-        setShowWaveform(newShowWaveform);
+      if (event.key === 'show_waveform_long_videos' || !event.key) {
+        const newShowWaveformLongVideos = localStorage.getItem('show_waveform_long_videos') === 'true';
+        setShowWaveformLongVideos(newShowWaveformLongVideos);
       }
 
       if (event.key === 'time_format' || !event.key) {
         const newTimeFormat = localStorage.getItem('time_format') || 'hms';
         setTimeFormat(newTimeFormat);
+      }
+
+      // Respond to Gemini effects setting changes
+      if (event.key === 'enable_gemini_effects') {
+        const enabled = localStorage.getItem('enable_gemini_effects') !== 'false';
+        if (enabled) {
+          initGeminiButtonEffects();
+        } else {
+          disableGeminiButtonEffects();
+        }
       }
 
       if (event.key === 'optimize_videos' || !event.key) {
@@ -248,7 +273,7 @@ export const useAppEffects = (props) => {
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [setTheme, setShowWaveform, setTimeFormat, setOptimizeVideos, setOptimizedResolution, setUseOptimizedPreview, setShowVideoAnalysis, setVideoAnalysisResult]);
+  }, [setTheme, setShowWaveformLongVideos, setTimeFormat, setOptimizeVideos, setOptimizedResolution, setUseOptimizedPreview, setShowVideoAnalysis, setVideoAnalysisResult]);
 
   // Check for OAuth authentication success
   useEffect(() => {
@@ -327,27 +352,16 @@ export const useAppEffects = (props) => {
         status.message.includes('캐시')));
 
     if (isCacheLoadMessage && subtitlesData) {
-      // For file upload tab
+      // For file upload tab - cached subtitles are ready to use
       if (uploadedFile) {
-
-
-        // Prepare the video for segments
-        prepareVideoForSegments(uploadedFile).catch(error => {
-          console.error('Error preparing video for segments after cache load:', error);
-          // Show a warning but keep the subtitles
-          setStatus({
-            message: t('warnings.segmentsPreparationFailed', 'Subtitles loaded, but video segment preparation failed: {{message}}', { message: error.message }),
-            type: 'warning'
-          });
-        });
+        // No need to prepare video segments when using cached subtitles
+        // The new simplified processing workflow doesn't require video splitting
       }
       // For YouTube tab, we need to download the video first
       else if (handleDownloadAndPrepareYouTubeVideo) {
-
-
         // We'll handle YouTube videos in a separate function to avoid making this effect too complex
         handleDownloadAndPrepareYouTubeVideo();
       }
     }
-  }, [status, subtitlesData, uploadedFile, t, prepareVideoForSegments, handleDownloadAndPrepareYouTubeVideo, setStatus]);
+  }, [status, subtitlesData, uploadedFile, t, handleDownloadAndPrepareYouTubeVideo, setStatus]);
 };

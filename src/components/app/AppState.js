@@ -26,7 +26,7 @@ export const useAppState = () => {
   const [activeTab, setActiveTab] = useState(localStorage.getItem('userPreferredTab') || 'unified-url');
   const [theme, setTheme] = useState(() => getThemeWithFallback());
   const [timeFormat, setTimeFormat] = useState(localStorage.getItem('time_format') || 'hms');
-  const [showWaveform, setShowWaveform] = useState(localStorage.getItem('show_waveform') !== 'false');
+  const [showWaveformLongVideos, setShowWaveformLongVideos] = useState(localStorage.getItem('show_waveform_long_videos') === 'true');
 
   // Video processing state
   const [selectedVideo, setSelectedVideo] = useState(null);
@@ -40,6 +40,7 @@ export const useAppState = () => {
   const [optimizedResolution, setOptimizedResolution] = useState(localStorage.getItem('optimized_resolution') || '360p');
   const [useOptimizedPreview, setUseOptimizedPreview] = useState(localStorage.getItem('use_optimized_preview') === 'true');
   const [useCookiesForDownload, setUseCookiesForDownload] = useState(localStorage.getItem('use_cookies_for_download') === 'true');
+  const [enableYoutubeSearch, setEnableYoutubeSearch] = useState(localStorage.getItem('enable_youtube_search') === 'true'); // Default to false
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [currentDownloadId, setCurrentDownloadId] = useState(null);
@@ -55,6 +56,13 @@ export const useAppState = () => {
   // Segments state
   const [segmentsStatus, setSegmentsStatus] = useState([]);
   const [videoSegments, setVideoSegments] = useState([]);
+
+  // Video processing workflow state
+  const [isUploading, setIsUploading] = useState(false);
+  const [selectedSegment, setSelectedSegment] = useState(null);
+  const [showProcessingModal, setShowProcessingModal] = useState(false);
+  const [uploadedFileData, setUploadedFileData] = useState(null);
+  const [isProcessingSegment, setIsProcessingSegment] = useState(false);
 
   // Rules editor state
   const [showRulesEditor, setShowRulesEditor] = useState(false);
@@ -231,12 +239,19 @@ export const useAppState = () => {
         setStatus({});
       }
     }
-    // If we don't have a Gemini API key and there's no current status message, show the required message
-    else if (!apiKeysSet.gemini && (!status?.message || status.type !== 'info')) {
-      setStatus({
-        message: t('errors.apiKeyRequired', 'Please set your API key in the settings first.'),
-        type: 'info'
-      });
+    // If we don't have a Gemini API key, show the required message
+    // This will update the message when language changes or when API key is missing
+    else if (!apiKeysSet.gemini) {
+      const currentMessage = t('errors.apiKeyRequired', 'Please set your API key in the settings first.');
+
+      // Only update if the message is different (to avoid unnecessary re-renders)
+      // or if there's no current status message
+      if (!status?.message || status.message !== currentMessage || status.type !== 'info') {
+        setStatus({
+          message: currentMessage,
+          type: 'info'
+        });
+      }
     }
   }, [apiKeysSet.gemini, status, setStatus, t]);
 
@@ -252,13 +267,14 @@ export const useAppState = () => {
     activeTab, setActiveTab,
     theme, setTheme,
     timeFormat, setTimeFormat,
-    showWaveform, setShowWaveform,
+    showWaveformLongVideos, setShowWaveformLongVideos,
     selectedVideo, setSelectedVideo,
     uploadedFile, setUploadedFile,
     optimizeVideos, setOptimizeVideos,
     optimizedResolution, setOptimizedResolution,
     useOptimizedPreview, setUseOptimizedPreview,
     useCookiesForDownload, setUseCookiesForDownload,
+    enableYoutubeSearch, setEnableYoutubeSearch,
     isDownloading, setIsDownloading,
     downloadProgress, setDownloadProgress,
     currentDownloadId, setCurrentDownloadId,
@@ -282,6 +298,13 @@ export const useAppState = () => {
     generateSubtitles,
     retryGeneration,
     retrySegment,
-    retryingSegments
+    retryingSegments,
+
+    // Video processing workflow
+    isUploading, setIsUploading,
+    selectedSegment, setSelectedSegment,
+    showProcessingModal, setShowProcessingModal,
+    uploadedFileData, setUploadedFileData,
+    isProcessingSegment, setIsProcessingSegment
   };
 };

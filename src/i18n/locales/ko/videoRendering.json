@@ -39,7 +39,7 @@
   "renderingFrames": "비디오 프레임 처리 중...",
   "renderingFramesDetailed": "프레임 렌더링: {{rendered}}/{{total}}",
   "encodingFrames": "프레임 인코딩 및 결합 중...",
-  "downloadingChrome": "최초 설정: Chrome 브라우저 다운로드 중... {{progress}}%",
+  "downloadingChrome": "Chrome for Testing 다운로드 중 (최초 1회만)",
   "bundling": "비디오 구성 요소 준비 중...",
   "selectingComposition": "비디오 컴포지션 설정 중...",
   "complete": "렌더링 완료!",
@@ -231,5 +231,14 @@
   "noNarrationGenerated": "내레이션이 아직 생성되지 않음",
   "renderCancelled": "렌더링이 취소되었습니다",
   "renderFailedBrowserClosed": "브라우저가 닫힌 동안 렌더링이 실패했습니다",
-  "frames": "프레임"
+  "frames": "프레임",
+  "fps24": "24 FPS (시네마)",
+  "fps25": "25 FPS (PAL)",
+  "fps30": "30 FPS (표준)",
+  "fps50": "50 FPS (PAL 고주사율)",
+  "fps60": "60 FPS (부드러움)",
+  "fps120": "120 FPS (고속)",
+  "upcomingFeatures": "예정된 기능: 자르기, 텍스트 추가, 로고, 이미지, 배경 음악, ...",
+  "networkError": "네트워크 오류 발생",
+  "reconnecting": "렌더링에 다시 연결 중..."
 }

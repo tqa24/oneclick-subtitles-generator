@@ -6,6 +6,7 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
   const [lyrics, setLyrics] = useState([]);
   const [history, setHistory] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
+  const [checkpointHistory, setCheckpointHistory] = useState([]); // Stack of saved checkpoints
   const [originalLyrics, setOriginalLyrics] = useState([]);
   const [savedLyrics, setSavedLyrics] = useState([]);
   const [isAtOriginalState, setIsAtOriginalState] = useState(true);
@@ -357,6 +358,19 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
   const handleInsertLyric = (index) => {
     setHistory(prevHistory => [...prevHistory, JSON.parse(JSON.stringify(lyrics))]);
 
+    // Handle special case: creating the very first lyric when list is empty
+    if (lyrics.length === 0) {
+      const newLyric = { text: '', start: 0, end: 2.0 };
+      const updatedLyrics = [newLyric];
+      setLyrics(updatedLyrics);
+      if (onUpdateLyrics) {
+        onUpdateLyrics(updatedLyrics);
+      }
+      // Show warning about translations
+      showTranslationWarning(t('translation.warningInserted', 'You have inserted a new subtitle. Translations may be outdated. Please translate again.'));
+      return;
+    }
+
     // Handle special case: inserting at the beginning (before the first lyric)
     if (index < 0 || (index === 0 && lyrics.length > 0)) {
       const firstLyric = lyrics[0];
@@ -530,6 +544,99 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     showTranslationWarning(t('translation.warningSplit', 'You have split subtitles. Translations may be outdated. Please translate again.'));
   };
 
+  // Clear all subtitles fully inside a time range [start, end]
+  const clearSubtitlesInRange = (start, end) => {
+    if (start == null || end == null || end <= start) return;
+    setHistory(prevHistory => [...prevHistory, JSON.parse(JSON.stringify(lyrics))]);
+    setRedoStack([]);
+    // Remove subtitles fully contained within the range
+    const updated = lyrics.filter(l => !(l.start >= start && l.end <= end));
+    setLyrics(updated);
+    onUpdateLyrics && onUpdateLyrics(updated);
+
+    // Notify timing change
+    window.dispatchEvent(new CustomEvent('subtitle-timing-changed', {
+      detail: { action: 'clear-range', start, end, updatedLyrics: updated }
+    }));
+    // Translation warning
+    showTranslationWarning(t('translation.warningDeleted', 'You have deleted a subtitle. Translations may be outdated. Please translate again.'));
+  };
+
+  // Move all subtitles fully inside a time range by delta seconds (apply immediately)
+  const moveSubtitlesInRange = (start, end, delta) => {
+    if (start == null || end == null || end <= start || !delta) return;
+    setHistory(prevHistory => [...prevHistory, JSON.parse(JSON.stringify(lyrics))]);
+    setRedoStack([]);
+    const updated = lyrics.map(l => {
+      if (l.start >= start && l.end <= end) {
+        const newStart = Math.max(0, l.start + delta);
+        const newEnd = Math.max(newStart + 0.1, l.end + delta);
+        return { ...l, start: newStart, end: newEnd };
+      }
+      return l;
+    });
+    setLyrics(updated);
+    onUpdateLyrics && onUpdateLyrics(updated);
+
+    window.dispatchEvent(new CustomEvent('subtitle-timing-changed', {
+      detail: { action: 'move-range', start, end, delta, updatedLyrics: updated }
+    }));
+  };
+
+  // Live range move preview with baseline
+  const movingRangeRef = useRef({ active: false, start: 0, end: 0, baseline: null });
+
+  const beginRangeMove = (start, end) => {
+    if (start == null || end == null || end <= start) return;
+    movingRangeRef.current = {
+      active: true,
+      start,
+      end,
+      baseline: JSON.parse(JSON.stringify(lyrics))
+    };
+  };
+
+  const previewRangeMove = (delta) => {
+    const state = movingRangeRef.current;
+    if (!state.active || state.baseline == null) return;
+    const { start, end, baseline } = state;
+    const updated = baseline.map(l => {
+      if (l.start >= start && l.end <= end) {
+        const newStart = Math.max(0, l.start + delta);
+        const newEnd = Math.max(newStart + 0.1, l.end + delta);
+        return { ...l, start: newStart, end: newEnd };
+      }
+      return l;
+    });
+    setLyrics(updated);
+    onUpdateLyrics && onUpdateLyrics(updated);
+  };
+
+  const commitRangeMove = () => {
+    const state = movingRangeRef.current;
+    if (!state.active) return;
+    // Push baseline to history to allow undo
+    setHistory(prevHistory => [...prevHistory, state.baseline]);
+    setRedoStack([]);
+    movingRangeRef.current = { active: false, start: 0, end: 0, baseline: null };
+
+    // Notify timing change (generic)
+    window.dispatchEvent(new CustomEvent('subtitle-timing-changed', {
+      detail: { action: 'move-range-commit', timestamp: Date.now() }
+    }));
+  };
+
+  const cancelRangeMove = () => {
+    const state = movingRangeRef.current;
+    if (!state.active) return;
+    // Revert to baseline
+    if (state.baseline) {
+      setLyrics(state.baseline);
+      onUpdateLyrics && onUpdateLyrics(state.baseline);
+    }
+    movingRangeRef.current = { active: false, start: 0, end: 0, baseline: null };
+  };
+
   // Add event listener for redo action
   useEffect(() => {
     const handleRedoEvent = () => {
@@ -565,6 +672,79 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     const currentState = JSON.parse(JSON.stringify(lyrics));
     setSavedLyrics(currentState);
     setIsAtSavedState(true);
+    
+    // Also create a checkpoint when saving
+    createCheckpoint();
+  };
+  
+  // Function to create a checkpoint (called when save happens)
+  const createCheckpoint = () => {
+    const currentState = JSON.parse(JSON.stringify(lyrics));
+    // Limit checkpoint history to 10 entries to avoid memory issues
+    setCheckpointHistory(prevCheckpoints => {
+      const newCheckpoints = [...prevCheckpoints, currentState];
+      if (newCheckpoints.length > 10) {
+        return newCheckpoints.slice(-10); // Keep only the last 10 checkpoints
+      }
+      return newCheckpoints;
+    });
+    console.log('[LyricsEditor] Created checkpoint at save');
+  };
+  
+  // Function to jump to previous checkpoints (cycles through checkpoint history)
+  const handleJumpToCheckpoint = () => {
+    if (checkpointHistory.length > 0) {
+      const currentState = JSON.parse(JSON.stringify(lyrics));
+      
+      // Find the most recent checkpoint that differs from current state
+      let targetCheckpointIndex = -1;
+      for (let i = checkpointHistory.length - 1; i >= 0; i--) {
+        const checkpoint = checkpointHistory[i];
+        if (JSON.stringify(checkpoint) !== JSON.stringify(currentState)) {
+          targetCheckpointIndex = i;
+          break;
+        }
+      }
+      
+      // If no different checkpoint found, use the oldest one (index 0)
+      if (targetCheckpointIndex === -1) {
+        // If we're already at all checkpoints, jump to the oldest
+        if (checkpointHistory.length > 1) {
+          targetCheckpointIndex = 0;
+        } else {
+          console.log('[LyricsEditor] No different checkpoint available');
+          return;
+        }
+      }
+      
+      const targetCheckpoint = checkpointHistory[targetCheckpointIndex];
+      
+      // Save current state to regular history for normal undo
+      setHistory(prevHistory => [...prevHistory, currentState]);
+      
+      // Clear redo stack
+      setRedoStack([]);
+      
+      // Jump to the checkpoint
+      setLyrics(targetCheckpoint);
+      if (onUpdateLyrics) {
+        onUpdateLyrics(targetCheckpoint);
+      }
+      
+      // Remove all checkpoints after the one we jumped to (keep earlier ones)
+      setCheckpointHistory(prevCheckpoints => prevCheckpoints.slice(0, targetCheckpointIndex));
+      
+      console.log(`[LyricsEditor] Jumped to checkpoint ${targetCheckpointIndex + 1} of ${checkpointHistory.length}`);
+    }
+  };
+
+  // Function to capture state before merging operations for undo/redo
+  const captureStateBeforeMerge = () => {
+    const currentState = JSON.parse(JSON.stringify(lyrics));
+    setHistory(prevHistory => [...prevHistory, currentState]);
+    // Clear redo stack since we're making a new change
+    setRedoStack([]);
+    console.log('[LyricsEditor] Captured state before merge operation for undo/redo');
   };
 
   return {
@@ -575,9 +755,11 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     isAtSavedState,
     canUndo: history.length > 0,
     canRedo: redoStack.length > 0,
+    canJumpToCheckpoint: checkpointHistory.length > 0,
     handleUndo,
     handleRedo,
     handleReset,
+    handleJumpToCheckpoint,
     startDrag,
     handleDrag,
     endDrag,
@@ -588,6 +770,14 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     handleInsertLyric,
     handleMergeLyrics,
     handleSplitSubtitles,
-    updateSavedLyrics
+    clearSubtitlesInRange,
+    moveSubtitlesInRange,
+    beginRangeMove,
+    previewRangeMove,
+    commitRangeMove,
+    cancelRangeMove,
+    updateSavedLyrics,
+    captureStateBeforeMerge,
+    createCheckpoint
   };
 };

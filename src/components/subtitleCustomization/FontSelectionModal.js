@@ -1,22 +1,70 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { groupFontsByCategory, getFontSupportFlags, getFontSampleText } from './fontOptions';
 import CloseButton from '../common/CloseButton';
+import CustomDropdown from '../common/CustomDropdown';
 import '../../styles/subtitle-customization/FontSelectionModal.css';
 
 const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [modalHeight, setModalHeight] = useState('auto');
   const modalRef = useRef(null);
   const searchInputRef = useRef(null);
+  const contentRef = useRef(null);
+
+
+  // Calculate and set modal height for smooth transitions
+  const updateModalHeight = useCallback(() => {
+    if (modalRef.current && contentRef.current && isOpen) {
+      // Get the natural height of the content
+      const modalElement = modalRef.current;
+      const currentHeight = modalElement.offsetHeight;
+      
+      // Temporarily set to auto to measure natural height
+      modalElement.style.height = 'auto';
+      const naturalHeight = modalElement.offsetHeight;
+      
+      // Set back to current height immediately (no visual change)
+      modalElement.style.height = `${currentHeight}px`;
+      
+      // Force a reflow by reading offsetHeight
+      // eslint-disable-next-line no-unused-expressions
+      void modalElement.offsetHeight;
+      
+      // Now transition to the new height
+      modalElement.style.height = `${naturalHeight}px`;
+    }
+  }, [isOpen]);
 
   // Focus search input when modal opens
   useEffect(() => {
-    if (isOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
+    if (isOpen) {
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
+      // Set initial height on open
+      setTimeout(() => {
+        if (modalRef.current) {
+          modalRef.current.style.height = 'auto';
+          const height = modalRef.current.offsetHeight;
+          modalRef.current.style.height = `${height}px`;
+        }
+      }, 50);
     }
   }, [isOpen]);
+  
+  // Update height when content changes
+  useEffect(() => {
+    if (isOpen) {
+      // Small delay to let DOM update
+      const timer = setTimeout(() => {
+        updateModalHeight();
+      }, 10);
+      return () => clearTimeout(timer);
+    }
+  }, [searchTerm, selectedCategory, isOpen, updateModalHeight]);
 
   // Handle escape key and outside clicks
   useEffect(() => {
@@ -85,7 +133,7 @@ const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => 
 
   return (
     <div className="font-modal-overlay">
-      <div className="font-modal" ref={modalRef}>
+      <div className="font-modal" ref={modalRef} style={{ height: modalHeight }}>
         {/* Modal Header */}
         <div className="font-modal-header">
           <h2>{t('fontModal.selectFont', 'Select Font')}</h2>
@@ -114,22 +162,20 @@ const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => 
           </div>
 
           <div className="font-category-filter">
-            <select
+            <CustomDropdown
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="category-select"
-            >
-              {categories.map(category => (
-                <option key={category} value={category}>
-                  {getCategoryName(category)}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => setSelectedCategory(value)}
+              options={categories.map(category => ({
+                value: category,
+                label: getCategoryName(category)
+              }))}
+              placeholder={t('fontModal.selectCategory', 'Select Category')}
+            />
           </div>
         </div>
 
         {/* Font Grid */}
-        <div className="font-modal-content">
+        <div className="font-modal-content" ref={contentRef}>
           {Object.entries(filteredGroups).map(([group, fonts]) => (
             <div key={group} className="font-category-section">
               <h3 className="font-category-title">{getCategoryName(group)}</h3>

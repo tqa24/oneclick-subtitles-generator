@@ -20,9 +20,13 @@ import ModelManagementTab from './ModelManagementTab';
 
 // Import icons
 import { ApiKeyIcon, ProcessingIcon, PromptIcon, CacheIcon, AboutIcon, ModelIcon } from './icons/TabIcons';
+import { getGitVersion, getLatestVersion, compareVersions } from '../../utils/gitVersion';
 
 import initSettingsTabPillAnimation from '../../utils/settingsTabPillAnimation';
 import initSettingsTabsDrag from '../../utils/settingsTabsDrag';
+
+// Import Gemini effects functions for immediate toggle
+import { initGeminiButtonEffects, disableGeminiButtonEffects } from '../../utils/geminiEffects';
 
 const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const { t } = useTranslation();
@@ -49,6 +53,29 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     // Initialize from localStorage
     return localStorage.getItem('about_background_type') || 'default';
   });
+
+  // Update availability for About tab badge
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    const check = async () => {
+      try {
+        const current = await getGitVersion();
+        const latest = await getLatestVersion();
+        if (!mounted) return;
+        if (current && latest) {
+          const isNewer = compareVersions(latest.version, current.version);
+          setUpdateAvailable(isNewer > 0);
+        }
+      } catch (e) {
+        // Silent fail for badge; About tab shows detailed error state
+      }
+    };
+    check();
+    return () => { mounted = false; };
+  }, []);
+
 
   // Initialize pill position and drag functionality on component mount
   useEffect(() => {
@@ -124,12 +151,16 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [segmentDuration, setSegmentDuration] = useState(5); // Default to 5 minutes
   const [geminiModel, setGeminiModel] = useState('gemini-2.0-flash'); // Default model
   const [timeFormat, setTimeFormat] = useState('hms'); // Default to HH:MM:SS format
-  const [showWaveform, setShowWaveform] = useState(true); // Default to showing waveform
+
+  const [showWaveformLongVideos, setShowWaveformLongVideos] = useState(false); // Default to NOT showing waveform for long videos
   const [segmentOffsetCorrection, setSegmentOffsetCorrection] = useState(-3.0); // Default offset correction for second segment
   const [useVideoAnalysis, setUseVideoAnalysis] = useState(true); // Default to using video analysis
-  const [videoAnalysisModel, setVideoAnalysisModel] = useState('gemini-2.0-flash'); // Default to Gemini 2.0 Flash
-  const [videoAnalysisTimeout, setVideoAnalysisTimeout] = useState('20'); // Default to 20 seconds timeout
-  const [autoSelectDefaultPreset, setAutoSelectDefaultPreset] = useState(false); // Default to false
+  const [videoAnalysisModel, setVideoAnalysisModel] = useState('gemini-2.5-flash-lite'); // Default to Gemini 2.5 Flash Lite
+  const [videoAnalysisTimeout, setVideoAnalysisTimeout] = useState('10'); // Default to 10 seconds timeout
+
+  // New: Show Gemini star effects setting (default ON)
+  const [enableGeminiEffects, setEnableGeminiEffects] = useState(() => localStorage.getItem('enable_gemini_effects') !== 'false');
+
   const [optimizeVideos, setOptimizeVideos] = useState(false); // Default to no optimization
   const [optimizedResolution, setOptimizedResolution] = useState('360p'); // Default to 360p
   const [useOptimizedPreview, setUseOptimizedPreview] = useState(false); // Default to original video in preview
@@ -137,12 +168,21 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
 
   // Thinking budget settings for each model
   const [thinkingBudgets, setThinkingBudgets] = useState({
-    'gemini-2.5-pro': -1, // Dynamic thinking (model decides when and how much to think)
-    'gemini-2.5-flash': -1, // Dynamic thinking (model decides when and how much to think)
-    'gemini-2.5-flash-lite': 0 // Model does not think by default
+    'gemini-2.5-pro': 128, // Custom thinking with 128 tokens
+    'gemini-2.5-flash': 0, // Thinking disabled by default
+    'gemini-2.5-flash-lite': 0 // Thinking disabled by default
   });
   const [transcriptionPrompt, setTranscriptionPrompt] = useState(DEFAULT_TRANSCRIPTION_PROMPT); // Custom transcription prompt
   const [useCookiesForDownload, setUseCookiesForDownload] = useState(false); // Default to not using cookies
+  const [enableYoutubeSearch, setEnableYoutubeSearch] = useState(false); // Default to disabling YouTube search
+  const [favoriteMaxSubtitleLength, setFavoriteMaxSubtitleLength] = useState(() => {
+    const saved = localStorage.getItem('video_processing_max_words');
+    return saved ? parseInt(saved, 10) : 12; // Default to 12 words
+  }); // Favorite max subtitle length
+  const [showFavoriteMaxLength, setShowFavoriteMaxLength] = useState(() => {
+    const saved = localStorage.getItem('show_favorite_max_length');
+    return saved === null ? true : saved === 'true'; // Default to true (showing)
+  }); // Toggle for showing favorite max length setting
 
   // Custom Gemini models state
   const [customGeminiModels, setCustomGeminiModels] = useState(() => {
@@ -196,24 +236,29 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     geminiModel: 'gemini-2.5-flash',
     timeFormat: 'hms',
     showWaveform: true,
+    showWaveformLongVideos: false,
     segmentOffsetCorrection: -3.0,
     transcriptionPrompt: DEFAULT_TRANSCRIPTION_PROMPT,
     useOAuth: false,
     youtubeClientId: '',
     youtubeClientSecret: '',
     useVideoAnalysis: true,
-    videoAnalysisModel: 'gemini-2.0-flash',
-    videoAnalysisTimeout: '20',
-    autoSelectDefaultPreset: false,
+    videoAnalysisModel: 'gemini-2.5-flash-lite',
+    videoAnalysisTimeout: '10',
+    enableGeminiEffects: true,
+
     optimizeVideos: false,
     optimizedResolution: '360p',
     useOptimizedPreview: false,
     thinkingBudgets: {
-      'gemini-2.5-pro': -1,
-      'gemini-2.5-flash': -1,
+      'gemini-2.5-pro': 128,
+      'gemini-2.5-flash': 0,
       'gemini-2.5-flash-lite': 0
     },
     useCookiesForDownload: false,
+    enableYoutubeSearch: false,
+    favoriteMaxSubtitleLength: 12,
+    showFavoriteMaxLength: true,
     customGeminiModels: []
   });
 
@@ -242,11 +287,13 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedSegmentDuration = parseInt(localStorage.getItem('segment_duration') || '5');
       const savedGeminiModel = localStorage.getItem('gemini_model') || 'gemini-2.5-flash';
       const savedTimeFormat = localStorage.getItem('time_format') || 'hms';
-      const savedShowWaveform = localStorage.getItem('show_waveform') !== 'false'; // Default to true if not set
+
+      const savedShowWaveformLongVideos = localStorage.getItem('show_waveform_long_videos') === 'true'; // Default to false if not set
       const savedOffsetCorrection = parseFloat(localStorage.getItem('segment_offset_correction') || '-3.0');
-      const savedUseVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false'; // Default to true if not set
-      const savedVideoAnalysisModel = localStorage.getItem('video_analysis_model') || 'gemini-2.0-flash'; // Default to 2.0 Flash
-      const savedVideoAnalysisTimeout = localStorage.getItem('video_analysis_timeout') || '20'; // Default to 20 seconds timeout
+      const savedEnableGeminiEffects = localStorage.getItem('enable_gemini_effects') !== 'false';
+      const savedUseVideoAnalysis = true; // Video analysis is always enabled
+      const savedVideoAnalysisModel = localStorage.getItem('video_analysis_model') || 'gemini-2.5-flash-lite'; // Default to 2.5 Flash Lite
+      const savedVideoAnalysisTimeout = localStorage.getItem('video_analysis_timeout') || '10'; // Default to 10 seconds timeout
       const savedAutoSelectDefaultPreset = localStorage.getItem('auto_select_default_preset') === 'true'; // Default to false
       const savedTranscriptionPrompt = localStorage.getItem('transcription_prompt') || DEFAULT_TRANSCRIPTION_PROMPT;
       const savedUseOAuth = localStorage.getItem('use_youtube_oauth') === 'true';
@@ -254,6 +301,9 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedOptimizedResolution = localStorage.getItem('optimized_resolution') || '360p';
       const savedUseOptimizedPreview = localStorage.getItem('use_optimized_preview') === 'true'; // Default to false if not set
       const savedUseCookiesForDownload = localStorage.getItem('use_cookies_for_download') === 'true';
+      const savedEnableYoutubeSearch = localStorage.getItem('enable_youtube_search') === 'true'; // Default to false
+      const savedFavoriteMaxSubtitleLength = parseInt(localStorage.getItem('video_processing_max_words') || '12');
+      const savedShowFavoriteMaxLength = localStorage.getItem('show_favorite_max_length') === null ? true : localStorage.getItem('show_favorite_max_length') === 'true';
 
       // Load custom Gemini models
       const savedCustomGeminiModels = (() => {
@@ -271,15 +321,15 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         try {
           const stored = localStorage.getItem('thinking_budgets');
           return stored ? JSON.parse(stored) : {
-            'gemini-2.5-pro': -1,
-            'gemini-2.5-flash': -1,
+            'gemini-2.5-pro': 128,
+            'gemini-2.5-flash': 0,
             'gemini-2.5-flash-lite': 0
           };
         } catch (error) {
           console.error('Error parsing thinking budgets from localStorage:', error);
           return {
-            'gemini-2.5-pro': -1,
-            'gemini-2.5-flash': -1,
+            'gemini-2.5-pro': 128,
+            'gemini-2.5-flash': 0,
             'gemini-2.5-flash-lite': 0
           };
         }
@@ -295,12 +345,13 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       setSegmentDuration(savedSegmentDuration);
       setGeminiModel(savedGeminiModel);
       setTimeFormat(savedTimeFormat);
-      setShowWaveform(savedShowWaveform);
+      setShowWaveformLongVideos(savedShowWaveformLongVideos);
       setSegmentOffsetCorrection(savedOffsetCorrection);
       setUseVideoAnalysis(savedUseVideoAnalysis);
       setVideoAnalysisModel(savedVideoAnalysisModel);
       setVideoAnalysisTimeout(savedVideoAnalysisTimeout);
-      setAutoSelectDefaultPreset(savedAutoSelectDefaultPreset);
+      setEnableGeminiEffects(savedEnableGeminiEffects);
+
       setTranscriptionPrompt(savedTranscriptionPrompt);
       setUseOAuth(savedUseOAuth);
       setYoutubeClientId(clientId);
@@ -310,6 +361,9 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       setOptimizedResolution(savedOptimizedResolution);
       setUseOptimizedPreview(savedUseOptimizedPreview);
       setUseCookiesForDownload(savedUseCookiesForDownload);
+      setEnableYoutubeSearch(savedEnableYoutubeSearch);
+      setFavoriteMaxSubtitleLength(savedFavoriteMaxSubtitleLength);
+      setShowFavoriteMaxLength(savedShowFavoriteMaxLength);
       setThinkingBudgets(savedThinkingBudgets);
       setCustomGeminiModels(savedCustomGeminiModels);
       setHasChanges(false); // Reset changes flag when loading settings
@@ -322,7 +376,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         segmentDuration: savedSegmentDuration,
         geminiModel: savedGeminiModel,
         timeFormat: savedTimeFormat,
-        showWaveform: savedShowWaveform,
+        showWaveformLongVideos: savedShowWaveformLongVideos,
         segmentOffsetCorrection: savedOffsetCorrection,
         transcriptionPrompt: savedTranscriptionPrompt,
         useOAuth: savedUseOAuth,
@@ -332,10 +386,14 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         videoAnalysisModel: savedVideoAnalysisModel,
         videoAnalysisTimeout: savedVideoAnalysisTimeout,
         autoSelectDefaultPreset: savedAutoSelectDefaultPreset,
+        enableGeminiEffects: savedEnableGeminiEffects,
         optimizeVideos: savedOptimizeVideos,
         optimizedResolution: savedOptimizedResolution,
         useOptimizedPreview: savedUseOptimizedPreview,
         useCookiesForDownload: savedUseCookiesForDownload,
+        enableYoutubeSearch: savedEnableYoutubeSearch,
+        favoriteMaxSubtitleLength: savedFavoriteMaxSubtitleLength,
+        showFavoriteMaxLength: savedShowFavoriteMaxLength,
         thinkingBudgets: savedThinkingBudgets,
         customGeminiModels: savedCustomGeminiModels
       });
@@ -418,7 +476,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       segmentDuration !== originalSettings.segmentDuration ||
       geminiModel !== originalSettings.geminiModel ||
       timeFormat !== originalSettings.timeFormat ||
-      showWaveform !== originalSettings.showWaveform ||
+      showWaveformLongVideos !== originalSettings.showWaveformLongVideos ||
       segmentOffsetCorrection !== originalSettings.segmentOffsetCorrection ||
       transcriptionPrompt !== originalSettings.transcriptionPrompt ||
       useOAuth !== originalSettings.useOAuth ||
@@ -427,19 +485,23 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       useVideoAnalysis !== originalSettings.useVideoAnalysis ||
       videoAnalysisModel !== originalSettings.videoAnalysisModel ||
       videoAnalysisTimeout !== originalSettings.videoAnalysisTimeout ||
-      autoSelectDefaultPreset !== originalSettings.autoSelectDefaultPreset ||
+      enableGeminiEffects !== (originalSettings.enableGeminiEffects ?? true) ||
+
       optimizeVideos !== originalSettings.optimizeVideos ||
       optimizedResolution !== originalSettings.optimizedResolution ||
       useOptimizedPreview !== originalSettings.useOptimizedPreview ||
       useCookiesForDownload !== originalSettings.useCookiesForDownload ||
+      enableYoutubeSearch !== originalSettings.enableYoutubeSearch ||
+      favoriteMaxSubtitleLength !== originalSettings.favoriteMaxSubtitleLength ||
+      showFavoriteMaxLength !== originalSettings.showFavoriteMaxLength ||
       JSON.stringify(thinkingBudgets) !== JSON.stringify(originalSettings.thinkingBudgets) ||
       JSON.stringify(customGeminiModels) !== JSON.stringify(originalSettings.customGeminiModels);
 
     setHasChanges(settingsChanged);
-  }, [isSettingsLoaded, geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveform,
+  }, [isSettingsLoaded, geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveformLongVideos,
       segmentOffsetCorrection, transcriptionPrompt, useOAuth, youtubeClientId,
-      youtubeClientSecret, useVideoAnalysis, videoAnalysisModel, videoAnalysisTimeout, autoSelectDefaultPreset,
-      optimizeVideos, optimizedResolution, useOptimizedPreview, useCookiesForDownload, thinkingBudgets, customGeminiModels, originalSettings]);
+      youtubeClientSecret, useVideoAnalysis, videoAnalysisModel, videoAnalysisTimeout, enableGeminiEffects,
+      optimizeVideos, optimizedResolution, useOptimizedPreview, useCookiesForDownload, enableYoutubeSearch, favoriteMaxSubtitleLength, showFavoriteMaxLength, thinkingBudgets, customGeminiModels, originalSettings]);
 
   // Handle save button click
   const handleSave = async () => {
@@ -448,19 +510,34 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
     localStorage.setItem('gemini_model', geminiModel);
     localStorage.setItem('genius_token', geniusApiKey);
     localStorage.setItem('time_format', timeFormat);
-    localStorage.setItem('show_waveform', showWaveform.toString());
+    localStorage.setItem('video_processing_max_words', favoriteMaxSubtitleLength.toString());
+    localStorage.setItem('show_favorite_max_length', showFavoriteMaxLength.toString());
+
+    localStorage.setItem('show_waveform_long_videos', showWaveformLongVideos.toString());
     localStorage.setItem('segment_offset_correction', segmentOffsetCorrection.toString());
     localStorage.setItem('transcription_prompt', transcriptionPrompt);
     localStorage.setItem('use_youtube_oauth', useOAuth.toString());
     localStorage.setItem('use_video_analysis', useVideoAnalysis.toString());
     localStorage.setItem('video_analysis_model', videoAnalysisModel);
     localStorage.setItem('video_analysis_timeout', videoAnalysisTimeout);
-    localStorage.setItem('auto_select_default_preset', autoSelectDefaultPreset.toString());
+    localStorage.setItem('enable_gemini_effects', enableGeminiEffects.toString());
+    
+    // Apply Gemini effects immediately in the same window
+    if (enableGeminiEffects) {
+      initGeminiButtonEffects();
+    } else {
+      disableGeminiButtonEffects();
+    }
+    
+    // Trigger listeners (same-document) to apply effects immediately
+    window.dispatchEvent(new Event('storage'));
+
     // Save the user's video optimization preference
     localStorage.setItem('optimize_videos', optimizeVideos.toString());
     localStorage.setItem('optimized_resolution', optimizedResolution);
     localStorage.setItem('use_optimized_preview', useOptimizedPreview.toString());
     localStorage.setItem('use_cookies_for_download', useCookiesForDownload.toString());
+    localStorage.setItem('enable_youtube_search', enableYoutubeSearch.toString());
     localStorage.setItem('thinking_budgets', JSON.stringify(thinkingBudgets));
     localStorage.setItem('custom_gemini_models', JSON.stringify(customGeminiModels));
     // Save the Gemini API key to the key manager
@@ -506,7 +583,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
 
     // Notify parent component about API keys, segment duration, model, time format, video optimization settings, and cookie setting
     // Note: optimizeVideos parameter removed since it's always enabled now
-    onSave(geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, showWaveform, optimizedResolution, useOptimizedPreview, useCookiesForDownload);
+    onSave(geminiApiKey, youtubeApiKey, geniusApiKey, segmentDuration, geminiModel, timeFormat, undefined, optimizedResolution, useOptimizedPreview, useCookiesForDownload, enableYoutubeSearch, showWaveformLongVideos);
 
     // Update original settings to match current settings
     setOriginalSettings({
@@ -516,7 +593,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       segmentDuration,
       geminiModel,
       timeFormat,
-      showWaveform,
+      showWaveformLongVideos,
       segmentOffsetCorrection,
       transcriptionPrompt,
       useOAuth,
@@ -525,12 +602,17 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       useVideoAnalysis,
       videoAnalysisModel,
       videoAnalysisTimeout,
-      autoSelectDefaultPreset,
+      enableGeminiEffects,
+
       optimizeVideos,
       optimizedResolution,
       useOptimizedPreview,
       useCookiesForDownload,
-      thinkingBudgets
+      enableYoutubeSearch,
+      favoriteMaxSubtitleLength,
+      showFavoriteMaxLength,
+      thinkingBudgets,
+      customGeminiModels
     });
 
     // Reset changes flag and mark settings as loaded
@@ -644,6 +726,14 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
             >
               <AboutIcon />
               {t('settings.about', 'About')}
+              {updateAvailable && (
+                <span
+                  className="tab-badge"
+                  role="status"
+                  aria-label={t('settings.updateAvailable', 'A new version is available!')}
+                  title={t('settings.updateAvailable', 'A new version is available!')}
+                />
+              )}
             </button>
           </div>
 
@@ -684,6 +774,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
               setIsAuthenticated={setIsAuthenticated}
               apiKeysSet={apiKeysSet}
               setApiKeysSet={setApiKeysSet}
+              enableYoutubeSearch={enableYoutubeSearch}
             />
           </div>
 
@@ -696,16 +787,15 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
               setGeminiModel={setGeminiModel}
               timeFormat={timeFormat}
               setTimeFormat={setTimeFormat}
-              showWaveform={showWaveform}
-              setShowWaveform={setShowWaveform}
+              showWaveformLongVideos={showWaveformLongVideos}
+              setShowWaveformLongVideos={setShowWaveformLongVideos}
               useVideoAnalysis={useVideoAnalysis}
               setUseVideoAnalysis={setUseVideoAnalysis}
               videoAnalysisModel={videoAnalysisModel}
               setVideoAnalysisModel={setVideoAnalysisModel}
               videoAnalysisTimeout={videoAnalysisTimeout}
               setVideoAnalysisTimeout={setVideoAnalysisTimeout}
-              autoSelectDefaultPreset={autoSelectDefaultPreset}
-              setAutoSelectDefaultPreset={setAutoSelectDefaultPreset}
+
               optimizeVideos={optimizeVideos}
               setOptimizeVideos={setOptimizeVideos}
               optimizedResolution={optimizedResolution}
@@ -714,10 +804,18 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
               setUseOptimizedPreview={setUseOptimizedPreview}
               useCookiesForDownload={useCookiesForDownload}
               setUseCookiesForDownload={setUseCookiesForDownload}
+              enableYoutubeSearch={enableYoutubeSearch}
+              setEnableYoutubeSearch={setEnableYoutubeSearch}
               thinkingBudgets={thinkingBudgets}
               setThinkingBudgets={setThinkingBudgets}
               customGeminiModels={customGeminiModels}
               setCustomGeminiModels={setCustomGeminiModels}
+              enableGeminiEffects={enableGeminiEffects}
+              setEnableGeminiEffects={setEnableGeminiEffects}
+              favoriteMaxSubtitleLength={favoriteMaxSubtitleLength}
+              setFavoriteMaxSubtitleLength={setFavoriteMaxSubtitleLength}
+              showFavoriteMaxLength={showFavoriteMaxLength}
+              setShowFavoriteMaxLength={setShowFavoriteMaxLength}
             />
           </div>
 

@@ -2,12 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import CloseButton from '../common/CloseButton';
+import CustomScrollbarTextarea from '../common/CustomScrollbarTextarea';
+import CustomDropdown from '../common/CustomDropdown';
 import '../../styles/PromptEditor.css';
 import '../../styles/background/BackgroundPromptEditor.css';
 
 const BackgroundPromptEditor = ({ isOpen, onClose }) => {
   const { t } = useTranslation();
   const modalRef = useRef(null);
+
+  // Local UI state
+  const [isSaving, setIsSaving] = useState(false);
 
   // State for the two prompts
   const [promptOne, setPromptOne] = useState(
@@ -17,6 +22,17 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
   const [promptTwo, setPromptTwo] = useState(
     `Expand the image into 16:9 ratio (landscape ratio). Then decorate my given image with \${prompt}`
   );
+
+  // Model selections
+  const [promptModel, setPromptModel] = useState('gemini-2.5-flash-lite');
+  const [imageModel, setImageModel] = useState('gemini-2.0-flash-preview-image-generation');
+
+
+  // Track initial (loaded) values to detect changes
+  const [initialPromptOne, setInitialPromptOne] = useState(promptOne);
+  const [initialPromptTwo, setInitialPromptTwo] = useState(promptTwo);
+  const [initialPromptModel, setInitialPromptModel] = useState(promptModel);
+  const [initialImageModel, setInitialImageModel] = useState(imageModel);
 
   // Load the current prompts from the server
   useEffect(() => {
@@ -28,6 +44,17 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
             const data = await response.json();
             if (data.promptOne) setPromptOne(data.promptOne);
             if (data.promptTwo) setPromptTwo(data.promptTwo);
+            if (data.promptModel) setPromptModel(data.promptModel);
+            if (data.imageModel) setImageModel(data.imageModel);
+
+	      // After loading, snapshot as initial values to compare for changes
+	      if (response.ok) {
+	        setInitialPromptOne((prev) => (data.promptOne ?? prev));
+	        setInitialPromptTwo((prev) => (data.promptTwo ?? prev));
+	        setInitialPromptModel((prev) => (data.promptModel ?? prev));
+	        setInitialImageModel((prev) => (data.imageModel ?? prev));
+	      }
+
           }
         } catch (error) {
           console.error('Error fetching prompts:', error);
@@ -75,7 +102,8 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
   // Handle saving the prompts
   const handleSave = async () => {
     try {
-      // Save the prompts to the server
+      setIsSaving(true);
+      // Save the prompts and selected models to the server
       const response = await fetch('http://127.0.0.1:3031/api/settings/update-prompts', {
         method: 'POST',
         headers: {
@@ -83,7 +111,9 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
         },
         body: JSON.stringify({
           promptOne,
-          promptTwo
+          promptTwo,
+          promptModel,
+          imageModel
         }),
       });
 
@@ -97,11 +127,23 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
     } catch (error) {
       console.error('Error saving prompts:', error);
       alert(`Error saving prompts: ${error.message}`);
+    } finally {
+      setIsSaving(false);
     }
   };
 
+
+	  // Determine if there are changes
+	  const hasChanges = (
+	    promptOne !== initialPromptOne ||
+	    promptTwo !== initialPromptTwo ||
+	    promptModel !== initialPromptModel ||
+	    imageModel !== initialImageModel
+	  );
+
   // Handle reset to default
   const handleReset = () => {
+    // Reset prompts to defaults
     setPromptOne(
       `song title: \${songName || 'Unknown Song'}\n\n\${lyrics}\n\ngenerate one prompt to put in a image generator to describe the atmosphere/object of this song, should be simple but abstract because I will use this image as youtube video background for a lyrics video, return the prompt only, no extra texts`
     );
@@ -109,6 +151,10 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
     setPromptTwo(
       `Expand the image into 16:9 ratio (landscape ratio). Then decorate my given image with \${prompt}`
     );
+
+    // Reset models to defaults
+    setPromptModel('gemini-2.5-flash-lite');
+    setImageModel('gemini-2.0-flash-preview-image-generation');
   };
 
   // Handle prompt one change with special handling for protected variables
@@ -161,7 +207,7 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
               {t('promptEditor.promptOneDescription', 'This prompt is used to generate a description from the lyrics.')}
             </p>
             <div className="prompt-editor-container">
-              <textarea
+              <CustomScrollbarTextarea
                 className="prompt-editor-textarea"
                 value={promptOne}
                 onChange={handlePromptOneChange}
@@ -171,11 +217,25 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
                 spellCheck="false"
               />
             </div>
+            <div className="prompt-model-row">
+              <label className="prompt-model-label">
+                {t('promptEditor.promptModelLabel', 'Model for "Generate the prompt"')}
+              </label>
+              <CustomDropdown
+                value={promptModel}
+                onChange={(value) => setPromptModel(value)}
+                options={[
+                  { value: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' },
+                  { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' }
+                ]}
+                placeholder={t('promptEditor.selectModel', 'Select Model')}
+              />
+            </div>
             <div className="variables-info">
               <h5>{t('promptEditor.availableVariables', 'Available Variables:')}</h5>
               <ul>
-                <li className="required-variable"><code>{`\${songName || 'Unknown Song'}`}</code> - {t('promptEditor.songNameDesc', 'The name of the song (required, cannot be removed)')}</li>
-                <li className="required-variable"><code>{`\${lyrics}`}</code> - {t('promptEditor.lyricsDesc', 'The lyrics of the song (required, cannot be removed)')}</li>
+                <li className="required-variable"><code>{`\${songName || 'Unknown Song'}`}</code> - {t('promptEditor.songNameVarDesc', 'The song name (required, cannot be removed)')}</li>
+                <li className="required-variable"><code>{`\${lyrics}`}</code> - {t('promptEditor.lyricsVarDesc', 'The song lyrics (required, cannot be removed)')}</li>
               </ul>
             </div>
           </div>
@@ -187,7 +247,7 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
               {t('promptEditor.promptTwoDescription', 'This prompt is used to generate the background image using the album art and the generated description.')}
             </p>
             <div className="prompt-editor-container">
-              <textarea
+              <CustomScrollbarTextarea
                 className="prompt-editor-textarea"
                 value={promptTwo}
                 onChange={handlePromptTwoChange}
@@ -195,6 +255,20 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
                 placeholder={t('promptEditor.enterPrompt', 'Enter your custom prompt here...')}
                 autoComplete="off"
                 spellCheck="false"
+              />
+            </div>
+            <div className="prompt-model-row">
+              <label className="prompt-model-label">
+                {t('promptEditor.imageModelLabel', 'Model for image generation')}
+              </label>
+              <CustomDropdown
+                value={imageModel}
+                onChange={(value) => setImageModel(value)}
+                options={[
+                  { value: 'gemini-2.5-flash-image-preview', label: 'Nano Banana' },
+                  { value: 'gemini-2.0-flash-preview-image-generation', label: 'Gemini 2.0 Flash Preview (Image Generation)' }
+                ]}
+                placeholder={t('promptEditor.selectImageModel', 'Select Image Model')}
               />
             </div>
             <div className="variables-info">
@@ -207,11 +281,13 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          <div className="prompt-editor-actions">
-            <button className="secondary-button" onClick={handleReset}>
+        </div>
+        <div className="prompt-editor-footer">
+          <div className="right-buttons">
+            <button className="reset-button" onClick={handleReset} disabled={isSaving}>
               {t('promptEditor.reset', 'Reset to Default')}
             </button>
-            <button className="primary-button" onClick={handleSave}>
+            <button className="save-button" onClick={handleSave} disabled={isSaving || !hasChanges}>
               {t('common.save', 'Save')}
             </button>
           </div>

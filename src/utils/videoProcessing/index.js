@@ -5,39 +5,35 @@
 
 // Import from utility modules
 import { getCacheIdForMedia } from './cacheUtils';
-import { createSegmentStatusUpdater, formatTime } from './segmentUtils';
-import { optimizeVideo, createAnalysisVideo } from './optimizationUtils';
 import { analyzeVideoAndWaitForUserChoice } from './analysisUtils';
-import { processLongVideo, processLongMedia, processShortMedia } from './processingUtils';
+import {
+  processVideoWithFilesApi,
+  shouldUseSimplifiedProcessing,
+  processMediaFile,
+  createVideoMetadata,
+  getEstimatedDuration
+} from './simplifiedProcessing';
 
 // Import from other modules for re-export
 import { getVideoDuration } from '../durationUtils';
-import { retrySegmentProcessing } from '../segmentManager';
 import { setTranscriptionRules } from '../transcriptionRulesStore';
 
 // Export all functions
 export {
-  // Main processing functions
-  processLongVideo,
-  processLongMedia,
-  processShortMedia,
-  
+  // New simplified processing functions (recommended)
+  processVideoWithFilesApi,
+  shouldUseSimplifiedProcessing,
+  processMediaFile,
+  createVideoMetadata,
+  getEstimatedDuration,
+
   // Cache utilities
   getCacheIdForMedia,
-  
-  // Segment utilities
-  createSegmentStatusUpdater,
-  formatTime,
-  
-  // Optimization utilities
-  optimizeVideo,
-  createAnalysisVideo,
-  
+
   // Analysis utilities
   analyzeVideoAndWaitForUserChoice,
-  
+
   // Re-exports from other modules
   getVideoDuration,
-  retrySegmentProcessing,
   setTranscriptionRules
 };

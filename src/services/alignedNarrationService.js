@@ -323,14 +323,9 @@ export const getAlignedAudioElement = () => {
   const cache = window.alignedNarrationCache || alignedNarrationCache;
 
   // Check if we have a URL in the cache
-  console.log('🔍 Service: Checking cache URL...', cache.url);
-  console.log('🔍 Service: Using cache:', cache === window.alignedNarrationCache ? 'window' : 'local');
   if (!cache.url) {
-    console.error('❌ Service: No URL in cache, returning null');
-    console.log('🔍 Service: Cache contents:', cache);
     return null;
   }
-  console.log('✅ Service: Cache URL found, proceeding...');
 
   // Check if we need to create or update the audio element
   // Don't log every time this function is called to reduce console spam
@@ -628,7 +623,6 @@ export const resetAlignedAudioElement = () => {
  * Call this when you need to completely clear the cache and start fresh
  */
 export const resetAlignedNarration = () => {
-  console.log('Resetting aligned narration completely');
 
   // Clean up the audio element
   if (alignedAudioElement) {
@@ -675,8 +669,6 @@ export const resetAlignedNarration = () => {
     timestamp: null,
     subtitleTimestamps: {}
   };
-
-  console.log('Aligned narration cache has been reset');
 };
 
 // Make resetAlignedNarration available globally for direct access from event handlers
@@ -684,13 +676,8 @@ window.resetAlignedNarration = resetAlignedNarration;
 
 // Add an event listener for subtitle timing changes
 window.addEventListener('subtitle-timing-changed', (event) => {
-  console.log('Subtitle timing changed event received:', event.detail);
-
   // Reset the aligned narration cache to force regeneration
   resetAlignedNarration();
-
-  // Log that the cache was reset
-  console.log('Aligned narration cache reset due to subtitle grouping change');
 });
 
 /**

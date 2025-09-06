@@ -102,22 +102,9 @@ const NarrationMenu = ({
       {showNarrationMenu && (
         <div
           className="subtitle-settings-panel narration-panel"
-          style={{ position: 'absolute', top: 'calc(100%)', right: '-10px', height: '400px', width: '320px', zIndex: 9999 }}
+          style={{ position: 'absolute', top: 'calc(100%)', right: '-10px', height: '320px', width: '320px', zIndex: 9999 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="settings-header">
-            <h4>{t('narration.playbackTitle', 'Narration')}</h4>
-            <div className="settings-header-actions">
-              <CloseButton
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowNarrationMenu(false);
-                }}
-                variant="default"
-                size="small"
-              />
-            </div>
-          </div>
 
           <div className="settings-content">
 

@@ -194,6 +194,10 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
         // Create a new object URL for the processed file
         const objectUrl = URL.createObjectURL(processedFile);
         localStorage.setItem('current_file_url', objectUrl);
+        try {
+          if (!window.__videoBlobMap) window.__videoBlobMap = {};
+          window.__videoBlobMap[objectUrl] = processedFile;
+        } catch {}
 
         // Clear any selected YouTube video state via parent callback
         if (onVideoSelect) {
@@ -208,23 +212,15 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
         // Store the processed file for actual processing
         setUploadedFile(processedFile);
 
-        // If we have subtitles data already (from uploaded SRT), trigger video processing
-        if (subtitlesData && subtitlesData.length > 0 && setVideoSegments && setSegmentsStatus && setStatus) {
-          try {
-            // Import the prepareVideoForSegments function
-            const { prepareVideoForSegments } = await import('../app/VideoProcessingHandlers');
-
-            // Prepare the video for segment processing
-            await prepareVideoForSegments(processedFile, setStatus, setVideoSegments, setSegmentsStatus, t);
-
-            // Update status to show that segments are ready
-            setStatus({ message: t('output.segmentsReady', 'Video segments are ready for processing!'), type: 'success' });
-          } catch (error) {
-            console.error('Error preparing video for segments:', error);
-            // Still keep the video, but show a warning
+        // If we have subtitles data already (from uploaded SRT), no need to prepare segments
+        if (subtitlesData && subtitlesData.length > 0) {
+          // With simplified processing, we don't need to prepare video segments
+          // The subtitles are already available and ready to use
+          console.log('Subtitles already available from uploaded SRT file');
+          if (setStatus) {
             setStatus({
-              message: t('warnings.segmentsPreparationFailed', 'Video uploaded, but segment preparation failed: {{message}}', { message: error.message }),
-              type: 'warning'
+              message: t('output.subtitlesReady', 'Subtitles are ready!'),
+              type: 'success'
             });
           }
         }

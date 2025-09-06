@@ -63,20 +63,7 @@
   box-shadow: none;
 }
 
-/* Dropdown arrow */
-.voice-dropdown::after {
-  content: '';
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 0;
-  height: 0;
-  border-left: 4px solid transparent; /* Slightly smaller arrow */
-  border-right: 4px solid transparent; /* Slightly smaller arrow */
-  border-top: 4px solid var(--md-on-surface-variant); /* Slightly smaller arrow */
-  pointer-events: none;
-}
+
 
 /* Voice type pills */
 .voice-type-pills {

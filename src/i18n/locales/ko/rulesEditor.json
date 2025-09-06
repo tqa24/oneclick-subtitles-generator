@@ -21,5 +21,11 @@
   "notesDescription": "일관된 트랜스크립션을 위한 기타 참고 사항 추가",
   "notePlaceholder": "추가 참고 사항...",
   "addNote": "+ 참고 사항 추가",
-  "currentPrompt": "현재 프롬프트 프리셋"
+  "currentPrompt": "현재 프롬프트 프리셋",
+  "autoSaveCountdown": "자동 저장까지",
+  "seconds": "초",
+  "clickToCancel": "(취소하려면 아무 곳이나 클릭)",
+  "waitingForAction": "사용자 작업 대기 중",
+  "clickToEdit": "(편집을 시작하려면 클릭)",
+  "saveContinue": "저장 및 계속"
 }

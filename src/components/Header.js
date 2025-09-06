@@ -4,6 +4,7 @@ import '../styles/Header.css';
 import GeminiHeaderAnimation from './GeminiHeaderAnimation';
 import specialStarIcon from '../assets/specialStar.svg';
 
+import { getGitVersion, getLatestVersion, compareVersions } from '../utils/gitVersion';
 const Header = ({ onSettingsClick }) => {
   const { t } = useTranslation();
   const [showFloatingActions, setShowFloatingActions] = useState(true); // Start as visible
@@ -11,6 +12,8 @@ const Header = ({ onSettingsClick }) => {
   const initialShowTimeoutRef = useRef(null);
   const [isInitialShow, setIsInitialShow] = useState(true); // Track if we're in initial show period
   const [hasOpenedSettings, setHasOpenedSettings] = useState(false); // Track if user has ever opened settings
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+
   const [isFullVersion, setIsFullVersion] = useState(false); // Track if running in full mode
 
   // Define the position update function outside useEffect so it can be reused
@@ -195,7 +198,9 @@ const Header = ({ onSettingsClick }) => {
         }
       } catch (error) {
         // If we can't detect, assume lite version
+
         setIsFullVersion(false);
+
       }
     };
 
@@ -214,10 +219,35 @@ const Header = ({ onSettingsClick }) => {
     onSettingsClick();
   };
 
+
+  // Check for updates to show badge on floating settings button
+  useEffect(() => {
+    let mounted = true;
+    const check = async () => {
+      try {
+        const current = await getGitVersion();
+        const latest = await getLatestVersion();
+        if (!mounted) return;
+        if (current && latest) {
+          setUpdateAvailable(compareVersions(latest.version, current.version) > 0);
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    check();
+    const id = setInterval(check, 30 * 60 * 1000);
+    return () => { mounted = false; clearInterval(id); };
+  }, []);
+
   return (
     <header className="app-header">
       {/* Gemini constellation animation */}
-      <GeminiHeaderAnimation />
+      {localStorage.getItem('enable_gemini_effects') !== 'false' && (
+        <GeminiHeaderAnimation />
+      )}
+
+
 
       <div className="header-title-container">
         <h1 className="header-title">
@@ -241,6 +271,7 @@ const Header = ({ onSettingsClick }) => {
           style={{ marginRight: '10px' }}
         />
         <span>{t('header.settings')}</span>
+        {updateAvailable && <span className="tab-badge" aria-hidden="true" />}
       </button>
     </header>
   );

@@ -86,7 +86,7 @@
 .about-section::before {
   content: "";
   position: absolute;
-  top: 80%;
+  top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   width: 100%;
@@ -137,11 +137,285 @@
   font-weight: 600;
 }
 
+/* Version Information Styles */
 .version-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.75rem;
+  border-radius: var(--md-shape-large);
+  box-shadow: var(--md-elevation-1);
+  background-color: var(--surface-container-low);
+  border: 1px solid var(--outline-variant);
+  margin-bottom: 1.5rem;
+}
+
+.version-info h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.version-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.version-display {
+  margin: 0;
+  text-align: center;
   font-size: 1rem;
   color: var(--text-secondary);
+}
+
+.version-display strong {
+  color: var(--text-primary);
+}
+
+/* Latest Version Check */
+.latest-version-check {
+  border-top: 1px solid var(--surface-variant);
+}
+
+.checking-update {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+  padding: 1rem;
+  background-color: var(--surface-container);
+  border-radius: var(--md-shape-medium);
+  border-left: 3px solid var(--md-primary);
+}
+
+.loading-spinner {
+  animation: spin 1.5s linear infinite;
+  color: var(--md-primary);
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.latest-version-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.latest-version-display {
+  margin: 0;
   text-align: center;
-  margin-bottom: 1rem;
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+.latest-version-display strong {
+  color: var(--text-primary);
+}
+
+/* Update Notification */
+.update-notification {
+  background-color: var(--md-primary-container);
+  border-radius: var(--md-shape-medium);
+  padding: 1.5rem;
+  border: 1px solid var(--md-primary);
+  box-shadow: var(--md-elevation-1);
+  position: relative;
+  overflow: hidden;
+}
+
+.update-notification::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--md-primary), var(--md-secondary));
+}
+
+.update-message {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--md-primary);
+  margin-bottom: 0.75rem;
+}
+
+.update-icon {
+  color: var(--md-primary);
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 0 rgba(var(--md-primary-rgb, 33, 150, 243), 0));
+  animation: glow 2.4s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%   { transform: none; filter: drop-shadow(0 0 0 rgba(var(--md-primary-rgb, 33, 150, 243), 0)); }
+  50%  { transform: none; filter: drop-shadow(0 0 6px rgba(var(--md-primary-rgb, 33, 150, 243), 0.7)); }
+  100% { transform: none; filter: drop-shadow(0 0 0 rgba(var(--md-primary-rgb, 33, 150, 243), 0)); }
+}
+
+.update-description {
+  margin: 0 0 1.25rem 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.update-instructions {
+  margin-top: 1rem;
+}
+
+.update-instructions p {
+  margin: 0 0 0.75rem 0;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.installer-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.installer-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background-color: var(--surface-container);
+  border-radius: var(--md-shape-small);
+  font-size: 0.9rem;
+  border: 1px solid var(--surface-variant);
+  transition: all 0.2s ease;
+}
+
+.installer-option.primary-installer {
+  background-color: var(--surface-container-high);
+  border-color: var(--md-primary);
+  font-weight: 600;
+  box-shadow: var(--md-elevation-1);
+}
+
+.installer-option.secondary-installer {
+  opacity: 0.8;
+  font-size: 0.8rem;
+}
+
+.installer-option strong {
+  min-width: 80px;
+  color: var(--text-primary);
+}
+
+.installer-option code {
+  background-color: var(--surface-variant);
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+  font-size: 0.85rem;
+  color: var(--md-primary);
+  font-weight: 600;
+  border: 1px solid var(--outline-variant);
+  letter-spacing: 0.025em;
+}
+
+/* Up to Date Message */
+.up-to-date {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  background-color: var(--md-success-container, rgba(76, 175, 80, 0.1));
+  color: var(--md-success, #4CAF50);
+  border-radius: var(--md-shape-medium);
+  font-weight: 500;
+  font-size: 0.95rem;
+  margin: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.check-icon {
+  color: var(--md-success, #4CAF50);
+  flex-shrink: 0;
+}
+
+/* Update Check Failed */
+.update-check-failed {
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
+  margin: 0;
+  padding: 0.5rem;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .version-info {
+  background-color: var(--surface-container-low-dark, rgba(255, 255, 255, 0.02));
+}
+
+[data-theme="dark"] .latest-version-check {
+  border-top-color: var(--surface-variant-dark, rgba(255, 255, 255, 0.12));
+}
+
+[data-theme="dark"] .checking-update {
+  background-color: var(--surface-container-dark, rgba(255, 255, 255, 0.08));
+  border-left-color: var(--md-primary-light);
+}
+
+[data-theme="dark"] .loading-spinner {
+  color: var(--md-primary-light);
+}
+
+[data-theme="dark"] .update-notification {
+  background-color: var(--md-primary-container-dark, rgba(144, 202, 249, 0.15));
+  border-color: var(--md-primary-light);
+}
+
+[data-theme="dark"] .update-notification::before {
+  background: linear-gradient(90deg, var(--md-primary-light), var(--md-secondary-light));
+}
+
+[data-theme="dark"] .update-message {
+  color: var(--md-primary-light);
+}
+
+[data-theme="dark"] .update-icon {
+  color: var(--md-primary-light);
+}
+
+[data-theme="dark"] .installer-option {
+  background-color: var(--surface-container-dark, rgba(255, 255, 255, 0.08));
+  border-color: var(--surface-variant-dark, rgba(255, 255, 255, 0.12));
+}
+
+[data-theme="dark"] .installer-option.primary-installer {
+  background-color: var(--surface-container-high-dark, rgba(255, 255, 255, 0.12));
+  border-color: var(--md-primary-light);
+}
+
+[data-theme="dark"] .installer-option code {
+  background-color: var(--surface-variant-dark, rgba(255, 255, 255, 0.12));
+  color: var(--md-primary-light);
+  border-color: var(--outline-variant-dark, rgba(255, 255, 255, 0.16));
+}
+
+
+
+[data-theme="dark"] .check-icon {
+  color: var(--md-success-light, #81C784);
 }
 
 .creator-info {

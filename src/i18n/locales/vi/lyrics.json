@@ -1,10 +1,14 @@
 {
   "synchronizedLyrics": "Phụ đề đồng bộ hóa",
   "stickyTimingsToggle": "Dính",
+  "stickyTimingsToggleWithShortcut": "Bật/tắt thời gian dính (Ctrl+Shift+T)",
+  "splitWithShortcut": "Chia nhỏ phụ đề trong vùng đã chọn (Ctrl+Shift+X)",
+  "splitDisabled": "Chọn một vùng có phụ đề để chia nhỏ",
+  "dragHintOrShortcut": "(hoặc Ctrl+A)",
   "autoScroll": "Cuộn",
   "autoScrollEnable": "Bật cuộn tự động",
   "autoScrollDisable": "Tắt cuộn tự động",
-  "timingInstructions": "Hiện có ??? dòng phụ đề. Kéo dấu thời gian để điều chỉnh thời gian cho mỗi phụ đề. Chế độ \"Dính\" sẽ điều chỉnh tất cả phụ đề theo sau. Chế độ \"Cuộn\" sẽ giúp tự dời tầm nhìn lên dòng sub đang chạy. 5 nút còn lại: Chia nhỏ sub, Lưu, Đặt lại, Hoàn tác, Làm lại",
+  "timingInstructions": "Hiện có ??? dòng phụ đề. Kéo dấu thời gian để điều chỉnh thời gian cho mỗi phụ đề. Chế độ \"Dính\" sẽ điều chỉnh tất cả phụ đề theo sau. Chế độ \"Cuộn\" sẽ giúp tự dời tầm nhìn lên dòng sub đang chạy. 6 nút còn lại: Chia nhỏ sub, Lưu, Đặt lại, Lùi checkpoint, Hoàn tác, Làm lại",
   "editTooltip": "Chỉnh sửa văn bản phụ đề",
   "deleteTooltip": "Xóa phụ đề",
   "insertTooltip": "Thêm dòng mới",
@@ -12,5 +16,7 @@
   "insertAbove": "Thêm vào trên",
   "insertBelow": "Thêm vào dưới",
   "mergeAbove": "Gộp với phụ đề trên",
-  "mergeBelow": "Gộp với phụ đề dưới"
+  "mergeBelow": "Gộp với phụ đề dưới",
+  "addFirst": "Thêm phụ đề đầu tiên",
+  "emptyTimingInstructions": "Hiện có {{count}} dòng phụ đề. Hãy kéo thả trên vùng chỉnh sửa phụ đề (nơi có hoạt ảnh bàn tay lướt phải) để tạo phụ đề tự động bằng AI. Có thể kéo từ đầu đến cuối để tạo sub toàn video hoặc chỉ 1 đoạn nếu muốn"
 }

@@ -1,10 +1,14 @@
 {
   "synchronizedLyrics": "Synchronized Subtitles",
   "stickyTimingsToggle": "Stick",
+  "stickyTimingsToggleWithShortcut": "Toggle sticky timings (Ctrl+Shift+T)",
+  "splitWithShortcut": "Split subtitles in selected range (Ctrl+Shift+X)",
+  "splitDisabled": "Select a range with subtitles to split",
+  "dragHintOrShortcut": "(or Ctrl+A)",
   "autoScroll": "Scroll",
   "autoScrollEnable": "Enable auto-scroll",
   "autoScrollDisable": "Disable auto-scroll",
-  "timingInstructions": "Currently have ??? subtitle lines. Drag timestamps to adjust timing for each subtitle. \"Stick\" mode will adjust all following subtitles. \"Scroll\" mode will automatically move view to the current running subtitle. 5 remaining buttons: Split subtitles, Save, Reset, Undo, Redo",
+  "timingInstructions": "Currently have ??? subtitle lines. Drag timestamps to adjust timing for each subtitle. \"Stick\" mode will adjust all following subtitles. \"Scroll\" mode will automatically move view to the current running subtitle. 6 remaining buttons: Split subtitles, Save, Reset, Jump to checkpoint, Undo, Redo",
   "editTooltip": "Edit lyric text",
   "deleteTooltip": "Delete lyric",
   "insertTooltip": "Add new line",
@@ -12,5 +16,7 @@
   "insertAbove": "Add above",
   "insertBelow": "Add below",
   "mergeAbove": "Merge with above",
-  "mergeBelow": "Merge with below"
+  "mergeBelow": "Merge with below",
+  "addFirst": "Add first subtitle",
+  "emptyTimingInstructions": "There are {{count}} subtitle lines. Drag across the subtitles editing area (the one with the right-swipe hand animation) to auto-create subtitles with AI. You can drag from start to end for the whole video or just a segment if you prefer."
 }

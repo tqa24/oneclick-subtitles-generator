@@ -30,6 +30,7 @@ export const setupButtonObserver = (initCallback, observerInitialized) => {
                 node.classList.contains('cancel-download-btn') ||
                 node.classList.contains('add-subtitles-button') ||
                 node.classList.contains('srt-upload-button') ||
+                node.classList.contains('video-analysis-button') ||
                 node.classList.contains('lets-go-btn')) &&
                !(node.classList.contains('translate-button') || node.classList.contains('download-btn')))
             ) {
@@ -37,7 +38,7 @@ export const setupButtonObserver = (initCallback, observerInitialized) => {
             }
 
             // Check if the node contains buttons with the relevant classes (excluding translate and download buttons)
-            const buttons = node.querySelectorAll('.generate-btn:not(.translate-button):not(.download-btn), .retry-gemini-btn, .force-stop-btn, .cancel-download-btn, .add-subtitles-button, .srt-upload-button, .lets-go-btn');
+            const buttons = node.querySelectorAll('.generate-btn:not(.translate-button):not(.download-btn), .retry-gemini-btn, .force-stop-btn, .cancel-download-btn, .add-subtitles-button, .srt-upload-button, .video-analysis-button, .lets-go-btn');
             if (buttons.length > 0) {
               shouldReinitialize = true;
             }
@@ -115,12 +116,16 @@ export const initializeButton = (button, initializedButtons, particles) => {
   }
 
   // Create a collection of particles for this button - use a few particles for initial state
-  const initialCount = button.classList.contains('generate-btn') ? 10 :
+  const isAutoGenerate = button.classList.contains('auto-generate');
+  const initialCount = isAutoGenerate ? 6 : // Fewer particles for auto-generate to prevent overlap
+                      button.classList.contains('generate-btn') ? 10 :
                       button.classList.contains('cancel-download-btn') ? 8 :
-                      button.classList.contains('add-subtitles-button') ? 6 : 4;
+                      button.classList.contains('add-subtitles-button') ? 6 :
+                      button.classList.contains('video-analysis-button') ? 8 : 4;
   const buttonParticles = createParticles(button, iconContainer, initialCount);
 
   // Make sure they're initially inactive/invisible
+  // All buttons start with invisible particles, including auto-generate
   buttonParticles.forEach(particle => {
     particle.isActive = false;
   });

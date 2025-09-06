@@ -65,7 +65,6 @@
   padding: 4px 8px; /* Padding for content */
   overflow: hidden;
   order: 1; /* Position on the left */
-  margin-top: -8px;
 }
 
 /* First row for zoom controls and sticky toggle */
@@ -153,6 +152,9 @@
   scroll-behavior: smooth;
   /* Enhance scroll performance */
   -webkit-overflow-scrolling: touch;
+  /* Hide horizontal scrollbar while keeping vertical scrolling */
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
   /* Add subtle transition for scroll position changes */
   transition: scroll-top var(--md-duration-medium2) var(--md-easing-emphasized);
 }
@@ -168,4 +170,52 @@
 .lyrics-container::-webkit-scrollbar-thumb {
   background-color: var(--border-color);
   border-radius: 4px;
+}
+
+/* Empty state for lyrics container */
+.lyrics-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background: var(--md-surface-1);
+  position: relative;
+}
+
+/* Hover hotspot that reveals the plus button (full area centered button) */
+.empty-add-hotspot {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-insert-lyric-btn {
+  width: 32px; /* match existing control button size */
+  height: 32px; /* match existing control button size */
+  border-radius: 50%;
+  border: none;
+  background: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  box-shadow: var(--md-elevation-level1);
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized),
+              box-shadow var(--md-duration-medium2) var(--md-easing-standard);
+}
+
+/* Appear when hovering anywhere over the wrapper */
+.lyrics-container-wrapper:hover .empty-insert-lyric-btn {
+  opacity: 1;
+  transform: scale(1);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.empty-insert-lyric-btn:hover svg {
+  transform: scale(1.15);
+  transition: transform var(--md-duration-medium2) var(--md-easing-emphasized);
 }

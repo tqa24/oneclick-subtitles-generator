@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SERVER_URL } from '../../../config';
 import MaterialSwitch from '../../common/MaterialSwitch';
+import CustomDropdown from '../../common/CustomDropdown';
 import LanguageSelectionModal from './LanguageSelectionModal';
 import { FiChevronDown } from 'react-icons/fi';
 import '../../../styles/narration/narrationAdvancedSettingsRedesign.css';
@@ -201,19 +202,16 @@ const GTTSControls = ({
           <label htmlFor="gtts-tld">{t('narration.gttsTld', 'Accent/Region')}:</label>
         </div>
         <div className="row-content">
-          <select
-            id="gtts-tld"
+          <CustomDropdown
             value={tld}
-            onChange={handleTldChange}
+            onChange={(value) => handleTldChange({ target: { value } })}
             disabled={isGenerating}
-            className="grouping-intensity-select"
-          >
-            {getTldOptions().map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            options={getTldOptions().map(option => ({
+              value: option.value,
+              label: option.label
+            }))}
+            placeholder={t('narration.selectAccent', 'Select Accent')}
+          />
         </div>
       </div>
 

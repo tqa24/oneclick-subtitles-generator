@@ -2,9 +2,9 @@
  * Service for analyzing videos with Gemini before splitting
  */
 
-import { fileToBase64 } from '../utils/fileUtils';
 import { createVideoAnalysisSchema, addResponseSchema } from '../utils/schemaUtils';
 import { addThinkingConfig } from '../utils/thinkingBudgetUtils';
+import { callGeminiApiWithFilesApiForAnalysis } from './gemini';
 import i18n from '../i18n/i18n';
 
 // Translation function shorthand
@@ -101,7 +101,7 @@ export const analyzeVideoWithGemini = async (videoFile, onStatusUpdate) => {
     }
 
     // Get the selected model from localStorage or use the default
-    const MODEL = localStorage.getItem('video_analysis_model') || "gemini-2.0-flash";
+    const MODEL = localStorage.getItem('video_analysis_model') || "gemini-2.5-flash-lite";
 
     // Get video duration
     onStatusUpdate({ message: t('input.preparingVideoAnalysis', 'Preparing video for analysis...'), type: 'loading' });
@@ -115,14 +115,11 @@ export const analyzeVideoWithGemini = async (videoFile, onStatusUpdate) => {
       console.warn('Could not determine video duration:', error);
     }
 
-    // Convert the video file to base64
-    const base64Data = await fileToBase64(videoFile);
-
     // Determine how comprehensive the rule set should be based on video length
     const isLongVideo = videoDuration > 600; // More than 10 minutes
     const isVeryLongVideo = videoDuration > 1800; // More than 30 minutes
 
-    // Create the request data with the analysis prompt
+    // Create the analysis prompt
     const analysisPrompt = `You are an expert video and audio content analyzer. This video is ${Math.round(videoDuration)} seconds long (${Math.round(videoDuration/60)} minutes). Analyze this video and provide:
 
 1. The most suitable transcription preset for this content from the following options:
@@ -144,87 +141,70 @@ export const analyzeVideoWithGemini = async (videoFile, onStatusUpdate) => {
 
 Provide your analysis in a structured format that can be used to guide the transcription process.`;
 
-    // Create the request data
-    let requestData = {
-      model: MODEL,
-      contents: [
-        {
-          role: "user",
-          parts: [
-            { text: analysisPrompt },
-            {
-              inlineData: {
-                mimeType: videoFile.type,
-                data: base64Data
-              }
-            }
-          ]
-        }
-      ]
-    };
-
-    // Add response schema for structured output
-    requestData = addResponseSchema(requestData, createVideoAnalysisSchema());
-
-    // Disable thinking for video analysis to avoid token conflicts with complex schemas
-    requestData = addThinkingConfig(requestData, MODEL, { enableThinking: false });
-
     onStatusUpdate({ message: t('input.analyzingVideo', 'Analyzing video content...'), type: 'loading' });
 
-    // Call the Gemini API
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-        signal: signal // Add the abort signal
-      }
-    );
+    // Prepare options for Files API call with very low FPS and resolution for analysis
+    const analysisOptions = {
+      modelId: MODEL,
+      videoMetadata: {
+        fps: 0.01  // Ultra low FPS (1 frame every 100 seconds) for maximum token efficiency
+      },
+      mediaResolution: 'MEDIA_RESOLUTION_LOW',  // Use low resolution to reduce token count
+      // We'll need a custom analysis prompt instead of transcription prompt
+      analysisMode: true,
+      analysisPrompt: analysisPrompt
+    };
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`);
+    // Limit analysis to max 30 minutes (1800 seconds) centered around video middle
+    const MAX_ANALYSIS_DURATION = 1800; // 30 minutes in seconds
+    
+    if (videoDuration > MAX_ANALYSIS_DURATION) {
+      // Calculate center-based offsets for videos longer than 30 minutes
+      const centerTime = videoDuration / 2;
+      const halfAnalysisDuration = MAX_ANALYSIS_DURATION / 2;
+      
+      // Calculate start and end times, ensuring they stay within video bounds
+      const startOffset = Math.max(0, Math.floor(centerTime - halfAnalysisDuration));
+      const endOffset = Math.min(videoDuration, Math.floor(centerTime + halfAnalysisDuration));
+      
+      // Add video metadata with offsets
+      analysisOptions.videoMetadata.start_offset = `${startOffset}s`;
+      analysisOptions.videoMetadata.end_offset = `${endOffset}s`;
+      
+      console.log(`[VideoAnalysis] Limiting analysis to 30 minutes: ${startOffset}s to ${endOffset}s (video duration: ${videoDuration}s)`);
+      
+      // Update the analysis prompt to mention we're analyzing a sample
+      analysisOptions.analysisPrompt = `You are analyzing a 30-minute sample from the middle of this video (from ${Math.floor(startOffset/60)}:${(startOffset%60).toString().padStart(2,'0')} to ${Math.floor(endOffset/60)}:${(endOffset%60).toString().padStart(2,'0')} of a ${Math.round(videoDuration/60)}-minute video). ${analysisPrompt}`;
     }
 
-    const data = await response.json();
-
-    // Check if content was blocked by Gemini
-    if (data?.promptFeedback?.blockReason) {
-      console.error('Content blocked by Gemini:', data.promptFeedback);
-      throw new Error(t('errors.contentBlocked', 'Video content is not safe and was blocked by Gemini'));
-    }
-
-    // Check if this is a structured JSON response
+    // Use the Files API with shared caching mechanism
+    const result = await callGeminiApiWithFilesApiForAnalysis(videoFile, analysisOptions, signal);
+    
+    // Extract analysis result from the response
     let analysisResult;
-    if (data.candidates?.[0]?.content?.parts?.[0]?.structuredJson) {
-      analysisResult = data.candidates[0].content.parts[0].structuredJson;
-    } else {
-      // If not structured, try to parse the text response
-      const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!resultText) {
-        throw new Error('No analysis returned from Gemini');
-      }
-
-      // Try to parse the text as JSON
+    if (result && result.length > 0 && result[0].text) {
+      // The result is in subtitle format, but contains our analysis
+      const analysisText = result[0].text;
+      
       try {
-        analysisResult = JSON.parse(resultText);
+        // Try to parse as JSON if the model returned structured data
+        analysisResult = JSON.parse(analysisText);
       } catch (e) {
-        console.error('Failed to parse analysis as JSON:', e);
-        // Create a simplified object with the raw text
+        // If not JSON, create a structured result from the text
+        console.log('Analysis result is not JSON, processing as text');
         analysisResult = {
-          rawResponse: resultText.substring(0, 1000), // Limit the size of raw response
+          rawResponse: analysisText.substring(0, 1000),
           recommendedPreset: {
             id: 'general',
-            reason: 'Default preset selected due to parsing error'
+            reason: 'Default preset selected - analysis returned unstructured text'
           },
           transcriptionRules: {
-            additionalNotes: [resultText.substring(0, 1000) + '... (truncated)']
+            additionalNotes: [analysisText]
           }
         };
       }
+    } else {
+      throw new Error('No analysis returned from Gemini');
     }
 
     // Sanitize the result to prevent localStorage overflow

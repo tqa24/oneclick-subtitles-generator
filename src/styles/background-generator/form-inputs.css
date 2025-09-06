@@ -138,3 +138,20 @@
   white-space: nowrap;
   font-family: 'Open Sans', sans-serif;
 }
+
+
+/* Use CustomDropdown pill only; remove legacy select rectangle behind */
+.custom-dropdown.image-count-dropdown {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  height: auto !important;
+  min-width: 60px !important;
+  width: 60px !important;
+}
+
+.custom-dropdown.image-count-dropdown .custom-dropdown-button {
+  height: 36px !important;
+  padding: 0 12px !important;
+}

@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import StandardSlider from '../../common/StandardSlider';
-import { SegmentsIcon, VideoAnalysisIcon, OptimizationIcon, DisplayIcon } from '../icons/TabIcons';
-import { FiCpu } from 'react-icons/fi';
 import MaterialSwitch from '../../common/MaterialSwitch';
+import { DisplayIcon, VideoAnalysisIcon } from '../icons/TabIcons';
+import { FiCpu, FiDownload, FiType } from 'react-icons/fi';
 import CustomGeminiModelsCard from '../components/CustomGeminiModelsCard';
+import CustomDropdown from '../../common/CustomDropdown';
+import { initGeminiButtonEffects, disableGeminiButtonEffects } from '../../../utils/geminiEffects';
 import '../../../styles/common/material-switch.css';
 import '../../../styles/settings/customGeminiModels.css';
 
@@ -15,16 +17,14 @@ const VideoProcessingTab = ({
   setGeminiModel,
   timeFormat,
   setTimeFormat,
-  showWaveform,
-  setShowWaveform,
+  showWaveformLongVideos,
+  setShowWaveformLongVideos,
   useVideoAnalysis,
   setUseVideoAnalysis,
   videoAnalysisModel,
   setVideoAnalysisModel,
   videoAnalysisTimeout,
   setVideoAnalysisTimeout,
-  autoSelectDefaultPreset,
-  setAutoSelectDefaultPreset,
   optimizeVideos,
   setOptimizeVideos,
   optimizedResolution,
@@ -35,36 +35,36 @@ const VideoProcessingTab = ({
   setThinkingBudgets,
   useCookiesForDownload,
   setUseCookiesForDownload,
+  enableYoutubeSearch,
+  setEnableYoutubeSearch,
   customGeminiModels,
-  setCustomGeminiModels
+  setCustomGeminiModels,
+  // New prop for gemini effects toggle
+  enableGeminiEffects,
+  setEnableGeminiEffects,
+  // New prop for favorite max subtitle length
+  favoriteMaxSubtitleLength,
+  setFavoriteMaxSubtitleLength,
+  showFavoriteMaxLength,
+  setShowFavoriteMaxLength
 }) => {
   const { t } = useTranslation();
 
-  // Helper function to get all available models (built-in + custom)
-  const getAllAvailableModels = () => {
-    const builtInModels = [
-      { id: 'gemini-2.5-pro', name: t('settings.modelBestAccuracy', 'Gemini 2.5 Pro (Paid) - Best accuracy, slowest, easily overloaded') },
-      { id: 'gemini-2.5-flash', name: t('settings.modelSmartFast', 'Gemini 2.5 Flash (Smarter & faster, second best accuracy)') },
-      { id: 'gemini-2.5-flash-lite', name: t('settings.modelFlash25Lite', 'Gemini 2.5 Flash Lite (Fastest 2.5 model, good accuracy)') },
-      { id: 'gemini-2.0-flash', name: t('settings.modelThirdBest', 'Gemini 2.0 Flash (Third best, acceptable accuracy, medium speed)') },
-      { id: 'gemini-2.0-flash-lite', name: t('settings.modelFastest', 'Gemini 2.0 Flash Lite (Worst accuracy, fastest - testing only)') }
-    ];
-
-    const customModels = customGeminiModels.map(model => ({
-      id: model.id,
-      name: `${model.name} (Custom)`,
-      isCustom: true
-    }));
-
-    return [...builtInModels, ...customModels];
-  };
+  // Apply Gemini effects immediately when toggle changes
+  useEffect(() => {
+    if (enableGeminiEffects) {
+      initGeminiButtonEffects();
+    } else {
+      disableGeminiButtonEffects();
+    }
+  }, [enableGeminiEffects]);
 
   // Helper function to get analysis models (subset of all models)
   const getAnalysisModels = () => {
     const builtInAnalysisModels = [
       { id: 'gemini-2.5-flash', name: t('settings.modelFlash25', 'Gemini 2.5 Flash (Best)') },
-      { id: 'gemini-2.5-flash-lite', name: t('settings.modelFlash25LiteAnalysis', 'Gemini 2.5 Flash Lite (Good + Fast)') },
-      { id: 'gemini-2.0-flash', name: t('settings.modelFlash', 'Gemini 2.0 Flash (More Detailed)') }
+      { id: 'gemini-2.5-flash-lite', name: t('settings.modelFlash25Lite', 'Gemini 2.5 Flash Lite (Fast + Efficient)') },
+      { id: 'gemini-2.0-flash', name: t('settings.modelFlash', 'Gemini 2.0 Flash (Normal)') }
     ];
 
     const customModels = customGeminiModels.map(model => ({
@@ -149,74 +149,8 @@ const VideoProcessingTab = ({
 
       {/* Grid layout for settings cards */}
       <div className="video-processing-grid">
-        {/* Combined Segments and AI Model Card */}
-        <div className="settings-card combined-card">
-          <div className="settings-card-header">
-            <div className="settings-card-icon">
-              <SegmentsIcon />
-            </div>
-            <h4>{t('settings.processingSettings', 'Processing Settings')}</h4>
-          </div>
-          <div className="settings-card-content">
-            {/* Segment Duration Setting */}
-            <div className="compact-setting">
-              <label htmlFor="segment-duration">
-                {t('settings.segmentDuration', 'Segment Duration (minutes)')}
-              </label>
-              <p className="setting-description">
-                {t('settings.segmentDurationDescription', 'Choose how long each video segment should be when processing long videos. Shorter segments process faster but may be less accurate.')}
-              </p>
-              <div className="segment-duration-slider-container">
-                <div className="slider-with-value">
-                  <StandardSlider
-                    value={segmentDuration}
-                    onChange={(value) => setSegmentDuration(parseInt(value))}
-                    min={1}
-                    max={45}
-                    step={1}
-                    orientation="Horizontal"
-                    size="XSmall"
-                    state="Enabled"
-                    showValueIndicator={false} // Using custom value display
-                    showIcon={false}
-                    showStops={false}
-                    className="segment-duration-slider"
-                    id="segment-duration"
-                    ariaLabel={t('settings.segmentDuration', 'Segment Duration')}
-                  />
-                  <div className="slider-value-display">
-                    {segmentDuration} {t('settings.minutes', 'minutes')}
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Gemini Model Setting */}
-            <div className="compact-setting">
-              <label htmlFor="gemini-model">
-                {t('settings.geminiModel', 'Gemini Model')}
-              </label>
-              <p className="setting-description">
-                {t('settings.geminiModelDescription', 'Select the Gemini model to use for transcription. Different models offer trade-offs between accuracy and speed.')}
-              </p>
-              <select
-                id="gemini-model"
-                value={geminiModel}
-                onChange={(e) => setGeminiModel(e.target.value)}
-                className="enhanced-select"
-              >
-                {getAllAvailableModels().map((model) => (
-                  <option key={model.id} value={model.id}>
-                    {model.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-
-        {/* Video Analysis Card */}
+        {/* Video Analysis Card - FIRST */}
         <div className="settings-card analysis-card">
           <div className="settings-card-header">
             <div className="settings-card-icon">
@@ -226,22 +160,8 @@ const VideoProcessingTab = ({
           </div>
           <div className="settings-card-content">
             <div className="compact-setting">
-              <div className="setting-header">
-                <label htmlFor="use-video-analysis">
-                  {t('settings.useVideoAnalysis', 'Detect Patterns + Context Memory/Rules')}
-                </label>
-                <div className="material-switch-container">
-                  <MaterialSwitch
-                    id="use-video-analysis"
-                    checked={useVideoAnalysis}
-                    onChange={(e) => setUseVideoAnalysis(e.target.checked)}
-                    ariaLabel={t('settings.useVideoAnalysis', 'Detect Patterns + Context Memory/Rules')}
-                    icons={true}
-                  />
-                </div>
-              </div>
               <p className="setting-description">
-                {t('settings.useVideoAnalysisDescription', 'Before splitting video, analyze the entire video with Gemini to identify the best prompt pattern and generate transcription rules. Turn off for faster processing.')}
+                {t('settings.useVideoAnalysisDescription', 'Settings for the "Add analysis" button, which analyze the entire video with Gemini to identify the best prompt pattern and generate transcription rules.')}
               </p>
             </div>
 
@@ -252,151 +172,206 @@ const VideoProcessingTab = ({
               <p className="setting-description">
                 {t('settings.videoAnalysisModel.simplified', 'Select the model to use for video analysis. Flash Lite is faster but less accurate.')}
               </p>
-              <select
-                id="video-analysis-model"
+              <CustomDropdown
                 value={videoAnalysisModel}
-                onChange={(e) => setVideoAnalysisModel(e.target.value)}
-                className="enhanced-select"
-                disabled={!useVideoAnalysis}
-              >
-                {getAnalysisModels().map((model) => (
-                  <option key={model.id} value={model.id}>
-                    {model.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="compact-setting">
-              <label htmlFor="video-analysis-timeout">
-                {t('settings.videoAnalysisTimeout', 'Analysis Timeout')}
-              </label>
-              <p className="setting-description">
-                {t('settings.videoAnalysisTimeout.simplified', 'Maximum time to wait for video analysis results before proceeding with default settings.')}
-              </p>
-              <select
-                id="video-analysis-timeout"
-                value={videoAnalysisTimeout}
-                onChange={(e) => setVideoAnalysisTimeout(e.target.value)}
-                className="enhanced-select"
-                disabled={!useVideoAnalysis}
-              >
-                <option value="none">{t('settings.timeoutNone', 'No Timeout')}</option>
-                <option value="10">{t('settings.timeout10Seconds', '10 Seconds')}</option>
-                <option value="20">{t('settings.timeout20Seconds', '20 Seconds')}</option>
-              </select>
-            </div>
-
-            <div className="compact-setting">
-              <div className="setting-header">
-                <label htmlFor="auto-select-default-preset">
-                  {t('settings.autoSelectDefaultPreset', 'Auto-select default preset on timeout')}
-                </label>
-                <div className="material-switch-container">
-                  <MaterialSwitch
-                    id="auto-select-default-preset"
-                    checked={autoSelectDefaultPreset}
-                    onChange={(e) => setAutoSelectDefaultPreset(e.target.checked)}
-                    disabled={!useVideoAnalysis}
-                    ariaLabel={t('settings.autoSelectDefaultPreset', 'Auto-select default preset on timeout')}
-                    icons={true}
-                  />
-                </div>
-              </div>
-              <p className="setting-description">
-                {t('settings.autoSelectDefaultPresetDescription', "If enabled, the 'Use My Default Preset' option will be automatically selected in the Video Analysis Results pop-up when the timer expires. Otherwise, the 'Use Recommended' preset will be selected.")}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Video Optimization Card */}
-        <div className="settings-card optimization-card">
-          <div className="settings-card-header">
-            <div className="settings-card-icon">
-              <OptimizationIcon />
-            </div>
-            <h4>{t('settings.videoOptimizationSection', 'Video Optimization')}</h4>
-          </div>
-          <div className="settings-card-content">
-            <div className="compact-setting">
-              <div className="setting-header">
-                <label htmlFor="optimize-videos">
-                  {t('settings.optimizeVideos', 'Optimize videos for processing')}
-                </label>
-                <div className="material-switch-container">
-                  <MaterialSwitch
-                    id="optimize-videos"
-                    checked={optimizeVideos}
-                    onChange={(e) => setOptimizeVideos(e.target.checked)}
-                    ariaLabel={t('settings.optimizeVideos', 'Optimize videos for processing')}
-                    icons={true}
-                  />
-                </div>
-              </div>
-              <p
-                className="setting-description"
-                dangerouslySetInnerHTML={{
-                  __html: t('settings.optimizeVideosDescription', 'Reduces video resolution and frame rate to 1 FPS for faster processing and smaller file sizes. Recommended for Gemini processing but may reduce visual quality for analysis.')
-                }}
+                onChange={(value) => setVideoAnalysisModel(value)}
+                options={getAnalysisModels().map((model) => ({
+                  value: model.id,
+                  label: model.name
+                }))}
+                placeholder={t('settings.selectAnalysisModel', 'Select Analysis Model')}
               />
             </div>
 
             <div className="compact-setting">
-              <label htmlFor="optimized-resolution">
-                {t('settings.optimizedResolution', 'Optimized Resolution')}
+              <label htmlFor="video-analysis-timeout">
+                {t('settings.videoAnalysisCountdown', 'Analysis Countdown Time')}
               </label>
               <p className="setting-description">
-                {t('settings.optimizedResolutionDescription', 'Select the resolution for Gemini processing. Higher resolutions don\'t improve AI accuracy significantly but increase file size and upload time. 360p is recommended for most content.')}
+                {t('settings.videoAnalysisCountdownDesc', 'How long to wait before auto-saving analysis rules in autoflow mode.')}
               </p>
-              <select
-                id="optimized-resolution"
-                value={optimizedResolution}
-                onChange={(e) => setOptimizedResolution(e.target.value)}
-                className="enhanced-select"
-                disabled={!optimizeVideos}
-              >
-                <option value="240p">{t('settings.resolution240p', '240p (Fastest, smallest files)')}</option>
-                <option value="360p">{t('settings.resolution360p', '360p (Recommended for Gemini)')}</option>
-              </select>
+              <CustomDropdown
+                value={videoAnalysisTimeout}
+                onChange={(value) => setVideoAnalysisTimeout(value)}
+                options={[
+                  { value: 'none', label: t('settings.countdownNone', 'No countdown (trust the analysis, not recommended)') },
+                  { value: '10', label: t('settings.countdown10', '10 seconds (default)') },
+                  { value: '20', label: t('settings.countdown20', '20 seconds') },
+                  { value: 'infinite', label: t('settings.countdownInfinite', 'Infinite countdown (no auto proceeding)') }
+                ]}
+                placeholder={t('settings.selectCountdownTime', 'Select Countdown Time')}
+              />
             </div>
+          </div>
+        </div>
 
+        {/* Processing Settings Card - SECOND */}
+        <div className="settings-card processing-card">
+          <div className="settings-card-header">
+            <div className="settings-card-icon">
+              <FiType />
+            </div>
+            <h4>{t('settings.processingSettings', 'Processing')}</h4>
+          </div>
+          <div className="settings-card-content">
+            {/* Auto Split Subtitles Setting */}
             <div className="compact-setting">
               <div className="setting-header">
-                <label htmlFor="use-optimized-preview">
-                  {t('settings.useOptimizedPreview', 'Use optimized video for preview')}
+                <label htmlFor="auto-split-subtitles">
+                  {t('settings.autoSplitSubtitles', 'Auto-split subtitles')}
                 </label>
                 <div className="material-switch-container">
                   <MaterialSwitch
-                    id="use-optimized-preview"
-                    checked={useOptimizedPreview}
-                    onChange={(e) => setUseOptimizedPreview(e.target.checked)}
-                    disabled={!optimizeVideos}
-                    ariaLabel={t('settings.useOptimizedPreview', 'Use optimized video for preview')}
+                    id="auto-split-subtitles"
+                    checked={showFavoriteMaxLength}
+                    onChange={(e) => setShowFavoriteMaxLength(e.target.checked)}
+                    ariaLabel={t('settings.autoSplitSubtitles', 'Auto-split subtitles')}
                     icons={true}
                   />
                 </div>
               </div>
               <p className="setting-description">
-                {t('settings.useOptimizedPreviewDescription.simplified', 'Use the optimized video for preview instead of the original. Improves performance and reduces memory usage. The optimized video has the same quality that Gemini processes (1 FPS, optimized resolution).')}
+                {t('settings.autoSplitSubtitlesDescription', 'Automatically split long subtitles into smaller segments for better readability.')}
+              </p>
+            </div>
+
+            {/* Favorite Max Subtitle Length Setting */}
+            <div className="compact-setting">
+              <label htmlFor="favorite-max-subtitle-length">
+                {t('settings.favoriteMaxSubtitleLength', 'Favorite max length of one subtitle')}
+              </label>
+              <p className="setting-description">
+                {t('settings.favoriteMaxSubtitleLengthDescription', 'Set the default maximum number of words per subtitle when auto-split is enabled.')}
+              </p>
+              <div className="slider-with-value">
+                <StandardSlider
+                  value={favoriteMaxSubtitleLength}
+                  onChange={(value) => setFavoriteMaxSubtitleLength(parseInt(value))}
+                  min={1}
+                  max={30}
+                  step={1}
+                  orientation="Horizontal"
+                  size="Small"
+                  state={showFavoriteMaxLength ? "Enabled" : "Disabled"}
+                  showValueIndicator={false}
+                  showIcon={false}
+                  showStops={false}
+                  className="max-subtitle-length-slider"
+                  id="favorite-max-subtitle-length"
+                  ariaLabel={t('settings.favoriteMaxSubtitleLength', 'Favorite max length of one subtitle')}
+                  disabled={!showFavoriteMaxLength}
+                />
+                <div className="slider-value-display" style={{ opacity: showFavoriteMaxLength ? 1 : 0.5 }}>
+                  {favoriteMaxSubtitleLength} {t('settings.words', 'words')}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Display Settings Card - THIRD */}
+        <div className="settings-card display-card">
+          <div className="settings-card-header">
+            <div className="settings-card-icon">
+              <DisplayIcon />
+            </div>
+            <h4>{t('settings.displaySettings', 'Display Settings')}</h4>
+          </div>
+          <div className="settings-card-content">
+            {/* Time Format Setting */}
+            <div className="compact-setting">
+              <label htmlFor="time-format">
+                {t('settings.timeFormat', 'Time Format')}
+              </label>
+              <p className="setting-description">
+                {t('settings.timeFormatDescription', 'Choose how time is displayed in the timeline and lyrics.')}
+              </p>
+              <CustomDropdown
+                value={timeFormat}
+                onChange={(value) => setTimeFormat(value)}
+                options={[
+                  { value: 'seconds', label: t('settings.timeFormatSeconds', 'Seconds (e.g., 75.40s)') },
+                  { value: 'hms', label: t('settings.timeFormatHMS', 'HH:MM:SS (e.g., 1:15.40)') }
+                ]}
+                placeholder={t('settings.selectTimeFormat', 'Select Time Format')}
+              />
+            </div>
+
+            {/* Audio Waveform for Long Videos Setting */}
+            <div className="compact-setting">
+              <div className="setting-header">
+                <label htmlFor="show-waveform-long-videos">
+                  {t('settings.showWaveformLongVideos', 'Show Waveform for Videos Longer than 30 Minutes')}
+                </label>
+                <div className="material-switch-container">
+                  <MaterialSwitch
+                    id="show-waveform-long-videos"
+                    checked={showWaveformLongVideos}
+                    onChange={(e) => setShowWaveformLongVideos(e.target.checked)}
+                    ariaLabel={t('settings.showWaveformLongVideos', 'Show Waveform for Videos Longer than 30 Minutes')}
+                    icons={true}
+                  />
+                </div>
+              </div>
+              <p className="setting-description">
+                {t('settings.showWaveformLongVideosDescription', 'Enable waveform visualization for videos longer than 30 minutes. This may impact performance on very long videos.')}
+              </p>
+            </div>
+
+            {/* Show Gemini star effects Setting */}
+            <div className="compact-setting">
+              <div className="setting-header">
+                <label htmlFor="enable-gemini-effects">
+                  {t('settings.showGeminiEffects', 'Show Gemini star effects')}
+                </label>
+                <div className="material-switch-container">
+                  <MaterialSwitch
+                    id="enable-gemini-effects"
+                    checked={enableGeminiEffects}
+                    onChange={(e) => setEnableGeminiEffects(e.target.checked)}
+                    ariaLabel={t('settings.showGeminiEffects', 'Show Gemini star effects')}
+                    icons={true}
+                  />
+                </div>
+              </div>
+              <p className="setting-description">
+                {t('settings.showGeminiEffectsDescription', 'Use Gemini starry sky effect and Gemini stars button effect. This can be turned off for low end devices and no functionalities will be affected')}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Download Settings Card */}
+        {/* Download Settings Card - FOURTH */}
         <div className="settings-card download-card">
           <div className="settings-card-header">
             <div className="settings-card-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7,10 12,15 17,10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
+              <FiDownload />
             </div>
             <h4>{t('settings.downloadSettings', 'Download Settings')}</h4>
           </div>
           <div className="settings-card-content">
+            {/* Enable YouTube Search Setting */}
+            <div className="compact-setting">
+              <div className="setting-header">
+                <label htmlFor="enable-youtube-search">
+                  {t('settings.enableYoutubeSearch', 'Enable YouTube Search')}
+                </label>
+                <div className="material-switch-container">
+                  <MaterialSwitch
+                    id="enable-youtube-search"
+                    checked={enableYoutubeSearch}
+                    onChange={(e) => setEnableYoutubeSearch(e.target.checked)}
+                    ariaLabel={t('settings.enableYoutubeSearch', 'Enable YouTube Search')}
+                    icons={true}
+                  />
+                </div>
+              </div>
+              <p className="setting-description">
+                {t('settings.enableYoutubeSearchDescription', 'Show the "Search YouTube" tab in input methods and enable YouTube API authentication settings. Disabling this will hide YouTube search functionality.')}
+              </p>
+            </div>
+
+            {/* Download Cookies Setting */}
             <div className="compact-setting">
               <div className="setting-header">
                 <label htmlFor="use-cookies-download">
@@ -419,60 +394,13 @@ const VideoProcessingTab = ({
           </div>
         </div>
 
-        {/* Display Settings Card */}
-        <div className="settings-card display-card">
-          <div className="settings-card-header">
-            <div className="settings-card-icon">
-              <DisplayIcon />
-            </div>
-            <h4>{t('settings.displaySettings', 'Display Settings')}</h4>
-          </div>
-          <div className="settings-card-content">
-            <div className="compact-setting">
-              <label htmlFor="time-format">
-                {t('settings.timeFormat', 'Time Format')}
-              </label>
-              <p className="setting-description">
-                {t('settings.timeFormatDescription', 'Choose how time is displayed in the timeline and lyrics.')}
-              </p>
-              <select
-                id="time-format"
-                value={timeFormat}
-                onChange={(e) => setTimeFormat(e.target.value)}
-                className="enhanced-select"
-              >
-                <option value="seconds">{t('settings.timeFormatSeconds', 'Seconds (e.g., 75.40s)')}</option>
-                <option value="hms">{t('settings.timeFormatHMS', 'HH:MM:SS (e.g., 1:15.40)')}</option>
-              </select>
-            </div>
-
-            <div className="compact-setting">
-              <div className="setting-header">
-                <label htmlFor="show-waveform">
-                  {t('settings.showWaveform', 'Show Audio Waveform')}
-                </label>
-                <div className="material-switch-container">
-                  <MaterialSwitch
-                    id="show-waveform"
-                    checked={showWaveform}
-                    onChange={(e) => setShowWaveform(e.target.checked)}
-                    ariaLabel={t('settings.showWaveform', 'Show Audio Waveform')}
-                    icons={true}
-                  />
-                </div>
-              </div>
-              <p className="setting-description">
-                {t('settings.showWaveformDescription', 'Display audio waveform visualization in the timeline. This helps identify silent parts and speech patterns.')}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Thinking Budget Card */}
+        {/* AI Thinking Budget Card - FIFTH */}
         <div className="settings-card thinking-card">
           <div className="settings-card-header">
             <div className="settings-card-icon">
-              <FiCpu />
+              <svg viewBox="0 -960 960 960" width="20" height="20" fill="currentColor">
+                <path d="M227-246q-58-54-89-124.5t-31-149.87Q107-675 215.5-784T480-893q128 0 228.5 77T839-618l52 206q6 25-9.82 45T839-347h-66v94q0 45-31.14 75.5T667-147h-54v27q0 22-15.5 37.5T560-67q-22 0-37.5-15.5T507-120v-80q0-22 15.5-37.5T560-253h107v-147q0-22 15.5-37.5T720-453h51l-34-138q-23-85-94.5-140.5T480-787q-110.61 0-188.81 77.5Q213-632 213-521.93q0 56.93 23 109.43 23 52.5 66 91.5l31 28v173q0 22-15.5 37.5T280-67q-22 0-37.5-15.5T227-120v-126Zm265-181Zm-22 139q22 0 36-14.38 14-14.37 14-35.62t-14.5-35.63Q491-388 469.82-388q-21.17 0-35.5 14.32Q420-359.35 420-338.18q0 21.18 14.38 35.68Q448.75-288 470-288Zm2.89-355q17.11 0 29.11 9.5t12 23.5q0 13-7.5 26T479-551q-21 23-31.5 42T433-467q-2 15.6 9.5 27.3Q454-428 471.33-428 486-428 498-439q12-11 17-28 3.75-12 11.88-23.5Q535-502 551-519q26-28 35.5-48t9.5-43q0-46.2-36-78.1-36-31.9-87-31.9-32 0-60.5 15T364-662q-11 14-6 31.5t22 24.5q14 6 27.5 1.5T434-623q7.78-9.6 17.89-14.8 10.11-5.2 21-5.2Z"/>
+              </svg>
             </div>
             <h4>{t('settings.thinkingBudgetSection', 'AI Thinking Budget')}</h4>
           </div>
@@ -489,17 +417,17 @@ const VideoProcessingTab = ({
               <p className="setting-description">
                 {t('settings.thinkingBudget25ProDesc', 'Cannot disable thinking. Choose dynamic or set custom token budget.')}
               </p>
-              <select
-                id="thinking-mode-25-pro"
-                value={getThinkingMode(thinkingBudgets['gemini-2.5-pro'] || -1)}
-                onChange={(e) => handleModeChange('gemini-2.5-pro', e.target.value)}
-                className="enhanced-select"
-              >
-                <option value="dynamic">{t('settings.thinkingDynamic', 'Dynamic (Auto)')}</option>
-                <option value="custom">{t('settings.thinkingCustom', 'Custom')}</option>
-              </select>
+              <CustomDropdown
+                value={getThinkingMode(thinkingBudgets['gemini-2.5-pro'] || 128)}
+                onChange={(value) => handleModeChange('gemini-2.5-pro', value)}
+                options={[
+                  { value: 'dynamic', label: t('settings.thinkingDynamic', 'Dynamic (Auto)') },
+                  { value: 'custom', label: `${t('settings.thinkingCustom', 'Custom')} (${t('settings.default', 'Default')})` }
+                ]}
+                placeholder={t('settings.selectThinkingMode', 'Select Thinking Mode')}
+              />
 
-              {getThinkingMode(thinkingBudgets['gemini-2.5-pro'] || -1) === 'custom' && (
+              {getThinkingMode(thinkingBudgets['gemini-2.5-pro'] || 128) === 'custom' && (
                 <div className="thinking-slider-container">
                   <div className="slider-with-value">
                     <StandardSlider
@@ -537,18 +465,18 @@ const VideoProcessingTab = ({
               <p className="setting-description">
                 {t('settings.thinkingBudget25FlashDesc', 'Can be disabled for fastest response, dynamic for auto, or custom token budget.')}
               </p>
-              <select
-                id="thinking-mode-25-flash"
-                value={getThinkingMode(thinkingBudgets['gemini-2.5-flash'] || -1)}
-                onChange={(e) => handleModeChange('gemini-2.5-flash', e.target.value)}
-                className="enhanced-select"
-              >
-                <option value="disabled">{t('settings.thinkingDisabled', 'Disabled')}</option>
-                <option value="dynamic">{t('settings.thinkingDynamic', 'Dynamic (Auto)')}</option>
-                <option value="custom">{t('settings.thinkingCustom', 'Custom')}</option>
-              </select>
+              <CustomDropdown
+                value={getThinkingMode(thinkingBudgets['gemini-2.5-flash'] || 0)}
+                onChange={(value) => handleModeChange('gemini-2.5-flash', value)}
+                options={[
+                  { value: 'disabled', label: `${t('settings.thinkingDisabled', 'Disabled')} (${t('settings.default', 'Default')})` },
+                  { value: 'dynamic', label: t('settings.thinkingDynamic', 'Dynamic (Auto)') },
+                  { value: 'custom', label: t('settings.thinkingCustom', 'Custom') }
+                ]}
+                placeholder={t('settings.selectThinkingMode', 'Select Thinking Mode')}
+              />
 
-              {getThinkingMode(thinkingBudgets['gemini-2.5-flash'] || -1) === 'custom' && (
+              {getThinkingMode(thinkingBudgets['gemini-2.5-flash'] || 0) === 'custom' && (
                 <div className="thinking-slider-container">
                   <div className="slider-with-value">
                     <StandardSlider
@@ -586,16 +514,16 @@ const VideoProcessingTab = ({
               <p className="setting-description">
                 {t('settings.thinkingBudget25FlashLiteDesc', 'Disabled by default for fastest response. Choose dynamic or custom token budget.')}
               </p>
-              <select
-                id="thinking-mode-25-flash-lite"
+              <CustomDropdown
                 value={getThinkingMode(thinkingBudgets['gemini-2.5-flash-lite'] || 0)}
-                onChange={(e) => handleModeChange('gemini-2.5-flash-lite', e.target.value)}
-                className="enhanced-select"
-              >
-                <option value="disabled">{t('settings.thinkingDisabled', 'Disabled')} ({t('settings.default', 'Default')})</option>
-                <option value="dynamic">{t('settings.thinkingDynamic', 'Dynamic (Auto)')}</option>
-                <option value="custom">{t('settings.thinkingCustom', 'Custom')}</option>
-              </select>
+                onChange={(value) => handleModeChange('gemini-2.5-flash-lite', value)}
+                options={[
+                  { value: 'disabled', label: `${t('settings.thinkingDisabled', 'Disabled')} (${t('settings.default', 'Default')})` },
+                  { value: 'dynamic', label: t('settings.thinkingDynamic', 'Dynamic (Auto)') },
+                  { value: 'custom', label: t('settings.thinkingCustom', 'Custom') }
+                ]}
+                placeholder={t('settings.selectThinkingMode', 'Select Thinking Mode')}
+              />
 
               {getThinkingMode(thinkingBudgets['gemini-2.5-flash-lite'] || 0) === 'custom' && (
                 <div className="thinking-slider-container">
@@ -629,7 +557,7 @@ const VideoProcessingTab = ({
           </div>
         </div>
 
-        {/* Custom Gemini Models Card */}
+        {/* Custom Gemini Models Card - SIXTH */}
         <CustomGeminiModelsCard
           customGeminiModels={customGeminiModels}
           setCustomGeminiModels={setCustomGeminiModels}

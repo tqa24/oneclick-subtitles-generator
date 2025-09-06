@@ -82,21 +82,14 @@ const LyricsDisplay = ({
   onSaveSubtitles = null, // New callback for when subtitles are saved
   videoSource = null, // Video source URL for audio analysis
   translatedSubtitles = null, // Translated subtitles
-  videoTitle = 'subtitles' // Video title for download filenames
+  videoTitle = 'subtitles', // Video title for download filenames
+  onSegmentSelect = null, // Callback for segment selection
+  selectedSegment = null, // Currently selected segment
+  isProcessingSegment = false // Whether a segment is being processed
 }) => {
   const { t } = useTranslation();
-  // Initialize zoom with a function that calculates the minimum zoom based on duration
-  const [zoom, setZoom] = useState(() => {
-    // Try to get the duration from the video element if it exists
-    const videoElement = document.querySelector('video');
-    if (videoElement && videoElement.duration && !isNaN(videoElement.duration)) {
-      // Calculate minimum zoom based on duration
-      const minZoom = videoElement.duration <= 300 ? 1 : videoElement.duration / 300;
-      return minZoom;
-    }
-    // Default to 1 if we can't determine the duration yet
-    return 1;
-  });
+  // Initialize zoom to 1 (100% - show entire timeline)
+  const [zoom, setZoom] = useState(1);
   const [panOffset, setPanOffset] = useState(0);
   const [centerTimelineAt, setCenterTimelineAt] = useState(null);
   const rowHeights = useRef({});
@@ -106,6 +99,7 @@ const LyricsDisplay = ({
     // Get the split duration from localStorage or use default (0 = no split)
     return parseInt(localStorage.getItem('consolidation_split_duration') || '0');
   });
+  const [selectedRange, setSelectedRange] = useState(null); // Track selected range for subtitle split
 
   // Get naming information for downloads
   const getNamingInfo = () => {
@@ -164,9 +158,10 @@ const LyricsDisplay = ({
     };
   };
   const [consolidationStatus, setConsolidationStatus] = useState('');
-  const [showWaveform, setShowWaveform] = useState(() => {
-    // Load from localStorage, default to true if not set
-    return localStorage.getItem('show_waveform') !== 'false';
+
+  const [showWaveformLongVideos, setShowWaveformLongVideos] = useState(() => {
+    // Load from localStorage, default to false if not set
+    return localStorage.getItem('show_waveform_long_videos') === 'true';
   });
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(() => {
     // Load from localStorage, default to true (auto-scroll enabled) if not set
@@ -205,32 +200,28 @@ const LyricsDisplay = ({
     }
   }, [matchedLyrics]);
 
-  // Update zoom level when duration changes
-  useEffect(() => {
-    if (duration) {
-      // Calculate minimum zoom based on duration
-      const minZoom = duration <= 300 ? 1 : duration / 300;
+  // No longer need to enforce minimum zoom when duration changes
+  // Users can freely zoom to any level
 
-      // Only update if the current zoom is less than the minimum
-      if (zoom < minZoom) {
-
-        setZoom(minZoom);
-      }
-    }
-  }, [duration, zoom]);
-
-  // Listen for changes to the show_waveform setting in localStorage
+  // Listen for changes to the waveform settings in localStorage
   useEffect(() => {
     const handleStorageChange = (event) => {
-      if (event.key === 'show_waveform') {
-        setShowWaveform(event.newValue !== 'false');
+      if (event.key === 'show_waveform_long_videos') {
+        setShowWaveformLongVideos(event.newValue === 'true');
       }
     };
 
+    // Also listen for custom events for immediate updates
+    const handleWaveformLongVideosChange = (event) => {
+      setShowWaveformLongVideos(event.detail.value);
+    };
+
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('waveformLongVideosChanged', handleWaveformLongVideosChange);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('waveformLongVideosChanged', handleWaveformLongVideosChange);
     };
   }, []);
 
@@ -272,9 +263,11 @@ const LyricsDisplay = ({
     isAtSavedState,
     canUndo,
     canRedo,
+    canJumpToCheckpoint,
     handleUndo,
     handleRedo,
     handleReset,
+    handleJumpToCheckpoint,
     startDrag,
     handleDrag,
     endDrag,
@@ -285,7 +278,15 @@ const LyricsDisplay = ({
     handleInsertLyric,
     handleMergeLyrics,
     updateSavedLyrics,
-    handleSplitSubtitles
+    handleSplitSubtitles,
+    captureStateBeforeMerge,
+    createCheckpoint,
+    clearSubtitlesInRange,
+    moveSubtitlesInRange,
+    beginRangeMove,
+    previewRangeMove,
+    commitRangeMove,
+    cancelRangeMove
   } = useLyricsEditor(matchedLyrics, onUpdateLyrics);
 
   // Find current lyric index based on time
@@ -407,6 +408,8 @@ const LyricsDisplay = ({
 
     }
   }, [seekTime]);
+
+
 
   // Generate comprehensive filename based on priority system
   const generateFilename = (source, namingInfo = {}) => {
@@ -666,6 +669,100 @@ const LyricsDisplay = ({
     }
   };
 
+  // Listen for save-before-update events triggered before new video processing results
+  useEffect(() => {
+    const handleSaveBeforeUpdate = (event) => {
+      console.log('[LyricsDisplay] Save-before-update event received:', event.detail);
+
+      // Handle both segment processing start and video processing complete
+      const isSegmentStart = event.detail?.source === 'segment-processing-start';
+      const isProcessingComplete = event.detail?.source === 'video-processing-complete';
+
+      if (isSegmentStart || isProcessingComplete) {
+        const action = isSegmentStart ? 'segment processing' : 'video processing completion';
+        console.log(`[LyricsDisplay] Saving current state before ${action}`);
+
+        // Trigger the save function to checkpoint current edits
+        handleSave().then(() => {
+          console.log(`[LyricsDisplay] Checkpoint save completed for ${action}`);
+          // Update the saved state to gray out the save button
+          updateSavedLyrics();
+
+          // Dispatch save-complete event to notify that save is done
+          window.dispatchEvent(new CustomEvent('save-complete', {
+            detail: {
+              source: event.detail?.source,
+              success: true
+            }
+          }));
+        }).catch((error) => {
+          console.error(`[LyricsDisplay] Error during checkpoint save for ${action}:`, error);
+
+          // Dispatch save-complete event even on error to prevent hanging
+          window.dispatchEvent(new CustomEvent('save-complete', {
+            detail: {
+              source: event.detail?.source,
+              success: false,
+              error: error.message
+            }
+          }));
+        });
+      }
+    };
+
+    window.addEventListener('save-before-update', handleSaveBeforeUpdate);
+
+    return () => {
+      window.removeEventListener('save-before-update', handleSaveBeforeUpdate);
+    };
+  }, [lyrics]); // Only include lyrics in dependency array since handleSave is stable
+
+  // Listen for save-after-streaming events triggered after streaming completion
+  useEffect(() => {
+    const handleSaveAfterStreaming = (event) => {
+      console.log('[LyricsDisplay] Save-after-streaming event received:', event.detail);
+
+      // Only trigger save if the event is from streaming completion and we have lyrics
+      if (event.detail?.source === 'streaming-complete' && lyrics && lyrics.length > 0) {
+        console.log('[LyricsDisplay] Auto-saving after streaming completion');
+
+        // Trigger the save function to preserve the new streaming results
+        handleSave().then(() => {
+          console.log('[LyricsDisplay] Auto-save after streaming completed successfully');
+          // Update the saved state to gray out the save button
+          updateSavedLyrics();
+        }).catch((error) => {
+          console.error('[LyricsDisplay] Error during auto-save after streaming:', error);
+        });
+      }
+    };
+
+    window.addEventListener('save-after-streaming', handleSaveAfterStreaming);
+
+    return () => {
+      window.removeEventListener('save-after-streaming', handleSaveAfterStreaming);
+    };
+  }, [lyrics]); // Only include lyrics in dependency array since handleSave is stable
+
+  // Listen for capture-before-merge events to support undo/redo for merging operations
+  useEffect(() => {
+    const handleCaptureBeforeMerge = (event) => {
+      console.log('[LyricsDisplay] Capture-before-merge event received:', event.detail);
+
+      // Capture the current state before merging happens
+      if (lyrics && lyrics.length > 0) {
+        console.log('[LyricsDisplay] Capturing state before merge for undo/redo');
+        captureStateBeforeMerge();
+      }
+    };
+
+    window.addEventListener('capture-before-merge', handleCaptureBeforeMerge);
+
+    return () => {
+      window.removeEventListener('capture-before-merge', handleCaptureBeforeMerge);
+    };
+  }, [lyrics, captureStateBeforeMerge]); // Include captureStateBeforeMerge in dependencies
+
   // Setup drag event handlers with performance optimizations
   const handleMouseDown = (e, index, field) => {
     e.preventDefault();
@@ -715,16 +812,19 @@ const LyricsDisplay = ({
           setIsSticky={setIsSticky}
           canUndo={canUndo}
           canRedo={canRedo}
+          canJumpToCheckpoint={canJumpToCheckpoint}
           isAtOriginalState={isAtOriginalState}
           isAtSavedState={isAtSavedState}
           onUndo={handleUndo}
           onRedo={handleRedo}
           onReset={handleReset}
+          onJumpToCheckpoint={handleJumpToCheckpoint}
           onSave={handleSave}
           autoScrollEnabled={autoScrollEnabled}
           setAutoScrollEnabled={setAutoScrollEnabled}
           lyrics={lyrics}
           onSplitSubtitles={handleSplitSubtitles}
+          selectedRange={selectedRange}
         />
 
         <TimelineVisualization
@@ -739,12 +839,22 @@ const LyricsDisplay = ({
           centerOnTime={centerTimelineAt}
           timeFormat={timeFormat}
           videoSource={videoSource}
-          showWaveform={showWaveform}
+          showWaveformLongVideos={showWaveformLongVideos}
+          onSegmentSelect={onSegmentSelect}
+          selectedSegment={selectedSegment}
+          isProcessingSegment={isProcessingSegment}
+          onClearRange={clearSubtitlesInRange}
+          onMoveRange={moveSubtitlesInRange}
+          onBeginMoveRange={beginRangeMove}
+          onPreviewMoveRange={previewRangeMove}
+          onCommitMoveRange={commitRangeMove}
+          onCancelMoveRange={cancelRangeMove}
+          onSelectedRangeChange={setSelectedRange}
         />
       </div>
 
       <div className="lyrics-container-wrapper">
-        {lyrics.length > 0 && (
+        {lyrics.length > 0 ? (
           <List
             ref={listRef}
             className="lyrics-container"
@@ -780,6 +890,21 @@ const LyricsDisplay = ({
           >
             {VirtualizedLyricRow}
           </List>
+        ) : (
+          <div className="lyrics-empty-state" style={{ height: 300 }}>
+            <div className="empty-add-hotspot" title={t('lyrics.addFirst', 'Add first subtitle')}>
+              <button
+                className="empty-insert-lyric-btn"
+                onClick={() => handleInsertLyric(0)}
+                aria-label={t('lyrics.addFirst', 'Add first subtitle')}
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
@@ -787,10 +912,19 @@ const LyricsDisplay = ({
         {allowEditing && (
           <div className="help-text">
             <p dangerouslySetInnerHTML={{
-              __html: t('lyrics.timingInstructions', 'Hiện có ??? dòng phụ đề. Kéo dấu thời gian để điều chỉnh thời gian cho mỗi phụ đề. Chế độ "Dính" sẽ điều chỉnh tất cả phụ đề theo sau. Chế độ "Cuộn" sẽ giúp tự dời tầm nhìn lên dòng sub đang chạy. 5 nút còn lại: Chia nhỏ sub, Lưu, Đặt lại, Hoàn tác, Làm lại')
-                .replace('??? dòng', `<strong>${lyrics.length} dòng</strong>`)
-                .replace('??? subtitle lines', `<strong>${lyrics.length} subtitle lines</strong>`)
-                .replace('???개의 자막 라인', `<strong>${lyrics.length}개의 자막 라인</strong>`)
+              __html: (lyrics.length === 0
+                ? t(
+                    'lyrics.emptyTimingInstructions',
+                    'Hiện có {{count}} dòng phụ đề. Hãy kéo thả trên vùng chỉnh sửa phụ đề (nơi có hoạt ảnh bàn tay lướt phải) để tạo phụ đề tự động bằng AI. Có thể kéo từ đầu đến cuối để tạo sub toàn video hoặc chỉ 1 đoạn nếu muốn',
+                    { count: lyrics.length }
+                  )
+                : t(
+                    'lyrics.timingInstructions',
+                    'Hiện có ??? dòng phụ đề. Kéo dấu thời gian để điều chỉnh thời gian cho mỗi phụ đề. Chế độ "Dính" sẽ điều chỉnh tất cả phụ đề theo sau. Chế độ "Cuộn" sẽ giúp tự dời tầm nhìn lên dòng sub đang chạy. 5 nút còn lại: Chia nhỏ sub, Lưu, Đặt lại, Hoàn tác, Làm lại'
+                  )
+                    .replace('??? dòng', `<strong>${lyrics.length} dòng</strong>`)
+                    .replace('??? subtitle lines', `<strong>${lyrics.length} subtitle lines</strong>`)
+                    .replace('???개의 자막 라인', `<strong>${lyrics.length}개의 자막 라인</strong>`))
             }} />
           </div>
         )}

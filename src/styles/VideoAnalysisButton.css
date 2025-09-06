@@ -1,0 +1,270 @@
+/* Button group container */
+.video-analysis-buttons-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px; /* Match the height of the buttons */
+}
+
+.video-analysis-button-container {
+  position: relative;
+  display: inline-block;
+}
+
+.video-analysis-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: var(--md-secondary);
+  color: var(--md-on-secondary);
+  border: none;
+  border-radius: var(--md-shape-pill);
+  font-size: var(--md-label-large-size);
+  line-height: var(--md-label-large-height);
+  font-weight: var(--md-label-large-weight);
+  font-family: var(--font-title);
+  cursor: pointer;
+  transition: box-shadow var(--md-duration-medium2) var(--md-easing-standard),
+              background-color var(--md-duration-medium2) var(--md-easing-standard),
+              transform var(--md-duration-medium2) var(--md-easing-emphasized);
+  box-shadow: var(--md-elevation-level2);
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+  height: 52px; /* Match the height of other buttons */
+}
+
+/* Ensure all text inside the button uses the title font */
+.video-analysis-button *,
+.video-analysis-button span {
+  font-family: var(--font-title) !important;
+}
+
+/* State layer for hover effect */
+.video-analysis-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+  pointer-events: none;
+}
+
+.video-analysis-button:hover::before {
+  background-color: transparent !important;
+}
+
+.video-analysis-button:active::before {
+  background-color: rgba(255, 255, 255, var(--md-state-pressed-opacity));
+}
+
+.video-analysis-button:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--md-elevation-level3);
+  background-color: transparent !important;
+  color: var(--md-secondary); /* Use secondary color for text on hover for better readability */
+  text-shadow: none; /* Remove any text shadow on hover */
+}
+
+.video-analysis-button:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.video-analysis-button:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Has analysis state */
+.video-analysis-button.has-analysis {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+}
+
+.video-analysis-button.has-analysis:hover {
+  background-color: transparent !important;
+  color: var(--md-primary); /* Use primary color for text on hover for better readability */
+  text-shadow: none; /* Remove text shadow on hover */
+}
+
+/* Style when in the buttons-container */
+.buttons-container .video-analysis-buttons-group {
+  margin: 0 10px 0 0;
+  display: flex;
+  align-items: center;
+  height: 52px; /* Match the height of other buttons in the container */
+}
+
+.buttons-container .video-analysis-button {
+  height: 40px;
+  margin: 0;
+  background-color: var(--md-secondary);
+  color: var(--md-on-secondary);
+  border: none;
+  box-shadow: var(--md-elevation-level2); /* Ensure consistent shadow with other buttons */
+}
+
+.buttons-container .video-analysis-button.has-analysis {
+  background-color: var(--md-primary);
+  color: var(--md-on-primary);
+}
+
+.buttons-container .video-analysis-button:hover {
+  background-color: transparent !important;
+  color: var(--md-secondary); /* Use secondary color for text on hover for better readability */
+  text-shadow: none; /* Remove text shadow on hover */
+  box-shadow: var(--md-elevation-level3); /* Updated to match other buttons */
+  transform: translateY(-2px); /* Updated to match other buttons */
+}
+
+.buttons-container .video-analysis-button.has-analysis:hover {
+  background-color: transparent !important;
+  color: var(--md-primary); /* Use primary color for text on hover for better readability */
+  text-shadow: none; /* Remove text shadow on hover */
+}
+
+.buttons-container .video-analysis-button:active {
+  transform: translateY(0);
+  box-shadow: var(--md-elevation-level1);
+}
+
+/* Clear button styles */
+.clear-analysis-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--md-error, #d32f2f);
+  color: var(--md-on-error, #ffffff);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.clear-analysis-button:hover {
+  background-color: var(--md-error-hover, #c62828);
+  transform: scale(1.15);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+}
+
+.clear-analysis-button:active {
+  transform: scale(0.95);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.clear-analysis-button:disabled {
+  background-color: var(--md-error-container, #ffcdd2);
+  color: var(--md-on-error-container, #8d0000);
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Clear button in buttons-container */
+.buttons-container .clear-analysis-button {
+  height: 34px;
+  width: 34px;
+}
+
+/* Tooltip for clear button */
+.clear-analysis-button[data-tooltip] {
+  position: relative;
+}
+
+.clear-analysis-button[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.video-analysis-button .icon {
+  font-size: 16px;
+}
+
+/* Processing state */
+.video-analysis-button.processing {
+  position: relative;
+  overflow: hidden;
+  background-image: linear-gradient(to right, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%);
+}
+
+/* Processing text styles */
+.video-analysis-button .processing-text-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Ensure LoadingIndicator displays inline within processing container */
+.video-analysis-button .processing-text-container .loading-indicator {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.video-analysis-button .processing-text {
+  font-size: var(--md-label-medium-size);
+}
+
+.video-analysis-button .processing-dots::after {
+  content: '.';
+  animation: dots 1.5s steps(5, end) infinite;
+}
+
+@keyframes dots {
+  0%, 20% { content: '.'; }
+  40% { content: '..'; }
+  60% { content: '...'; }
+  80%, 100% { content: ''; }
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .video-analysis-button {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+
+  .video-analysis-button span {
+    display: none;
+  }
+
+  .video-analysis-buttons-group {
+    gap: 6px;
+  }
+
+  .video-analysis-button-container {
+    margin-right: 0;
+  }
+}

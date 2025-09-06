@@ -231,17 +231,7 @@ const VideoAnalysisModal = ({
     }
   }
 
-  // Check if video analysis is disabled - if so, don't show the modal
-  const useVideoAnalysis = localStorage.getItem('use_video_analysis') !== 'false';
-  if (!useVideoAnalysis) {
-    console.log('Video analysis is disabled, closing modal');
-    // Clear localStorage flags to ensure modal doesn't show again
-    localStorage.removeItem('show_video_analysis');
-    localStorage.removeItem('video_analysis_timestamp');
-    localStorage.removeItem('video_analysis_result');
-    if (onClose) onClose();
-    return null;
-  }
+  // Video analysis is always enabled
 
   // Additional check to ensure we have valid data
   if (!analysisResult || !analysisResult.recommendedPreset || !analysisResult.transcriptionRules) {

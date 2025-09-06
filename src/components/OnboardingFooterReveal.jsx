@@ -29,7 +29,9 @@ const OnboardingFooterReveal = () => {
     if (visible) {
       // Small delay to ensure DOM is ready
       const timer = setTimeout(() => {
-        initGeminiButtonEffects();
+        if (localStorage.getItem('enable_gemini_effects') !== 'false') {
+          initGeminiButtonEffects();
+        }
       }, 100);
       return () => clearTimeout(timer);
     }

@@ -1,0 +1,345 @@
+/* Custom Scrollbar Textarea Component Styles */
+
+/* Container with custom scrollbar */
+.custom-scrollbar-textarea-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%; /* Ensure full width */
+  flex: 1; /* Take available space in flex containers */
+  border-radius: 20px;
+  overflow: hidden; /* Contain the scrollbar within rounded corners */
+  background-color: var(--md-surface-2);
+  box-shadow: var(--md-elevation-level1);
+  border: 1px solid rgba(var(--md-outline-variant-rgb, 121, 116, 126), 0.3);
+  transition: all 0.2s ease;
+}
+
+/* Focus state - apply to container instead of textarea */
+.custom-scrollbar-textarea-container:focus-within {
+  box-shadow: var(--md-elevation-level2), 0 0 0 2px var(--md-primary);
+  border: 1px solid rgba(var(--md-outline-variant-rgb, 121, 116, 126), 0.3); /* Keep same border size */
+  background-color: var(--md-surface-2);
+  /* Remove transform to prevent layout shift */
+}
+
+.custom-scrollbar-textarea-container:focus-within .custom-scrollbar-textarea {
+  padding: 16px; /* Keep same padding to prevent layout shift */
+}
+
+/* Textarea - hide native scrollbar completely and override all focus styles */
+.custom-scrollbar-textarea {
+  width: 100%;
+  padding: 16px;
+  border: none !important; /* Force override any inherited border styles */
+  border-radius: 0;
+  background-color: transparent !important; /* Force override any inherited background */
+  color: var(--md-on-surface);
+  font-size: 0.95rem;
+  resize: none !important;
+  min-height: 60px;
+  height: auto !important;
+  flex: 1;
+  transition: all 0.2s ease;
+  font-family: var(--font-primary);
+  line-height: 1.5;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  position: relative;
+  z-index: 1;
+  outline: none !important; /* Force override any inherited outline */
+  box-shadow: none !important; /* Force override any inherited box-shadow */
+
+  /* Completely hide ALL native scrollbars */
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE and Edge */
+}
+
+/* Override any focus styles that might be inherited from parent components */
+.custom-scrollbar-textarea:focus {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+}
+
+/* Force hide webkit scrollbar completely */
+.custom-scrollbar-textarea::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+.custom-scrollbar-textarea::-webkit-scrollbar-track {
+  display: none !important;
+}
+
+.custom-scrollbar-textarea::-webkit-scrollbar-thumb {
+  display: none !important;
+}
+
+.custom-scrollbar-textarea::-webkit-scrollbar-corner {
+  display: none !important;
+}
+
+/* Disabled state */
+.custom-scrollbar-textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.custom-scrollbar-textarea-container:has(.custom-scrollbar-textarea:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Custom scrollbar track */
+.custom-scrollbar-textarea-container::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  right: 5px;
+  bottom: 8px;
+  width: 4px;
+  background: rgba(var(--md-outline-variant-rgb, 121, 116, 126), 0.15);
+  border-radius: 50px; /* Pill shape */
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 9;
+}
+
+/* Custom scrollbar thumb - positioned dynamically by JavaScript */
+.custom-scrollbar-thumb {
+  position: absolute;
+  right: 5px;
+  width: 4px;
+  background: rgba(var(--md-primary-rgb, 103, 80, 164), 0.6);
+  border-radius: 50px; /* Pill shape */
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: auto;
+  z-index: 10;
+  cursor: pointer;
+  min-height: 20px;
+}
+
+/* Show scrollbar track only when container has scrollable content */
+.custom-scrollbar-textarea-container.has-scrollable-content:hover::before,
+.custom-scrollbar-textarea-container.has-scrollable-content:focus-within::before {
+  opacity: 1;
+}
+
+/* Show scrollbar thumb on hover or focus */
+.custom-scrollbar-textarea-container:hover .custom-scrollbar-thumb,
+.custom-scrollbar-textarea-container:focus-within .custom-scrollbar-thumb {
+  opacity: 1;
+}
+
+/* Enhanced hover state for thumb */
+.custom-scrollbar-thumb:hover {
+  width: 6px;
+  right: 4px;
+  background: rgba(var(--md-primary-rgb, 103, 80, 164), 0.8);
+}
+
+/* Active state for thumb */
+.custom-scrollbar-thumb:active {
+  background: var(--md-primary);
+  width: 6px;
+  right: 4px;
+}
+
+/* Dark mode scrollbar */
+[data-theme="dark"] .custom-scrollbar-textarea-container::before {
+  background: rgba(var(--md-outline-variant-rgb, 200, 196, 206), 0.15);
+}
+
+[data-theme="dark"] .custom-scrollbar-thumb {
+  background: rgba(var(--md-primary-rgb, 208, 188, 255), 0.6);
+}
+
+[data-theme="dark"] .custom-scrollbar-thumb:hover {
+  background: rgba(var(--md-primary-rgb, 208, 188, 255), 0.8);
+}
+
+[data-theme="dark"] .custom-scrollbar-thumb:active {
+  background: var(--md-primary);
+}
+
+/* Dragging state */
+.custom-scrollbar-thumb.dragging {
+  background: var(--md-primary) !important;
+  width: 6px !important;
+  right: 4px !important;
+  opacity: 1 !important;
+  transition: none !important; /* Disable transitions while dragging */
+}
+
+/* Remove smooth scrolling so drag follows immediately */
+.custom-scrollbar-textarea {
+  scroll-behavior: auto;
+}
+
+/* Variants for different use cases */
+
+/* Compact variant - smaller padding and height */
+.custom-scrollbar-textarea-container.compact {
+  border-radius: 12px;
+}
+
+.custom-scrollbar-textarea-container.compact .custom-scrollbar-textarea {
+  padding: 12px;
+  min-height: 40px;
+  font-size: 0.9rem;
+}
+
+.custom-scrollbar-textarea-container.compact:focus-within .custom-scrollbar-textarea {
+  padding: 10px; /* Adjust for border */
+}
+
+/* Large variant - bigger padding and text */
+.custom-scrollbar-textarea-container.large {
+  border-radius: 24px;
+}
+
+.custom-scrollbar-textarea-container.large .custom-scrollbar-textarea {
+  padding: 20px;
+  min-height: 80px;
+  font-size: 1rem;
+}
+
+.custom-scrollbar-textarea-container.large:focus-within .custom-scrollbar-textarea {
+  padding: 18px; /* Adjust for border */
+}
+
+/* Minimal variant - no background, just border */
+.custom-scrollbar-textarea-container.minimal {
+  background-color: transparent;
+  box-shadow: none;
+  border: 1px solid var(--md-outline);
+}
+
+.custom-scrollbar-textarea-container.minimal:focus-within {
+  background-color: var(--md-surface-1);
+  border: 1px solid var(--md-outline); /* Keep same border size */
+  box-shadow: 0 0 0 2px var(--md-primary); /* Use box-shadow for focus ring */
+}
+
+/* Specific overrides for components that might have conflicting textarea styles */
+
+/* Override SubtitlesInputModal textarea styles */
+.subtitles-input-modal-content .custom-scrollbar-textarea,
+.subtitles-input-modal-content .custom-scrollbar-textarea:focus {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+  padding: 16px !important; /* Maintain our padding */
+}
+
+/* Override SegmentRetryModal textarea styles */
+.custom-subtitles .custom-scrollbar-textarea,
+.custom-subtitles .custom-scrollbar-textarea:focus {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+}
+
+/* Override BackgroundGenerator textarea styles */
+.background-generator-container .custom-scrollbar-textarea,
+.background-generator-container .custom-scrollbar-textarea:focus {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+}
+
+/* Override PromptEditor textarea styles */
+.prompt-editor-container .custom-scrollbar-textarea,
+.prompt-editor-container .custom-scrollbar-textarea:focus {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+  border-radius: 0 !important;
+}
+
+/* Override PromptEditor.css container styling when using custom scrollbar */
+.prompt-editor-container {
+  border: none !important; /* Remove the container border */
+  background-color: transparent !important; /* Remove container background */
+  overflow: visible !important; /* Allow our custom container to show */
+}
+
+/* Ensure prompt editor container works well with custom scrollbar */
+.prompt-editor-container .custom-scrollbar-textarea-container {
+  border-radius: 20px !important; /* Match reference text border radius */
+  box-shadow: var(--md-elevation-level1) !important; /* Match reference text shadow */
+  background-color: var(--md-surface-2) !important; /* Match reference text background */
+  border: 1px solid rgba(var(--md-outline-variant-rgb, 121, 116, 126), 0.3) !important; /* Match reference text border */
+}
+
+/* Restore blue highlight focus effect for prompt editors */
+.prompt-editor-container .custom-scrollbar-textarea-container:focus-within {
+  border: 1px solid rgba(var(--md-outline-variant-rgb, 121, 116, 126), 0.3) !important; /* Keep same border size */
+  box-shadow: var(--md-elevation-level2), 0 0 0 2px var(--md-primary) !important;
+  /* Remove transform to prevent layout shift */
+  background-color: var(--md-surface-2) !important; /* Match reference text focus background */
+}
+
+/* Keep same padding to prevent layout shift */
+.prompt-editor-container .custom-scrollbar-textarea-container:focus-within .custom-scrollbar-textarea {
+  padding: 12px !important; /* Keep same padding as default */
+}
+
+/* Monospace font for prompt editors */
+.prompt-editor-container .custom-scrollbar-textarea {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: var(--md-body-medium-size) !important;
+  line-height: 1.5 !important;
+  padding: 12px !important;
+  min-height: 150px !important;
+}
+
+/* Special styling for transcription prompt in settings */
+.transcription-prompt-setting .custom-scrollbar-textarea-container {
+  border-radius: 32px !important;
+  background-color: var(--background-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: none !important;
+}
+
+.transcription-prompt-setting .custom-scrollbar-textarea-container:focus-within {
+  border: 1px solid var(--border-color) !important; /* Keep same border size */
+  box-shadow: var(--md-elevation-level2), 0 0 0 2px var(--md-primary) !important;
+  /* Remove transform to prevent layout shift */
+  background-color: var(--background-secondary) !important;
+}
+
+.transcription-prompt-setting .custom-scrollbar-textarea-container:focus-within .custom-scrollbar-textarea {
+  padding: 0.75rem !important; /* Keep same padding to prevent layout shift */
+}
+
+.transcription-prompt-setting .custom-scrollbar-textarea {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.9rem !important;
+  line-height: 1.5 !important;
+  padding: 0.75rem !important; /* Match original 0.75rem */
+  min-height: 150px !important;
+}
+
+/* Override any other potential conflicting styles */
+.custom-scrollbar-textarea-container .custom-scrollbar-textarea,
+.custom-scrollbar-textarea-container .custom-scrollbar-textarea:focus,
+.custom-scrollbar-textarea-container .custom-scrollbar-textarea:hover {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+}

@@ -35,6 +35,9 @@ import videoQuality from './videoQuality.json';
 import warnings from './warnings.json';
 import subtitleSplit from './subtitleSplit.json';
 import consolidation from './consolidation.json';
+import processing from './processing.json';
+import waveform from './waveform.json';
+import autoFlow from './autoFlow.json';
 
 const vi = {
   common,
@@ -73,7 +76,10 @@ const vi = {
   videoQuality,
   warnings,
   subtitleSplit,
-  consolidation
+  consolidation,
+  processing,
+  waveform,
+  autoFlow
 };
 
 export default vi;

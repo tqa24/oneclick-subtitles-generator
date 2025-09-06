@@ -36,6 +36,9 @@ import fontModal from './fontModal.json';
 import videoQuality from './videoQuality.json';
 import subtitleSplit from './subtitleSplit.json';
 import consolidation from './consolidation.json';
+import processing from './processing.json';
+import waveform from './waveform.json';
+import autoFlow from './autoFlow.json';
 
 // Combine all translations
 const koTranslations = {
@@ -74,7 +77,10 @@ const koTranslations = {
   fontModal,
   videoQuality,
   subtitleSplit,
-  consolidation
+  consolidation,
+  processing,
+  waveform,
+  autoFlow
 };
 
 export default koTranslations;

@@ -71,53 +71,42 @@ export const analyzeVideoAndWaitForUserChoice = async (analysisFile, onStatusUpd
       localStorage.setItem('video_analysis_result', JSON.stringify(fallbackResult));
     }
 
-    // Dispatch event with the analysis result
-
-    const analysisCompleteEvent = new CustomEvent('videoAnalysisComplete', {
-      detail: analysisResult
-    });
-    window.dispatchEvent(analysisCompleteEvent);
-
-
-    // Force the modal to show by directly setting the state in localStorage
-    localStorage.setItem('show_video_analysis', 'true');
-    localStorage.setItem('video_analysis_timestamp', Date.now().toString());
-
-    // Add a small delay to ensure the modal is shown, but only if it's not already shown
-    setTimeout(() => {
-      // Check if the modal should still be shown
-      if (localStorage.getItem('show_video_analysis') === 'true') {
-
-        // Dispatch events again after a delay
-        const startEvent = new CustomEvent('videoAnalysisStarted');
-        window.dispatchEvent(startEvent);
-
-        const completeEvent = new CustomEvent('videoAnalysisComplete', {
-          detail: analysisResult
-        });
-        window.dispatchEvent(completeEvent);
-      } else {
-
-      }
-    }, 500);
-
-    // Create a promise that will be resolved when the user makes a choice
-    const userChoicePromise = new Promise((resolve) => {
-      const handleUserChoice = (event) => {
-        window.removeEventListener('videoAnalysisUserChoice', handleUserChoice);
-        resolve(event.detail);
-      };
-      window.addEventListener('videoAnalysisUserChoice', handleUserChoice);
-    });
-
-    // Wait for the user's choice
-    const userChoice = await userChoicePromise;
-
-
+    // Open rules editor modal directly with countdown
     // Set the transcription rules globally
-    if (userChoice.transcriptionRules) {
-      setTranscriptionRules(userChoice.transcriptionRules);
+    if (analysisResult.transcriptionRules) {
+      setTranscriptionRules(analysisResult.transcriptionRules);
     }
+
+    // Set the recommended preset in session storage for the rules editor
+    const recommendedPresetId = analysisResult.recommendedPreset?.id || 'settings';
+    sessionStorage.setItem('current_session_preset_id', recommendedPresetId);
+
+    // Also set the prompt if we have the preset
+    if (recommendedPresetId !== 'settings') {
+      // Import PROMPT_PRESETS to get the actual prompt
+      const { PROMPT_PRESETS } = await import('../../services/geminiService');
+      const recommendedPreset = PROMPT_PRESETS.find(p => p.id === recommendedPresetId);
+      if (recommendedPreset) {
+        sessionStorage.setItem('current_session_prompt', recommendedPreset.prompt);
+      }
+    }
+
+    // Dispatch event to open the rules editor with countdown
+    const openRulesEditorEvent = new CustomEvent('openRulesEditorWithCountdown', {
+      detail: {
+        transcriptionRules: analysisResult.transcriptionRules,
+        analysisResult: analysisResult,
+        recommendedPresetId: recommendedPresetId,
+        showCountdown: true // Flag to show countdown
+      }
+    });
+    window.dispatchEvent(openRulesEditorEvent);
+
+    // Return the analysis result with a default choice (use recommended preset)
+    const userChoice = {
+      presetId: recommendedPresetId,
+      transcriptionRules: analysisResult.transcriptionRules
+    };
 
     return {
       analysisResult,

@@ -8,13 +8,20 @@ import { initTabPillAnimation } from '../utils/tabPillAnimation';
 import '../styles/InputMethods.css';
 import '../styles/components/tab-content-animations.css';
 
-const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVideo, uploadedFile, setUploadedFile, activeTab, setActiveTab, isSrtOnlyMode, setIsSrtOnlyMode, setStatus, subtitlesData, setVideoSegments, setSegmentsStatus }) => {
+const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVideo, uploadedFile, setUploadedFile, activeTab, setActiveTab, isSrtOnlyMode, setIsSrtOnlyMode, setStatus, subtitlesData, setVideoSegments, setSegmentsStatus, enableYoutubeSearch = true }) => {
   const { t } = useTranslation();
   const tabsRef = useRef(null);
   const containerRef = useRef(null);
   const contentRef = useRef(null);
   const [previousTab, setPreviousTab] = useState(null);
   const [animationDirection, setAnimationDirection] = useState('center');
+
+  // Handle case where YouTube search is disabled but active tab is youtube-search
+  useEffect(() => {
+    if (!enableYoutubeSearch && activeTab === 'youtube-search') {
+      setActiveTab('unified-url');
+    }
+  }, [enableYoutubeSearch, activeTab, setActiveTab]);
 
   // Initialize pill position and container height on component mount
   useEffect(() => {
@@ -44,7 +51,9 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
 
       // Determine animation direction based on tab order
       if (previousTab) {
-        const tabOrder = ['unified-url', 'youtube-search', 'file-upload'];
+        const tabOrder = enableYoutubeSearch
+          ? ['unified-url', 'youtube-search', 'file-upload']
+          : ['unified-url', 'file-upload'];
         const prevIndex = tabOrder.indexOf(previousTab);
         const currentIndex = tabOrder.indexOf(activeTab);
 
@@ -69,7 +78,7 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
         initTabPillAnimation('.input-tabs');
       }, 10);
     }
-  }, [activeTab, previousTab]);
+  }, [activeTab, previousTab, enableYoutubeSearch]);
 
   // Handle height animation when content changes
   useEffect(() => {
@@ -175,6 +184,7 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
             {t('inputMethods.unifiedUrl', 'Video URL')}
           </button>
 
+          {enableYoutubeSearch && (
           <button
             className={`tab-btn ${activeTab === 'youtube-search' ? 'active' : ''}`}
             onClick={() => setActiveTab('youtube-search')}
@@ -185,6 +195,7 @@ const InputMethods = ({ onVideoSelect, apiKeysSet, selectedVideo, setSelectedVid
             </svg>
             {t('inputMethods.youtubeSearch', 'Search YouTube')}
           </button>
+          )}
 
           <button
             className={`tab-btn ${activeTab === 'file-upload' ? 'active' : ''}`}

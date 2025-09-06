@@ -4,10 +4,10 @@
   "gemini25FlashLite": "Gemini 2.5 Flash Lite",
   "gemini20Flash": "Gemini 2.0 Flash",
   "gemini20FlashLite": "Gemini 2.0 Flash Lite",
-  "bestAccuracy": "Làm theo lệnh tốt nhất, dễ tạo sub ngắn, dễ quá tải",
+  "bestAccuracy": "Độ chính xác tốt nhất, dễ quá tải",
   "smarterFaster": "Độ chính xác thứ hai",
   "fastestAdvanced": "Mô hình 2.5 nhanh nhất",
-  "balancedModel": "Cân bằng, dễ bị sub dài",
-  "fastestModel": "Nhanh nhất, dễ bị sub dài",
+  "balancedModel": "Cân bằng",
+  "fastestModel": "Nhanh nhất, kết quả kém",
   "customModel": "Mô hình tùy chỉnh"
 }

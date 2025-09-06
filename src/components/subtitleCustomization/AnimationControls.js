@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import StandardSlider from '../common/StandardSlider';
+import CustomDropdown from '../common/CustomDropdown';
 import { formatDecimal } from '../../utils/formatUtils';
 import { getAnimationTypes, getAnimationEasing } from './fontOptions';
 
@@ -23,17 +24,15 @@ const AnimationControls = ({ customization, onChange }) => {
           <label>{t('videoRendering.animationType', 'Animation Type')}</label>
         </div>
         <div className="row-content">
-          <select
+          <CustomDropdown
             value={customization.animationType}
-            onChange={(e) => updateCustomization({ animationType: e.target.value })}
-            className="setting-select"
-          >
-            {animationTypes.map(type => (
-              <option key={type.value} value={type.value}>
-                {type.label}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => updateCustomization({ animationType: value })}
+            options={animationTypes.map(type => ({
+              value: type.value,
+              label: type.label
+            }))}
+            placeholder={t('videoRendering.selectAnimation', 'Select Animation')}
+          />
         </div>
       </div>
 
@@ -43,17 +42,15 @@ const AnimationControls = ({ customization, onChange }) => {
           <label>{t('videoRendering.animationEasing', 'Animation Easing')}</label>
         </div>
         <div className="row-content">
-          <select
+          <CustomDropdown
             value={customization.animationEasing}
-            onChange={(e) => updateCustomization({ animationEasing: e.target.value })}
-            className="setting-select"
-          >
-            {animationEasing.map(easing => (
-              <option key={easing.value} value={easing.value}>
-                {easing.label}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => updateCustomization({ animationEasing: value })}
+            options={animationEasing.map(easing => ({
+              value: easing.value,
+              label: easing.label
+            }))}
+            placeholder={t('videoRendering.selectEasing', 'Select Easing')}
+          />
         </div>
       </div>
 

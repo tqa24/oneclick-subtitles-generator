@@ -25,7 +25,7 @@
   background-color: var(--background-primary);
   border-radius: var(--modal-border-radius);
   width: 80%;
-  max-height: 90vh; /* Use max-height instead of fixed height */
+  height: 80%; /* Use viewport height for consistent sizing */
   display: flex;
   flex-direction: column;
   box-shadow: var(--md-elevation-level3);

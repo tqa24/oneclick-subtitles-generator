@@ -39,9 +39,9 @@
   "renderingFrames": "Đang xử lý khung hình video...",
   "renderingFramesDetailed": "Đang render khung hình: {{rendered}}/{{total}}",
   "encodingFrames": "Đang mã hóa và ghép nối khung hình...",
-  "downloadingChrome": "Thiết lập lần đầu: Đang tải xuống trình duyệt Chrome... {{progress}}%",
+  "downloadingChrome": "Tải Chrome for Testing lần đầu",
   "bundling": "Đang chuẩn bị các thành phần video...",
-  "selectingComposition": "Đang thiết lập thành phần video...",
+  "selectingComposition": "Đang thiết lập cấu hình video...",
   "complete": "Render hoàn thành!",
   "failed": "Render thất bại",
   "cancelled": "Render đã hủy",
@@ -231,5 +231,14 @@
   "noNarrationGenerated": "Thuyết minh chưa được tạo",
   "renderCancelled": "Render đã bị hủy",
   "renderFailedBrowserClosed": "Render thất bại khi trình duyệt đã đóng",
-  "frames": "khung hình"
+  "frames": "khung hình",
+  "fps24": "24 FPS (Điện ảnh)",
+  "fps25": "25 FPS (PAL)",
+  "fps30": "30 FPS (Tiêu chuẩn)",
+  "fps50": "50 FPS (PAL Cao)",
+  "fps60": "60 FPS (Mượt)",
+  "fps120": "120 FPS (Tốc độ cao)",
+  "upcomingFeatures": "Các tính năng sắp tới: crop, thêm text, logo, ảnh, nhạc nền, ...",
+  "networkError": "Xảy ra lỗi mạng",
+  "reconnecting": "Đang kết nối lại với quá trình render..."
 }

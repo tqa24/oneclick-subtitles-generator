@@ -1,8 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import SrtUploadButton from '../SrtUploadButton';
 import AddSubtitlesButton from '../AddSubtitlesButton';
+import VideoAnalysisButton from '../VideoAnalysisButton';
+import LoadingIndicator from '../common/LoadingIndicator';
+import WavyProgressIndicator from '../common/WavyProgressIndicator';
 import { abortAllRequests } from '../../services/geminiService';
 import { hasValidDownloadedVideo } from '../../utils/videoUtils';
+import '../../styles/ButtonTextBalance.css';
 
 /**
  * Component for rendering the buttons container
@@ -10,7 +14,6 @@ import { hasValidDownloadedVideo } from '../../utils/videoUtils';
 const ButtonsContainer = ({
   handleSrtUpload,
   handleGenerateSubtitles,
-  handleRetryGeneration,
   handleCancelDownload,
   handleUserSubtitlesAdd,
   handleAbortVideoAnalysis,
@@ -29,10 +32,18 @@ const ButtonsContainer = ({
   userProvidedSubtitles,
   selectedVideo,
   uploadedFile,
+  uploadedFileData,
   isSrtOnlyMode,
   t,
-  onGenerateBackground
+  onGenerateBackground,
+  isProcessingSegment = false,
+  setIsProcessingSegment = () => {}
 }) => {
+  // State for auto-generation flow
+  const [isAutoGenerating, setIsAutoGenerating] = useState(false);
+  const [autoFlowStep, setAutoFlowStep] = useState('');
+  const autoFlowTimeoutRef = useRef(null);
+  const autoFlowAbortedRef = useRef(false);
   // State for tracking uploaded SRT files with localStorage persistence
   const [uploadedSrtInfo, setUploadedSrtInfo] = useState(() => {
     try {
@@ -51,6 +62,270 @@ const ButtonsContainer = ({
     }
   });
 
+  // Ref for WavyProgressIndicator animations
+  const wavyProgressRef = useRef(null);
+  
+  // Refs to track current state for autoflow (to avoid closure issues)
+  const currentStateRef = useRef({
+    uploadedFile: null,
+    uploadedFileData: null,
+    isDownloading: false,
+    downloadProgress: 0
+  });
+  
+  // Auto-generate flow implementation
+  const startAutoGenerateFlow = async () => {
+    if (isAutoGenerating) return;
+    
+    setIsAutoGenerating(true);
+    autoFlowAbortedRef.current = false;
+    
+    try {
+      // Step 0: Save current subtitle state (especially if cleared/empty)
+      console.log('[AutoFlow] Step 0: Saving current subtitle state...');
+      const lyricsSaveBtn = document.querySelector('.lyrics-save-btn');
+      if (lyricsSaveBtn) {
+        console.log('[AutoFlow] Triggering lyrics save to persist current state (including empty state)');
+        lyricsSaveBtn.click();
+        // Wait a moment for save to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
+      // Step 1: Trigger video loading (semi-automatic generate)
+      setAutoFlowStep('loading');
+      console.log('[AutoFlow] Step 1: Triggering video load...');
+      
+      // Click the semi-automatic generate button to trigger video loading
+      try {
+        console.log('[AutoFlow] Calling handleGenerateSubtitles...');
+        handleGenerateSubtitles();
+        console.log('[AutoFlow] handleGenerateSubtitles called successfully');
+      } catch (error) {
+        console.error('[AutoFlow] Error calling handleGenerateSubtitles:', error);
+        throw error;
+      }
+      
+      // Wait for video to be loaded (either uploaded or downloaded)
+      console.log('[AutoFlow] Waiting for video to be ready...');
+      await waitForVideoReady();
+      console.log('[AutoFlow] Video ready, continuing to step 2');
+      
+      if (autoFlowAbortedRef.current) return;
+      
+      // Step 2: Trigger video analysis
+      setAutoFlowStep('analyzing');
+      console.log('[AutoFlow] Step 2: Starting video analysis...');
+      
+      // Wait a moment for buttons to be ready after video load
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Find the video analysis button - check for either the button or its container
+      const analysisButton = document.querySelector('.video-analysis-button, .video-analysis-button-container button');
+      console.log('[AutoFlow] Found analysis button:', analysisButton);
+      
+      if (analysisButton && !analysisButton.disabled) {
+        // Check if it already has analysis (edit mode)
+        const hasAnalysis = analysisButton.classList.contains('has-analysis');
+        
+        if (!hasAnalysis) {
+          console.log('[AutoFlow] Triggering video analysis...');
+          analysisButton.click();
+          
+          // Wait for analysis to complete
+          await waitForAnalysisComplete();
+        } else {
+          console.log('[AutoFlow] Analysis already exists, skipping analysis step');
+          // Show temporary toast about using existing analysis
+          const toast = document.createElement('div');
+          toast.className = 'auto-flow-toast';
+          toast.textContent = t('autoFlow.usingExistingAnalysis', 'Using existing analysis rules');
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 2000);
+        }
+      } else {
+        console.log('[AutoFlow] Analysis button not found or disabled, continuing without analysis');
+        // Show temporary toast about skipping analysis
+        const toast = document.createElement('div');
+        toast.className = 'auto-flow-toast';
+        toast.textContent = t('autoFlow.analysisSkipped', 'Analysis skipped, continuing with default settings');
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+      }
+      
+      if (autoFlowAbortedRef.current) return;
+      
+      // Step 3: Trigger Ctrl+A to select all and open processing modal
+      setAutoFlowStep('processing');
+      console.log('[AutoFlow] Step 3: Selecting all timeline and opening processing modal...');
+      
+      // Dispatch Ctrl+A keyboard event
+      const ctrlAEvent = new KeyboardEvent('keydown', {
+        key: 'a',
+        code: 'KeyA',
+        ctrlKey: true,
+        bubbles: true
+      });
+      document.dispatchEvent(ctrlAEvent);
+      
+      // Wait a moment for modal to open
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (autoFlowAbortedRef.current) return;
+      
+      // Step 4: Click the process button in the modal
+      console.log('[AutoFlow] Step 4: Starting processing...');
+      const processBtn = document.querySelector('.video-processing-modal .process-btn');
+      if (processBtn && !processBtn.disabled) {
+        processBtn.click();
+      }
+      
+      // Auto-flow complete
+      setAutoFlowStep('complete');
+      console.log('[AutoFlow] Auto-generation flow completed successfully');
+      
+    } catch (error) {
+      console.error('[AutoFlow] Error during auto-generation:', error);
+      // Show error toast
+      const toast = document.createElement('div');
+      toast.className = 'auto-flow-toast error';
+      toast.textContent = t('autoFlow.error', 'Auto-generation encountered an error');
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    } finally {
+      setIsAutoGenerating(false);
+      setAutoFlowStep('');
+    }
+  };
+  
+  // Helper function to wait for video to be ready
+  const waitForVideoReady = () => {
+    console.log('[AutoFlow] waitForVideoReady started, initial state:', {
+      uploadedFile: !!currentStateRef.current.uploadedFile,
+      uploadedFileData: !!currentStateRef.current.uploadedFileData,
+      isDownloading: currentStateRef.current.isDownloading
+    });
+    
+    return new Promise((resolve) => {
+      let checkCount = 0;
+      const maxChecks = 300; // 5 minutes max wait
+      
+      const checkInterval = setInterval(() => {
+        checkCount++;
+        
+        // Get current state from ref (to avoid closure issues)
+        const currentState = currentStateRef.current;
+        
+        // Log current state every 5 checks
+        if (checkCount % 5 === 0) {
+          console.log('[AutoFlow] Check #' + checkCount + ', state:', {
+            uploadedFile: !!currentState.uploadedFile,
+            uploadedFileData: !!currentState.uploadedFileData,
+            isDownloading: currentState.isDownloading,
+            downloadProgress: currentState.downloadProgress
+          });
+        }
+        
+        // Check if video is ready (uploaded or downloaded)
+        // Also check that we're not still downloading
+        if ((currentState.uploadedFile || currentState.uploadedFileData) && !currentState.isDownloading) {
+          clearInterval(checkInterval);
+          console.log('[AutoFlow] Video is ready! File available:', !!currentState.uploadedFile, 'FileData available:', !!currentState.uploadedFileData);
+          resolve();
+        } else if (checkCount >= maxChecks || autoFlowAbortedRef.current) {
+          clearInterval(checkInterval);
+          console.log('[AutoFlow] Video loading timeout or aborted');
+          resolve();
+        } else if (currentState.isDownloading) {
+          // Still downloading, keep waiting
+          console.log('[AutoFlow] Still downloading video...', currentState.downloadProgress + '%');
+        } else {
+          // Not downloading but also no file - log this state
+          if (checkCount % 5 === 0) {
+            console.log('[AutoFlow] Waiting for video, but not downloading. File states:', {
+              uploadedFile: !!currentState.uploadedFile,
+              uploadedFileData: !!currentState.uploadedFileData
+            });
+          }
+        }
+      }, 1000); // Check every second
+    });
+  };
+  
+  // Helper function to wait for analysis to complete
+  const waitForAnalysisComplete = () => {
+    return new Promise((resolve) => {
+      let checkCount = 0;
+      const maxChecks = 120; // 2 minutes max wait for analysis
+      let modalDetected = false;
+      
+      const checkInterval = setInterval(() => {
+        checkCount++;
+        
+        // Check for the rules editor modal
+        const rulesModal = document.querySelector('.rules-editor-modal');
+        const hasRules = localStorage.getItem('transcription_rules');
+        
+        if (rulesModal) {
+          // Rules editor modal is open
+          if (!modalDetected) {
+            console.log('[AutoFlow] Rules editor modal detected with countdown');
+            modalDetected = true;
+            
+            // Check if countdown is enabled
+            const timeoutSetting = localStorage.getItem('video_analysis_timeout') || '10';
+            const showCountdown = sessionStorage.getItem('show_rules_editor_countdown') === 'true';
+            
+            if (timeoutSetting !== 'none' && showCountdown) {
+              const timeout = parseInt(timeoutSetting, 10);
+              if (!isNaN(timeout) && timeout > 0) {
+                console.log(`[AutoFlow] Rules editor has ${timeout}s countdown, waiting for it to complete or modal to close...`);
+              }
+            } else {
+              console.log('[AutoFlow] Rules editor opened without countdown or countdown disabled');
+            }
+          }
+          
+          // Just wait while the modal is open
+          // The countdown will auto-save or user will manually save/cancel
+          
+        } else if (modalDetected && !rulesModal) {
+          // Modal was open but now closed - analysis/editing is complete
+          clearInterval(checkInterval);
+          console.log('[AutoFlow] Rules editor modal closed');
+          
+          // Clean up the countdown flag
+          sessionStorage.removeItem('show_rules_editor_countdown');
+          
+          // Give a small delay to ensure everything is properly saved
+          setTimeout(() => {
+            resolve();
+          }, 500);
+          
+        } else if (!modalDetected && hasRules && checkCount > 10) {
+          // Rules exist but modal never opened (might happen if analysis was very fast)
+          clearInterval(checkInterval);
+          console.log('[AutoFlow] Analysis complete (rules saved without modal)');
+          resolve();
+          
+        } else if (autoFlowAbortedRef.current) {
+          clearInterval(checkInterval);
+          console.log('[AutoFlow] Analysis aborted');
+          resolve();
+        }
+      }, 500); // Check every 500ms for faster response
+    });
+  };
+  
+  // Stop auto-flow if user manually intervenes
+  const stopAutoFlow = () => {
+    if (isAutoGenerating) {
+      autoFlowAbortedRef.current = true;
+      setIsAutoGenerating(false);
+      setAutoFlowStep('');
+      console.log('[AutoFlow] Auto-generation stopped by user');
+    }
+  };
+
   // Persist uploadedSrtInfo to localStorage whenever it changes
   useEffect(() => {
     try {
@@ -59,6 +334,27 @@ const ButtonsContainer = ({
       console.error('Error saving uploaded SRT info to localStorage:', error);
     }
   }, [uploadedSrtInfo]);
+
+  // Update current state ref whenever props change
+  useEffect(() => {
+    currentStateRef.current = {
+      uploadedFile,
+      uploadedFileData,
+      isDownloading,
+      downloadProgress
+    };
+  }, [uploadedFile, uploadedFileData, isDownloading, downloadProgress]);
+  
+  // Handle entrance/disappear animations for WavyProgressIndicator
+  useEffect(() => {
+    if (isDownloading && wavyProgressRef.current) {
+      // Start entrance animation when downloading begins
+      wavyProgressRef.current.startEntranceAnimation();
+    } else if (!isDownloading && wavyProgressRef.current) {
+      // Start disappear animation when downloading ends
+      wavyProgressRef.current.startDisappearanceAnimation();
+    }
+  }, [isDownloading]);
 
   // Initialize SRT upload detection on component mount
   useEffect(() => {
@@ -173,50 +469,48 @@ const ButtonsContainer = ({
       setSubtitlesData(null);
     }
   };
-  // Determine retry button visibility - show more aggressively for force retry
-  const hasSubtitlesData = subtitlesData && subtitlesData.length > 0;
-  const hasError = status?.type === 'error';
-  const hasAnyVideoSource = selectedVideo || uploadedFile || localStorage.getItem('current_video_url') || localStorage.getItem('current_file_url');
-  const isNotBusy = !isGenerating && !isDownloading;
-
   // Check if we have URL + SRT but no downloaded video yet
   const hasUrlAndSrtOnly = selectedVideo &&
                           !uploadedFile &&
-                          hasSubtitlesData &&
+                          subtitlesData && subtitlesData.length > 0 &&
                           !hasValidDownloadedVideo(uploadedFile) &&
                           !isSrtOnlyMode;
+  // Detect current theme from data-theme attribute (light/dark)
+  const isDarkTheme = (typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark');
 
-  // Show retry button if:
-  // 1. We have subtitles data OR there's an error OR there's any video source
-  // 2. AND we're not currently busy
-  const retryButtonVisible = (hasSubtitlesData || hasError || hasAnyVideoSource) && isNotBusy;
 
   return (
     <div className="buttons-container">
-      <SrtUploadButton
-        onSrtUpload={handleSrtUploadWithState}
-        onSrtClear={handleSrtClear}
-        disabled={isGenerating || isDownloading}
-        hasSrtUploaded={uploadedSrtInfo.hasUploaded}
-        uploadedFileName={uploadedSrtInfo.fileName}
-      />
+      <div style={{ flexShrink: 0 }}>
+        <SrtUploadButton
+          onSrtUpload={handleSrtUploadWithState}
+          onSrtClear={handleSrtClear}
+          disabled={isGenerating || isDownloading}
+          hasSrtUploaded={uploadedSrtInfo.hasUploaded}
+          uploadedFileName={uploadedSrtInfo.fileName}
+        />
+      </div>
 
       {/* Add Subtitles Button - always visible like SrtUploadButton */}
 
-      <AddSubtitlesButton
-        onSubtitlesAdd={handleUserSubtitlesAdd}
-        hasSubtitles={userProvidedSubtitles.trim() !== ''}
-        subtitlesText={userProvidedSubtitles}
-        disabled={isGenerating || isDownloading}
-        onGenerateBackground={onGenerateBackground}
-      />
+      <div style={{ flexShrink: 0 }}>
+        <AddSubtitlesButton
+          onSubtitlesAdd={handleUserSubtitlesAdd}
+          hasSubtitles={userProvidedSubtitles.trim() !== ''}
+          subtitlesText={userProvidedSubtitles}
+          disabled={isGenerating || isDownloading}
+          onGenerateBackground={onGenerateBackground}
+        />
+      </div>
 
       {/* Hide generate button when retrying segments, when isRetrying is true, or when any segment is being retried */}
       {validateInput() && retryingSegments.length === 0 && !isRetrying && !segmentsStatus.some(segment => segment.status === 'retrying') && (
-        <button
-          className={`generate-btn ${isGenerating || isDownloading ? 'processing' : ''}`}
-          onClick={handleGenerateSubtitles}
-          disabled={isGenerating || isDownloading}
+        <>
+          {/* Semi-automatic Generate Button */}
+          <button
+            className={`generate-btn semi-auto ${isGenerating || isDownloading ? 'processing' : ''}`}
+            onClick={handleGenerateSubtitles}
+            disabled={isGenerating || isDownloading || isAutoGenerating}
         >
           {/* Static Gemini icons for fallback */}
           <div className="gemini-icon-container">
@@ -233,27 +527,76 @@ const ButtonsContainer = ({
           </div>
           {isGenerating || isDownloading ? (
             <span className="processing-text-container">
-              <span className="processing-gemini-icon">
-                <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14 28C14 26.0633 13.6267 24.2433 12.88 22.54C12.1567 20.8367 11.165 19.355 9.905 18.095C8.645 16.835 7.16333 15.8433 5.46 15.12C3.75667 14.3733 1.93667 14 0 14C1.93667 14 3.75667 13.6383 5.46 12.915C7.16333 12.1683 8.645 11.165 9.905 9.905C11.165 8.645 12.1567 7.16333 12.88 5.46C13.6267 3.75667 14 1.93667 14 0C14 1.93667 14.3617 3.75667 15.085 5.46C15.8317 7.16333 16.835 8.645 18.095 9.905C19.355 11.165 20.8367 12.1683 22.54 12.915C24.2433 13.6383 26.0633 14 28 14C26.0633 14 24.2433 14.3733 22.54 15.12C20.8367 15.8433 19.355 16.835 18.095 18.095C16.835 19.355 15.8317 20.8367 15.085 22.54C14.3617 24.2433 14 26.0633 14 28Z" stroke="currentColor" strokeWidth="1.5"/>
-                </svg>
-              </span>
-              <span className="processing-text">
-                {isDownloading
-                  ? t('output.downloadingVideoProgress', 'Downloading video: {{progress}}%', { progress: downloadProgress })
-                  : t('output.processingVideo').split('...')[0]
-                }
-              </span>
-              <span className="processing-dots"></span>
+              {/* Use opposite theme for better contrast; also override shape color directly */}
+              <LoadingIndicator
+                theme={isDarkTheme ? 'light' : 'dark'}
+                showContainer={false}
+                size={16}
+                className="buttons-processing-loading"
+                color={isDarkTheme ? '#324574' : '#FFFFFF'}
+              />
+              {/* Replace percentage text with plain downloading text + WavyProgressIndicator */}
+              {isDownloading ? (
+                <div className="processing-wavy" style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+                  <WavyProgressIndicator
+                    ref={wavyProgressRef}
+                    progress={Math.max(0, Math.min(1, (downloadProgress || 0) / 100))}
+                    animate={true}
+                    showStopIndicator={true}
+                    waveSpeed={1.2}
+                    width={140}
+                    autoAnimateEntrance={false}
+                    color={isDarkTheme ? '#FFFFFF' : '#FFFFFF'}
+                    trackColor={isDarkTheme ? '#404659' : 'rgba(255,255,255,0.35)'}
+                  />
+                </div>
+              ) : (
+                <span className="processing-text">
+                  {t('output.processingVideo').split('...')[0]}
+                </span>
+              )}
             </span>
           ) : isSrtOnlyMode ? t('output.srtOnlyMode', 'Working with SRT only') :
             hasUrlAndSrtOnly ? t('output.downloadAndViewWithSrt', 'Download + View with Uploaded SRT') :
-            t('header.tagline')}
-        </button>
+            selectedVideo && !uploadedFile ? t('output.downloadAndGenerateSemiAuto', 'Download + Generate (semi-auto)') :
+            t('output.semiAutoGenerate', 'Semi-auto')}
+          </button>
+          
+          {/* Auto Generate Button */}
+          <button
+            className={`generate-btn auto-generate ${isAutoGenerating ? 'processing' : ''}`}
+            onClick={startAutoGenerateFlow}
+            disabled={isGenerating || isDownloading || isAutoGenerating}
+            title={t('header.autoGenerateTooltip', 'Fully automatic subtitle generation with analysis and optimal settings')}
+          >
+            {/* Gemini stars container - populated by particle system */}
+            <div className="gemini-icon-container"></div>
+            {isAutoGenerating ? (
+              <span className="processing-text-container">
+                <LoadingIndicator
+                  theme={isDarkTheme ? 'light' : 'dark'}
+                  showContainer={false}
+                  size={16}
+                  className="buttons-processing-loading"
+                  color={isDarkTheme ? '#324574' : '#FFFFFF'}
+                />
+                <span className="processing-text">
+                  {/* Show download state when downloading, otherwise show autoflow step */}
+                  {isDownloading ? t('autoFlow.loading', 'Loading video...') :
+                   autoFlowStep === 'analyzing' ? t('autoFlow.analyzing', 'Analyzing...') :
+                   autoFlowStep === 'processing' ? t('autoFlow.processing', 'Processing...') :
+                   autoFlowStep === 'complete' ? t('autoFlow.complete', 'Complete!') :
+                   t('autoFlow.running', 'Running auto...')}
+                </span>
+              </span>
+            ) : <span className="button-text">{selectedVideo && !uploadedFile ? t('output.downloadAndGenerateAuto', 'Download + Generate subtitles (auto)') :
+            t('output.autoFlow', 'Generate subtitles (auto)')}</span>}
+          </button>
+        </>
       )}
 
       {/* Add cancel button as a proper member of the buttons-container */}
-      {isDownloading && currentDownloadId && validateInput() && retryingSegments.length === 0 && !isRetrying && !segmentsStatus.some(segment => segment.status === 'retrying') && (
+      {isDownloading && currentDownloadId && validateInput() && retryingSegments.length === 0 && !isRetrying && !segmentsStatus.some(segment => segment.status === 'retrying') && !isAutoGenerating && (
         <button
           className="cancel-download-btn"
           onClick={handleCancelDownload}
@@ -280,47 +623,14 @@ const ButtonsContainer = ({
         </button>
       )}
 
-      {retryButtonVisible && (
-        <button
-          className={`retry-gemini-btn ${retryingSegments.length > 0 ? 'processing' : ''}`}
-          onClick={() => {
-            console.log('FORCE RETRY button clicked!');
-            try {
-              handleRetryGeneration();
-              console.log('Force retry initiated successfully');
-            } catch (error) {
-              console.error('Error calling handleRetryGeneration:', error);
-            }
-          }}
-          disabled={isGenerating || isDownloading}
-          title={t('output.retryGeminiTooltip')}
-        >
-          {/* Dynamic Gemini effects container - populated by particle system */}
-          <div className="gemini-icon-container"></div>
-          {retryingSegments.length > 0 ? (
-            <span className="processing-text-container">
-              <span className="processing-gemini-icon">
-                <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M14 28C14 26.0633 13.6267 24.2433 12.88 22.54C12.1567 20.8367 11.165 19.355 9.905 18.095C8.645 16.835 7.16333 15.8433 5.46 15.12C3.75667 14.3733 1.93667 14 0 14C1.93667 14 3.75667 13.6383 5.46 12.915C7.16333 12.1683 8.645 11.165 9.905 9.905C11.165 8.645 12.1567 7.16333 12.88 5.46C13.6267 3.75667 14 1.93667 14 0C14 1.93667 14.3617 3.75667 15.085 5.46C15.8317 7.16333 16.835 8.645 18.095 9.905C19.355 11.165 20.8367 12.1683 22.54 12.915C24.2433 13.6383 26.0633 14 28 14C26.0633 14 24.2433 14.3733 22.54 15.12C20.8367 15.8433 19.355 16.835 18.095 18.095C16.835 19.355 15.8317 20.8367 15.085 22.54C14.3617 24.2433 14 26.0633 14 28Z" stroke="currentColor" strokeWidth="1.5"/>
-                </svg>
-              </span>
-              <span className="processing-text">{t('output.processingVideo').split('...')[0]}</span>
-              <span className="processing-dots"></span>
-            </span>
-          ) : (
-            <>
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-                <path d="M1 4v6h6"></path>
-                <path d="M23 20v-6h-6"></path>
-                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
-              </svg>
-              {t('output.retryGemini')}
-            </>
-          )}
-        </button>
-      )}
+      {/* Video Analysis Button - always visible like SrtUploadButton */}
+      <VideoAnalysisButton
+        disabled={isGenerating || isDownloading}
+        uploadedFile={uploadedFile}
+        uploadedFileData={uploadedFileData}
+      />
 
-      {(isGenerating || retryingSegments.length > 0 || isRetrying) && (
+      {(isGenerating || retryingSegments.length > 0 || isRetrying || isProcessingSegment) && (
         <button
           className="force-stop-btn"
           onClick={(e) => {
@@ -334,8 +644,11 @@ const ButtonsContainer = ({
               }
             }, 1000);
 
-            // Abort all ongoing Gemini API requests
-            abortAllRequests();
+            // Abort all ongoing Gemini API requests (including streaming)
+            const aborted = abortAllRequests();
+            if (aborted) {
+              console.log('[ButtonsContainer] Successfully aborted all Gemini requests');
+            }
 
             // Abort any active video analysis
             handleAbortVideoAnalysis();
@@ -344,6 +657,16 @@ const ButtonsContainer = ({
             if (isRetrying) {
               setIsRetrying(false);
             }
+            
+            // Also reset processing segment state
+            if (isProcessingSegment) {
+              setIsProcessingSegment(false);
+              // Clear processing ranges overlay
+              try {
+                window.dispatchEvent(new CustomEvent('processing-ranges', { detail: { ranges: [] } }));
+              } catch {}
+            }
+            
             // The state will be updated by the event listener in useSubtitles hook
           }}
           title={t('output.forceStopTooltip', 'Force stop all Gemini requests')}

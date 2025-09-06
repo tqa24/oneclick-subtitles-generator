@@ -40,7 +40,7 @@
   "retryGeminiTooltip": "Try generating subtitles again with a new Gemini request",
   "retryWithModel": "Retry with different model",
   "selectModel": "Select model to retry with",
-  "longVideoWarning": "You've uploaded a {{duration}} minute video. Processing may take longer than usual due to multiple Gemini calls.",
+  "longVideoWarning": "You are uploading a {{duration}} minute video. Uploading progress can be long depends on network speed.",
   "longVideoProcessing": "Processing a video longer than 30 minutes. This may take a while...",
   "processingDirectly": "Processing video directly...",
   "clientSideSegmentation": "Processing video segments on your device...",
@@ -84,6 +84,7 @@
   "processingAudio": "Processing audio...",
   "optimizationFailed": "Video optimization failed, using original video.",
   "processingOptimizedVideo": "Processing optimized video...",
+  "uploading": "Uploading video...",
   "uploadingVideoToServer": "Uploading video to server...",
   "uploadingAudioToServer": "Uploading audio to server...",
   "videoUploaded": "Video uploaded, processing segments...",
@@ -93,6 +94,13 @@
   "retrying": "Retrying...",
   "ready": "Ready",
   "segmentReady": "Ready for processing",
+  "videoReady": "Video ready for segment selection...",
   "subtitleUploadSuccess": "Subtitle file uploaded successfully!",
-  "downloadAndViewWithSrt": "Download + View with Uploaded SRT"
+  "downloadAndViewWithSrt": "Download + View with Uploaded SRT",
+  "downloadAndGenerate": "Download video + Generate timed subtitles with AI",
+  "preparingProcessing": "Preparing video for processing...",
+  "semiAutoGenerate": "Generate subtitles\u00a0(semi-auto)",
+  "downloadAndGenerateSemiAuto": "Download +\u00a0Generate\u00a0subtitles (semi-auto)",
+  "autoFlow": "Generate subtitles\u00a0(auto)",
+  "downloadAndGenerateAuto": "Download +\u00a0Generate\u00a0subtitles (auto)"
 }

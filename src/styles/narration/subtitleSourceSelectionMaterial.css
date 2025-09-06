@@ -211,25 +211,29 @@
   visibility: visible;
 }
 
+/* Grouping Controls Wrapper - Contains switch and info side by side */
+.grouping-controls-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  width: 100%;
+}
+
 /* Material Web Switch Container */
 .subtitle-grouping-container .material-switch-container {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 8px 0;
+  flex-shrink: 0;
 }
-
-
-
-
 
 /* Grouping Info Container */
 .grouping-info-container {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-top: 4px;
-  padding-left: 52px; /* Align with the toggle label text */
+  padding: 8px 0;
 }
 
 /* View Grouping Button */
@@ -402,9 +406,14 @@
     justify-content: flex-start;
   }
 
+  .grouping-controls-wrapper {
+    flex-direction: column;
+    gap: 12px;
+  }
+
   .grouping-info-container {
     flex-direction: column;
     align-items: flex-start;
-    padding-left: 0;
+    margin-left: 0;
   }
 }

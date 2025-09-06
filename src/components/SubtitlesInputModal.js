@@ -2,8 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FiMusic, FiImage } from 'react-icons/fi';
 import CloseButton from './common/CloseButton';
+import CustomScrollbarTextarea from './common/CustomScrollbarTextarea';
 import '../styles/SubtitlesInputModal.css';
 import LyricsInputSection from './LyricsInputSection';
+import MaterialSwitch from './common/MaterialSwitch';
+import '../styles/common/material-switch.css';
 
 /**
  * Modal component for inputting subtitles without timings
@@ -22,7 +25,7 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
   const [showBackgroundPrompt, setShowBackgroundPrompt] = useState(false);
   const [songName, setSongName] = useState('');
   const [isClosing, setIsClosing] = useState(false);
-
+  const [autoEraseBlankLines, setAutoEraseBlankLines] = useState(true);
 
 
   // Focus the textarea when the modal opens
@@ -33,16 +36,67 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
   }, []);
 
   const handleSave = () => {
-    onSave(text);
+    const finalText = autoEraseBlankLines ? removeBlankLines(text) : text;
+    onSave(finalText);
   };
 
   const handleTextChange = (e) => {
     setText(e.target.value);
   };
 
+  // Utility to remove blank lines
+  const removeBlankLines = (s) => s.split('\n').filter(line => line.trim() !== '').join('\n');
+
+  // Handle paste to auto-clean blank lines without disrupting typing
+  const handlePaste = (e) => {
+    if (!autoEraseBlankLines) return;
+    const textarea = e.target;
+    const paste = e.clipboardData?.getData('text');
+    if (typeof paste !== 'string') return;
+    e.preventDefault();
+    const cleaned = removeBlankLines(paste);
+    const start = textarea.selectionStart ?? text.length;
+    const end = textarea.selectionEnd ?? start;
+    const newValue = text.slice(0, start) + cleaned + text.slice(end);
+    setText(newValue);
+    // Restore caret after React updates the value
+    requestAnimationFrame(() => {
+      if (textareaRef.current) {
+        const pos = start + cleaned.length;
+        textareaRef.current.setSelectionRange(pos, pos);
+        textareaRef.current.focus();
+      }
+    });
+  };
+
+  // When enabling auto-erase, proactively clean existing text once and preserve caret
+  useEffect(() => {
+    if (!autoEraseBlankLines) return;
+    setText((prev) => {
+      const cleaned = removeBlankLines(prev);
+      if (cleaned === prev) return prev;
+      const ta = textareaRef.current;
+      if (ta) {
+        const oldPos = ta.selectionStart ?? 0;
+        const before = prev.slice(0, oldPos);
+        const beforeCleaned = removeBlankLines(before);
+        const newPos = beforeCleaned.length;
+        requestAnimationFrame(() => {
+          if (textareaRef.current) {
+            const pos = Math.min(newPos, cleaned.length);
+            textareaRef.current.setSelectionRange(pos, pos);
+          }
+        });
+      }
+      return cleaned;
+    });
+  }, [autoEraseBlankLines]);
+
+
   // Handle receiving lyrics from the LyricsInputSection component
   const handleLyricsReceived = (lyrics, albumArtUrl, songTitle) => {
-    setText(lyrics);
+    const cleanedLyrics = autoEraseBlankLines ? removeBlankLines(lyrics) : lyrics;
+    setText(cleanedLyrics);
     setAlbumArt(albumArtUrl);
     setSongName(songTitle || '');
     setShowBackgroundPrompt(true);
@@ -81,11 +135,6 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
         <div className="subtitles-input-modal-header">
           <div className="header-title-section">
             <h2>{t('subtitlesInput.title', 'Add Your Subtitles')}</h2>
-            <div className="header-badge">
-              <span className="badge-text">
-                {t('subtitlesInput.gemini25Warning', 'Gemini 2.5 Pro, 2.5 Flash và 2.5 Flash Lite không cho kết quả tốt trong trường hợp này')}
-              </span>
-            </div>
           </div>
           <CloseButton onClick={handleClose} variant="modal" size="medium" />
         </div>
@@ -147,13 +196,15 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
             </div>
           )}
 
-          <textarea
+          <CustomScrollbarTextarea
             ref={textareaRef}
             value={text}
             onChange={handleTextChange}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             placeholder={t('subtitlesInput.placeholder', 'Enter your subtitles here...')}
             rows={10}
+            containerClassName="large"
           />
 
           <div className="keyboard-shortcuts">
@@ -169,12 +220,38 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
         </div>
 
         <div className="subtitles-input-modal-footer">
-          <button className="cancel-button" onClick={handleClose}>
-            {t('subtitlesInput.cancel', 'Cancel')}
-          </button>
-          <button className="save-button" onClick={handleSave}>
-            {t('subtitlesInput.save', 'Save Subtitles')}
-          </button>
+          <div className="footer-left">
+            <div className="material-switch-container">
+              <MaterialSwitch
+                id="auto-erase-blank-lines"
+                checked={autoEraseBlankLines}
+                onChange={(e) => setAutoEraseBlankLines(e.target.checked)}
+                ariaLabel={t('subtitlesInput.autoEraseBlankLines', 'Auto erase blank lines')}
+                icons={true}
+              />
+              <label htmlFor="auto-erase-blank-lines" className="material-switch-label">
+                {t('subtitlesInput.autoEraseBlankLines', 'Auto erase blank lines')}
+              </label>
+              <div
+                className="help-icon-container"
+                title={t('subtitlesInput.autoEraseBlankLinesHelp', 'Automatically remove empty lines from pasted text and existing content. Does not interfere while typing.')}
+              >
+                <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div className="footer-right">
+            <button className="cancel-button" onClick={handleClose}>
+              {t('subtitlesInput.cancel', 'Cancel')}
+            </button>
+            <button className="save-button" onClick={handleSave}>
+              {t('subtitlesInput.save', 'Save Subtitles')}
+            </button>
+          </div>
         </div>
       </div>
     </div>

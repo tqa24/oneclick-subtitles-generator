@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import StandardSlider from '../../common/StandardSlider';
 import MaterialSwitch from '../../common/MaterialSwitch';
+import CustomDropdown from '../../common/CustomDropdown';
 import '../../../styles/common/material-switch.css';
 
 /**
@@ -100,15 +101,15 @@ const StyleSettings = ({ settings, handleSettingChange, textAlignOptions, textTr
 
       <div className="setting-group">
         <label htmlFor="text-transform">{t('subtitleSettings.textTransform', 'Text Transform')}</label>
-        <select
-          id="text-transform"
+        <CustomDropdown
           value={settings.textTransform || 'none'}
-          onChange={(e) => handleSettingChange('textTransform', e.target.value)}
-        >
-          {textTransformOptions.map(option => (
-            <option key={option.value} value={option.value}>{option.label}</option>
-          ))}
-        </select>
+          onChange={(value) => handleSettingChange('textTransform', value)}
+          options={textTransformOptions.map(option => ({
+            value: option.value,
+            label: option.label
+          }))}
+          placeholder={t('subtitleSettings.selectTextTransform', 'Select Text Transform')}
+        />
       </div>
 
       <div className="setting-group">

@@ -8,6 +8,9 @@ const {
 } = require('./shared/progressTracker');
 const { getYtDlpPath, getYtDlpArgs } = require('./shared/ytdlpUtils');
 
+// Track active quality download processes by videoId for cancellation
+const activeQualityProcesses = new Map();
+
 
 
 
@@ -118,11 +121,11 @@ function parseYtDlpFormats(formatOutput) {
 
     if (height && height >= 144 && !seenResolutions.has(height)) {
       seenResolutions.add(height);
-      
+
       // Determine quality label
       let qualityLabel = `${height}p`;
       let qualityDescription = `${height}p`;
-      
+
       if (height >= 2160) {
         qualityDescription = `${height}p (4K)`;
       } else if (height >= 1440) {
@@ -326,52 +329,39 @@ async function downloadWithQualityAttempt(videoURL, outputPath, quality, videoId
 
     const ytdlpProcess = spawn(ytDlpPath, args);
 
+    // Track process for cancellation if videoId provided
+    if (videoId) {
+      activeQualityProcesses.set(videoId, ytdlpProcess);
+    }
+
     let stderr = '';
+
+    let stdoutBuffer = ''; // Buffer for line-by-line processing
 
     ytdlpProcess.stdout.on('data', (data) => {
       const output = data.toString();
+      stdoutBuffer += output;
 
-      // Update progress tracking system if videoId is provided
-      if (videoId) {
-        // Only log progress lines, not all output
-        if (output.includes('%') || output.includes('download')) {
-          console.log(`[downloadWithQuality] yt-dlp progress for ${videoId}:`, output.trim());
-        }
+      // Process complete lines only
+      const lines = stdoutBuffer.split('\n');
+      stdoutBuffer = lines.pop(); // Keep the incomplete line in buffer
 
-        // Try both the existing progress parser and a simple one
-        updateProgressFromYtdlpOutput(videoId, output);
+      for (const line of lines) {
+        if (line.trim()) {
+          // Update progress tracking system if videoId is provided
+          if (videoId) {
+            // Use ONLY the centralized progress parser - no duplicate manual parsing
+            updateProgressFromYtdlpOutput(videoId, line);
+          }
 
-        // Also try manual parsing as backup (only for actual download progress lines)
-        if (output.includes('[download]') && output.includes('%')) {
-          const progressMatch = output.match(/\[download\]\s+(\d+\.?\d*)%/);
-          if (progressMatch) {
-            const progress = parseFloat(progressMatch[1]);
-            // Only accept reasonable progress values (0-100%)
-            if (progress >= 0 && progress <= 100) {
-              console.log(`[downloadWithQuality] Manual progress parsing: ${progress}%`);
-
-              // Directly set progress and broadcast
-              setDownloadProgress(videoId, progress, 'downloading');
-
-              // Try to broadcast manually
-              try {
-                const { broadcastProgress } = require('./shared/progressWebSocket');
-                broadcastProgress(videoId, progress, 'downloading', 'download');
-                console.log(`[downloadWithQuality] Broadcasted progress: ${progress}%`);
-              } catch (error) {
-                console.warn(`[downloadWithQuality] Failed to broadcast progress:`, error.message);
-              }
+          // Parse progress if callback provided (legacy support)
+          if (progressCallback) {
+            const progressMatch = line.match(/(\d+\.?\d*)%/);
+            if (progressMatch) {
+              const progress = parseFloat(progressMatch[1]);
+              progressCallback(progress);
             }
           }
-        }
-      }
-
-      // Parse progress if callback provided (legacy support)
-      if (progressCallback) {
-        const progressMatch = output.match(/(\d+\.?\d*)%/);
-        if (progressMatch) {
-          const progress = parseFloat(progressMatch[1]);
-          progressCallback(progress);
         }
       }
     });
@@ -380,34 +370,20 @@ async function downloadWithQualityAttempt(videoURL, outputPath, quality, videoId
       const errorOutput = data.toString();
       stderr += errorOutput;
 
-      // yt-dlp sometimes outputs progress to stderr, but ignore debug URLs with timestamps
-      if (videoId && errorOutput.includes('[download]') && errorOutput.includes('%')) {
-        console.log(`[downloadWithQuality] yt-dlp stderr progress for ${videoId}:`, errorOutput.trim());
-
-        const progressMatch = errorOutput.match(/\[download\]\s+(\d+\.?\d*)%/);
-        if (progressMatch) {
-          const progress = parseFloat(progressMatch[1]);
-          // Only accept reasonable progress values (0-100%)
-          if (progress >= 0 && progress <= 100) {
-            console.log(`[downloadWithQuality] Manual stderr progress parsing: ${progress}%`);
-
-            // Directly set progress and broadcast
-            setDownloadProgress(videoId, progress, 'downloading');
-
-            try {
-              const { broadcastProgress } = require('./shared/progressWebSocket');
-              broadcastProgress(videoId, progress, 'downloading', 'download');
-              console.log(`[downloadWithQuality] Broadcasted stderr progress: ${progress}%`);
-            } catch (error) {
-              console.warn(`[downloadWithQuality] Failed to broadcast stderr progress:`, error.message);
-            }
-          }
-        }
-      }
+      // Removed duplicate stderr progress parsing to prevent conflicts with centralized parser
     });
 
-    ytdlpProcess.on('close', (code) => {
-      console.log(`[downloadWithQualityAttempt] Process finished with code: ${code}`);
+    ytdlpProcess.on('close', (code, signal) => {
+      console.log(`[downloadWithQualityAttempt] Process finished with code: ${code}, signal: ${signal}`);
+
+      // Remove from process tracking
+      if (videoId) {
+        activeQualityProcesses.delete(videoId);
+      }
+
+      // If process was cancelled, resolve gracefully
+      const cancelled = signal === 'SIGTERM' || (videoId && (require('./shared/progressTracker').getDownloadProgress(videoId).status === 'cancelled'));
+
       if (code === 0) {
         console.log(`[downloadWithQualityAttempt] Download successful for: ${outputPath}`);
 
@@ -417,6 +393,17 @@ async function downloadWithQualityAttempt(videoURL, outputPath, quality, videoId
         }
 
         resolve(true);
+      } else if (cancelled) {
+        console.log(`[downloadWithQualityAttempt] Download cancelled for videoId: ${videoId}`);
+        // Remove partial file if present
+        try {
+          if (fs.existsSync(outputPath)) {
+            fs.unlinkSync(outputPath);
+          }
+        } catch (e) {
+          // ignore file cleanup errors
+        }
+        resolve(false);
       } else {
         console.error(`[downloadWithQualityAttempt] yt-dlp download failed:`, stderr);
 
@@ -429,10 +416,26 @@ async function downloadWithQualityAttempt(videoURL, outputPath, quality, videoId
       }
     });
   });
+  }
+
+
+/**
+ * Cancel an active quality download by videoId
+ */
+function cancelQualityDownload(videoId) {
+  const proc = activeQualityProcesses.get(videoId);
+  if (proc) {
+    try { proc.kill('SIGTERM'); } catch (e) {}
+    activeQualityProcesses.delete(videoId);
+    return true;
+  }
+  return false;
 }
 
 module.exports = {
   scanAvailableQualities,
   getVideoInfo,
-  downloadWithQuality
+  downloadWithQuality,
+  cancelQualityDownload
 };
+

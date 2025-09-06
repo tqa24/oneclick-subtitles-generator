@@ -12,8 +12,55 @@ const { getFfmpegPath } = require('../../../services/shared/ffmpegUtils');
 // Import directory paths
 const { TEMP_AUDIO_DIR } = require('../directoryManager');
 
-// Import media duration utility
-const { getMediaDuration } = require('../../../services/videoProcessing/durationUtils');
+// Simple media duration utility (replacement for removed durationUtils)
+
+/**
+ * Get the duration of a media file using ffprobe
+ * @param {string} mediaPath - Path to the media file
+ * @returns {Promise<number>} - Duration in seconds
+ */
+function getMediaDuration(mediaPath) {
+  return new Promise((resolve, reject) => {
+    const ffprobePath = getFfmpegPath().replace('ffmpeg', 'ffprobe');
+    const ffprobe = spawn(ffprobePath, [
+      '-v', 'error',
+      '-show_entries', 'format=duration',
+      '-of', 'default=noprint_wrappers=1:nokey=1',
+      mediaPath
+    ]);
+
+    let output = '';
+    let errorOutput = '';
+
+    ffprobe.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+
+    ffprobe.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+
+    ffprobe.on('close', (code) => {
+      if (code !== 0) {
+        console.error(`ffprobe error: ${errorOutput}`);
+        return reject(new Error(`ffprobe failed with code ${code}`));
+      }
+
+      const duration = parseFloat(output.trim());
+      if (isNaN(duration)) {
+        return reject(new Error('Could not parse duration'));
+      }
+
+      resolve(duration);
+    });
+
+    // Timeout after 10 seconds
+    setTimeout(() => {
+      ffprobe.kill();
+      reject(new Error('ffprobe timeout'));
+    }, 10000);
+  });
+}
 
 /**
  * Find blank spaces (gaps) between segments where we can potentially move segments
@@ -603,5 +650,6 @@ const concatenateAudioFiles = async (inputFiles, outputPath) => {
 module.exports = {
   processBatch,
   concatenateAudioFiles,
-  analyzeAndAdjustSegments
+  analyzeAndAdjustSegments,
+  getMediaDuration
 };

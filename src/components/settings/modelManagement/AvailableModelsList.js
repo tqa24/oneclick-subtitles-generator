@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import DownloadIcon from '@mui/icons-material/Download';
 import CancelIcon from '@mui/icons-material/Cancel';
 import AddIcon from '@mui/icons-material/Add';
-import LoadingIndicator from '../../common/LoadingIndicator';
+import WavyProgressIndicator from '../../common/WavyProgressIndicator';
 import { addModelFromHuggingFace, cancelModelDownload } from '../../../services/modelService';
 import { invalidateModelsCache } from '../../../services/modelAvailabilityService';
 import { AVAILABLE_MODELS, LANGUAGE_NAMES } from '../ModelList';
@@ -29,6 +29,78 @@ const AvailableModelsList = ({
   setCustomModels
 }) => {
   const { t } = useTranslation();
+
+  // Refs for WavyProgressIndicator animations (one per model)
+  const wavyProgressRefs = useRef({});
+
+  // Theme detection for WavyProgressIndicator colors
+  const [theme, setTheme] = useState(() => {
+    return document.documentElement.getAttribute('data-theme') || 'dark';
+  });
+
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+          const newTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+          setTheme(newTheme);
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    });
+
+    // Also listen for storage events (theme changes from other tabs)
+    const handleStorageChange = () => {
+      const newTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+      setTheme(newTheme);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
+
+  // Track download state changes for entrance/disappear animations
+  const [previousDownloads, setPreviousDownloads] = useState({});
+
+  useEffect(() => {
+    // Check for newly started downloads (entrance animation)
+    Object.keys(downloads).forEach(modelId => {
+      const wasDownloading = isDownloading(modelId, previousDownloads);
+      const isNowDownloading = isDownloading(modelId, downloads);
+
+      if (!wasDownloading && isNowDownloading) {
+        // Started downloading - trigger entrance animation
+        const ref = wavyProgressRefs.current[modelId];
+        if (ref) {
+          ref.startEntranceAnimation();
+        }
+      }
+    });
+
+    // Check for completed/cancelled downloads (disappear animation)
+    Object.keys(previousDownloads).forEach(modelId => {
+      const wasDownloading = isDownloading(modelId, previousDownloads);
+      const isNowDownloading = isDownloading(modelId, downloads);
+
+      if (wasDownloading && !isNowDownloading) {
+        // Stopped downloading - trigger disappear animation
+        const ref = wavyProgressRefs.current[modelId];
+        if (ref) {
+          ref.startDisappearanceAnimation();
+        }
+      }
+    });
+
+    setPreviousDownloads(downloads);
+  }, [downloads, previousDownloads]);
 
   // Create a list of installed model IDs for filtering
   const installedModelIds = React.useMemo(() => {
@@ -96,26 +168,33 @@ const AvailableModelsList = ({
   // Handle cancelling a model download
   const handleCancelDownload = async (modelId) => {
     try {
+      // Trigger disappear animation first
+      const ref = wavyProgressRefs.current[modelId];
+      if (ref) {
+        ref.startDisappearanceAnimation();
+      }
+
       // Call API to cancel download
       const response = await cancelModelDownload(modelId);
 
       if (response.success) {
+        // Wait for disappear animation to complete (400ms) before removing from state
+        setTimeout(() => {
+          // Remove from downloads state
+          setDownloads(prev => {
+            const newDownloads = { ...prev };
+            delete newDownloads[modelId];
+            return newDownloads;
+          });
 
-        
-        // Remove from downloads state
-        setDownloads(prev => {
-          const newDownloads = { ...prev };
-          delete newDownloads[modelId];
-          return newDownloads;
-        });
+          // Invalidate the models cache to notify other components
+          invalidateModelsCache();
 
-        // Invalidate the models cache to notify other components
-        invalidateModelsCache();
-
-        // Notify parent component to refresh the model list
-        if (onModelAdded) {
-          onModelAdded();
-        }
+          // Notify parent component to refresh the model list
+          if (onModelAdded) {
+            onModelAdded();
+          }
+        }, 450); // Slightly longer than animation duration (400ms)
       }
     } catch (error) {
       console.error('Error cancelling model download:', error);
@@ -195,29 +274,33 @@ const AvailableModelsList = ({
 
             {isDownloading(model.id, {}, downloads) ? (
               <div>
-                <div className="download-progress">
-                  <div
-                    className="download-progress-bar"
-                    style={{
-                      width: downloads[model.id] && downloads[model.id].progress !== undefined
-                        ? `${downloads[model.id].progress}%`
-                        : '10%' // Default progress when no information is available
-                    }}
-                  ></div>
-                </div>
-                <div className="model-card-actions">
-                  <div className="download-percentage">
-                    <LoadingIndicator
-                      theme="dark"
-                      showContainer={false}
-                      size={16}
-                      className="download-progress-indicator"
+
+                {/* Move progress above the actions border */}
+                <div className="model-card-progress" style={{ padding: '8px 0 0', width: '100%' }}>
+                  <div style={{ width: '100%' }}>
+                    <WavyProgressIndicator
+                      ref={(ref) => {
+                        if (ref) {
+                          wavyProgressRefs.current[model.id] = ref;
+                        } else {
+                          delete wavyProgressRefs.current[model.id];
+                        }
+                      }}
+                      height={12}
+                      progress={Math.max(0, Math.min(1, (getDownloadProgress(model.id, downloads) || 0) / 100))}
+                      animate={true}
+                      showStopIndicator={true}
+                      waveSpeed={1.2}
+                      color={theme === 'dark' ? '#FFFFFF' : '#485E92'}
+                      trackColor={theme === 'dark' ? 'rgba(255,255,255,0.3)' : '#D9DFF6'}
                     />
-                    <span>
-                      {/* Always show percentage format only */}
-                      {getDownloadProgress(model.id, downloads) ? `${getDownloadProgress(model.id, downloads)}%` : ''}
-                    </span>
                   </div>
+                </div>
+
+                <div className="model-card-actions" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <span className="download-percent-label">
+                    {getDownloadProgress(model.id, downloads) ? `${getDownloadProgress(model.id, downloads)}%` : ''}
+                  </span>
                   <button
                     className="cancel-download-btn"
                     onClick={() => handleCancelDownload(model.id)}

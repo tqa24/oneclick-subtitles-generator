@@ -34,5 +34,7 @@
   "textTransformNone": "없음",
   "textTransformUppercase": "대문자",
   "textTransformLowercase": "소문자",
-  "textTransformCapitalize": "첫글자 대문자"
+  "textTransformCapitalize": "첫글자 대문자",
+  "textAlign": "텍스트 정렬",
+  "textShadow": "텍스트 그림자"
 }

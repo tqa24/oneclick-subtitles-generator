@@ -13,6 +13,9 @@ const {
   updateProgressFromYtdlpOutput
 } = require('../shared/progressTracker');
 
+// Global process tracking for cancellation
+const activeYtdlpProcesses = new Map(); // videoId -> { process, cancelled }
+
 
 
 /**
@@ -61,13 +64,14 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId
     // Build the yt-dlp command arguments with conditional cookie support
     const args = [
       ...getYtDlpArgs(useCookies),
+      '--progress',  // Enable progress reporting
+      '--newline',   // Force newlines for better parsing
+      '--no-colors', // Disable ANSI colors
       videoURL,
       '-f', `bestvideo[height<=${resolution}]+bestaudio/best[height<=${resolution}]`,
       '-o', tempPath,
       '--no-playlist',
       '--merge-output-format', 'mp4',
-      '--progress',  // Enable progress reporting
-      '--newline',   // Force newlines for better parsing
       '--no-post-overwrites',  // Prevent hanging on post-processing
       '--prefer-ffmpeg'        // Use ffmpeg for merging (more reliable)
     ];
@@ -76,42 +80,84 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId
 
 
 
-    // Spawn the yt-dlp process
-    const ytdlpProcess = spawn(ytdlpCommand, args);
+    // Spawn the yt-dlp process with unbuffered output
+    const ytdlpProcess = spawn(ytdlpCommand, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        PYTHONUNBUFFERED: '1'  // Force unbuffered output
+      }
+    });
+
+    // Track the process for cancellation
+    if (videoId) {
+      activeYtdlpProcesses.set(videoId, { process: ytdlpProcess, cancelled: false });
+    }
 
     let stdoutData = '';
     let stderrData = '';
+    let stdoutBuffer = ''; // Buffer for line-by-line processing
 
     ytdlpProcess.stdout.on('data', (data) => {
       const output = data.toString();
       stdoutData += output;
+      stdoutBuffer += output;
 
-      // Log merge-related messages for debugging
-      if (output.includes('Merging') || output.includes('merger') || output.includes('ffmpeg')) {
-        console.log(`[yt-dlp merge] ${output.trim()}`);
-      }
+      // Process complete lines only
+      const lines = stdoutBuffer.split('\n');
+      stdoutBuffer = lines.pop(); // Keep the incomplete line in buffer
 
-      // Parse progress information if videoId is provided
-      if (videoId) {
-        updateProgressFromYtdlpOutput(videoId, output);
+      for (const line of lines) {
+        if (line.trim()) {
+          // Always log the line for debugging
+          console.log(`[yt-dlp stdout] ${line.trim()}`);
+          
+          // Parse progress information if videoId is provided
+          if (videoId) {
+            updateProgressFromYtdlpOutput(videoId, line);
+          }
+        }
       }
     });
 
     ytdlpProcess.stderr.on('data', (data) => {
       const output = data.toString();
       stderrData += output;
-      console.error(`[yt-dlp error] ${output.trim()}`);
-
-      // Log merge-related messages for debugging
-      if (output.includes('Merging') || output.includes('merger') || output.includes('ffmpeg')) {
-        console.log(`[yt-dlp merge] ${output.trim()}`);
+      
+      // Process line by line
+      const lines = output.split('\n');
+      for (const line of lines) {
+        if (line.trim()) {
+          console.log(`[yt-dlp stderr] ${line.trim()}`);
+          
+          // Also check stderr for progress (yt-dlp sometimes outputs progress there)
+          if (videoId) {
+            updateProgressFromYtdlpOutput(videoId, line);
+          }
+        }
       }
     });
 
     ytdlpProcess.on('close', (code) => {
       clearTimeout(downloadTimeout);
+
+      // Check if process was cancelled
+      let wasCancelled = false;
+      if (videoId && activeYtdlpProcesses.has(videoId)) {
+        wasCancelled = activeYtdlpProcesses.get(videoId).cancelled;
+        activeYtdlpProcesses.delete(videoId);
+      }
+
       console.log(`[ytdlpDownloader] Process closed with code: ${code} for video: ${videoId || 'unknown'}`);
-      if (code === 0) {
+
+      if (wasCancelled) {
+        // Process was cancelled - this is expected
+        if (videoId) {
+          setDownloadProgress(videoId, 0, 'cancelled');
+        }
+        console.log(`[ytdlpDownloader] Download cancelled for: ${videoId}`);
+        resolve(false); // Return false to indicate cancellation, not failure
+      } else if (code === 0) {
         // Success - move the file to the final location
         try {
           console.log(`[ytdlpDownloader] Checking for file: ${tempPath}`);
@@ -188,7 +234,29 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId
   });
 }
 
+/**
+ * Cancel an active yt-dlp download process
+ * @param {string} videoId - Video ID to cancel
+ * @returns {boolean} - True if process was found and killed
+ */
+function cancelYtdlpProcess(videoId) {
+  if (activeYtdlpProcesses.has(videoId)) {
+    const processInfo = activeYtdlpProcesses.get(videoId);
+    console.log(`[ytdlpDownloader] Cancelling download for ${videoId}, killing process`);
+
+    // Mark as cancelled before killing
+    processInfo.cancelled = true;
+
+    // Kill the process
+    processInfo.process.kill('SIGTERM');
+
+    return true;
+  }
+  return false;
+}
+
 module.exports = {
   downloadWithYtdlp,
-  getDownloadProgress
+  getDownloadProgress,
+  cancelYtdlpProcess
 };

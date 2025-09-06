@@ -34,5 +34,7 @@
   "textTransformNone": "None",
   "textTransformUppercase": "UPPERCASE",
   "textTransformLowercase": "lowercase",
-  "textTransformCapitalize": "Capitalize"
+  "textTransformCapitalize": "Capitalize",
+  "textAlign": "Text Alignment",
+  "textShadow": "Text Shadow"
 }

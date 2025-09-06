@@ -5,7 +5,7 @@ import PositionSettings from './PositionSettings';
 import StyleSettings from './StyleSettings';
 import { fontOptions, fontWeightOptions, textAlignOptions, getTextTransformOptions } from '../constants';
 import { groupFontsByCategory } from '../utils/fontUtils';
-import CloseButton from '../../common/CloseButton';
+import CustomDropdown from '../../common/CustomDropdown';
 
 /**
  * Subtitle Settings Panel component
@@ -38,40 +38,63 @@ const SubtitleSettingsPanel = ({
   // Group fonts for the select element
   const fontGroups = groupFontsByCategory(fontOptions);
 
+  // Handle click outside to close
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (event) => {
+      // Check if click is outside the panel
+      const panel = document.querySelector('.subtitle-settings-panel');
+      const toggleButton = document.querySelector('.subtitle-settings-toggle');
+      
+      if (panel && !panel.contains(event.target) && 
+          toggleButton && !toggleButton.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    // Add event listeners
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen, setIsOpen]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="subtitle-settings-panel">
-      <div className="settings-header">
-        <h4>{t('subtitleSettings.title', 'Subtitle Settings')}</h4>
-        <div className="settings-header-actions">
-          <CloseButton
-            onClick={() => setIsOpen(false)}
-            variant="default"
-            size="small"
-          />
-        </div>
-      </div>
-
-      <div className="settings-content">
+    <>
+      {/* Invisible backdrop for click detection */}
+      <div className="subtitle-settings-backdrop" onClick={() => setIsOpen(false)} />
+      
+      <div className="subtitle-settings-panel">
+        <div className="settings-content">
         {/* Subtitle Language Selector - Always shown at the top */}
         <div className="setting-group subtitle-language-group">
           <label htmlFor="subtitle-language">{t('subtitleSettings.subtitleLanguage', 'Subtitle Language')}</label>
-          <select
-            id="subtitle-language"
+          <CustomDropdown
             value={subtitleLanguage}
-            onChange={handleSubtitleLanguageChange}
-            className="subtitle-language-select"
+            onChange={(value) => handleSubtitleLanguageChange({ target: { value } })}
             disabled={!hasTranslation}
-          >
-            <option value="original">{t('subtitleSettings.original', 'Original')}</option>
-            {hasTranslation && (
-              <option value="translated">
-                {t('subtitleSettings.translated', 'Translated')}
-                {targetLanguage ? ` (${targetLanguage})` : ''}
-              </option>
-            )}
-          </select>
+            options={[
+              { value: 'original', label: t('subtitleSettings.original', 'Original') },
+              ...(hasTranslation ? [{
+                value: 'translated',
+                label: `${t('subtitleSettings.translated', 'Translated')}${targetLanguage ? ` (${targetLanguage})` : ''}`
+              }] : [])
+            ]}
+            placeholder={t('subtitleSettings.selectLanguage', 'Select Language')}
+          />
         </div>
 
         <hr className="settings-divider" />
@@ -110,6 +133,7 @@ const SubtitleSettingsPanel = ({
         </button>
       </div>
     </div>
+    </>
   );
 };
 

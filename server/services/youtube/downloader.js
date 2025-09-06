@@ -32,7 +32,18 @@ async function downloadYouTubeVideo(videoId, useCookies = true) {
   try {
     // Always pass '360p' as the quality parameter to ensure consistent behavior
     // Pass videoId for progress tracking
-    await downloadWithYtdlp(videoURL, outputPath, '360p', videoId, useCookies);
+    const result = await downloadWithYtdlp(videoURL, outputPath, '360p', videoId, useCookies);
+
+    if (result === false) {
+      // Download was cancelled
+      return {
+        success: false,
+        cancelled: true,
+        message: `Download cancelled for ${videoId}`,
+        title: videoInfo.title,
+        method: 'yt-dlp'
+      };
+    }
 
     return {
       success: true,

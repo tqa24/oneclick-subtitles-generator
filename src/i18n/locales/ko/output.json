@@ -40,7 +40,7 @@
   "retryGeminiTooltip": "새로운 Gemini 요청으로 자막 생성을 다시 시도",
   "retryWithModel": "다른 모델로 다시 시도",
   "selectModel": "다시 시도할 모델 선택",
-  "longVideoWarning": "{{duration}}분 길이의 비디오를 업로드했습니다. 여러 Gemini 호출로 인해 처리 시간이 평소보다 길어질 수 있습니다.",
+  "longVideoWarning": "{{duration}}분 길이의 비디오를 업로드하고 있습니다. 네트워크 속도에 따라 업로드 진행이 오래 걸릴 수 있습니다.",
   "longVideoProcessing": "30분 이상의 비디오를 처리 중입니다. 시간이 좀 걸릴 수 있습니다...",
   "processingDirectly": "비디오를 직접 처리 중...",
   "clientSideSegmentation": "사용자 기기에서 비디오 세그먼트 처리 중...",
@@ -84,6 +84,7 @@
   "processingAudio": "오디오 처리 중...",
   "optimizationFailed": "비디오 최적화 실패, 원본 비디오 사용.",
   "processingOptimizedVideo": "최적화된 비디오 처리 중...",
+  "uploading": "비디오 업로드 중...",
   "uploadingVideoToServer": "서버에 비디오 업로드 중...",
   "uploadingAudioToServer": "서버에 오디오 업로드 중...",
   "videoUploaded": "비디오 업로드 완료, 세그먼트 처리 중...",
@@ -93,6 +94,13 @@
   "retrying": "재시도 중...",
   "ready": "준비 완료",
   "segmentReady": "처리 준비 완료",
+  "videoReady": "세그먼트 선택을 위한 비디오 준비 완료...",
   "subtitleUploadSuccess": "자막 파일이 성공적으로 업로드되었습니다!",
-  "downloadAndViewWithSrt": "다운로드 + 업로드된 SRT로 보기"
+  "downloadAndViewWithSrt": "다운로드 + 업로드된 SRT로 보기",
+  "downloadAndGenerate": "비디오 다운로드 + AI로 시간 맞춤 자막 생성",
+  "preparingProcessing": "비디오 처리 준비 중...",
+  "semiAutoGenerate": "반자동\u00a0자막\u00a0생성",
+  "downloadAndGenerateSemiAuto": "다운로드 +\u00a0반자동 자막\u00a0생성",
+  "autoFlow": "자동\u00a0자막\u00a0생성",
+  "downloadAndGenerateAuto": "다운로드 +\u00a0자동 자막\u00a0생성"
 }

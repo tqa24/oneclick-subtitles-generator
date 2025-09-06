@@ -40,7 +40,7 @@
   "retryGeminiTooltip": "Thử tạo phụ đề lại với một yêu cầu Gemini mới",
   "retryWithModel": "Thử lại với mô hình khác",
   "selectModel": "Chọn mô hình để thử lại",
-  "longVideoWarning": "Bạn đã tải lên video dài {{duration}} phút. Quá trình xử lý có thể lâu hơn bình thường do nhiều cuộc gọi Gemini.",
+  "longVideoWarning": "Bạn đang tải lên video dài {{duration}} phút. Tiến trình tải lên có thể lâu tùy thuộc vào tốc độ mạng.",
   "longVideoProcessing": "Đang xử lý video dài hơn 30 phút. Điều này có thể mất một lúc...",
   "processingDirectly": "Đang xử lý video trực tiếp...",
   "clientSideSegmentation": "Đang xử lý video theo phần trên thiết bị của bạn...",
@@ -84,6 +84,7 @@
   "processingAudio": "Đang xử lý âm thanh...",
   "optimizationFailed": "Tối ưu hóa video thất bại, sử dụng video gốc.",
   "processingOptimizedVideo": "Đang xử lý video đã tối ưu hóa...",
+  "uploading": "Đang tải video lên...",
   "uploadingVideoToServer": "Đang tải video lên máy chủ...",
   "uploadingAudioToServer": "Đang tải âm thanh lên máy chủ...",
   "videoUploaded": "Đã tải video lên, đang xử lý các phần...",
@@ -93,6 +94,13 @@
   "retrying": "Đang thử lại...",
   "ready": "Sẵn sàng",
   "segmentReady": "Sẵn sàng để xử lý",
+  "videoReady": "Video đã sẵn sàng để chọn phân đoạn...",
   "subtitleUploadSuccess": "Tập tin phụ đề đã được tải lên thành công!",
-  "downloadAndViewWithSrt": "Tải xuống + Xem với SRT đã upload"
+  "downloadAndViewWithSrt": "Tải xuống + Xem với SRT đã upload",
+  "downloadAndGenerate": "Tải xuống + Tạo phụ đề có thời gian bằng AI",
+  "preparingProcessing": "Đang chuẩn bị xử lý video...",
+  "semiAutoGenerate": "Tạo sub\u00a0bán tự động",
+  "downloadAndGenerateSemiAuto": "Tải +\u00a0Tạo sub bán tự động",
+  "autoFlow": "Tạo sub\u00a0tự động",
+  "downloadAndGenerateAuto": "Tải +\u00a0Tạo sub tự động"
 }

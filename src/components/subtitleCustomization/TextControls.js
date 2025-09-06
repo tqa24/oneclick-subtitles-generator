@@ -4,6 +4,7 @@ import StandardSlider from '../common/StandardSlider';
 import { groupFontsByCategory, getFontSupportFlags } from './fontOptions';
 import FontSelectionModal from './FontSelectionModal';
 import { formatDecimal } from '../../utils/formatUtils';
+import CustomDropdown from '../common/CustomDropdown';
 
 const TextControls = ({ customization, onChange }) => {
   const { t } = useTranslation();
@@ -136,15 +137,16 @@ const TextControls = ({ customization, onChange }) => {
           <label>{t('videoRendering.textAlign', 'Text Alignment')}</label>
         </div>
         <div className="row-content">
-          <select
+          <CustomDropdown
             value={customization.textAlign}
-            onChange={(e) => updateCustomization({ textAlign: e.target.value })}
-            className="setting-select"
-          >
-            <option value="left">{t('videoRendering.left', 'Left')}</option>
-            <option value="center">{t('videoRendering.center', 'Center')}</option>
-            <option value="right">{t('videoRendering.right', 'Right')}</option>
-          </select>
+            onChange={(value) => updateCustomization({ textAlign: value })}
+            options={[
+              { value: 'left', label: t('videoRendering.left', 'Left') },
+              { value: 'center', label: t('videoRendering.center', 'Center') },
+              { value: 'right', label: t('videoRendering.right', 'Right') }
+            ]}
+            placeholder={t('videoRendering.selectAlignment', 'Select Alignment')}
+          />
         </div>
       </div>
 
@@ -210,16 +212,17 @@ const TextControls = ({ customization, onChange }) => {
           <label>{t('videoRendering.textTransform', 'Text Transform')}</label>
         </div>
         <div className="row-content">
-          <select
+          <CustomDropdown
             value={customization.textTransform}
-            onChange={(e) => updateCustomization({ textTransform: e.target.value })}
-            className="setting-select"
-          >
-            <option value="none">{t('videoRendering.none', 'None')}</option>
-            <option value="uppercase">{t('videoRendering.uppercase', 'Uppercase')}</option>
-            <option value="lowercase">{t('videoRendering.lowercase', 'Lowercase')}</option>
-            <option value="capitalize">{t('videoRendering.capitalize', 'Capitalize')}</option>
-          </select>
+            onChange={(value) => updateCustomization({ textTransform: value })}
+            options={[
+              { value: 'none', label: t('videoRendering.none', 'None') },
+              { value: 'uppercase', label: t('videoRendering.uppercase', 'Uppercase') },
+              { value: 'lowercase', label: t('videoRendering.lowercase', 'Lowercase') },
+              { value: 'capitalize', label: t('videoRendering.capitalize', 'Capitalize') }
+            ]}
+            placeholder={t('videoRendering.selectTransform', 'Select Transform')}
+          />
         </div>
       </div>
 

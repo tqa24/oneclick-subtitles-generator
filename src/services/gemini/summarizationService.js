@@ -5,6 +5,7 @@
 
 import { getLanguageCode } from '../../utils/languageUtils';
 import { createSummarizationSchema, addResponseSchema } from '../../utils/schemaUtils';
+import { addThinkingConfig } from '../../utils/thinkingBudgetUtils';
 import { getDefaultSummarizePrompt } from './promptManagement';
 import { createRequestController, removeRequestController } from './requestManagement';
 import { processStructuredJsonResponse, processTextResponse } from './responseProcessingService';
@@ -104,6 +105,8 @@ export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash
         // Always use structured output
         requestData = addResponseSchema(requestData, createSummarizationSchema());
 
+        // Add thinking configuration if supported by the model
+        requestData = addThinkingConfig(requestData, model);
 
         const response = await fetch(apiUrl, {
             method: 'POST',

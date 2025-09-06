@@ -177,9 +177,16 @@ const splitTiming = (startTime, endTime, chunks) => {
   return timings;
 };
 
-const SubtitleSplitModal = ({ isOpen, onClose, lyrics, onSplitSubtitles }) => {
+const SubtitleSplitModal = ({ isOpen, onClose, lyrics, onSplitSubtitles, selectedRange = null }) => {
   const { t } = useTranslation();
   const [maxWords, setMaxWords] = useState(8);
+  
+  // Format time for display
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleApply = () => {
     if (!lyrics || lyrics.length === 0) {
@@ -190,6 +197,17 @@ const SubtitleSplitModal = ({ isOpen, onClose, lyrics, onSplitSubtitles }) => {
     const newLyrics = [];
     
     lyrics.forEach((lyric) => {
+      // Check if this lyric is within the selected range
+      const isInRange = selectedRange && 
+        lyric.start >= selectedRange.start && 
+        lyric.end <= selectedRange.end;
+      
+      // If no range is selected or lyric is not in range, keep it as is
+      if (!selectedRange || !isInRange) {
+        newLyrics.push(lyric);
+        return;
+      }
+      
       const wordCount = countWords(lyric.text);
       
       // If subtitle is already within limit, keep it as is
@@ -224,7 +242,21 @@ const SubtitleSplitModal = ({ isOpen, onClose, lyrics, onSplitSubtitles }) => {
     <CustomModelDialog
       isOpen={isOpen}
       onClose={onClose}
-      title={t('subtitleSplit.title', 'Chia nhỏ subtitles')}
+      title={
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <span>{t('subtitleSplit.title', 'Chia nhỏ subtitles')}</span>
+          {selectedRange && (
+            <span style={{ 
+              fontSize: '0.85em', 
+              color: 'var(--md-on-surface-variant)',
+              fontWeight: 'normal'
+            }}>
+              {formatTime(selectedRange.start)} - {formatTime(selectedRange.end)}
+              {' '}({Math.round(selectedRange.end - selectedRange.start)}s)
+            </span>
+          )}
+        </div>
+      }
       footer={
         <button
           className="apply-btn"
@@ -251,7 +283,10 @@ const SubtitleSplitModal = ({ isOpen, onClose, lyrics, onSplitSubtitles }) => {
           fontSize: '14px',
           lineHeight: '1.4'
         }}>
-          {t('subtitleSplit.description', 'Chia nhỏ sub thông minh (các sub đã nhỏ hơn giới hạn sẽ không bị ảnh hưởng)')}
+          {selectedRange 
+            ? t('subtitleSplit.descriptionRange', 'Chia nhỏ sub thông minh trong vùng đã chọn (các sub đã nhỏ hơn giới hạn sẽ không bị ảnh hưởng)')
+            : t('subtitleSplit.description', 'Chia nhỏ sub thông minh (các sub đã nhỏ hơn giới hạn sẽ không bị ảnh hưởng)')
+          }
         </p>
 
         <div style={{ marginBottom: '24px' }}>
@@ -330,7 +365,7 @@ const SubtitleSplitModal = ({ isOpen, onClose, lyrics, onSplitSubtitles }) => {
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
               gap: '16px',
-              '@media (max-width: 768px)': {
+              '@media (maxWidth: 768px)': {
                 gridTemplateColumns: '1fr'
               }
             }}>

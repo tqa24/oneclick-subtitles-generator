@@ -2,15 +2,22 @@
 
 /* Container for the processing text */
 .processing-text-container {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   position: relative;
+}
+
+/* Ensure LoadingIndicator displays inline within any processing container */
+.processing-text-container .loading-indicator {
+  display: inline-flex;
+  flex-shrink: 0;
 }
 
 /* Ensure buttons-container processing text uses title font */
 .buttons-container .processing-text-container,
 .buttons-container .processing-text,
-.buttons-container .processing-dots,
-.buttons-container .processing-gemini-icon {
+.buttons-container .processing-dots {
   font-family: var(--font-title);
 }
 
@@ -50,20 +57,7 @@
   50% { opacity: 1; }
 }
 
-/* Small Gemini icon that appears next to the text */
-.processing-gemini-icon {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  margin-right: 8px;
-  vertical-align: middle;
-  animation: processing-icon-spin 3s infinite linear;
-}
 
-@keyframes processing-icon-spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
 
 /* Ensure the animations work in disabled state too */
 button:disabled .processing-text-container {

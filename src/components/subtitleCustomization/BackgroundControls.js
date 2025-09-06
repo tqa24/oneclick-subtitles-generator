@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import StandardSlider from '../common/StandardSlider';
+import CustomDropdown from '../common/CustomDropdown';
 
 const BackgroundControls = ({ customization, onChange }) => {
   const { t } = useTranslation();
@@ -149,17 +150,18 @@ const BackgroundControls = ({ customization, onChange }) => {
           <label>{t('videoRendering.borderStyle', 'Border Style')}</label>
         </div>
         <div className="row-content">
-          <select
+          <CustomDropdown
             value={customization.borderStyle}
-            onChange={(e) => updateCustomization({ borderStyle: e.target.value })}
-            className="setting-select"
-          >
-            <option value="none">{t('videoRendering.none', 'None')}</option>
-            <option value="solid">{t('videoRendering.solid', 'Solid')}</option>
-            <option value="dashed">{t('videoRendering.dashed', 'Dashed')}</option>
-            <option value="dotted">{t('videoRendering.dotted', 'Dotted')}</option>
-            <option value="double">{t('videoRendering.double', 'Double')}</option>
-          </select>
+            onChange={(value) => updateCustomization({ borderStyle: value })}
+            options={[
+              { value: 'none', label: t('videoRendering.none', 'None') },
+              { value: 'solid', label: t('videoRendering.solid', 'Solid') },
+              { value: 'dashed', label: t('videoRendering.dashed', 'Dashed') },
+              { value: 'dotted', label: t('videoRendering.dotted', 'Dotted') },
+              { value: 'double', label: t('videoRendering.double', 'Double') }
+            ]}
+            placeholder={t('videoRendering.selectBorderStyle', 'Select Border Style')}
+          />
         </div>
       </div>
     </>

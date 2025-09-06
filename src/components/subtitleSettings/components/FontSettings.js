@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import StandardSlider from '../../common/StandardSlider';
 import { formatDecimal } from '../../../utils/formatUtils';
+import CustomDropdown from '../../common/CustomDropdown';
 
 /**
  * Font Settings component
@@ -20,22 +21,17 @@ const FontSettings = ({ settings, handleSettingChange, fontGroups, fontWeightOpt
     <>
       <div className="setting-group">
         <label htmlFor="font-family">{t('subtitleSettings.font', 'Font')}</label>
-        <select
-          id="font-family"
+        <CustomDropdown
           value={settings.fontFamily}
-          onChange={(e) => handleSettingChange('fontFamily', e.target.value)}
-          className="font-select"
-        >
-          {Object.entries(fontGroups).map(([group, fonts]) => (
-            <optgroup key={group} label={group}>
-              {fonts.map(font => (
-                <option key={font.value} value={font.value}>
-                  {font.label} {font.koreanSupport && '🇰🇷'}{font.vietnameseSupport && '🇻🇳'}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
+          onChange={(value) => handleSettingChange('fontFamily', value)}
+          options={Object.entries(fontGroups).flatMap(([group, fonts]) =>
+            fonts.map(font => ({
+              value: font.value,
+              label: `${font.label} ${font.koreanSupport ? '🇰🇷' : ''}${font.vietnameseSupport ? '🇻🇳' : ''}`
+            }))
+          )}
+          placeholder={t('subtitleSettings.selectFont', 'Select Font')}
+        />
 
       </div>
 
@@ -64,15 +60,15 @@ const FontSettings = ({ settings, handleSettingChange, fontGroups, fontWeightOpt
 
       <div className="setting-group">
         <label htmlFor="font-weight">{t('subtitleSettings.fontWeight', 'Font Weight')}</label>
-        <select
-          id="font-weight"
+        <CustomDropdown
           value={settings.fontWeight}
-          onChange={(e) => handleSettingChange('fontWeight', e.target.value)}
-        >
-          {fontWeightOptions.map(option => (
-            <option key={option.value} value={option.value}>{option.label}</option>
-          ))}
-        </select>
+          onChange={(value) => handleSettingChange('fontWeight', value)}
+          options={fontWeightOptions.map(option => ({
+            value: option.value,
+            label: option.label
+          }))}
+          placeholder={t('subtitleSettings.selectFontWeight', 'Select Font Weight')}
+        />
       </div>
 
       <div className="setting-group">

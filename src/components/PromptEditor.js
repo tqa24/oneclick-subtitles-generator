@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import CloseButton from './common/CloseButton';
+import CustomScrollbarTextarea from './common/CustomScrollbarTextarea';
 import '../styles/PromptEditor.css';
 
 const PromptEditor = ({
@@ -211,7 +212,7 @@ const PromptEditor = ({
 
           <div className="prompt-editor-container">
             <label htmlFor="custom-instructions" className="instructions-label">{t('promptEditor.customInstructions', 'Your Custom Instructions:')}</label>
-            <textarea
+            <CustomScrollbarTextarea
               id="custom-instructions"
               ref={textareaRef}
               className="prompt-editor-textarea"

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import StandardSlider from '../common/StandardSlider';
+import CustomDropdown from '../common/CustomDropdown';
 
 const PositionControls = ({ customization, onChange }) => {
   const { t } = useTranslation();
@@ -17,16 +18,17 @@ const PositionControls = ({ customization, onChange }) => {
           <label>{t('videoRendering.position', 'Position')}</label>
         </div>
         <div className="row-content">
-          <select
+          <CustomDropdown
             value={customization.position}
-            onChange={(e) => updateCustomization({ position: e.target.value })}
-            className="setting-select"
-          >
-            <option value="bottom">{t('videoRendering.bottom', 'Bottom')}</option>
-            <option value="top">{t('videoRendering.top', 'Top')}</option>
-            <option value="center">{t('videoRendering.center', 'Center')}</option>
-            <option value="custom">{t('videoRendering.custom', 'Custom')}</option>
-          </select>
+            onChange={(value) => updateCustomization({ position: value })}
+            options={[
+              { value: 'bottom', label: t('videoRendering.bottom', 'Bottom') },
+              { value: 'top', label: t('videoRendering.top', 'Top') },
+              { value: 'center', label: t('videoRendering.center', 'Center') },
+              { value: 'custom', label: t('videoRendering.custom', 'Custom') }
+            ]}
+            placeholder={t('videoRendering.selectPosition', 'Select Position')}
+          />
         </div>
       </div>
 

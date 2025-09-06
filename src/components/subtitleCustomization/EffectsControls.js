@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import StandardSlider from '../common/StandardSlider';
 import MaterialSwitch from '../common/MaterialSwitch';
+import CustomDropdown from '../common/CustomDropdown';
 import '../../styles/common/material-switch.css';
 
 const EffectsControls = ({ customization, onChange }) => {
@@ -237,18 +238,19 @@ const EffectsControls = ({ customization, onChange }) => {
               <label>{t('videoRendering.gradientDirection', 'Gradient Direction')}</label>
             </div>
             <div className="row-content">
-              <select
+              <CustomDropdown
                 value={customization.gradientDirection}
-                onChange={(e) => updateCustomization({ gradientDirection: e.target.value })}
-                className="setting-select"
-              >
-                <option value="0deg">Horizontal →</option>
-                <option value="90deg">Vertical ↓</option>
-                <option value="45deg">Diagonal ↘</option>
-                <option value="135deg">Diagonal ↙</option>
-                <option value="180deg">Horizontal ←</option>
-                <option value="270deg">Vertical ↑</option>
-              </select>
+                onChange={(value) => updateCustomization({ gradientDirection: value })}
+                options={[
+                  { value: '0deg', label: 'Horizontal →' },
+                  { value: '90deg', label: 'Vertical ↓' },
+                  { value: '45deg', label: 'Diagonal ↘' },
+                  { value: '135deg', label: 'Diagonal ↙' },
+                  { value: '180deg', label: 'Horizontal ←' },
+                  { value: '270deg', label: 'Vertical ↑' }
+                ]}
+                placeholder={t('videoRendering.selectDirection', 'Select Direction')}
+              />
             </div>
           </div>
         </>

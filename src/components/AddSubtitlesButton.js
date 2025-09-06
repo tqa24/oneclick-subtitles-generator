@@ -24,9 +24,34 @@ const AddSubtitlesButton = ({
   const { t } = useTranslation();
   const [showModal, setShowModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [localHasSubtitles, setLocalHasSubtitles] = useState(hasSubtitles);
+  const [localSubtitlesText, setLocalSubtitlesText] = useState(subtitlesText);
+
+  // Check for existing user-provided subtitles on mount
+  useEffect(() => {
+    const checkExistingSubtitles = () => {
+      const savedSubtitles = localStorage.getItem('user_provided_subtitles');
+      if (savedSubtitles && savedSubtitles.trim() !== '') {
+        setLocalHasSubtitles(true);
+        setLocalSubtitlesText(savedSubtitles);
+        console.log('[AddSubtitlesButton] Found existing user-provided subtitles on page load');
+      } else {
+        setLocalHasSubtitles(hasSubtitles);
+        setLocalSubtitlesText(subtitlesText);
+      }
+    };
+
+    checkExistingSubtitles();
+  }, []); // Run only once on mount
+
+  // Update local state when props change
+  useEffect(() => {
+    setLocalHasSubtitles(hasSubtitles);
+    setLocalSubtitlesText(subtitlesText);
+  }, [hasSubtitles, subtitlesText]);
 
   const handleButtonClick = () => {
-    if (hasSubtitles) {
+    if (localHasSubtitles) {
       // If subtitles are already added, show the modal to edit them
       setShowModal(true);
     } else {
@@ -47,6 +72,14 @@ const AddSubtitlesButton = ({
 
   const handleSaveSubtitles = (text) => {
     setIsProcessing(true); // Start processing animation
+
+    // Update local state
+    setLocalHasSubtitles(text.trim() !== '');
+    setLocalSubtitlesText(text);
+
+    // Save to localStorage
+    localStorage.setItem('user_provided_subtitles', text);
+
     onSubtitlesAdd(text);
     setShowModal(false);
   };
@@ -58,6 +91,14 @@ const AddSubtitlesButton = ({
   const handleClearSubtitles = (e) => {
     e.stopPropagation(); // Prevent button click from triggering
     setIsProcessing(true); // Start processing animation
+
+    // Update local state
+    setLocalHasSubtitles(false);
+    setLocalSubtitlesText('');
+
+    // Clear from localStorage
+    localStorage.removeItem('user_provided_subtitles');
+
     onSubtitlesAdd(''); // Clear subtitles by passing empty string
     setTimeout(() => setIsProcessing(false), 500); // Short animation
   };
@@ -67,10 +108,10 @@ const AddSubtitlesButton = ({
       <div className="add-subtitles-buttons-group">
         <div className="add-subtitles-button-container">
           <button
-            className={`add-subtitles-button ${hasSubtitles ? 'has-subtitles' : ''} ${isProcessing ? 'processing' : ''}`}
+            className={`add-subtitles-button ${localHasSubtitles ? 'has-subtitles' : ''} ${isProcessing ? 'processing' : ''}`}
             onClick={handleButtonClick}
             disabled={disabled || isProcessing}
-            title={hasSubtitles
+            title={localHasSubtitles
               ? t('subtitlesInput.editSubtitles', 'Edit provided subtitles')
               : t('subtitlesInput.addSubtitles', 'Add your own subtitles without timings')}
           >
@@ -80,16 +121,17 @@ const AddSubtitlesButton = ({
           {isProcessing ? (
             <span className="processing-text-container">
               <LoadingIndicator
-                theme="dark"
+                theme="light"
                 showContainer={false}
                 size={16}
                 className="subtitles-processing-loading"
+                color="#FFFFFF"
               />
               <span className="processing-text">
                 {t('subtitlesInput.processing', 'Processing...')}
               </span>
             </span>
-          ) : hasSubtitles ? (
+          ) : localHasSubtitles ? (
             <>
               <FiCheck className="icon" />
               <span>{t('subtitlesInput.subtitlesAdded', 'Subtitles added')}</span>
@@ -104,7 +146,7 @@ const AddSubtitlesButton = ({
         </div>
 
         {/* Separate clear button */}
-        {hasSubtitles && !isProcessing && (
+        {localHasSubtitles && !isProcessing && (
           <button
             className="clear-subtitles-button"
             onClick={handleClearSubtitles}
@@ -122,7 +164,7 @@ const AddSubtitlesButton = ({
         <>
 
           <SubtitlesInputModal
-            initialText={subtitlesText}
+            initialText={localSubtitlesText}
             onSave={handleSaveSubtitles}
             onClose={handleCloseModal}
             onGenerateBackground={onGenerateBackground}

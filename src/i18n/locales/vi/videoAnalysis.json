@@ -19,5 +19,14 @@
   "autoSelectRecommendedCountdown": "Tự động chọn mẫu đề xuất trong (nhấp bất kỳ đâu để hủy)",
   "autoSelectDefaultCountdown": "Tự động chọn mẫu mặc định trong (nhấp bất kỳ đâu để hủy)",
   "seconds": "giây",
-  "back": "Quay lại"
+  "back": "Quay lại",
+  "addAnalysis": "Thêm phân tích",
+  "editRules": "Chỉnh sửa quy tắc",
+  "analyzing": "Đang phân tích",
+  "analyzeTooltip": "Phân tích video để tạo quy tắc phiên âm",
+  "editTooltip": "Chỉnh sửa quy tắc phiên âm",
+  "clearAnalysis": "Xóa phân tích video",
+  "noVideoFile": "Không có tệp video để phân tích. Vui lòng tải lên hoặc tải xuống video trước.",
+  "disabled": "Phân tích video bị tắt trong cài đặt. Vui lòng bật trong tab Xử lý Video.",
+  "error": "Phân tích video thất bại: {{message}}"
 }

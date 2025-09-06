@@ -18,6 +18,8 @@ export const initTabPillAnimation = (tabsSelector = '.input-tabs') => {
     // Initial positioning of the pill
     positionPillForActiveTab(tabContainer);
 
+
+
     // Add event listeners to all tab buttons
     const tabButtons = tabContainer.querySelectorAll('.tab-btn');
     tabButtons.forEach(button => {
@@ -33,6 +35,37 @@ export const initTabPillAnimation = (tabsSelector = '.input-tabs') => {
         // Small delay to allow the active class to be applied
         setTimeout(() => positionPillForActiveTab(tabContainer), 10);
       });
+
+      // Press overlay geometry for non-active tabs so the hold state matches the tab size
+      const setPressVars = (btn) => {
+        // If pressing the active tab, let CSS fall back to --pill-*; no overrides needed
+        if (btn.classList.contains('active')) {
+          tabContainer.style.removeProperty('--press-pill-left');
+          tabContainer.style.removeProperty('--press-pill-width');
+          return;
+        }
+        const tabRect = btn.getBoundingClientRect();
+        const containerRect = tabContainer.getBoundingClientRect();
+        const left = tabRect.left - containerRect.left + tabContainer.scrollLeft;
+        const pillPadding = 8; // keep in sync with positionPillForActiveTab
+        const naturalWidth = tabRect.width; // non-active tabs are not scaled
+        const pressWidth = naturalWidth + pillPadding;
+        tabContainer.style.setProperty('--press-pill-width', `${pressWidth}px`);
+        tabContainer.style.setProperty('--press-pill-left', `${left - (pillPadding / 2)}px`);
+      };
+      const clearPressVars = () => {
+        tabContainer.style.removeProperty('--press-pill-left');
+        tabContainer.style.removeProperty('--press-pill-width');
+      };
+
+      // Attach press/hold listeners
+      ['pointerdown','mousedown','touchstart'].forEach(evt => {
+        button.addEventListener(evt, () => setPressVars(button), { passive: true });
+      });
+      ['pointerup','mouseup','touchend','touchcancel','pointercancel','mouseleave','pointerout','blur'].forEach(evt => {
+        button.addEventListener(evt, clearPressVars, { passive: true });
+      });
+
     });
 
     // Also handle window resize events

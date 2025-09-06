@@ -118,6 +118,29 @@
   border-left-color: var(--md-error);
 }
 
+.result-item.retrying {
+  opacity: 0.7;
+  background-color: var(--md-surface-1);
+  border-left-color: var(--md-tertiary);
+  pointer-events: none;
+}
+
+.result-item.unprocessed {
+  border-left-color: var(--md-outline);
+  background-color: var(--md-surface-1);
+  opacity: 0.9;
+}
+
+.result-item.pending {
+  border-left-color: var(--md-tertiary);
+  background-color: var(--md-surface-1);
+  opacity: 0.9;
+}
+
+.result-item.success {
+  border-left-color: var(--md-primary);
+}
+
 .result-text {
   flex: 1;
   margin-right: 1rem;
@@ -135,17 +158,43 @@
   gap: 0.5rem;
 }
 
-/* Fix for error message alignment in result controls */
-.result-controls .error-message {
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  padding: 0.5rem 1rem !important;
-  height: 36px !important;
-  box-sizing: border-box !important;
+/* Error message styling specifically for narration results */
+.result-controls .error-message,
+.results-section .error-message {
   display: inline-flex !important;
   align-items: center !important;
+  gap: 0.5rem !important;
+  padding: 0.5rem 1rem !important;
+  background-color: var(--md-error-container) !important;
+  color: var(--md-on-error-container) !important;
   border-radius: 18px !important;
   font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  border: 1px solid var(--md-error) !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  height: 36px !important;
+  line-height: 1.2 !important;
+}
+
+/* Error details styling for narration results */
+.results-section .error-details {
+  display: block !important;
+  font-size: 0.75rem !important;
+  margin-top: 0.25rem !important;
+  margin-left: 0 !important;
+  color: var(--md-on-error-container) !important;
+  font-style: italic !important;
+  opacity: 0.8 !important;
+  line-height: 1.2 !important;
+}
+
+/* Style for unprocessed subtitles */
+.result-item.unprocessed .error-message {
+  background-color: var(--md-surface-variant);
+  color: var(--md-on-surface-variant);
+  border-color: var(--md-outline);
+  font-style: italic;
 }
 
 /* No results message styling */
@@ -158,4 +207,53 @@
   font-style: italic;
   border: 1px dashed var(--md-outline-variant);
   animation: pulse 2s infinite ease-in-out;
+  /* Make slightly more compact to avoid pulse clipping on sides */
+  display: block;
+  max-width: 640px;
+  width: calc(100% - 32px); /* leave 16px breathing room on both sides */
+  margin: 0.5rem auto; /* center the message */
+  overflow: visible; /* ensure the element itself doesn't clip */
+  transform-origin: center; /* scale from center during pulse */
+}
+
+/* Status message styling */
+.status-message.pending {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--md-tertiary);
+  font-size: 0.9rem;
+  animation: pulse 2s infinite ease-in-out;
+}
+
+/* Virtualized list container */
+.results-virtualized-list {
+  border-radius: 8px;
+  background-color: var(--md-surface-1);
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin-bottom: 20px;
+
+  /* Firefox scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--md-outline-variant) var(--md-surface-1);
+}
+
+/* Webkit (Chrome, Safari, Edge) scrollbar styling */
+.results-virtualized-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.results-virtualized-list::-webkit-scrollbar-track {
+  background: var(--md-surface-1);
+  border-radius: 4px;
+}
+
+.results-virtualized-list::-webkit-scrollbar-thumb {
+  background: var(--md-outline-variant);
+  border-radius: 4px;
+}
+
+.results-virtualized-list::-webkit-scrollbar-thumb:hover {
+  background: var(--md-outline);
 }

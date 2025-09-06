@@ -124,6 +124,8 @@
   box-shadow: var(--md-elevation-level2);
   border-radius: var(--md-shape-pill);
   height: 52px; /* Fixed height for consistency */
+  white-space: normal; /* Allow text wrapping */
+  text-align: center; /* Center the wrapped text */
 }
 
 .buttons-container .retry-gemini-btn {

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GEMINI_VOICES } from '../../../services/gemini/geminiNarrationService';
 import '../../../styles/narration/geminiVoiceSelectionCompact.css';
+import CustomDropdown from '../../common/CustomDropdown';
 
 /**
  * Component for selecting a Gemini voice
@@ -25,9 +26,7 @@ const GeminiVoiceSelection = ({
   const femaleVoices = GEMINI_VOICES.filter(voice => voice.gender === 'Female');
   const maleVoices = GEMINI_VOICES.filter(voice => voice.gender === 'Male');
 
-  const handleVoiceChange = (e) => {
-    const newVoice = e.target.value;
-
+  const handleVoiceChange = (newVoice) => {
     setSelectedVoice(newVoice);
 
     // Store in localStorage for persistence
@@ -152,17 +151,16 @@ const GeminiVoiceSelection = ({
 
             {/* Voice dropdown */}
             <div className="voice-dropdown">
-              <select
+              <CustomDropdown
                 value={selectedVoice}
                 onChange={handleVoiceChange}
                 disabled={isGenerating}
-              >
-                {filteredVoices.map(voice => (
-                  <option key={voice.id} value={voice.id}>
-                    {voice.name}
-                  </option>
-                ))}
-              </select>
+                options={filteredVoices.map(voice => ({
+                  value: voice.id,
+                  label: voice.name
+                }))}
+                placeholder={t('narration.selectVoice', 'Select Voice')}
+              />
             </div>
 
             {/* Play button */}

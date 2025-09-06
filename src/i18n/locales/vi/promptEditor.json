@@ -1,6 +1,8 @@
 {
   "editPrompt": "Chỉnh sửa lệnh",
   "editPromptTooltip": "Chỉnh sửa lệnh Gemini",
+  "editPromptAndModel": "Chỉnh sửa Lệnh & Mô hình",
+  "editPromptAndModelTooltip": "Chỉnh sửa lệnh và mô hình",
   "enterPrompt": "Nhập lệnh tùy chỉnh của bạn tại đây...",
   "availableVariables": "Biến khả dụng:",
   "variablesInstruction": "Các biến sau được biểu thị bằng các biểu tượng trong vùng văn bản:",
@@ -24,11 +26,14 @@
   "examplePreserveDetails": "Giữ lại các chi tiết quan trọng",
   "templateNote": "Lưu ý: Hệ thống sẽ tự động xử lý định dạng và cấu trúc của đầu ra. Bạn chỉ cần thêm hướng dẫn tùy chỉnh của mình.",
   "editBackgroundPrompts": "Chỉnh sửa lệnh tạo nền",
+  "customizeBackgroundPromptDesc": "Tùy chỉnh cách Gemini tạo hình nền từ lời bài hát và ảnh bìa album.",
   "promptOne": "Lệnh tạo mô tả hình ảnh",
   "promptOneDescription": "Lệnh này được sử dụng để tạo mô tả từ lời bài hát.",
   "promptTwo": "Lệnh tạo hình nền",
   "promptTwoDescription": "Lệnh này được sử dụng để tạo hình nền bằng cách sử dụng ảnh bìa album và mô tả đã tạo.",
   "lyricsVarDesc": "Lời bài hát (bắt buộc, không thể xóa)",
   "songNameVarDesc": "Tên bài hát (bắt buộc, không thể xóa)",
-  "promptVarDesc": "Mô tả đã tạo (bắt buộc, không thể xóa)"
+  "promptVarDesc": "Mô tả đã tạo (bắt buộc, không thể xóa)",
+  "promptModelLabel": "Mô hình cho \"Tạo lệnh\"",
+  "imageModelLabel": "Mô hình tạo hình ảnh"
 }

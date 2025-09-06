@@ -1,10 +1,14 @@
 {
   "synchronizedLyrics": "동기화된 자막",
   "stickyTimingsToggle": "고정",
+  "stickyTimingsToggleWithShortcut": "고정 타이밍 전환 (Ctrl+Shift+T)",
+  "splitWithShortcut": "선택한 범위의 자막 분할 (Ctrl+Shift+X)",
+  "splitDisabled": "분할할 자막이 있는 범위를 선택하세요",
+  "dragHintOrShortcut": "(또는 Ctrl+A)",
   "autoScroll": "스크롤",
   "autoScrollEnable": "자동 스크롤 활성화",
   "autoScrollDisable": "자동 스크롤 비활성화",
-  "timingInstructions": "현재 ???개의 자막 라인이 있습니다. 타임스탬프를 드래그하여 각 자막의 타이밍을 조정하세요. \"고정\" 모드는 그 이후의 모든 자막을 조정합니다. \"스크롤\" 모드는 현재 재생 중인 자막으로 자동으로 화면을 이동합니다. 나머지 5개 버튼: 자막 분할, 저장, 재설정, 실행 취소, 다시 실행",
+  "timingInstructions": "현재 ???개의 자막 라인이 있습니다. 타임스탬프를 드래그하여 각 자막의 타이밍을 조정하세요. \"고정\" 모드는 그 이후의 모든 자막을 조정합니다. \"스크롤\" 모드는 현재 재생 중인 자막으로 자동으로 화면을 이동합니다. 나머지 6개 버튼: 자막 분할, 저장, 재설정, 마지막 체크포인트로 이동, 실행 취소, 다시 실행",
   "editTooltip": "자막 텍스트 편집",
   "deleteTooltip": "자막 삭제",
   "insertTooltip": "새 줄 추가",
@@ -12,5 +16,7 @@
   "insertAbove": "위에 추가",
   "insertBelow": "아래에 추가",
   "mergeAbove": "위 자막과 병합",
-  "mergeBelow": "아래 자막과 병합"
+  "mergeBelow": "아래 자막과 병합",
+  "addFirst": "첫 번째 자막 추가",
+  "emptyTimingInstructions": "현재 {{count}}개의 자막 라인이 있습니다. 자막 편집 영역(오른쪽으로 스와이프하는 손 애니메이션이 있는 곳)을 드래그하여 AI로 자동 자막을 생성하세요. 전체 비디오에 대해 시작부터 끝까지 드래그하거나, 원하는 구간만 선택할 수도 있습니다."
 }

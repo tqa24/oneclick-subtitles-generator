@@ -19,12 +19,28 @@ const generatePrompt = async (req, res) => {
       return res.status(400).json({ error: 'Missing lyrics' });
     }
 
+
+	    // Selected model (defaults to UI default)
+	    let selectedPromptModel = 'gemini-2.5-flash-lite';
+
     // Get Gemini API key from localStorage
     let geminiApiKey = null;
     try {
       const localStoragePath = path.join(process.cwd(), 'localStorage.json');
       const localStorageData = await fs.readFile(localStoragePath, 'utf-8');
       const localStorage = JSON.parse(localStorageData);
+
+	      try {
+	        const storagePath = path.join(process.cwd(), 'localStorage.json');
+	        const storageRaw = await fs.readFile(storagePath, 'utf-8');
+	        const storage = JSON.parse(storageRaw || '{}');
+	        if (storage.background_prompt_model) {
+	          selectedPromptModel = storage.background_prompt_model;
+	        }
+	      } catch (e) {
+	        // ignore, use default
+	      }
+
       geminiApiKey = localStorage.gemini_token || localStorage.gemini_api_key;
     } catch (localStorageError) {
       console.error('Error reading localStorage file:', localStorageError);
@@ -45,13 +61,11 @@ const generatePrompt = async (req, res) => {
 
 
     // Prepare the content
-    const content = `
-song title: ${songName || 'Unknown Song'}
+    const content = `song title: ${songName || 'Unknown Song'}
 
 ${lyrics}
 
-generate one prompt to put in a image generator to describe the atmosphere/object of this song, should be simple but abstract because I will use this image as youtube video background for a lyrics video, return the prompt only, no extra texts
-`;
+generate one prompt to put in a image generator to describe the atmosphere/object of this song, should be simple but abstract because I will use this image as youtube video background for a lyrics video, return the prompt only, no extra texts`;
 
     // Set generation config
     const generationConfig = {
@@ -64,7 +78,7 @@ generate one prompt to put in a image generator to describe the atmosphere/objec
     // Generate the prompt
 
     const response = await genAI.models.generateContent({
-      model: 'gemini-2.0-flash-lite',
+      model: selectedPromptModel,
       contents: [{ text: content }],
       generationConfig,
     });
@@ -95,6 +109,20 @@ const generateImage = async (req, res) => {
     if (!prompt) {
       return res.status(400).json({ error: 'Missing prompt' });
     }
+
+	    // Selected image model (defaults to UI default)
+	    let selectedImageModel = 'gemini-2.0-flash-preview-image-generation';
+	    try {
+	      const storagePath = path.join(process.cwd(), 'localStorage.json');
+	      const storageRaw = await fs.readFile(storagePath, 'utf-8');
+	      const storage = JSON.parse(storageRaw || '{}');
+	      if (storage.background_image_model) {
+	        selectedImageModel = storage.background_image_model;
+	      }
+	    } catch (_) {
+	      // ignore
+	    }
+
 
     if (!albumArtUrl) {
       return res.status(400).json({ error: 'Missing album art URL' });
@@ -231,7 +259,7 @@ const generateImage = async (req, res) => {
 
       // Set both generationConfig and config with responseModalities as shown in the example
       const response = await genAI.models.generateContent({
-        model: 'gemini-2.0-flash-preview-image-generation',
+        model: selectedImageModel,
         contents: contents,
         generationConfig: {
           responseModalities: ["TEXT", "IMAGE"],
@@ -312,21 +340,45 @@ const generateImage = async (req, res) => {
 };
 
 /**
- * Get the current prompts used for image generation
+ * Get the current prompts and models used for background generation
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
-const getPrompts = (req, res) => {
+const getPrompts = async (req, res) => {
   try {
-    // Return the current prompts
-    res.json({
-      promptOne: `song title: \${songName || 'Unknown Song'}
+    const filePath = path.join(process.cwd(), 'server', 'controllers', 'geminiImageController.js');
+    const fileContent = await fs.readFile(filePath, 'utf-8');
 
-\${lyrics}
+    // Extract promptOne (const content = `...`)
+    const promptOneMatch = fileContent.match(/const\s+content\s*=\s*`([\s\S]*?)`;/);
+    const promptOne = promptOneMatch ? promptOneMatch[1] : `song title: \${songName || 'Unknown Song'}\n\n\${lyrics}\n\ngenerate one prompt to put in a image generator to describe the atmosphere/object of this song, should be simple but abstract because I will use this image as youtube video background for a lyrics video, return the prompt only, no extra texts`;
 
-generate one prompt to put in a image generator to describe the atmosphere/object of this song, should be simple but abstract because I will use this image as youtube video background for a lyrics video, return the prompt only, no extra texts`,
-      promptTwo: `Expand the image into 16:9 ratio (landscape ratio). Then decorate my given image with \${prompt}`
-    });
+    // Extract promptTwo (const finalPrompt = `...`)
+    const promptTwoMatch = fileContent.match(/const\s+finalPrompt\s*=\s*`([\s\S]*?)`;/);
+    const promptTwo = promptTwoMatch ? promptTwoMatch[1] : `Expand the image into 16:9 ratio (landscape ratio). Then decorate my given image with \${prompt}`;
+
+    // Pull models from persisted storage (preferred) else fallback to code scanning
+    let promptModel = 'gemini-2.5-flash-lite';
+    let imageModel = 'gemini-2.0-flash-preview-image-generation';
+    try {
+      const storagePath = path.join(process.cwd(), 'localStorage.json');
+      const storageRaw = await fs.readFile(storagePath, 'utf-8');
+      const storage = JSON.parse(storageRaw || '{}');
+      promptModel = storage.background_prompt_model || promptModel;
+      imageModel = storage.background_image_model || imageModel;
+    } catch (_) {
+      // fallback to code scanning
+      const modelRegex = /model:\s*'([^']+)'/g;
+      const models = [];
+      let m;
+      while ((m = modelRegex.exec(fileContent)) !== null) {
+        models.push(m[1]);
+      }
+      promptModel = models[0] || promptModel;
+      imageModel = models[1] || imageModel;
+    }
+
+    res.json({ promptOne, promptTwo, promptModel, imageModel });
   } catch (error) {
     console.error('Error getting prompts:', error);
     res.status(500).json({ error: error.message });

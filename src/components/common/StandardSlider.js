@@ -69,6 +69,8 @@ const StandardSlider = ({
   showValueIndicator = true, // Figma default
   showIcon = false, // Figma default
   showStops = false, // Figma default
+  showValueBadge = true, // New: allow hiding the dragging value badge
+  valueBadgeFormatter, // New: custom formatter for the dragging value badge
   className = '',
   id,
   ariaLabel,
@@ -326,9 +328,13 @@ const StandardSlider = ({
         {/* Handle - positioned in flex layout between tracks */}
         <div className="standard-slider-handle">
           {/* Value badge that appears when dragging */}
-          <div className="standard-slider-value-badge">
-            {step < 1 ? parseFloat(parseFloat(currentValue).toFixed(2)) : Math.round(currentValue)}
-          </div>
+          {showValueBadge && (
+            <div className="standard-slider-value-badge">
+              {valueBadgeFormatter
+                ? valueBadgeFormatter(currentValue)
+                : (step < 1 ? parseFloat(parseFloat(currentValue).toFixed(2)) : Math.round(currentValue))}
+            </div>
+          )}
         </div>
 
         {/* Inactive track (right portion) - uses flex-grow for remaining space */}

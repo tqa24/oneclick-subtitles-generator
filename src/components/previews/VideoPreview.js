@@ -22,6 +22,8 @@ import { SERVER_URL } from '../../config';
 const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, onSeek, translatedSubtitles, subtitlesArray, onVideoUrlReady, onReferenceAudioChange, onRenderVideo, useCookiesForDownload = true }) => {
   const { t } = useTranslation();
   const videoRef = useRef(null);
+  const lastBlobUrlRef = useRef(null);
+
   const seekLockRef = useRef(false);
   const lastTimeUpdateRef = useRef(0); // Track last time update to throttle updates
   const lastPlayStateRef = useRef(false); // Track last play state to avoid redundant updates
@@ -321,16 +323,67 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     loadVideo();
   }, [videoSource, t, processVideoUrl]);
 
-  // Notify parent component when videoUrl changes
+  // Notify parent component when videoUrl changes AND mirror as blob to act like uploaded
   useEffect(() => {
-    // Determine which URL to use based on the useOptimizedPreview setting
     const urlToUse = useOptimizedPreview && optimizedVideoUrl ? optimizedVideoUrl : videoUrl;
+    if (!urlToUse) return;
 
-    // Debug logging removed for production
-
-    if (urlToUse && onVideoUrlReady) {
+    // Early notify with the actual player URL
+    if (onVideoUrlReady) {
       onVideoUrlReady(urlToUse);
     }
+
+    // Also create a blob/object URL so downstream (waveform, processors) can treat it like an upload
+    (async () => {
+      try {
+        // If already a blob/object URL, persist and notify
+        if (urlToUse.startsWith('blob:')) {
+          localStorage.setItem('current_file_url', urlToUse);
+          if (onVideoUrlReady) onVideoUrlReady(urlToUse);
+          return;
+        }
+        
+        // Check if this is an external URL that will cause CORS issues
+        const isExternalUrl = (urlToUse.startsWith('http://') || urlToUse.startsWith('https://')) && 
+                            !urlToUse.startsWith('http://localhost') && 
+                            !urlToUse.startsWith('http://127.0.0.1');
+        
+        if (isExternalUrl) {
+          // For external URLs, skip blob conversion to avoid CORS errors
+          console.log('[VideoPreview] Skipping blob conversion for external URL to avoid CORS');
+          // Still notify with the original URL for components that can handle it
+          localStorage.setItem('current_file_url', urlToUse);
+          if (onVideoUrlReady) onVideoUrlReady(urlToUse);
+          return;
+        }
+        
+        // Convert server URL to blob to avoid CORS/decoding issues (only for local URLs)
+        const resp = await fetch(urlToUse, { cache: 'no-cache', mode: 'cors' });
+        if (!resp.ok) throw new Error(`Failed to fetch video for blob: ${resp.status}`);
+        const blob = await resp.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        localStorage.setItem('current_file_url', objectUrl);
+        // Expose blob in a global map keyed by its object URL for downstream reuse
+        if (!window.__videoBlobMap) window.__videoBlobMap = {};
+        window.__videoBlobMap[objectUrl] = blob;
+        // Keep track of last blob to revoke later when replaced
+        if (lastBlobUrlRef.current && lastBlobUrlRef.current.startsWith('blob:')) {
+          try { URL.revokeObjectURL(lastBlobUrlRef.current); } catch {}
+          try { if (window.__videoBlobMap) delete window.__videoBlobMap[lastBlobUrlRef.current]; } catch {}
+        }
+        lastBlobUrlRef.current = objectUrl;
+        // Notify consumers to switch to blob (acts like uploaded)
+        if (onVideoUrlReady) onVideoUrlReady(objectUrl);
+        window.dispatchEvent(new CustomEvent('currentFileUrlChanged', { detail: { url: objectUrl } }));
+      } catch (e) {
+        // Non-fatal: keep using direct URL; waveform may still work if server sends proper CORS
+        console.log('[VideoPreview] Failed to convert to blob, using direct URL:', e.message);
+      }
+    })();
+
+    return () => {
+      // Keep blob alive for the session; it will be replaced on next change
+    };
   }, [videoUrl, optimizedVideoUrl, useOptimizedPreview, onVideoUrlReady]);
 
   // Handle video source switching while preserving playback state
@@ -484,7 +537,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       clearInterval(interval);
       // Don't update state during cleanup to avoid React warnings
     };
-  }, [videoId, t, downloadCheckInterval, setVideoUrl, setIsDownloading, setError, setDownloadProgress, setDownloadCheckInterval]);
+  }, [videoId, t]);
 
   // processVideoUrl is now defined inside the useEffect above
 
@@ -583,11 +636,6 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
 
               // Update fullscreen subtitle if in fullscreen mode
               const container = document.getElementById('fullscreen-subtitle-overlay');
-              console.log('ðŸŽ¬ SUBTITLE - Updating subtitle text:', {
-                text: currentSub.text,
-                containerExists: !!container,
-                isFullscreen
-              });
 
               if (container) {
                 // Clear existing content
@@ -1469,7 +1517,9 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
     const handleKeyDown = (event) => {
       // Handle multiple keyboard shortcuts
       const validKeys = ['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyM', 'KeyF', 'KeyK'];
-      if (!validKeys.includes(event.code) && !['j', 'l', 'k', 'm', 'f', ' '].includes(event.key.toLowerCase())) return;
+      // Safely check event.key - it might be undefined during browser autocomplete
+      const eventKey = event.key ? event.key.toLowerCase() : '';
+      if (!validKeys.includes(event.code) && !['j', 'l', 'k', 'm', 'f', ' '].includes(eventKey)) return;
 
       // Don't handle spacebar if user is typing in an input field
       const activeElement = document.activeElement;
@@ -1514,7 +1564,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       event.stopPropagation();
 
       // Handle different keyboard shortcuts
-      switch (event.code || event.key.toLowerCase()) {
+      // Safely check event.key - it might be undefined during browser autocomplete
+      switch (event.code || eventKey) {
         case 'Space':
         case ' ':
         case 'KeyK':
@@ -2071,7 +2122,6 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                       setTimeout(() => {
                         const actuallyPlaying = !videoRef.current.paused;
                         if (actuallyPlaying !== isPlaying) {
-                          console.log('[VideoPreview] Force syncing UI state after video click:', { actuallyPlaying, uiState: isPlaying });
                           setIsPlaying(actuallyPlaying);
                         }
                       }, 50);

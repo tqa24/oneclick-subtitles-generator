@@ -97,6 +97,11 @@
 .prompt-editor-container {
   position: relative;
   margin-top: 0.5rem;
+  border: 1px solid var(--md-outline-variant);
+  border-bottom: none; /* Hide bottom line under textarea */
+  border-radius: var(--md-shape-medium);
+  overflow: hidden; /* Ensures inner scrollbar is visually contained */
+  background-color: var(--md-surface);
 }
 
 /* Default template box */
@@ -151,8 +156,8 @@
 .prompt-editor-textarea {
   width: 100%;
   padding: 12px;
-  border: 1px solid var(--md-outline-variant);
-  border-radius: var(--md-shape-medium);
+  border: none; /* Border moved to container */
+  border-radius: 0; /* Radius handled by container */
   background-color: var(--md-surface);
   color: var(--md-on-surface);
   font-family: 'JetBrains Mono', monospace;
@@ -163,6 +168,18 @@
   height: 150px;
   scrollbar-width: thin;
   scrollbar-color: var(--md-primary) var(--md-surface-2);
+  box-sizing: border-box;
+/* Ensure the textarea occupies the container fully without exposing edges */
+/* Remove any default bottom border or shadow effects */
+.prompt-editor-textarea {
+  box-shadow: none;
+}
+
+.prompt-editor-container .prompt-editor-textarea {
+  display: block;
+  width: 100%;
+}
+
 }
 
 /* Custom scrollbar for Webkit browsers */
@@ -188,8 +205,6 @@
 
 .prompt-editor-textarea:focus {
   outline: none;
-  border-color: var(--md-primary);
-  box-shadow: 0 0 0 2px rgba(var(--md-primary-rgb), 0.2);
 }
 
 .prompt-editor-variables {
@@ -241,11 +256,10 @@
   align-items: center;
   padding: 16px 24px;
   border-top: 1px solid var(--md-outline-variant);
-  background-color: var(--md-surface-2);
 }
 
 .right-buttons {
-  display: flex;
+  display: contents;
   gap: 12px;
 }
 
@@ -287,6 +301,16 @@
 .save-button:hover {
   background-color: color-mix(in srgb, var(--md-primary), black 10%);
 }
+
+/* Disabled state for footer buttons */
+.reset-button:disabled,
+.cancel-button:disabled,
+.save-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
 
 /* Edit prompt button */
 .edit-prompt-button {
@@ -472,6 +496,12 @@
 }
 
 .prompt-editor-examples ul {
+
+/* Remove bottom border so no line appears under the textarea area */
+.prompt-editor-container {
+  border-bottom: none;
+}
+
   margin: 0;
   padding-left: 24px;
 }

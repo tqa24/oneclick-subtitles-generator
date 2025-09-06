@@ -1,0 +1,10 @@
+{
+  "loading": "비디오 다운로드 중...",
+  "analyzing": "분석 중...",
+  "processing": "처리 중...",
+  "complete": "완료!",
+  "running": "자동 실행 중...",
+  "usingExistingAnalysis": "기존 분석 규칙 사용",
+  "analysisSkipped": "분석 건너뛰기, 기본 설정으로 계속",
+  "error": "자동 생성 중 오류 발생"
+}

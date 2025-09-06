@@ -3,7 +3,8 @@ import { callGeminiApi, setProcessingForceStopped } from '../services/geminiServ
 import { preloadYouTubeVideo } from '../utils/videoPreloader';
 import { generateFileCacheId } from '../utils/cacheUtils';
 import { extractYoutubeVideoId } from '../utils/videoDownloader';
-import { getVideoDuration, processLongVideo, retrySegmentProcessing } from '../utils/videoProcessor';
+import { getVideoDuration, processMediaFile } from '../utils/videoProcessor';
+import { processSegmentWithFilesApi } from '../utils/videoProcessing/processingUtils';
 import { setCurrentCacheId as setRulesCacheId } from '../utils/transcriptionRulesStore';
 import { setCurrentCacheId as setSubtitlesCacheId } from '../utils/userSubtitlesStore';
 
@@ -85,12 +86,18 @@ export const useSubtitles = (t) => {
             }
 
             // If we have a current video URL, validate that the cache belongs to this URL
-            if (currentVideoUrl && data.metadata && data.metadata.sourceUrl) {
+            // Skip this validation for file uploads since they don't have consistent URLs
+            const currentFileCacheId = localStorage.getItem('current_file_cache_id');
+            const isFileUpload = currentFileCacheId === cacheId;
+
+            if (!isFileUpload && currentVideoUrl && data.metadata && data.metadata.sourceUrl) {
                 if (data.metadata.sourceUrl !== currentVideoUrl) {
                     console.log(`[Cache] Cache ID collision detected. Cache for ${data.metadata.sourceUrl}, current: ${currentVideoUrl}`);
                     return null; // Cache belongs to different video
                 }
             }
+
+            console.log(`[Cache] Cache validation passed for ${isFileUpload ? 'file upload' : 'video URL'}`);
 
             return data.subtitles;
         } catch (error) {
@@ -128,7 +135,7 @@ export const useSubtitles = (t) => {
 
     const generateSubtitles = useCallback(async (input, inputType, apiKeysSet, options = {}) => {
         // Extract options
-        const { userProvidedSubtitles } = options;
+        const { userProvidedSubtitles, segment, fps, mediaResolution, model } = options;
         if (!apiKeysSet.gemini) {
             setStatus({ message: t('errors.apiKeyRequired'), type: 'error' });
             return false;
@@ -139,13 +146,21 @@ export const useSubtitles = (t) => {
 
         setIsGenerating(true);
         setStatus({ message: t('output.processingVideo'), type: 'loading' });
-        setSubtitlesData(null);
 
         try {
             let cacheId = null;
 
             // Check if this is a URL-based input (either direct URL or downloaded video)
             const currentVideoUrl = localStorage.getItem('current_video_url');
+            const currentFileCacheId = localStorage.getItem('current_file_cache_id');
+
+            console.log('[Subtitle Generation] Cache ID generation debug:', {
+                inputType,
+                currentVideoUrl,
+                currentFileCacheId,
+                inputIsFile: input instanceof File,
+                inputName: input instanceof File ? input.name : 'not a file'
+            });
 
             if (inputType === 'youtube' || currentVideoUrl) {
                 // Use unified URL-based caching for all video URLs
@@ -183,7 +198,7 @@ export const useSubtitles = (t) => {
                         // If video is longer than 30 minutes, show warning and use special processing
                         if (durationMinutes > 30) {
                             setStatus({
-                                message: t('output.longVideoWarning', 'You uploaded a {{duration}} minute video. Processing can be longer than usual due to multiple Gemini calls.', { duration: durationMinutes }),
+                                message: t('output.longVideoWarning', 'You are uploading a {{duration}} minute video. Uploading progress can be long depends on network speed.', { duration: durationMinutes }),
                                 type: 'loading'
                             });
                         }
@@ -193,27 +208,337 @@ export const useSubtitles = (t) => {
                 }
             }
 
-            // Check cache with URL validation
-            if (cacheId) {
+            // IMPORTANT: Check cache FIRST and load cached subtitles immediately
+            // This ensures the timeline shows cached subtitles right when output container appears
+            console.log('[Subtitle Generation] Cache check debug:', {
+                cacheId,
+                segment: !!segment,
+                willCheckCache: !!(cacheId && !segment)
+            });
+
+            if (cacheId && !segment) {
+                console.log('[Subtitle Generation] Checking for cached subtitles with cache ID:', cacheId);
                 const cachedSubtitles = await checkCachedSubtitles(cacheId, currentVideoUrl);
+                console.log('[Subtitle Generation] Cache check result:', {
+                    found: !!cachedSubtitles,
+                    count: cachedSubtitles ? cachedSubtitles.length : 0
+                });
+
                 if (cachedSubtitles) {
+                    console.log('[Subtitle Generation] Loading cached subtitles immediately for timeline display');
                     setSubtitlesData(cachedSubtitles);
-                    // Use the translation key directly to ensure it's properly translated
                     setStatus({
                         message: t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!'),
                         type: 'success',
-                        translationKey: 'output.subtitlesLoadedFromCache' // Add a translation key for reference
+                        translationKey: 'output.subtitlesLoadedFromCache'
                     });
                     setIsGenerating(false);
                     return true;
                 }
+                // If no cached subtitles found, clear the timeline for fresh generation
+                console.log('[Subtitle Generation] No cached subtitles found, clearing timeline for fresh generation');
+                setSubtitlesData(null);
+            } else if (segment) {
+                console.log('[Subtitle Generation] Skipping cache check for segment processing - generating fresh subtitles');
+                // For segment processing, keep existing subtitles (don't clear)
+            } else {
+                // No cache ID available, clear timeline for fresh generation
+                console.log('[Subtitle Generation] No cache ID available, clearing timeline for fresh generation');
+                setSubtitlesData(null);
             }
 
             // Generate new subtitles
             let subtitles;
 
+            // Check if this is segment processing
+            if (segment) {
+                console.log('[Subtitle Generation] Processing specific segment with streaming:', segment);
+
+                // CRITICAL: Ensure cache ID is properly set BEFORE triggering save
+                if (inputType === 'file-upload') {
+                    // Check if this is a downloaded video (has current_video_url) or a true file upload
+                    const currentVideoUrl = localStorage.getItem('current_video_url');
+
+                    if (currentVideoUrl) {
+                        // This is a downloaded video - use URL-based cache ID for subtitle caching
+                        console.log('[Subtitle Generation] Downloaded video detected, using URL-based cache ID for subtitles');
+                        // The URL-based cache ID is already set in the main cache ID generation above
+                    } else {
+                        // This is a true file upload - use file-based cache ID
+                        let cacheId = localStorage.getItem('current_file_cache_id');
+                        if (!cacheId) {
+                            // Generate and store cache ID if not already set
+                            cacheId = await generateFileCacheId(input);
+                            localStorage.setItem('current_file_cache_id', cacheId);
+                            console.log('[Subtitle Generation] Generated file cache ID for uploaded file:', cacheId);
+                        } else {
+                            console.log('[Subtitle Generation] Using existing file cache ID for uploaded file:', cacheId);
+                        }
+                    }
+                }
+
+                // FIRST: Trigger save to preserve any manual edits before processing starts
+                // Use a Promise to wait for the save to actually complete
+                await new Promise((resolve) => {
+                    const handleSaveComplete = (event) => {
+                        if (event.detail?.source === 'segment-processing-start') {
+                            window.removeEventListener('save-complete', handleSaveComplete);
+                            resolve();
+                        }
+                    };
+
+                    window.addEventListener('save-complete', handleSaveComplete);
+
+                    // Trigger the save
+                    window.dispatchEvent(new CustomEvent('save-before-update', {
+                        detail: {
+                            source: 'segment-processing-start',
+                            segment: segment
+                        }
+                    }));
+
+                    // Fallback timeout in case save doesn't complete
+                    setTimeout(() => {
+                        window.removeEventListener('save-complete', handleSaveComplete);
+                        resolve();
+                    }, 2000);
+                });
+
+                // Import the streaming segment processing function and subtitle merger
+                const { processSegmentWithStreaming } = await import('../utils/videoProcessing/processingUtils');
+                const { mergeStreamingSubtitlesProgressively } = await import('../utils/subtitle/subtitleMerger');
+
+                // IMPORTANT: Use the current React state directly instead of loading from cache
+                // The save operation above should have already persisted any manual edits
+                // Loading from cache can introduce stale data if the save hasn't fully propagated
+                let currentSubtitles = [];
+                
+                // Get the current subtitles from React state
+                // This ensures we're using the most up-to-date data that's currently displayed
+                await new Promise((resolve) => {
+                    setSubtitlesData(current => {
+                        currentSubtitles = current || [];
+                        console.log('[Subtitle Generation] Using current React state for merging:', currentSubtitles.length, 'subtitles');
+                        resolve();
+                        return current; // Don't modify the state
+                    });
+                });
+                
+                // Log the subtitles we're about to merge with
+                console.log('[Subtitle Generation] Current subtitles sample:', 
+                    currentSubtitles.slice(0, 3).map(s => `${s.start}-${s.end}: ${s.text.substring(0, 20)}...`)
+                );
+
+                console.log('[Subtitle Generation] Before streaming (using saved state):', {
+                    existingCount: currentSubtitles.length,
+                    segmentRange: `${segment.start}s - ${segment.end}s`,
+                    existingSubtitles: currentSubtitles.map(s => `${s.start}-${s.end}: ${s.text.substring(0, 20)}...`)
+                });
+
+                // Process the specific segment with streaming
+                const segmentSubtitles = await processSegmentWithStreaming(
+                    input,
+                    segment,
+                    {
+                        fps,
+                        mediaResolution,
+                        model,
+                        userProvidedSubtitles,
+                        maxDurationPerRequest: options.maxDurationPerRequest,
+                        autoSplitSubtitles: options.autoSplitSubtitles,
+                        maxWordsPerSubtitle: options.maxWordsPerSubtitle
+                    },
+                    setStatus,
+                    (() => {
+                        // Create a throttled version of the streaming update handler
+                        let lastMergeTime = 0;
+                        let pendingUpdate = null;
+                        let updateTimer = null;
+                        const MERGE_THROTTLE_MS = 500; // Throttle merges to once every 500ms
+                        const CAPTURE_THROTTLE_MS = 2000; // Capture undo state less frequently
+                        let lastCaptureTime = 0;
+                        
+                        return (streamingSubtitles, isStreaming, chunkInfo) => {
+                            // Real-time subtitle updates during streaming
+                            if (streamingSubtitles && streamingSubtitles.length > 0) {
+                                // console.log(`[Subtitle Generation] Streaming update: ${streamingSubtitles.length} subtitles`);
+
+                                const now = Date.now();
+                                const timeSinceMerge = now - lastMergeTime;
+                                const timeSinceCapture = now - lastCaptureTime;
+                                
+                                // Store the pending update
+                                pendingUpdate = { streamingSubtitles, isStreaming, chunkInfo };
+                                
+                                // Clear any existing timer
+                                if (updateTimer) {
+                                    clearTimeout(updateTimer);
+                                }
+                                
+                                // Throttle the merge operations
+                                if (timeSinceMerge >= MERGE_THROTTLE_MS) {
+                                    // Enough time has passed, perform the merge immediately
+                                    lastMergeTime = now;
+                                    
+                                    // Only capture state for undo/redo occasionally, not on every merge
+                                    if (timeSinceCapture >= CAPTURE_THROTTLE_MS) {
+                                        lastCaptureTime = now;
+                                        window.dispatchEvent(new CustomEvent('capture-before-merge', {
+                                            detail: {
+                                                type: 'progressive-merge',
+                                                source: 'streaming-update',
+                                                segment: segment
+                                            }
+                                        }));
+                                    }
+
+                                    // CRITICAL FIX: Merge streaming subtitles with existing timeline
+                                    // Get current subtitles and filter out those in the segment range
+                                    setSubtitlesData(current => {
+                                        const existingSubtitles = current || [];
+                                        
+                                        // Filter out existing subtitles that overlap with this segment
+                                        const nonOverlappingSubtitles = existingSubtitles.filter(sub => {
+                                            // Keep subtitles that are completely outside the segment boundaries
+                                            return sub.end <= segment.start || sub.start >= segment.end;
+                                        });
+                                        
+                                        // Merge: existing non-overlapping + new streaming subtitles
+                                        const mergedStreamingSubtitles = [...nonOverlappingSubtitles, ...streamingSubtitles]
+                                            .sort((a, b) => a.start - b.start);
+                                        
+                                        return mergedStreamingSubtitles;
+                                    });
+
+                                    // Update status to show streaming progress
+                                    if (isStreaming) {
+                                        setStatus({
+                                            message: `Streaming... ${streamingSubtitles.length} subtitles generated for segment`,
+                                            type: 'loading'
+                                        });
+                                    }
+                                } else {
+                                    // Schedule the update for later
+                                    const delay = MERGE_THROTTLE_MS - timeSinceMerge;
+                                    updateTimer = setTimeout(() => {
+                                        if (pendingUpdate) {
+                                            const { streamingSubtitles: pending, isStreaming: pendingStreaming } = pendingUpdate;
+                                            lastMergeTime = Date.now();
+                                            
+                                            // Check if we should capture state
+                                            if (Date.now() - lastCaptureTime >= CAPTURE_THROTTLE_MS) {
+                                                lastCaptureTime = Date.now();
+                                                window.dispatchEvent(new CustomEvent('capture-before-merge', {
+                                                    detail: {
+                                                        type: 'progressive-merge',
+                                                        source: 'streaming-update',
+                                                        segment: segment
+                                                    }
+                                                }));
+                                            }
+                                            
+                                            // CRITICAL FIX: Merge streaming subtitles with existing timeline
+                                            setSubtitlesData(current => {
+                                                const existingSubtitles = current || [];
+                                                
+                                                // Filter out existing subtitles that overlap with this segment
+                                                const nonOverlappingSubtitles = existingSubtitles.filter(sub => {
+                                                    // Keep subtitles that are completely outside the segment boundaries
+                                                    return sub.end <= segment.start || sub.start >= segment.end;
+                                                });
+                                                
+                                                // Merge: existing non-overlapping + new streaming subtitles
+                                                const mergedStreamingSubtitles = [...nonOverlappingSubtitles, ...pending]
+                                                    .sort((a, b) => a.start - b.start);
+                                                
+                                                return mergedStreamingSubtitles;
+                                            });
+                                            
+                                            // Update status to show streaming progress
+                                            if (pendingStreaming) {
+                                                setStatus({
+                                                    message: `Streaming... ${pending.length} subtitles generated for segment`,
+                                                    type: 'loading'
+                                                });
+                                            }
+                                            
+                                            pendingUpdate = null;
+                                        }
+                                    }, delay);
+                                }
+                            }
+                        };
+                    })(),
+                    t
+                );
+
+                console.log('[Subtitle Generation] Streaming complete:', {
+                    newSegmentCount: segmentSubtitles.length,
+                    segmentRange: `${segment.start}s - ${segment.end}s`
+                });
+
+                // CRITICAL FIX: For single segment processing, we need to MERGE with existing subtitles
+                // NOT replace the entire timeline
+                if (segmentSubtitles && segmentSubtitles.length > 0) {
+                    // Get current subtitles from React state (not the stale closure variable)
+                    // Use a callback to get the most up-to-date state value
+                    await new Promise((resolve) => {
+                        setSubtitlesData(current => {
+                            const currentSubtitles = current || [];
+                            
+                            console.log('[DEBUG] Before merge - current subtitles:', {
+                                count: currentSubtitles.length,
+                                beforeSegment: currentSubtitles.filter(s => s.end <= segment.start).length,
+                                inSegment: currentSubtitles.filter(s => s.start < segment.end && s.end > segment.start).length,
+                                afterSegment: currentSubtitles.filter(s => s.start >= segment.end).length,
+                                segment: `${segment.start}s-${segment.end}s`
+                            });
+                            
+                            // Filter out existing subtitles that overlap with this segment
+                            const nonOverlappingSubtitles = currentSubtitles.filter(sub => {
+                                // Keep subtitles that are completely outside the segment boundaries
+                                return sub.end <= segment.start || sub.start >= segment.end;
+                            });
+                            
+                            // Merge: existing non-overlapping + new segment subtitles
+                            const mergedSubtitles = [...nonOverlappingSubtitles, ...segmentSubtitles]
+                                .sort((a, b) => a.start - b.start);
+                            
+                            console.log('[Subtitle Generation] Merging single segment result:', {
+                                existingCount: currentSubtitles.length,
+                                nonOverlappingCount: nonOverlappingSubtitles.length,
+                                segmentCount: segmentSubtitles.length,
+                                finalCount: mergedSubtitles.length,
+                                segmentRange: `${segment.start}s-${segment.end}s`,
+                                removedCount: currentSubtitles.length - nonOverlappingSubtitles.length
+                            });
+                            
+                            // Store for use outside the callback
+                            subtitles = mergedSubtitles;
+                            resolve();
+                            
+                            // Return the merged result to update state
+                            return mergedSubtitles;
+                        });
+                    });
+                } else {
+                    // No new subtitles from segment - get current state
+                    await new Promise((resolve) => {
+                        setSubtitlesData(current => {
+                            subtitles = current;
+                            resolve();
+                            return current; // Don't modify state
+                        });
+                    });
+                }
+
+                console.log('[Subtitle Generation] Using final streaming result:', {
+                    totalCount: subtitles?.length || 0,
+                    finalSubtitles: subtitles?.map(s => `${s.start}-${s.end}: ${s.text.substring(0, 20)}...`) || []
+                });
+            }
             // Check if this is a long media file (video or audio) that needs special processing
-            if (input.type && (input.type.startsWith('video/') || input.type.startsWith('audio/'))) {
+            else if (input.type && (input.type.startsWith('video/') || input.type.startsWith('audio/'))) {
                 try {
                     const duration = await getVideoDuration(input);
                     // eslint-disable-next-line no-unused-vars
@@ -227,9 +552,19 @@ export const useSubtitles = (t) => {
                     // Debug log to see the media duration
 
 
-                    // Always use segmentation for media files
-                    // Process long media file by splitting it into segments
-                    subtitles = await processLongVideo(input, setStatus, t, { userProvidedSubtitles });
+                    // Check if we have segment-based processing options
+                    if (segment && fps && mediaResolution && model) {
+                        // Use new segment-based processing with Files API
+                        subtitles = await processSegmentWithFilesApi(input, segment, {
+                            fps,
+                            mediaResolution,
+                            model,
+                            userProvidedSubtitles
+                        }, setStatus, t);
+                    } else {
+                        // Use the existing smart processing function
+                        subtitles = await processMediaFile(input, setStatus, t, { userProvidedSubtitles });
+                    }
                 } catch (error) {
                     console.error('Error checking media duration:', error);
                     // Fallback to normal processing
@@ -240,11 +575,51 @@ export const useSubtitles = (t) => {
                 subtitles = await callGeminiApi(input, inputType, { userProvidedSubtitles });
             }
 
-            setSubtitlesData(subtitles);
+            // For segment processing, the final result is already set during streaming
+            // For non-segment processing, trigger save before updating with new results
+            if (segment) {
+                // For segment processing, the final result is already set via progressive merging
+                // No need to call setSubtitlesData again since subtitles = subtitlesData (current state)
 
-            // Cache the results
-            if (cacheId && subtitles && subtitles.length > 0) {
+                // Auto-save after streaming completion to preserve the new results
+                if (subtitles && subtitles.length > 0) {
+                    setTimeout(() => {
+                        console.log('[Subtitle Generation] Triggering auto-save after streaming completion');
+                        window.dispatchEvent(new CustomEvent('save-after-streaming', {
+                            detail: {
+                                source: 'streaming-complete',
+                                subtitles: subtitles,
+                                segment: segment
+                            }
+                        }));
+                    }, 500); // Wait a bit for UI to update with final results
+                }
+            } else {
+                // For non-segment processing, trigger save before updating with new results
+                if (subtitles && subtitles.length > 0) {
+                    // First, trigger save of current state to preserve any manual edits
+                    window.dispatchEvent(new CustomEvent('save-before-update', {
+                        detail: {
+                            source: 'video-processing-complete',
+                            newSubtitles: subtitles
+                        }
+                    }));
+
+                    // Wait a moment for the save to complete, then update with new results
+                    setTimeout(() => {
+                        setSubtitlesData(subtitles);
+                    }, 300);
+                } else {
+                    // If no subtitles, just update normally
+                    setSubtitlesData(subtitles);
+                }
+            }
+
+            // Cache the results - but don't cache segment results with the full file cache ID
+            if (cacheId && subtitles && subtitles.length > 0 && !segment) {
                 await saveSubtitlesToCache(cacheId, subtitles);
+            } else if (segment) {
+                console.log('[Subtitle Generation] Skipping cache save for segment processing - not overwriting full file cache');
             }
 
             // Check if using a strong model (Gemini 2.5 Pro or Gemini 2.0 Flash Thinking)
@@ -368,9 +743,8 @@ export const useSubtitles = (t) => {
                     // Debug log to see the media duration
 
 
-                    // Always use segmentation for media files to match generateSubtitles behavior
-                    // Process long media file by splitting it into segments
-                    subtitles = await processLongVideo(input, setStatus, t, { userProvidedSubtitles });
+                    // Use the new smart processing function that chooses between simplified and legacy
+                    subtitles = await processMediaFile(input, setStatus, t, { userProvidedSubtitles });
                 } catch (error) {
                     console.error('Error checking media duration:', error);
                     // Fallback to normal processing
@@ -470,7 +844,7 @@ export const useSubtitles = (t) => {
     // Function to retry a specific segment
     const retrySegment = useCallback(async (segmentIndex, segments, options = {}) => {
         // Extract options
-        const { userProvidedSubtitles, modelId } = options;
+        const { modelId } = options;
 
         if (modelId) {
             console.log(`[RetrySegment] Using custom model for segment ${segmentIndex + 1}: ${modelId}`);
@@ -478,144 +852,20 @@ export const useSubtitles = (t) => {
             console.log(`[RetrySegment] Using default model for segment ${segmentIndex + 1}`);
         }
 
-        // Get the most up-to-date subtitles data
-        // This is important because the subtitles might have been saved just before this function is called
-        let currentSubtitles;
-
-        // Try to get the current cache ID using unified approach
-        const currentVideoUrl = localStorage.getItem('current_video_url');
-        const currentFileUrl = localStorage.getItem('current_file_url');
-        let cacheId = null;
-
-        if (currentVideoUrl) {
-            // For any video URL, use unified URL-based caching
-            cacheId = await generateUrlBasedCacheId(currentVideoUrl);
-        } else if (currentFileUrl) {
-            // For uploaded files, the cacheId is already stored
-            cacheId = localStorage.getItem('current_file_cache_id');
-        }
-
-        if (cacheId) {
-            try {
-                // Try to get the latest subtitles from cache with URL validation
-                const currentVideoUrl = localStorage.getItem('current_video_url');
-                const cachedSubtitles = await checkCachedSubtitles(cacheId, currentVideoUrl);
-                if (cachedSubtitles) {
-
-                    currentSubtitles = cachedSubtitles;
-                } else {
-                    // Fall back to current state if cache retrieval fails
-                    currentSubtitles = subtitlesData || [];
-                }
-            } catch (error) {
-                console.error('Error getting latest subtitles from cache:', error);
-                // Fall back to current state
-                currentSubtitles = subtitlesData || [];
-            }
-        } else {
-            // If no cache ID, use current state
-            currentSubtitles = subtitlesData || [];
-        }
-
-        // Reset the force stop flag when retrying a segment
-        setProcessingForceStopped(false);
-
-        // Determine if this is a video or audio file based on the segment name
-        // Segment names for audio files typically include 'audio' in the name
-        const isAudio = segments && segments[segmentIndex] &&
-            (segments[segmentIndex].name?.toLowerCase().includes('audio') ||
-             segments[segmentIndex].url?.toLowerCase().includes('audio'));
-        const mediaType = isAudio ? 'audio' : 'video';
-
-
-        // Mark this segment as retrying
+        // Mark this segment as retrying temporarily
         setRetryingSegments(prev => [...prev, segmentIndex]);
 
-        // Update the segment status to show it's retrying
-        const retryingStatus = {
-            index: segmentIndex,
-            status: 'retrying',
-            message: t('output.retryingSegment', 'Retrying segment...'),
-            shortMessage: t('output.retrying', 'Retrying...')
-        };
-        const event = new CustomEvent('segmentStatusUpdate', { detail: [retryingStatus] });
-        window.dispatchEvent(event);
-
-        // No need to save/restore model since we're not changing it
-
         try {
-            // Retry processing the specific segment
-            const updatedSubtitles = await retrySegmentProcessing(
-                segmentIndex,
-                segments,
-                currentSubtitles,
-                (status) => {
-                    // Only update the overall status if it's a success message
-                    if (status.type === 'success') {
-                        setStatus(status);
-                    }
-                },
-                t,
-                mediaType,
-                { userProvidedSubtitles, modelId }
-            );
-
-            // Update the subtitles data with the new results
-            setSubtitlesData(updatedSubtitles);
-
-            // Store the updated subtitles in localStorage to ensure they're not overwritten
-            try {
-                localStorage.setItem('latest_segment_subtitles', JSON.stringify(updatedSubtitles));
-
-            } catch (e) {
-                console.error('Error saving latest subtitles to localStorage:', e);
-            }
-
-            // Trigger auto-save after segment subtitles arrive
-            // Find the save button
-            const saveButton = document.querySelector('.lyrics-save-btn');
-            if (saveButton) {
-
-
-                // Create a promise to track when the save is complete
-                const savePromise = new Promise((resolve) => {
-                    // Create a one-time event listener for the save completion
-                    const handleSaveComplete = () => {
-
-                        resolve();
-                        // Remove the event listener
-                        window.removeEventListener('subtitles-saved', handleSaveComplete);
-                    };
-
-                    // Listen for a custom event that will be dispatched when save is complete
-                    window.addEventListener('subtitles-saved', handleSaveComplete, { once: true });
-
-                    // Click the save button to trigger the save
-                    saveButton.click();
-
-                    // Set a timeout in case the event never fires
-                    setTimeout(() => {
-                        window.removeEventListener('subtitles-saved', handleSaveComplete);
-                        resolve();
-                    }, 2000);
-                });
-
-                // Wait for the save to complete
-                await savePromise;
-            } else {
-                console.warn('Could not find save button to auto-save after segment subtitles arrived');
-            }
-
-            // Show a brief success message
-            // Check if we're generating a new segment or retrying an existing one
-            const isGenerating = !subtitlesData || subtitlesData.length === 0;
+            // Segment retry is deprecated - show error message instead
             setStatus({
-                message: isGenerating
-                    ? t('output.segmentGenerateSuccess', 'Segment {{segmentNumber}} processed successfully and combined with existing subtitles', { segmentNumber: segmentIndex + 1 })
-                    : t('output.segmentRetrySuccess', 'Segment {{segmentNumber}} reprocessed successfully', { segmentNumber: segmentIndex + 1 }),
-                type: 'success'
+                message: t('errors.segmentRetryDeprecated', 'Segment retry is deprecated. Please use the new workflow: upload your video and select segments on the timeline for processing.'),
+                type: 'error'
             });
-            return true;
+
+            // Remove this segment from the retrying list since we're not actually retrying
+            setRetryingSegments(prev => prev.filter(idx => idx !== segmentIndex));
+
+            return false;
         } catch (error) {
             console.error('Error retrying segment:', error);
 
@@ -640,6 +890,8 @@ export const useSubtitles = (t) => {
             setRetryingSegments(prev => prev.filter(idx => idx !== segmentIndex));
         }
     }, [subtitlesData, t]);
+
+
 
     return {
         subtitlesData,

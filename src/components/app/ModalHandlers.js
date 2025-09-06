@@ -46,7 +46,7 @@ export const useModalHandlers = (appState) => {
 
       // Update status to indicate we're moving forward
       setStatus({
-        message: t('output.preparingSplitting', 'Preparing to split video into segments...'),
+        message: t('output.preparingProcessing', 'Preparing video for processing...'),
         type: 'loading'
       });
 
@@ -88,7 +88,7 @@ export const useModalHandlers = (appState) => {
 
     // Update status to indicate we're moving forward
     setStatus({
-      message: t('output.preparingSplitting', 'Preparing to split video into segments...'),
+      message: t('output.preparingProcessing', 'Preparing video for processing...'),
       type: 'loading'
     });
 

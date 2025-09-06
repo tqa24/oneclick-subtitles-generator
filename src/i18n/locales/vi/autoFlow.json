@@ -1,0 +1,10 @@
+{
+  "loading": "Đang tải video...",
+  "analyzing": "Đang phân tích...",
+  "processing": "Đang xử lý...",
+  "complete": "Hoàn thành!",
+  "running": "Đang chạy tự động...",
+  "usingExistingAnalysis": "Sử dụng quy tắc phân tích hiện có",
+  "analysisSkipped": "Bỏ qua phân tích, tiếp tục với cài đặt mặc định",
+  "error": "Lỗi trong quá trình tạo tự động"
+}

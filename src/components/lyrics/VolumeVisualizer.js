@@ -1,37 +1,119 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+
 
 // Global cache for audio data to avoid reprocessing the same audio
 const audioDataCache = new Map();
 
+// High-DPI canvas utilities for crisp rendering at any zoom level
+const getDevicePixelRatio = () => window.devicePixelRatio || 1;
+
+const setupHighDPICanvas = (canvas, width, height) => {
+  const dpr = getDevicePixelRatio();
+  const rect = canvas.getBoundingClientRect();
+
+  // Set actual canvas size in memory (scaled up for high-DPI)
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+
+  // Scale the canvas back down using CSS
+  canvas.style.width = width + 'px';
+  canvas.style.height = height + 'px';
+
+  // Scale the drawing context so everything draws at the correct size
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  return ctx;
+};
+
+// Efficient waveform data structure for multi-resolution rendering
+class WaveformLOD {
+  constructor(audioData, maxLevels = 8) {
+    this.levels = [];
+    this.maxLevels = maxLevels;
+    this.buildLODLevels(audioData);
+  }
+
+  buildLODLevels(audioData) {
+    // Level 0: Original data
+    this.levels[0] = audioData;
+
+    // Build progressively lower resolution levels
+    for (let level = 1; level < this.maxLevels; level++) {
+      const prevLevel = this.levels[level - 1];
+      const newLength = Math.max(Math.floor(prevLevel.length / 2), 1);
+      const newLevel = new Float32Array(newLength);
+
+      for (let i = 0; i < newLength; i++) {
+        const start = i * 2;
+        const end = Math.min(start + 2, prevLevel.length);
+
+        // Use RMS for downsampling to preserve peaks
+        let sum = 0;
+        for (let j = start; j < end; j++) {
+          sum += prevLevel[j] * prevLevel[j];
+        }
+        newLevel[i] = Math.sqrt(sum / (end - start));
+      }
+
+      this.levels[level] = newLevel;
+    }
+  }
+
+  // Get the appropriate LOD level based on zoom and available pixels
+  getLODLevel(samplesPerPixel) {
+    // Choose LOD level based on how many samples we're trying to fit per pixel
+    let level = 0;
+    while (level < this.maxLevels - 1 && samplesPerPixel > Math.pow(2, level + 1)) {
+      level++;
+    }
+    return this.levels[level];
+  }
+}
+
+// Decode with timeout to avoid hanging on problematic sources
+function decodeWithTimeout(audioContext, arrayBuffer, timeoutMs = 12000) {
+  return Promise.race([
+    audioContext.decodeAudioData(arrayBuffer),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('Audio decode timed out')), timeoutMs))
+  ]);
+}
+
 /**
- * Component to visualize audio volume levels
+ * Professional-grade volume visualizer with high-DPI support and efficient zoom rendering
  * @param {string} audioSource - URL of the audio/video source
  * @param {number} duration - Total duration of the audio/video
  * @param {Object} visibleTimeRange - Visible time range object
  * @param {number} height - Height of the visualizer
  * @returns {React.Component} - Volume visualizer component
  */
-const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 30 }) => {
+const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26 }) => {
+  const { t } = useTranslation();
   const canvasRef = useRef(null);
-  const [audioData, setAudioData] = useState(null);
+  const containerRef = useRef(null);
+  const [waveformLOD, setWaveformLOD] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isProcessed, setIsProcessed] = useState(false);
   const [hasAudio, setHasAudio] = useState(true);
   const [audioError, setAudioError] = useState(null);
+  const [hasDrawn, setHasDrawn] = useState(false);
   const audioContextRef = useRef(null);
-  const bufferCanvasRef = useRef(null);
-  const lastRenderRangeRef = useRef(null);
+  const lastRenderParamsRef = useRef(null);
   const animationFrameRef = useRef(null);
-  const renderCountRef = useRef(0);
-  const lastRenderTimeRef = useRef(0);
+  const resizeObserverRef = useRef(null);
+  const abortControllerRef = useRef(null);
 
   // Process audio data once when the component mounts or audioSource changes
   useEffect(() => {
     if (!audioSource || isProcessed || isProcessing) return;
 
+    let isActive = true;
+
     // Reset states when audioSource changes
     setHasAudio(true);
     setAudioError(null);
+    setHasDrawn(false);
 
     // Skip YouTube URLs as they can't be directly processed due to CORS
     if (audioSource.includes('youtube.com') || audioSource.includes('youtu.be')) {
@@ -49,7 +131,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 30
         setIsProcessed(true);
         return;
       }
-      setAudioData(cachedData);
+      setWaveformLOD(cachedData);
       setIsProcessed(true);
       return;
     }
@@ -61,19 +143,34 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 30
       try {
         setIsProcessing(true);
 
-        // Create audio context
-        // @ts-ignore - webkitAudioContext is available in Safari but not in TypeScript types
+        // Create audio context with proper fallback
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!audioContextRef.current) {
           audioContextRef.current = new AudioContext();
         }
 
-        // Fetch the audio data
-        const response = await fetch(audioSource);
+        // Setup abort controller for fetch and decoding
+        abortControllerRef.current = new AbortController();
+
+        // Fetch the audio data with abort support
+        let response;
+        const isBlob = audioSource.startsWith('blob:');
+        try {
+          if (isBlob && window.__videoBlobMap && window.__videoBlobMap[audioSource]) {
+            // Directly use stored blob for faster access
+            const blob = window.__videoBlobMap[audioSource];
+            response = new Response(blob);
+          } else {
+            response = await fetch(audioSource, { signal: abortControllerRef.current.signal, cache: 'no-cache', mode: isBlob ? 'no-cors' : 'cors' });
+          }
+        } catch (e) {
+          // Retry once without mode override
+          response = await fetch(audioSource, { signal: abortControllerRef.current.signal, cache: 'no-cache' });
+        }
         const arrayBuffer = await response.arrayBuffer();
 
-        // Decode the audio data
-        const audioBuffer = await audioContextRef.current.decodeAudioData(arrayBuffer);
+        // Decode the audio data with timeout to avoid hanging
+        const audioBuffer = await decodeWithTimeout(audioContextRef.current, arrayBuffer, isLongVideo ? 15000 : 10000);
 
         // Check if the audio buffer has any channels (i.e., if there's actually audio)
         if (!audioBuffer || audioBuffer.numberOfChannels === 0) {
@@ -119,17 +216,23 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 30
             await new Promise(resolve => setTimeout(resolve, 0));
           }
         } else {
-          // Standard processing for shorter videos
-          for (let i = 0; i < sampleSize; i++) {
-            const startSample = i * samplesPerSegment;
-            const endSample = Math.min(startSample + samplesPerSegment, channelData.length);
+          // Standard processing for shorter videos, but chunked to avoid blocking UI
+          const chunkSize = 80; // process 80 segments then yield
+          for (let chunkStart = 0; chunkStart < sampleSize; chunkStart += chunkSize) {
+            const chunkEnd = Math.min(chunkStart + chunkSize, sampleSize);
+            for (let i = chunkStart; i < chunkEnd; i++) {
+              const startSample = i * samplesPerSegment;
+              const endSample = Math.min(startSample + samplesPerSegment, channelData.length);
 
-            // Calculate RMS (root mean square) for this segment
-            let sum = 0;
-            for (let j = startSample; j < endSample; j++) {
-              sum += channelData[j] * channelData[j];
+              // Calculate RMS (root mean square) for this segment
+              let sum = 0;
+              for (let j = startSample; j < endSample; j++) {
+                sum += channelData[j] * channelData[j];
+              }
+              volumeData[i] = Math.sqrt(sum / (endSample - startSample));
             }
-            volumeData[i] = Math.sqrt(sum / (endSample - startSample));
+            // Yield to main thread to keep timeline animations smooth
+            await new Promise(resolve => setTimeout(resolve, 0));
           }
         }
 
@@ -154,13 +257,22 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 30
           }
         }
 
+        // Create LOD structure for efficient multi-resolution rendering
+        const waveformLOD = new WaveformLOD(volumeData);
+
         // Store the processed audio data in cache for future use
-        audioDataCache.set(audioSource, volumeData);
+        audioDataCache.set(audioSource, waveformLOD);
 
         // Store the processed audio data
-        setAudioData(volumeData);
+        setWaveformLOD(waveformLOD);
         setIsProcessed(true);
       } catch (error) {
+        // Swallow expected AbortError when unmounting or toggling off
+        if (error && (error.name === 'AbortError' || error.message?.includes('aborted'))) {
+          // Do not log or set errors for expected aborts
+          return;
+        }
+
         console.error('Error processing audio for visualization:', error);
 
         // Check if this is an audio decoding error (no audio track)
@@ -185,275 +297,299 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 30
 
     // Cleanup function
     return () => {
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close();
+      // Abort any in-flight fetch/processing
+      if (abortControllerRef.current) {
+        try { abortControllerRef.current.abort(); } catch {}
       }
+      try {
+        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+          audioContextRef.current.close();
+        }
+      } catch {}
     };
   }, [audioSource, isProcessed, isProcessing, duration]);
 
-  // Create a pre-rendered buffer of the entire waveform
-  useEffect(() => {
-    if (!audioData || audioData.length === 0) return;
+  // Professional waveform rendering function
+  const renderWaveform = useCallback((canvas, containerWidth) => {
+    if (!waveformLOD || !visibleTimeRange) return;
 
-    // Create an off-screen canvas for the entire waveform
-    const bufferCanvas = document.createElement('canvas');
-    bufferCanvas.width = audioData.length; // One pixel per data point
-    bufferCanvas.height = height;
-    bufferCanvasRef.current = bufferCanvas;
+    const ctx = setupHighDPICanvas(canvas, containerWidth, height);
+    const { start: visibleStart, end: visibleEnd } = visibleTimeRange;
 
-    const ctx = bufferCanvas.getContext('2d');
+    // Calculate rendering parameters
+    const visibleDuration = visibleEnd - visibleStart;
+    const pixelsPerSecond = containerWidth / visibleDuration;
+    const samplesPerSecond = waveformLOD.levels[0].length / duration;
+    const samplesPerPixel = samplesPerSecond / pixelsPerSecond;
 
-    // Clear the canvas first
-    ctx.clearRect(0, 0, bufferCanvas.width, bufferCanvas.height);
+    // Get appropriate LOD level for current zoom
+    const lodData = waveformLOD.getLODLevel(samplesPerPixel);
+    const lodSamplesPerSecond = lodData.length / duration;
 
+    // Calculate visible sample range in LOD data
+    const startSample = Math.floor(visibleStart * lodSamplesPerSecond);
+    const endSample = Math.ceil(visibleEnd * lodSamplesPerSecond);
+    const visibleSamples = endSample - startSample;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, containerWidth, height);
+
+    // Get theme colors
     const theme = document.documentElement.getAttribute('data-theme') || 'light';
+    const primaryColor = theme === 'dark' ? 'rgb(80, 200, 255)' : 'rgb(93, 95, 239)';
+    const gradientColor = theme === 'dark' ? 'rgba(80, 200, 255, 0.3)' : 'rgba(93, 95, 239, 0.3)';
 
-    // Set colors based on theme
-    const barColor = theme === 'dark' ? 'rgb(80, 200, 255)' : 'rgb(93, 95, 239)';
-    ctx.fillStyle = barColor;
+    // Create gradient for professional look
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, primaryColor);
+    gradient.addColorStop(0.85, gradientColor);
+    gradient.addColorStop(1, 'transparent');
 
-    // Apply simple smoothing to the data
-    const smoothedData = [];
-    const smoothingFactor = 2; // Lower value for better performance
+    ctx.fillStyle = gradient;
+    ctx.strokeStyle = primaryColor;
+    ctx.lineWidth = 0.5;
 
-    for (let i = 0; i < audioData.length; i++) {
+    // Render based on zoom level
+    if (samplesPerPixel < 1) {
+      // High zoom: Draw individual samples with interpolation
+      renderHighZoom(ctx, lodData, startSample, endSample, containerWidth, height);
+    } else if (samplesPerPixel < 10) {
+      // Medium zoom: Draw with peak detection
+      renderMediumZoom(ctx, lodData, startSample, endSample, containerWidth, height);
+    } else {
+      // Low zoom: Draw with efficient batching
+      renderLowZoom(ctx, lodData, startSample, endSample, containerWidth, height);
+    }
+
+  }, [waveformLOD, visibleTimeRange, duration, height]);
+
+  // High zoom rendering with smooth interpolation
+  const renderHighZoom = (ctx, data, startSample, endSample, width, height) => {
+    const samplesCount = endSample - startSample;
+    const pixelsPerSample = width / samplesCount;
+
+    ctx.beginPath();
+
+    for (let i = 0; i < samplesCount; i++) {
+      const sampleIndex = startSample + i;
+      if (sampleIndex >= data.length) break;
+
+      const x = i * pixelsPerSample;
+      const amplitude = data[sampleIndex];
+      const barHeight = amplitude * height * 0.9; // Leave 10% margin
+      const y = height - barHeight;
+
+      if (i === 0) {
+        ctx.moveTo(x, height);
+        ctx.lineTo(x, y);
+      } else {
+        // Smooth curves for professional look
+        const prevX = (i - 1) * pixelsPerSample;
+        const prevAmplitude = data[Math.max(0, startSample + i - 1)];
+        const prevY = height - (prevAmplitude * height * 0.9);
+
+        const cpX = (prevX + x) / 2;
+        ctx.quadraticCurveTo(cpX, prevY, x, y);
+      }
+    }
+
+    ctx.lineTo(width, height);
+    ctx.closePath();
+    ctx.fill();
+  };
+
+  // Medium zoom with peak detection
+  const renderMediumZoom = (ctx, data, startSample, endSample, width, height) => {
+    const pixelCount = Math.min(width, 2000); // Limit for performance
+    const samplesPerPixel = (endSample - startSample) / pixelCount;
+
+    ctx.beginPath();
+    ctx.moveTo(0, height);
+
+    for (let pixel = 0; pixel < pixelCount; pixel++) {
+      const sampleStart = startSample + Math.floor(pixel * samplesPerPixel);
+      const sampleEnd = startSample + Math.floor((pixel + 1) * samplesPerPixel);
+
+      // Find peak in this pixel range
+      let peak = 0;
+      for (let s = sampleStart; s < Math.min(sampleEnd, data.length); s++) {
+        peak = Math.max(peak, data[s]);
+      }
+
+      const x = (pixel / pixelCount) * width;
+      const barHeight = peak * height * 0.9;
+      const y = height - barHeight;
+
+      ctx.lineTo(x, y);
+    }
+
+    ctx.lineTo(width, height);
+    ctx.closePath();
+    ctx.fill();
+  };
+
+  // Low zoom with efficient batching
+  const renderLowZoom = (ctx, data, startSample, endSample, width, height) => {
+    const batchSize = Math.max(1, Math.floor((endSample - startSample) / width));
+    const batches = Math.ceil((endSample - startSample) / batchSize);
+
+    ctx.beginPath();
+    ctx.moveTo(0, height);
+
+    for (let batch = 0; batch < batches; batch++) {
+      const batchStart = startSample + batch * batchSize;
+      const batchEnd = Math.min(batchStart + batchSize, endSample, data.length);
+
+      // RMS calculation for this batch
       let sum = 0;
       let count = 0;
-
-      // Simple moving average
-      for (let j = Math.max(0, i - smoothingFactor); j <= Math.min(audioData.length - 1, i + smoothingFactor); j++) {
-        sum += audioData[j];
+      for (let s = batchStart; s < batchEnd; s++) {
+        sum += data[s] * data[s];
         count++;
       }
 
-      smoothedData.push(sum / count);
-    }
-
-    // Draw the entire waveform to the buffer
-    for (let i = 0; i < smoothedData.length; i++) {
-      const barHeight = smoothedData[i] * height;
+      const rms = count > 0 ? Math.sqrt(sum / count) : 0;
+      const x = (batch / batches) * width;
+      const barHeight = rms * height * 0.9;
       const y = height - barHeight;
-      ctx.fillRect(i, y, 1, barHeight);
+
+      ctx.lineTo(x, y);
     }
 
-  }, [audioData, height]);
+    ctx.lineTo(width, height);
+    ctx.closePath();
+    ctx.fill();
+  };
 
-  // Function to draw the visualization with throttling for better performance
-  const drawVisualization = useCallback(() => {
-    if (!audioData || !canvasRef.current || !bufferCanvasRef.current) return;
-
-    // Throttle rendering for better performance
-    // Only render at most once every 50ms during active scrolling/zooming
-    const now = performance.now();
-    if (now - lastRenderTimeRef.current < 50 && renderCountRef.current > 0) {
-      return;
-    }
-    lastRenderTimeRef.current = now;
-    renderCountRef.current++;
+  // Optimized render function with intelligent caching
+  const updateVisualization = useCallback(() => {
+    if (!canvasRef.current || !containerRef.current || !waveformLOD) return;
 
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const bufferCanvas = bufferCanvasRef.current;
+    const container = containerRef.current;
+    const containerWidth = container.clientWidth;
 
-    // Calculate the visible range
-    const { start: visibleStart, end: visibleEnd } = visibleTimeRange;
+    // Create render signature for caching
+    const renderParams = {
+      width: containerWidth,
+      height: height,
+      start: visibleTimeRange.start,
+      end: visibleTimeRange.end,
+      theme: document.documentElement.getAttribute('data-theme') || 'light'
+    };
 
-    // Skip redrawing if the visible range hasn't changed
-    if (lastRenderRangeRef.current &&
-        lastRenderRangeRef.current.start === visibleStart &&
-        lastRenderRangeRef.current.end === visibleEnd) {
+    // Skip render if nothing changed (intelligent caching)
+    if (lastRenderParamsRef.current &&
+        JSON.stringify(lastRenderParamsRef.current) === JSON.stringify(renderParams)) {
       return;
     }
 
-    // Update the last render range
-    lastRenderRangeRef.current = { start: visibleStart, end: visibleEnd };
+    lastRenderParamsRef.current = renderParams;
 
-    // Clear the canvas completely
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Calculate the source and destination coordinates
-    const startIndex = Math.floor((visibleStart / duration) * audioData.length);
-    const endIndex = Math.ceil((visibleEnd / duration) * audioData.length);
-    const sourceWidth = endIndex - startIndex;
-
-    // For very long videos, use a more efficient drawing approach
-    if (duration > 7200) { // 2 hours
-      // Draw at a lower resolution for better performance
-      const maxPoints = 200; // Maximum number of points to draw
-      if (sourceWidth > maxPoints) {
-        const step = Math.ceil(sourceWidth / maxPoints);
-
-        // Use a simplified drawing approach
-        ctx.beginPath();
-        const theme = document.documentElement.getAttribute('data-theme') || 'light';
-        const barColor = theme === 'dark' ? 'rgb(80, 200, 255)' : 'rgb(93, 95, 239)';
-        ctx.fillStyle = barColor;
-
-        for (let i = startIndex; i < endIndex; i += step) {
-          const x = ((i - startIndex) / sourceWidth) * canvas.width;
-          const barHeight = audioData[i] * height;
-          const y = height - barHeight;
-          ctx.fillRect(x, y, Math.max(1, canvas.width / maxPoints), barHeight);
-        }
-        return;
-      }
+    // Render with appropriate technique based on container size
+    if (containerWidth > 0) {
+      renderWaveform(canvas, containerWidth);
+      setHasDrawn(true);
     }
+  }, [waveformLOD, visibleTimeRange, height, renderWaveform]);
 
-    // Standard drawing for normal videos
-    ctx.drawImage(
-      bufferCanvas,
-      startIndex, 0, sourceWidth, height,
-      0, 0, canvas.width, canvas.height
-    );
-  }, [audioData, visibleTimeRange, duration, height]);
-
-  // Listen for theme changes to redraw with appropriate colors
+  // Handle theme changes efficiently
   useEffect(() => {
     const handleThemeChange = () => {
-      // Force buffer recreation when theme changes
-      if (audioData && audioData.length > 0) {
-        // Create an off-screen canvas for the entire waveform
-        const bufferCanvas = document.createElement('canvas');
-        bufferCanvas.width = audioData.length; // One pixel per data point
-        bufferCanvas.height = height;
-        bufferCanvasRef.current = bufferCanvas;
-
-        const ctx = bufferCanvas.getContext('2d');
-
-        // Clear the canvas first
-        ctx.clearRect(0, 0, bufferCanvas.width, bufferCanvas.height);
-
-        const theme = document.documentElement.getAttribute('data-theme') || 'light';
-
-        // Set colors based on theme
-        const barColor = theme === 'dark' ? 'rgb(80, 200, 255)' : 'rgb(93, 95, 239)';
-        ctx.fillStyle = barColor;
-
-        // Draw the entire waveform to the buffer
-        for (let i = 0; i < audioData.length; i++) {
-          const barHeight = audioData[i] * height;
-          const y = height - barHeight;
-          ctx.fillRect(i, y, 1, barHeight);
-        }
-
-        // Reset last render range to force redraw
-        lastRenderRangeRef.current = null;
-
-        // Redraw the visualization
-        drawVisualization();
-      }
+      // Force re-render on theme change
+      lastRenderParamsRef.current = null;
+      updateVisualization();
     };
 
     // Listen for storage events (theme changes)
     window.addEventListener('storage', handleThemeChange);
 
-    return () => {
-      window.removeEventListener('storage', handleThemeChange);
-    };
-  }, [audioData, height, drawVisualization]);
-
-  // Draw the volume visualization when audioData or visibleTimeRange changes
-  useEffect(() => {
-    if (!canvasRef.current) return;
-
-    // For long videos, use a more efficient rendering approach
-    const isLongVideo = duration > 7200; // 2 hours
-
-    // Use requestAnimationFrame for smoother rendering, but with throttling for long videos
-    const updateVisualization = () => {
-      // For long videos, only render when necessary (on visible range change)
-      // This significantly reduces CPU usage
-      if (isLongVideo) {
-        // Only draw if the visible range has changed
-        const { start: visibleStart, end: visibleEnd } = visibleTimeRange;
-        if (!lastRenderRangeRef.current ||
-            lastRenderRangeRef.current.start !== visibleStart ||
-            lastRenderRangeRef.current.end !== visibleEnd) {
-          drawVisualization();
+    // Also listen for direct theme attribute changes
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+          handleThemeChange();
         }
-      } else {
-        // For shorter videos, render normally
-        drawVisualization();
-      }
-
-      // Only schedule another frame if the component is still mounted
-      if (canvasRef.current) {
-        // For long videos, use a lower frame rate to reduce CPU usage
-        if (isLongVideo) {
-          // Use a 100ms delay between frames for long videos (10 fps)
-          setTimeout(() => {
-            animationFrameRef.current = requestAnimationFrame(updateVisualization);
-          }, 100);
-        } else {
-          animationFrameRef.current = requestAnimationFrame(updateVisualization);
-        }
-      }
-    };
-
-    // Start the animation loop
-    animationFrameRef.current = requestAnimationFrame(updateVisualization);
-
-    // Set up resize observer to handle canvas resizing
-    const resizeObserver = new ResizeObserver(() => {
-      // Reset last render range to force redraw
-      lastRenderRangeRef.current = null;
-
-      // For long videos, ensure the canvas size is optimized
-      if (isLongVideo && canvasRef.current) {
-        // Limit canvas resolution for better performance
-        canvasRef.current.width = Math.min(canvasRef.current.clientWidth, 800);
-      }
+      });
     });
 
-    resizeObserver.observe(canvasRef.current);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    });
 
     return () => {
-      // Cancel any pending animation frame
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
+      window.removeEventListener('storage', handleThemeChange);
+      observer.disconnect();
+    };
+  }, [updateVisualization]);
 
-      // Clean up resize observer
-      if (canvasRef.current) {
-        resizeObserver.unobserve(canvasRef.current);
+  // Main rendering effect with professional optimization
+  useEffect(() => {
+    if (!waveformLOD || !containerRef.current) return;
+
+    // Immediate render
+    updateVisualization();
+
+    // Set up resize observer for responsive rendering
+    const resizeObserver = new ResizeObserver(() => {
+      // Debounce resize events
+      clearTimeout(animationFrameRef.current);
+      animationFrameRef.current = setTimeout(() => {
+        lastRenderParamsRef.current = null; // Force re-render
+        updateVisualization();
+      }, 16); // ~60fps
+    });
+
+    resizeObserver.observe(containerRef.current);
+
+    return () => {
+      if (animationFrameRef.current) {
+        clearTimeout(animationFrameRef.current);
       }
       resizeObserver.disconnect();
     };
-  }, [audioData, visibleTimeRange, duration, height, drawVisualization]);
+  }, [waveformLOD, updateVisualization]);
 
-  // Set up canvas with appropriate attributes for better performance
-  const canvasSetup = useCallback(node => {
-    if (node !== null) {
-      canvasRef.current = node;
-
-      // For long videos, limit canvas resolution for better performance
-      const isLongVideo = duration > 7200; // 2 hours
-
-      // Set width and height directly on the canvas element (not just style)
-      // This ensures the canvas has the correct resolution
-      if (isLongVideo) {
-        // Limit canvas resolution for better performance with long videos
-        node.width = Math.min(node.clientWidth, 800);
-      } else {
-        node.width = node.clientWidth;
-      }
-      node.height = height;
-
-      // Apply performance optimizations
-      const ctx = node.getContext('2d');
-
-      // Disable image smoothing for better performance
-      if (ctx.imageSmoothingEnabled !== undefined) {
-        ctx.imageSmoothingEnabled = !isLongVideo;
-      }
-
-      // Use low quality for long videos
-      if (isLongVideo) {
-        ctx.imageSmoothingQuality = 'low';
-      }
+  // Handle visible range changes with smart throttling
+  useEffect(() => {
+    // Use requestAnimationFrame for smooth updates
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
     }
-  }, [height, duration]);
+
+    animationFrameRef.current = requestAnimationFrame(() => {
+      updateVisualization();
+    });
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [visibleTimeRange, updateVisualization]);
+
+  // Professional canvas setup with high-DPI support
+  const setupCanvas = useCallback((canvas) => {
+    if (!canvas) return;
+
+    canvasRef.current = canvas;
+
+    // Enable high-DPI rendering
+    const ctx = canvas.getContext('2d');
+
+    // Set rendering optimizations
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Enable hardware acceleration hints
+    ctx.globalCompositeOperation = 'source-over';
+
+    // Initial render
+    if (waveformLOD && containerRef.current) {
+      updateVisualization();
+    }
+  }, [waveformLOD, updateVisualization]);
 
   // Don't render anything if there's no audio
   if (!hasAudio && isProcessed) {
@@ -461,13 +597,51 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 30
   }
 
   return (
-    <div className="volume-visualizer" style={{ height: `${height}px` }}>
+    <div
+      ref={containerRef}
+      className="volume-visualizer"
+      style={{
+        height: `${height}px`,
+        position: 'relative',
+        overflow: 'hidden',
+        zIndex: 5
+      }}
+    >
       <canvas
-        ref={canvasSetup}
-        style={{ width: '100%', height: '100%' }}
+        ref={setupCanvas}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          display: 'block',
+          // Ensure crisp rendering
+          imageRendering: 'pixelated',
+          zIndex: 1
+        }}
       />
-      {isProcessing && (
-        <div className="volume-visualizer-loading">
+      {((!waveformLOD && !hasDrawn) || isProcessing || (!isProcessed && !audioError)) && (
+        <div
+          className="volume-visualizer-loading"
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '12px',
+            color: 'var(--md-on-surface)',
+            backgroundColor: 'var(--md-surface)',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            zIndex: 10,
+            pointerEvents: 'none'
+          }}
+        >
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" style={{ marginRight: '6px' }}>
             <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83">
               <animateTransform
@@ -480,14 +654,25 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 30
               />
             </path>
           </svg>
-          Processing audio waveform...
+          {t('waveform.processing', 'Processing audio waveform...')}
         </div>
       )}
       {!hasAudio && isProcessed && audioError && (
-        <div className="volume-visualizer-no-audio">
-          <span style={{ fontSize: '12px', color: 'var(--md-outline)', opacity: 0.7 }}>
-            No audio track
-          </span>
+        <div
+          className="volume-visualizer-no-audio"
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            fontSize: '12px',
+            color: 'var(--md-outline)',
+            opacity: 0.7,
+            zIndex: 2,
+            pointerEvents: 'none'
+          }}
+        >
+          No audio track
         </div>
       )}
     </div>

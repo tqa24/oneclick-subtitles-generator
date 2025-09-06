@@ -8,6 +8,50 @@ import './i18n/i18n';
 import './utils/sliderDragHandler';
 import { getThemeWithFallback, setupSystemThemeListener } from './utils/systemDetection';
 
+// Suppress harmless ResizeObserver loop error
+const suppressResizeObserverError = () => {
+  // Handle console errors
+  const originalError = console.error;
+  console.error = (...args) => {
+    if (
+      args.length > 0 &&
+      typeof args[0] === 'string' &&
+      args[0].includes('ResizeObserver loop completed with undelivered notifications')
+    ) {
+      // Suppress this specific harmless error
+      return;
+    }
+    originalError.apply(console, args);
+  };
+
+  // Handle window errors
+  window.addEventListener('error', (event) => {
+    if (
+      event.message &&
+      event.message.includes('ResizeObserver loop completed with undelivered notifications')
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      return false;
+    }
+  });
+
+  // Handle unhandled promise rejections
+  window.addEventListener('unhandledrejection', (event) => {
+    if (
+      event.reason &&
+      event.reason.message &&
+      event.reason.message.includes('ResizeObserver loop completed with undelivered notifications')
+    ) {
+      event.preventDefault();
+      return false;
+    }
+  });
+};
+
+// Initialize error suppression
+suppressResizeObserverError();
+
 // Theme initialization
 const initializeTheme = () => {
   const theme = getThemeWithFallback();

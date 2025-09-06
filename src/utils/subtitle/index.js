@@ -70,24 +70,107 @@ export const parseGeminiResponse = (response) => {
 
     const text = response.candidates[0].content.parts[0].text;
 
+    // Ensure text is a string before processing
+    if (typeof text !== 'string') {
+        console.error('Text is not a string:', typeof text, text);
+        // Try to convert to string or handle the unexpected type
+        if (text === null || text === undefined) {
+            throw new Error('Response text is null or undefined');
+        }
+        // If it's an object or array, try to stringify it
+        if (typeof text === 'object') {
+            console.warn('Received object instead of string, attempting to parse directly');
+            // Check if it's already parsed JSON data
+            if (Array.isArray(text)) {
+                // It's already an array of subtitles
+                return text;
+            }
+            // Try to stringify and continue
+            try {
+                const stringified = JSON.stringify(text);
+                console.warn('Stringified object:', stringified.substring(0, 200));
+                // Continue with stringified version
+                text = stringified;
+            } catch (e) {
+                throw new Error(`Cannot process non-string text: ${typeof text}`);
+            }
+        }
+    }
 
-    // Check if the text is a JSON string
-    if (text.trim().startsWith('[') && text.trim().endsWith(']')) {
+    // Check if the text is a JSON string (be more lenient for streaming)
+    // Handle both direct JSON arrays and JSON wrapped in markdown code blocks
+    let jsonText = (typeof text === 'string' ? text : String(text)).trim();
+
+    // Extract JSON from markdown code blocks if present
+    if (jsonText.includes('```json') || jsonText.includes('```')) {
+        const jsonMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)(?:```|$)/);
+        if (jsonMatch && jsonMatch[1]) {
+            jsonText = jsonMatch[1].trim();
+        }
+    }
+
+    if (jsonText.startsWith('[')) {
         try {
 
-            const jsonData = JSON.parse(text);
+            // For streaming, try to fix incomplete JSON by adding missing closing bracket
+            if (!jsonText.endsWith(']')) {
+                // Find the last complete object and truncate there
+                let lastCompleteIndex = -1;
+                let braceCount = 0;
+                let inString = false;
+                let escapeNext = false;
+
+                for (let i = 0; i < jsonText.length; i++) {
+                    const char = jsonText[i];
+
+                    if (escapeNext) {
+                        escapeNext = false;
+                        continue;
+                    }
+
+                    if (char === '\\') {
+                        escapeNext = true;
+                        continue;
+                    }
+
+                    if (char === '"') {
+                        inString = !inString;
+                        continue;
+                    }
+
+                    if (!inString) {
+                        if (char === '{') {
+                            braceCount++;
+                        } else if (char === '}') {
+                            braceCount--;
+                            if (braceCount === 0) {
+                                lastCompleteIndex = i;
+                            }
+                        }
+                    }
+                }
+
+                // If we found complete objects, truncate and add closing bracket
+                if (lastCompleteIndex > -1) {
+                    jsonText = jsonText.substring(0, lastCompleteIndex + 1) + ']';
+                } else if (jsonText.endsWith(',')) {
+                    // Remove trailing comma and add closing bracket
+                    jsonText = jsonText.slice(0, -1) + ']';
+                } else {
+                    // Just add closing bracket
+                    jsonText += ']';
+                }
+            }
+
+            const jsonData = JSON.parse(jsonText);
 
             if (Array.isArray(jsonData)) {
-
-
                 // Check if it's a subtitle array
                 if (jsonData.length > 0) {
                     const firstItem = jsonData[0];
 
-
                     // Check for standard subtitle format with text
                     if (firstItem.startTime && firstItem.endTime && firstItem.text) {
-
                         // Create a mock structured response
                         const mockResponse = {
                             candidates: [{
@@ -102,7 +185,6 @@ export const parseGeminiResponse = (response) => {
                     }
                     // Check for timing format with index (for user-provided subtitles, with or without text)
                     else if (firstItem.startTime && firstItem.endTime && firstItem.index !== undefined) {
-
                         // Create a mock structured response
                         const mockResponse = {
                             candidates: [{
@@ -119,7 +201,7 @@ export const parseGeminiResponse = (response) => {
             }
         } catch (e) {
             console.error('Failed to parse text as JSON:', e);
-
+            // Continue to other parsing methods
         }
     }
 

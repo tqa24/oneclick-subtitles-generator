@@ -5,6 +5,48 @@
 import { convertTimeStringToSeconds } from './timeUtils';
 
 /**
+ * Detect if text contains excessive character repetition (hallucination pattern)
+ * @param {string} text - The text to check
+ * @returns {boolean} - True if excessive repetition is detected
+ */
+const hasExcessiveRepetition = (text) => {
+    if (!text || text.length < 50) return false; // Too short to be a concern
+    
+    // Check for single character repeated many times
+    const singleCharPattern = /(.)\1{19,}/; // Same character repeated 20+ times
+    if (singleCharPattern.test(text)) {
+        const match = text.match(singleCharPattern);
+        console.warn(`[StructuredJsonParser] Detected excessive repetition: "${match[0].substring(0, 20)}..." repeated ${match[0].length} times`);
+        return true;
+    }
+    
+    // Check for short sequences (2-5 chars) repeated many times
+    const shortSequencePattern = /(.{2,5})\1{9,}/; // 2-5 char sequence repeated 10+ times
+    if (shortSequencePattern.test(text)) {
+        const match = text.match(shortSequencePattern);
+        const totalLength = match[0].length;
+        const sequenceLength = match[1].length;
+        const repetitions = totalLength / sequenceLength;
+        console.warn(`[StructuredJsonParser] Detected sequence repetition: "${match[1]}" repeated ${Math.floor(repetitions)} times`);
+        return true;
+    }
+    
+    // Check if more than 80% of the text is the same character
+    const charCounts = {};
+    for (const char of text) {
+        charCounts[char] = (charCounts[char] || 0) + 1;
+    }
+    const maxCount = Math.max(...Object.values(charCounts));
+    if (maxCount / text.length > 0.8) {
+        const dominantChar = Object.keys(charCounts).find(key => charCounts[key] === maxCount);
+        console.warn(`[StructuredJsonParser] Text is ${Math.round(maxCount / text.length * 100)}% the character "${dominantChar}"`);
+        return true;
+    }
+    
+    return false;
+};
+
+/**
  * Parse structured JSON response from Gemini
  * @param {Object} response - The response from Gemini API
  * @returns {Array} - Array of subtitle objects
@@ -210,12 +252,26 @@ export const parseStructuredJsonResponse = (response) => {
                         const start = convertTimeStringToSeconds(item.startTime);
                         const end = convertTimeStringToSeconds(item.endTime);
 
-
-
                         // Skip empty subtitles at the beginning of the video
                         if (start === 0 && end === 0 && (!item.text || item.text.trim() === '')) {
-
                             continue;
+                        }
+                        
+                        // Check for excessive repetition (hallucination)
+                        if (item.text && hasExcessiveRepetition(item.text)) {
+                            console.error(`[StructuredJsonParser] Skipping subtitle ${i + 1} due to hallucination (excessive repetition)`);
+                            console.error(`[StructuredJsonParser] Subtitle time: ${item.startTime} - ${item.endTime}`);
+                            console.error(`[StructuredJsonParser] Text sample: "${item.text.substring(0, 100)}..."`);
+                            
+                            // Throw an error to indicate hallucination detected
+                            throw new Error(JSON.stringify({
+                                type: 'hallucination_detected',
+                                message: `Subtitle contains excessive character repetition, indicating model hallucination`,
+                                subtitleIndex: i + 1,
+                                startTime: item.startTime,
+                                endTime: item.endTime,
+                                textSample: item.text.substring(0, 200)
+                            }));
                         }
 
                         subtitles.push({

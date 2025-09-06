@@ -1,19 +1,66 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import CloseButton from '../../common/CloseButton';
+import CustomDropdown from '../../common/CustomDropdown';
 import '../../../styles/narration/VoiceSelectionModal.css'; // Reuse the same CSS
 
 const LanguageSelectionModal = ({ isOpen, onClose, languages, selectedLanguage, onLanguageSelect, detectedLanguage, t }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [modalHeight, setModalHeight] = useState('auto');
   const modalRef = useRef(null);
   const searchInputRef = useRef(null);
+  const contentRef = useRef(null);
+
+  // Calculate and set modal height for smooth transitions
+  const updateModalHeight = useCallback(() => {
+    if (modalRef.current && contentRef.current && isOpen) {
+      // Get the natural height of the content
+      const modalElement = modalRef.current;
+      const currentHeight = modalElement.offsetHeight;
+      
+      // Temporarily set to auto to measure natural height
+      modalElement.style.height = 'auto';
+      const naturalHeight = modalElement.offsetHeight;
+      
+      // Set back to current height immediately (no visual change)
+      modalElement.style.height = `${currentHeight}px`;
+      
+      // Force a reflow by reading offsetHeight
+      // eslint-disable-next-line no-unused-expressions
+      void modalElement.offsetHeight;
+      
+      // Now transition to the new height
+      modalElement.style.height = `${naturalHeight}px`;
+    }
+  }, [isOpen]);
 
   // Focus search input when modal opens
   useEffect(() => {
-    if (isOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
+    if (isOpen) {
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      }
+      // Set initial height on open
+      setTimeout(() => {
+        if (modalRef.current) {
+          modalRef.current.style.height = 'auto';
+          const height = modalRef.current.offsetHeight;
+          modalRef.current.style.height = `${height}px`;
+        }
+      }, 50);
     }
   }, [isOpen]);
+  
+  // Update height when content changes
+  useEffect(() => {
+    if (isOpen) {
+      // Small delay to let DOM update
+      const timer = setTimeout(() => {
+        updateModalHeight();
+      }, 10);
+      return () => clearTimeout(timer);
+    }
+  }, [searchTerm, selectedCategory, isOpen, updateModalHeight]);
 
   // Handle click outside modal and ESC key
   useEffect(() => {
@@ -122,7 +169,7 @@ const LanguageSelectionModal = ({ isOpen, onClose, languages, selectedLanguage, 
 
   return (
     <div className="voice-modal-overlay">
-      <div className="voice-modal" ref={modalRef}>
+      <div className="voice-modal" ref={modalRef} style={{ height: modalHeight }}>
         {/* Modal Header */}
         <div className="voice-modal-header">
           <h2>{t('narration.selectLanguage', 'Select Language')}</h2>
@@ -153,29 +200,26 @@ const LanguageSelectionModal = ({ isOpen, onClose, languages, selectedLanguage, 
           </div>
 
           <div className="voice-category-filter">
-            <select
+            <CustomDropdown
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="voice-category-select"
-            >
-              {availableCategories.map(category => (
-                <option key={category} value={category}>
-                  {category === 'All'
-                    ? t('narration.allCategories', 'All')
-                    : category === 'Recommended'
-                    ? t('narration.recommendedLanguage', 'Recommended for {{language}}', {
-                        language: detectedLanguage?.languageName || detectedLanguage?.languageCode
-                      })
-                    : category
-                  }
-                </option>
-              ))}
-            </select>
+              onChange={(value) => setSelectedCategory(value)}
+              options={availableCategories.map(category => ({
+                value: category,
+                label: category === 'All'
+                  ? t('narration.allCategories', 'All')
+                  : category === 'Recommended'
+                  ? t('narration.recommendedLanguage', 'Recommended for {{language}}', {
+                      language: detectedLanguage?.languageName || detectedLanguage?.languageCode
+                    })
+                  : category
+              }))}
+              placeholder={t('narration.selectCategory', 'Select Category')}
+            />
           </div>
         </div>
 
         {/* Language Grid */}
-        <div className="voice-modal-content">
+        <div className="voice-modal-content" ref={contentRef}>
           {/* Recommended Language Section */}
           {detectedLanguage?.languageCode && getFilteredRecommendedLanguage() && (
             <div className="voice-category-section">

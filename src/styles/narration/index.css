@@ -1,10 +1,8 @@
 /* Narration Section CSS - Main file that imports all modular components */
 
 /* Import component styles */
-@import './narrationSettings.css';
 @import './unifiedNarrationRedesign.css';
 @import './narrationAdvancedSettingsRedesign.css';
-@import './geminiNarrationResults.css';
 @import './speedControlSlider.css';
 @import './chatterboxSliderFixes.css';
 

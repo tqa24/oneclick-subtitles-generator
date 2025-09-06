@@ -104,7 +104,7 @@ const FontDropdown = ({ value, onChange, className }) => {
           <div className="font-options">
             {Object.entries(filteredGroups).map(([group, fonts]) => (
               <div key={group} className="font-group">
-                <div className="font-group-header">{group}</div>
+                <div className="font-group-header">{t(`fontModal.category${group}`, group)}</div>
                 {fonts.map(font => (
                   <div
                     key={font.value}

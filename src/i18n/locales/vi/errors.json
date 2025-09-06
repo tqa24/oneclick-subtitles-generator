@@ -19,5 +19,8 @@
   "invalidJsonFile": "Tập tin JSON phải chứa một mảng phụ đề",
   "invalidJsonFormat": "Định dạng JSON không hợp lệ",
   "invalidJsonStructure": "Phụ đề JSON phải có các thuộc tính start, end và text",
-  "noNarrationResults": "Không có kết quả thuyết minh để tạo âm thanh đồng bộ"
+  "noNarrationResults": "Không có kết quả thuyết minh để tạo âm thanh đồng bộ",
+  "requestAborted": "Yêu cầu đã bị hủy",
+  "processingCancelled": "Người dùng đã hủy quá trình xử lý",
+  "allRequestsAborted": "Tất cả các yêu cầu đã bị hủy"
 }
