@@ -386,6 +386,9 @@ function verifyServerAssets(
 
 // Render video endpoint
 app.post('/render', async (req, res) => {
+  // Store original console.log at the render handler scope
+  let originalConsoleLog = console.log;
+  
   // Generate unique render ID
   const renderId = `render_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
   console.log('=== NEW RENDER STARTED ===');
@@ -591,6 +594,29 @@ app.post('/render', async (req, res) => {
     console.log('Video resolution:', `${resolution} (${width}x${height})`);
     console.log('Video settings:', `${metadata.videoType}, ${fps}fps, ${resolution}`);
 
+    // Note: originalConsoleLog already declared at render handler scope
+    
+    // IMPORTANT: Intercept console.log BEFORE selectComposition to catch Chrome download progress
+    console.log = (...args: any[]) => {
+      const message = args.join(' ');
+      
+      // Check for Chrome download progress messages from Remotion
+      const chromeDownloadMatch = message.match(/Downloading Chrome Headless Shell - ([\d.]+) Mb\/([\d.]+) Mb/);
+      if (chromeDownloadMatch) {
+        const downloaded = parseFloat(chromeDownloadMatch[1]);
+        const total = parseFloat(chromeDownloadMatch[2]);
+        
+        // Send Chrome download progress to client
+        const activeRenderForChrome = activeRenders.get(renderId);
+        if (activeRenderForChrome && !activeRenderForChrome.response.writableEnded) {
+          activeRenderForChrome.response.write(`data: ${JSON.stringify({ chromeDownload: { downloaded, total } })}\n\n`);
+        }
+      }
+      
+      // Call original console.log
+      originalConsoleLog(...args);
+    };
+
     const composition = await selectComposition({
       serveUrl: bundleResult,
       id: compositionId,
@@ -623,9 +649,8 @@ app.post('/render', async (req, res) => {
     console.log(`- Resolution: ${width}x${height} (${resolution})`);
     console.log(`- Frame rate: ${fps} fps`);
 
-    // Store original console.log for restoration
-    const originalConsoleLog = console.log;
-
+    // Note: console.log interception already set up before selectComposition
+    // to catch Chrome download messages
 
     // Throttle console progress logs to 1% increments across render + retry
     let lastLoggedPercent = -1;
@@ -634,30 +659,6 @@ app.post('/render', async (req, res) => {
       // Double-check that temp directories exist right before rendering
       ensureRemotionTempDirs();
 
-      // Intercept console.log to catch Chrome download progress
-      console.log = (...args: any[]) => {
-        const message = args.join(' ');
-
-        // Check for Chrome download progress
-        const chromeDownloadMatch = message.match(/Downloading Chrome Headless Shell - ([\d.]+) Mb\/([\d.]+) Mb/);
-        if (chromeDownloadMatch) {
-          const downloaded = parseFloat(chromeDownloadMatch[1]);
-          const total = parseFloat(chromeDownloadMatch[2]);
-
-          // Use the current response object (which may have been updated on reconnection)
-          const activeRenderForChrome = activeRenders.get(renderId);
-          if (activeRenderForChrome && !activeRenderForChrome.response.writableEnded) {
-            activeRenderForChrome.response.write(`data: ${JSON.stringify({ chromeDownload: { downloaded, total } })}\n\n`);
-          }
-        }
-
-        // Call original console.log
-        originalConsoleLog(...args);
-      };
-
-
-      // Throttle console progress logs to 1% increments
-      let lastLoggedPercent = -1;
 
       await renderMedia({
         composition,
@@ -912,6 +913,9 @@ app.post('/render', async (req, res) => {
     setTimeout(() => {
       activeRenders.delete(renderId);
     }, 300000); // Keep for 5 minutes
+  } finally {
+    // IMPORTANT: Restore original console.log to prevent affecting other renders
+    console.log = originalConsoleLog;
   }
 });
 

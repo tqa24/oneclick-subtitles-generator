@@ -356,9 +356,83 @@ const VideoRenderingSection = ({
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
+              
+              // Debug logging to understand what the server is sending during reconnection
+              if (data.message && data.message.includes('Chrome')) {
+                console.log('[Chrome Download Debug - Reconnection] Server message:', data);
+              }
+              
+              // Also log any data with progress-related info during reconnection
+              if (data.message && (data.message.includes('Mb/') || data.message.includes('download'))) {
+                console.log('[Progress Debug - Reconnection] Server message with download info:', data);
+              }
 
+              // IMPORTANT: Check Chrome download FIRST before other phases (reconnection)
+              // Chrome download happens during selectComposition after bundling
+              if (data.chromeDownload) {
+                // This is the actual format from server: { chromeDownload: { downloaded: X, total: Y } }
+                const { downloaded, total } = data.chromeDownload;
+                const downloadProgress = Math.round((downloaded / total) * 100);
+                console.log(`[Chrome Download Progress - Reconnection] ${downloaded}MB / ${total}MB = ${downloadProgress}%`);
+                
+                const chromeDownloadStatus = t('videoRendering.downloadingChrome', 'Downloading Chrome shell (first time only)');
+                
+                setRenderProgress(downloadProgress);
+                setRenderStatus(chromeDownloadStatus);
+                
+                setRenderQueue(prev => prev.map(item =>
+                  item.id === queueItem.id
+                    ? {
+                        ...item,
+                        progress: downloadProgress,
+                        phase: 'chrome-download',
+                        phaseDescription: chromeDownloadStatus
+                      }
+                    : item
+                ));
+              }
+              // Handle Chrome download from other possible formats (fallback)
+              else if ((data.type === 'browser-download') || 
+                  (data.message && data.message.includes('Chrome Headless Shell')) ||
+                  (data.message && data.message.includes('Downloading Chrome Headless Shell'))) {
+                let downloadProgress = 0;
+                let chromeDownloadStatus = '';
+                
+                if (data.type === 'browser-download' && data.downloaded && data.total) {
+                } else if (data.type === 'browser-download' && data.downloaded && data.total) {
+                  // Format 2: { type: 'browser-download', downloaded: X, total: Y }
+                  downloadProgress = Math.round((data.downloaded / data.total) * 100);
+                } else if (data.message && (data.message.includes('Chrome Headless Shell') || data.message.includes('Downloading Chrome'))) {
+                  // Format 3: Parse from message like "Downloading Chrome Headless Shell - 9.5 Mb/102.3 Mb"
+                  // or "[RENDERER] Downloading Chrome Headless Shell - 9.5 Mb/102.3 Mb"
+                  const match = data.message.match(/([0-9.]+)\s*Mb\/([0-9.]+)\s*Mb/);
+                  if (match) {
+                    const downloaded = parseFloat(match[1]);
+                    const total = parseFloat(match[2]);
+                    downloadProgress = Math.round((downloaded / total) * 100);
+                    console.log(`[Chrome Download - Reconnection] Parsed progress: ${downloaded}/${total} MB = ${downloadProgress}%`);
+                  } else {
+                    console.log(`[Chrome Download - Reconnection] Could not parse progress from message: "${data.message}"`);
+                  }
+                }
+                
+                chromeDownloadStatus = t('videoRendering.downloadingChrome', 'Downloading Chrome shell (first time only)');
+                setRenderProgress(downloadProgress);
+                setRenderStatus(chromeDownloadStatus);
+                
+                setRenderQueue(prev => prev.map(item =>
+                  item.id === queueItem.id
+                    ? {
+                        ...item,
+                        progress: downloadProgress,
+                        phase: 'chrome-download',
+                        phaseDescription: chromeDownloadStatus
+                      }
+                    : item
+                ));
+              }
               // Handle progress updates
-              if (data.progress !== undefined) {
+              else if (data.progress !== undefined) {
                 const progressPercent = Math.round(data.progress * 100);
 
                 // Simple debug to see if frame data is received
@@ -1036,25 +1110,138 @@ const VideoRenderingSection = ({
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
+              
+              // LOG EVERYTHING to understand what server is actually sending
+              console.log('[SERVER SSE DATA]', JSON.stringify(data));
+              
+              // Debug logging to understand what the server is sending
+              if (data.message && data.message.includes('Chrome')) {
+                console.log('[Chrome Download Debug] Server message:', data);
+              }
+              
+              // Also log any data with progress-related info
+              if (data.message && (data.message.includes('Mb/') || data.message.includes('download'))) {
+                console.log('[Progress Debug] Server message with download info:', data);
+              }
 
-              // Handle Chrome download progress for first-time users
+              // IMPORTANT: Check Chrome download FIRST before other phases
+              // Chrome download happens during selectComposition after bundling
               if (data.chromeDownload) {
+                // This is the actual format from server: { chromeDownload: { downloaded: X, total: Y } }
                 const { downloaded, total } = data.chromeDownload;
                 const downloadProgress = Math.round((downloaded / total) * 100);
+                console.log(`[Chrome Download Progress] ${downloaded}MB / ${total}MB = ${downloadProgress}%`);
+                
+                const chromeDownloadStatus = t('videoRendering.downloadingChrome', 'Downloading Chrome shell (first time only)');
+                
+                // Use real download progress (0-100%)
                 setRenderProgress(downloadProgress);
-                setRenderStatus(t('videoRendering.downloadingChrome', 'First-time setup: Downloading Chrome browser... {{progress}}%', {
-                  progress: downloadProgress
-                }));
+                setRenderStatus(chromeDownloadStatus);
+                
+                // Update the queue item's progress and phase description
+                const targetQueueItem = queueItem || currentQueueItem;
+                if (targetQueueItem) {
+                  setRenderQueue(prev => prev.map(item =>
+                    item.id === targetQueueItem.id
+                      ? {
+                          ...item,
+                          progress: downloadProgress,
+                          phase: 'chrome-download',
+                          phaseDescription: chromeDownloadStatus
+                        }
+                      : item
+                  ));
+                }
+              }
+              // Handle Chrome download from other possible formats (fallback)
+              else if ((data.type === 'browser-download') || 
+                  (data.message && data.message.includes('Chrome Headless Shell')) ||
+                  (data.message && data.message.includes('Downloading Chrome Headless Shell'))) {
+                let downloadProgress = 0;
+                let chromeDownloadStatus = '';
+                
+                if (data.type === 'browser-download' && data.downloaded && data.total) {
+                } else if (data.type === 'browser-download' && data.downloaded && data.total) {
+                  // Format 2: { type: 'browser-download', downloaded: X, total: Y }
+                  downloadProgress = Math.round((data.downloaded / data.total) * 100);
+                } else if (data.message && (data.message.includes('Chrome Headless Shell') || data.message.includes('Downloading Chrome'))) {
+                  // Format 3: Parse from message like "Downloading Chrome Headless Shell - 9.5 Mb/102.3 Mb"
+                  // or "[RENDERER] Downloading Chrome Headless Shell - 9.5 Mb/102.3 Mb"
+                  const match = data.message.match(/([0-9.]+)\s*Mb\/([0-9.]+)\s*Mb/);
+                  if (match) {
+                    const downloaded = parseFloat(match[1]);
+                    const total = parseFloat(match[2]);
+                    downloadProgress = Math.round((downloaded / total) * 100);
+                    console.log(`[Chrome Download] Parsed progress: ${downloaded}/${total} MB = ${downloadProgress}%`);
+                  } else {
+                    console.log(`[Chrome Download] Could not parse progress from message: "${data.message}"`);
+                  }
+                }
+                
+                chromeDownloadStatus = t('videoRendering.downloadingChrome', 'Downloading Chrome shell (first time only)');
+                
+                // Use real download progress (0-100%) instead of mapping to render progress
+                setRenderProgress(downloadProgress);
+                setRenderStatus(chromeDownloadStatus);
+                
+                // Update the queue item's progress and phase description (use passed queueItem or fallback to currentQueueItem)
+                const targetQueueItem = queueItem || currentQueueItem;
+                if (targetQueueItem) {
+                  setRenderQueue(prev => prev.map(item =>
+                    item.id === targetQueueItem.id
+                      ? {
+                          ...item,
+                          progress: downloadProgress, // Real 0-100% progress for Chrome download
+                          phase: 'chrome-download',
+                          phaseDescription: chromeDownloadStatus
+                        }
+                      : item
+                  ));
+                }
               }
               // Handle bundling progress
               else if (data.bundling) {
-                setRenderProgress(10);
-                setRenderStatus(t('videoRendering.bundling', 'Preparing video components...'));
+                const bundlingStatus = t('videoRendering.bundling', 'Preparing video components...');
+                // Reset progress to 0 after Chrome download completes and rendering begins
+                setRenderProgress(0);
+                setRenderStatus(bundlingStatus);
+                
+                // Update the queue item's progress and phase description (use passed queueItem or fallback to currentQueueItem)
+                const targetQueueItem = queueItem || currentQueueItem;
+                if (targetQueueItem) {
+                  setRenderQueue(prev => prev.map(item =>
+                    item.id === targetQueueItem.id
+                      ? {
+                          ...item,
+                          progress: 0, // Reset to 0% for new render phase after Chrome download
+                          phase: 'bundling',
+                          phaseDescription: bundlingStatus
+                        }
+                      : item
+                  ));
+                }
               }
               // Handle composition selection
               else if (data.composition) {
-                setRenderProgress(20);
-                setRenderStatus(t('videoRendering.selectingComposition', 'Setting up video composition...'));
+                const compositionStatus = t('videoRendering.selectingComposition', 'Setting up video composition...');
+                // Reset to 0% for composition phase after bundling, let server control the progress
+                setRenderProgress(0);
+                setRenderStatus(compositionStatus);
+                
+                // Update the queue item's progress and phase description (use passed queueItem or fallback to currentQueueItem)
+                const targetQueueItem = queueItem || currentQueueItem;
+                if (targetQueueItem) {
+                  setRenderQueue(prev => prev.map(item =>
+                    item.id === targetQueueItem.id
+                      ? {
+                          ...item,
+                          progress: 0, // Start at 0%, let server drive progress
+                          phase: 'composition',
+                          phaseDescription: compositionStatus
+                        }
+                      : item
+                  ));
+                }
               }
               // Handle regular render progress - update queue item instead of global state
               else if (data.progress !== undefined) {
