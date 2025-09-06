@@ -103,7 +103,7 @@ export const coordinateParallelStreaming = async (
         } : undefined
       };
 
-      // Start streaming for this segment
+      // Start streaming for this segment with hallucination recovery support
       streamGeminiContent(
         file,
         fileUri,
@@ -125,14 +125,7 @@ export const coordinateParallelStreaming = async (
               // If the first subtitle starts before half the segment start time, it's likely relative
               needsAdjustment = firstSubtitle.start < subSegment.start / 2;
               
-              if (index === 1 || index === 6) { // Debug problematic segments
-                console.log(`[ParallelCoordinator] Segment ${index + 1} timestamp check:`, {
-                  segmentStart: subSegment.start,
-                  firstSubStart: firstSubtitle.start,
-                  needsAdjustment,
-                  isRelative: firstSubtitle.start < subSegment.start / 2
-                });
-              }
+              // Removed debug logging for specific segments
             }
             
             let adjustedSubtitles = chunk.subtitles.map((subtitle, subIdx) => {
@@ -144,13 +137,7 @@ export const coordinateParallelStreaming = async (
                   end: subtitle.end + subSegment.start
                 };
                 
-                // Debug log for first subtitle of problematic segments
-                if ((index === 1 || index === 6) && subIdx === 0) {
-                  console.log(`[ParallelCoordinator] Adjusting Seg ${index + 1} subtitle:`, {
-                    original: `${subtitle.start}-${subtitle.end}`,
-                    adjusted: `${adjusted.start}-${adjusted.end}`
-                  });
-                }
+                // Removed debug logging
                 
                 return adjusted;
               }
@@ -169,24 +156,9 @@ export const coordinateParallelStreaming = async (
             segmentSubtitles[index] = adjustedSubtitles;
             segmentTexts[index] = chunk.accumulatedText || '';
             
-            // Special detailed logging for segment 6
-            if (index === 5) { // Segment 6 is index 5 (0-based)
-              console.log(`[SEGMENT 6 DEBUG] Chunk ${chunk.chunkCount} received:`, {
-                segmentRange: `[${subSegment.start}s-${subSegment.end}s]`,
-                rawSubtitleCount: chunk.subtitles.length,
-                adjustedSubtitleCount: adjustedSubtitles.length,
-                firstThreeRaw: chunk.subtitles.slice(0, 3).map(s => `${s.start.toFixed(1)}-${s.end.toFixed(1)}s`),
-                firstThreeAdjusted: adjustedSubtitles.slice(0, 3).map(s => `${s.start.toFixed(1)}-${s.end.toFixed(1)}s`),
-                lastThreeAdjusted: adjustedSubtitles.slice(-3).map(s => `${s.start.toFixed(1)}-${s.end.toFixed(1)}s`)
-              });
-            } else {
-              // Regular logging for other segments (less verbose)
-              console.log(`[ParallelCoordinator] Segment ${index + 1}/${subSegments.length} chunk update:`, {
-                segmentRange: `[${subSegment.start}s-${subSegment.end}s]`,
-                subtitleCount: chunk.subtitles.length,
-                chunkCount: chunk.chunkCount,
-                subtitleRanges: chunk.subtitles.slice(0, 3).map(s => `${s.start}-${s.end}s`).join(', ') + (chunk.subtitles.length > 3 ? '...' : '')
-              });
+            // Only log progress every 10 chunks to reduce noise
+            if (chunk.chunkCount % 10 === 0) {
+              console.log(`[ParallelCoordinator] Seg ${index + 1}: ${adjustedSubtitles.length} subtitles`);
             }
 
             // Update progress for this segment
@@ -198,13 +170,7 @@ export const coordinateParallelStreaming = async (
               .map((subs, i) => ({ segment: subSegments[i], subtitles: subs }))
               .filter(result => result.subtitles.length > 0);
             
-            console.log(`[ParallelCoordinator] Pre-merge state:`, {
-              segmentsWithData: segmentsWithSubtitles.length,
-              segmentIndices: segmentsWithSubtitles.map(s => {
-                const idx = subSegments.indexOf(s.segment);
-                return `Seg${idx + 1}[${s.segment.start}-${s.segment.end}]: ${s.subtitles.length} subs`;
-              }).join(', ')
-            });
+            // Removed verbose pre-merge logging
             
             const aggregatedSubtitles = mergeParallelSubtitles(segmentsWithSubtitles);
 
@@ -225,21 +191,7 @@ export const coordinateParallelStreaming = async (
         },
         // onComplete for this segment
         (finalText) => {
-          // Special logging for segment 6
-          if (index === 5) {
-            console.log(`[SEGMENT 6 DEBUG] FINAL COMPLETION:`, {
-              segmentRange: `[${subSegment.start}s-${subSegment.end}s]`,
-              finalSubtitleCount: segmentSubtitles[index]?.length || 0,
-              textLength: finalText?.length || 0,
-              allSubtitles: segmentSubtitles[index]?.map(s => `${s.start.toFixed(1)}-${s.end.toFixed(1)}: ${s.text.substring(0, 20)}...`)
-            });
-          } else {
-            console.log(`[ParallelCoordinator] Segment ${index + 1}/${subSegments.length} completed:`, {
-              segmentRange: `[${subSegment.start}s-${subSegment.end}s]`,
-              finalSubtitleCount: segmentSubtitles[index]?.length || 0,
-              textLength: finalText?.length || 0
-            });
-          }
+          console.log(`[ParallelCoordinator] Seg ${index + 1} done: ${segmentSubtitles[index]?.length || 0} subtitles`);
           
           // Final adjustment check - ensure we haven't already adjusted these
           // The adjustment should have been done during streaming

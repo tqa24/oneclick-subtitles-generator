@@ -7,6 +7,7 @@ import LyricsDisplay from './LyricsDisplay';
 import TranslationSection from './translation';
 import { UnifiedNarrationSection } from './narration';
 import ParallelProcessingStatus from './ParallelProcessingStatus';
+import HallucinationRecoveryStatus from './common/HallucinationRecoveryStatus';
 import { hasValidDownloadedVideo, isBlobUrlValid } from '../utils/videoUtils';
 // BackgroundImageGenerator moved back to AppLayout
 
@@ -238,6 +239,9 @@ const OutputContainer = ({
           </div>
         )
       )}
+      
+      {/* Hallucination Recovery Status - Shows when retrying after detecting hallucination */}
+      <HallucinationRecoveryStatus />
 
       {(subtitlesData || uploadedFile || isUploading || status?.message?.includes('select a segment')) && (
         <>

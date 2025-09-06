@@ -13,15 +13,17 @@ import { createRequestController, removeRequestController } from './requestManag
 import i18n from '../../i18n/i18n';
 
 /**
- * Stream content generation from Gemini API
+ * Stream content generation from Gemini API with hallucination recovery
  * @param {File} file - The media file (already uploaded to Files API)
  * @param {string} fileUri - The uploaded file URI from Files API
  * @param {Object} options - Generation options
  * @param {Function} onChunk - Callback for each streaming chunk
  * @param {Function} onComplete - Callback when streaming is complete
  * @param {Function} onError - Callback for errors
+ * @param {number} retryStartOffset - Start offset for retry (used in hallucination recovery)
+ * @param {number} retryAttempt - Current retry attempt for the same offset
  */
-export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, onComplete, onError) => {
+export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, onComplete, onError, retryStartOffset = null, retryAttempt = 0) => {
   const { userProvidedSubtitles, modelId, videoMetadata, mediaResolution, autoSplitSubtitles: autoSplitEnabled, maxWordsPerSubtitle } = options;
   const MODEL = modelId || localStorage.getItem('gemini_model') || "gemini-2.5-flash";
   
@@ -72,9 +74,13 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
 
     // Add video metadata if provided
     if (videoMetadata && !isAudio) {
-      console.log('[StreamingService] Adding video metadata:', JSON.stringify(videoMetadata, null, 2));
-      requestData.contents[0].parts[0].video_metadata = videoMetadata; // Now at index 0 since video is first
-      console.log('[StreamingService] Part with video_metadata:', JSON.stringify(requestData.contents[0].parts[0], null, 2));
+      // If this is a retry with retryStartOffset, adjust the start_offset
+      let adjustedMetadata = { ...videoMetadata };
+      if (retryStartOffset !== null) {
+        adjustedMetadata.start_offset = `${Math.floor(retryStartOffset)}s`;
+        console.log(`[StreamingService] Retry adjusted start: ${adjustedMetadata.start_offset}`);
+      }
+      requestData.contents[0].parts[0].video_metadata = adjustedMetadata; // Now at index 0 since video is first
     }
 
     // Add structured output schema
@@ -100,8 +106,7 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
     signal = controller.signal;
 
     // Make streaming request
-    console.log('[StreamingService] Request URL:', `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse`);
-    console.log('[StreamingService] Request body:', JSON.stringify(requestData, null, 2));
+    // Removed verbose request logging
     
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?alt=sse`,
@@ -116,8 +121,11 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
       }
     );
 
-    console.log('[StreamingService] Response status:', response.status);
-    console.log('[StreamingService] Response headers:', [...response.headers.entries()]);
+    // Only log if there's an issue
+    if (!response.ok) {
+      console.log('[StreamingService] Response status:', response.status);
+      console.log('[StreamingService] Response headers:', [...response.headers.entries()]);
+    }
     
     if (!response.ok) {
       removeRequestController(requestId);
@@ -126,8 +134,8 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
       throw new Error(`Gemini API error: ${response.status} - ${errorData}`);
     }
 
-    // Process streaming response with options for early termination
-    await processStreamingResponse(response, onChunk, onComplete, onError, options);
+    // Process streaming response with options for early termination and hallucination recovery
+    await processStreamingResponse(response, onChunk, onComplete, onError, options, file, fileUri, retryStartOffset, retryAttempt);
     
     // Clean up request controller after successful completion
     removeRequestController(requestId);
@@ -147,14 +155,18 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
 };
 
 /**
- * Process the streaming response from Gemini API
+ * Process the streaming response from Gemini API with hallucination recovery
  * @param {Response} response - Fetch response object
  * @param {Function} onChunk - Callback for each chunk
  * @param {Function} onComplete - Callback when complete
  * @param {Function} onError - Callback for errors
  * @param {Object} options - Additional options like segment info
+ * @param {File} file - The media file for retry
+ * @param {string} fileUri - The file URI for retry
+ * @param {number} retryStartOffset - Start offset for retry
+ * @param {number} retryAttempt - Current retry attempt
  */
-const processStreamingResponse = async (response, onChunk, onComplete, onError, options = {}) => {
+const processStreamingResponse = async (response, onChunk, onComplete, onError, options = {}, file = null, fileUri = null, retryStartOffset = null, retryAttempt = 0) => {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
@@ -167,14 +179,24 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
   // Extract segment end offset if provided
   // Note: The property is 'end', not 'endOffset'
   const segmentEndOffset = options?.segmentInfo?.end || options?.segmentInfo?.endOffset || null;
+  const segmentStartOffset = retryStartOffset !== null ? retryStartOffset : (options?.segmentInfo?.start || 0);
   let shouldTerminate = false;
   let lastValidSubtitleEndTime = 0;
   
-  console.log(`[StreamingService] Segment processing initialized:`, {
-    segmentStart: options?.segmentInfo?.start || 'not set',
-    segmentEnd: segmentEndOffset || 'not set',
-    duration: options?.segmentInfo?.duration || 'not set'
-  });
+  // Stuck chunk detection variables
+  let lastSubtitleCount = 0;
+  let chunksWithoutNewSubtitles = 0;
+  const MAX_CHUNKS_WITHOUT_SUBTITLES = 30; // Reduced from 50 to 30 for faster detection
+  let lastChunkWithSubtitles = 0;
+  
+  // Hallucination recovery tracking
+  let hallucinationStartTime = null;
+  let validSubtitlesBeforeHallucination = [];
+  
+  // Only log segment info if it's a retry or first attempt
+  if (retryAttempt === 0) {
+    console.log(`[StreamingService] Segment: ${segmentStartOffset}s-${segmentEndOffset}s`);
+  }
 
   try {
     while (true) {
@@ -268,8 +290,137 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
 
                 const parsedSubtitles = parseGeminiResponse(mockResponse);
                 
+                // Stuck chunk detection - check if we're getting NEW subtitles
+                // CRITICAL: We need to check if the count increased, not if it's greater than last count
+                if (parsedSubtitles && parsedSubtitles.length > 0) {
+                  const currentSubtitleCount = parsedSubtitles.length;
+                  
+                  // Check if we got new subtitles in this specific chunk
+                  // The parsed subtitles are accumulated, so we check if count increased
+                  if (currentSubtitleCount > lastSubtitleCount) {
+                    // We got new subtitles, reset the counter
+                    const newSubtitlesInChunk = currentSubtitleCount - lastSubtitleCount;
+                    chunksWithoutNewSubtitles = 0;
+                    lastSubtitleCount = currentSubtitleCount;
+                    lastChunkWithSubtitles = chunkCount;
+                    
+                    // Only log significant updates to reduce noise
+                    if (chunkCount % 100 === 0 || newSubtitlesInChunk > 10) {
+                      console.log(`[StreamingService] Progress: Chunk ${chunkCount}, Total subtitles: ${currentSubtitleCount} (+${newSubtitlesInChunk})`);
+                    }
+                  } else {
+                    // No new subtitles in this chunk
+                    chunksWithoutNewSubtitles++;
+                    
+                    // Log warning every 20 chunks without subtitles
+                    if (chunksWithoutNewSubtitles % 20 === 0 && chunksWithoutNewSubtitles < MAX_CHUNKS_WITHOUT_SUBTITLES) {
+                      console.log(`[StreamingService] Warning: ${chunksWithoutNewSubtitles} chunks without new subtitles (chunk ${chunkCount}, stuck at ${lastSubtitleCount} subtitles)`);
+                    }
+                    
+                    if (chunksWithoutNewSubtitles >= MAX_CHUNKS_WITHOUT_SUBTITLES) {
+                      console.log(`[StreamingService] 🚨 STUCK DETECTION: No new subtitles for ${chunksWithoutNewSubtitles} chunks!`);
+                      console.log(`[StreamingService] Current chunk: ${chunkCount}, Stuck at: ${lastSubtitleCount} subtitles`);
+                      console.log(`[StreamingService] Last subtitle received at chunk: ${lastChunkWithSubtitles}`);
+                      
+                      // Treat this as a hallucination - we're stuck
+                      if (parsedSubtitles.length > 0 && segmentEndOffset !== null && file && fileUri) {
+                        const lastValidSubtitle = parsedSubtitles[parsedSubtitles.length - 1];
+                        hallucinationStartTime = lastValidSubtitle.end;
+                        validSubtitlesBeforeHallucination = [...parsedSubtitles];
+                        
+                        const remainingDuration = segmentEndOffset - hallucinationStartTime;
+                        
+                        if (remainingDuration > 1 && retryAttempt < 3) {
+                          console.log(`[StreamingService] ⚡ STUCK RECOVERY INITIATED`);
+                          console.log(`[StreamingService] ✅ Saved ${validSubtitlesBeforeHallucination.length} valid subtitles`);
+                          console.log(`[StreamingService] 🔄 Retrying: ${hallucinationStartTime.toFixed(1)}s → ${segmentEndOffset.toFixed(1)}s (${remainingDuration.toFixed(1)}s remaining)`);
+                          console.log(`[StreamingService] 📊 Attempt ${retryAttempt + 1}/3`);
+                          
+                          reader.cancel(); // Cancel the reader
+                          
+                          // Dispatch event to update UI
+                          window.dispatchEvent(new CustomEvent('hallucination-recovery', {
+                            detail: {
+                              originalSegment: options.segmentInfo,
+                              retrySegment: {
+                                start: hallucinationStartTime,
+                                end: segmentEndOffset
+                              },
+                              attempt: retryAttempt + 1,
+                              validSubtitlesCount: validSubtitlesBeforeHallucination.length
+                            }
+                          }));
+                          
+                          // Prepare retry options
+                          const retryOptions = {
+                            ...options,
+                            segmentInfo: {
+                              ...options.segmentInfo,
+                              start: hallucinationStartTime,
+                              end: segmentEndOffset
+                            }
+                          };
+                          
+                          if (retryOptions.videoMetadata) {
+                            retryOptions.videoMetadata = {
+                              ...retryOptions.videoMetadata,
+                              start_offset: `${Math.floor(hallucinationStartTime)}s`,
+                              end_offset: `${Math.ceil(segmentEndOffset) + 2}s`
+                            };
+                          }
+                          
+                          // Create wrapper callbacks
+                          const wrappedOnChunk = (chunk) => {
+                            if (chunk.subtitles && chunk.subtitles.length > 0) {
+                              const mergedSubtitles = [...validSubtitlesBeforeHallucination, ...chunk.subtitles]
+                                .sort((a, b) => a.start - b.start);
+                              
+                              onChunk({
+                                ...chunk,
+                                subtitles: mergedSubtitles,
+                                isHallucinationRecovery: true
+                              });
+                            } else {
+                              onChunk(chunk);
+                            }
+                          };
+                          
+                          const wrappedOnComplete = (finalText) => {
+                            console.log(`[StreamingService] Stuck recovery completed successfully`);
+                            onComplete(finalText);
+                          };
+                          
+                          // Start recovery
+                          setTimeout(() => {
+                            streamGeminiContent(
+                              file,
+                              fileUri,
+                              retryOptions,
+                              wrappedOnChunk,
+                              wrappedOnComplete,
+                              onError,
+                              hallucinationStartTime,
+                              retryAttempt + 1
+                            );
+                          }, 1000);
+                          
+                          return; // Exit the streaming loop
+                        }
+                      }
+                      shouldTerminate = true;
+                    }
+                  }
+                } else if (chunkCount > 10) {
+                  // If we've had 10+ chunks with no subtitles at all, something's wrong
+                  chunksWithoutNewSubtitles++;
+                  if (chunksWithoutNewSubtitles >= 20) {
+                    console.log(`[StreamingService] 🚨 STUCK DETECTION: No subtitles at all after ${chunkCount} chunks`);
+                    shouldTerminate = true;
+                  }
+                }
+                
                 // Check if we should terminate based on segment end offset
-                if (segmentEndOffset !== null && parsedSubtitles && parsedSubtitles.length > 0) {
+                if (!shouldTerminate && segmentEndOffset !== null && parsedSubtitles && parsedSubtitles.length > 0) {
                   // console.log(`[StreamingService] Checking segment bounds: end offset = ${segmentEndOffset}s`);
                   // Find the last subtitle that's within the segment bounds
                   let validSubtitles = [];
@@ -309,10 +460,9 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                         
                         if (!legitimateExtended || count > 50) {
                           foundHallucination = true;
-                          console.log(`[StreamingService] Detected hallucination: Character "${char}" repeated ${count} times`);
+                          // Only log the actual hallucination, not the allowed cases
+                          console.log(`[StreamingService] Hallucination: "${char}" x${count}`);
                           break;
-                        } else if (count > 30) {
-                          console.log(`[StreamingService] Allowing extended character "${char}" x${count} (possibly legitimate vocalization)`);
                         }
                       }
                       
@@ -335,7 +485,7 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                         // Even the most repetitive songs rarely repeat the same word/syllable 30+ times in a row
                         if (repetitions > 30) {
                           foundHallucination = true;
-                          console.log(`[StreamingService] Detected hallucination: "${originalRepeatedSection}" repeated ${Math.floor(repetitions)} times (>30 threshold)`);
+                          console.log(`[StreamingService] Hallucination: "${originalRepeatedSection}" x${Math.floor(repetitions)}`);
                           break;
                         }
                         
@@ -346,11 +496,8 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                         
                         if (!hasLetters || looksLikeGibberish) {
                           foundHallucination = true;
-                          console.log(`[StreamingService] Detected hallucination: Non-text pattern "${originalRepeatedSection}" repeated ${Math.floor(repetitions)} times`);
+                          console.log(`[StreamingService] Hallucination: Non-text "${originalRepeatedSection}" x${Math.floor(repetitions)}`);
                           break;
-                        } else if (repetitions > 25) {
-                          // Log warning for 25-30 repetitions but allow it
-                          console.log(`[StreamingService] Warning: "${originalRepeatedSection}" repeated ${Math.floor(repetitions)} times (approaching threshold)`);
                         }
                       }
                       
@@ -537,6 +684,14 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                   if (foundHallucination || foundExceeding) {
                     shouldTerminate = true;
                     
+                    // Track where hallucination started for recovery
+                    if (foundHallucination && validSubtitles.length > 0) {
+                      const lastValidSubtitle = validSubtitles[validSubtitles.length - 1];
+                      hallucinationStartTime = lastValidSubtitle.end;
+                      validSubtitlesBeforeHallucination = [...validSubtitles];
+                      console.log(`[StreamingService] Hallucination detected, will retry from ${hallucinationStartTime}s`);
+                    }
+                    
                     // Send only valid subtitles
                     if (validSubtitles.length > 0) {
                       // Apply auto-split if enabled
@@ -565,6 +720,100 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                       console.log(`[StreamingService] Hallucination reason: Check logs above for specific pattern detected`);
                       console.log(`[StreamingService] Last valid subtitle timestamp: ${lastSubtitle.start?.toFixed(1) || 0}s - ${lastSubtitle.end?.toFixed(1) || 0}s`);
                       console.log(`[StreamingService] Total valid subtitles before termination: ${validSubtitles.length}`);
+                      
+                      // CRITICAL: Trigger hallucination recovery immediately
+                      reader.cancel(); // Cancel the reader first
+                      
+                      // Check if we can and should do hallucination recovery
+                      if (hallucinationStartTime !== null && segmentEndOffset !== null && file && fileUri) {
+                        const remainingDuration = segmentEndOffset - hallucinationStartTime;
+                        
+                        if (remainingDuration > 1 && retryAttempt < 3) {
+                          console.log(`[StreamingService] ⚡ HALLUCINATION RECOVERY INITIATED`);
+                          console.log(`[StreamingService] ✅ Saved ${validSubtitlesBeforeHallucination.length} valid subtitles`);
+                          console.log(`[StreamingService] 🔄 Retrying: ${hallucinationStartTime.toFixed(1)}s → ${segmentEndOffset.toFixed(1)}s (${remainingDuration.toFixed(1)}s remaining)`);
+                          console.log(`[StreamingService] 📊 Attempt ${retryAttempt + 1}/3`);
+                          
+                          // Dispatch event to update UI with the retry sub-range
+                          window.dispatchEvent(new CustomEvent('hallucination-recovery', {
+                            detail: {
+                              originalSegment: options.segmentInfo,
+                              retrySegment: {
+                                start: hallucinationStartTime,
+                                end: segmentEndOffset
+                              },
+                              attempt: retryAttempt + 1,
+                              validSubtitlesCount: validSubtitlesBeforeHallucination.length
+                            }
+                          }));
+                          
+                          // Prepare options for retry with updated segment
+                          const retryOptions = {
+                            ...options,
+                            segmentInfo: {
+                              ...options.segmentInfo,
+                              start: hallucinationStartTime,
+                              end: segmentEndOffset
+                            }
+                          };
+                          
+                          // Update video metadata for the retry segment
+                          if (retryOptions.videoMetadata) {
+                            retryOptions.videoMetadata = {
+                              ...retryOptions.videoMetadata,
+                              start_offset: `${Math.floor(hallucinationStartTime)}s`,
+                              end_offset: `${Math.ceil(segmentEndOffset) + 2}s`
+                            };
+                          }
+                          
+                          // Create wrapper callbacks
+                          const wrappedOnChunk = (chunk) => {
+                            if (chunk.subtitles && chunk.subtitles.length > 0) {
+                              const mergedSubtitles = [...validSubtitlesBeforeHallucination, ...chunk.subtitles]
+                                .sort((a, b) => a.start - b.start);
+                              
+                              onChunk({
+                                ...chunk,
+                                subtitles: mergedSubtitles,
+                                isHallucinationRecovery: true,
+                                recoverySegment: {
+                                  start: hallucinationStartTime,
+                                  end: segmentEndOffset
+                                }
+                              });
+                            } else {
+                              onChunk(chunk);
+                            }
+                          };
+                          
+                          const wrappedOnComplete = (finalText) => {
+                            console.log(`[StreamingService] Hallucination recovery completed successfully`);
+                            onComplete(finalText);
+                          };
+                          
+                          // Start recovery immediately
+                          setTimeout(() => {
+                            streamGeminiContent(
+                              file,
+                              fileUri,
+                              retryOptions,
+                              wrappedOnChunk,
+                              wrappedOnComplete,
+                              onError,
+                              hallucinationStartTime,
+                              retryAttempt + 1
+                            );
+                          }, 1000); // Small delay to let the current stream fully terminate
+                          
+                          return; // Exit without calling onComplete since recovery will handle it
+                        } else {
+                          if (retryAttempt >= 3) {
+                            console.log(`[StreamingService] Max retry attempts reached for offset ${hallucinationStartTime}`);
+                          } else {
+                            console.log(`[StreamingService] Not enough remaining duration for retry (${remainingDuration}s)`);
+                          }
+                        }
+                      }
                     } else {
                       console.log(`[StreamingService] Terminating stream - reached segment end offset at ${segmentEndOffset}`);
                     }
@@ -653,8 +902,105 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
 
     // Final processing
     console.log('[StreamingService] Stream ended, final text length:', accumulatedText.length);
+    
+    // Check if we need hallucination recovery
+    if (hallucinationStartTime !== null && segmentEndOffset !== null && file && fileUri) {
+      const remainingDuration = segmentEndOffset - hallucinationStartTime;
+      
+      if (remainingDuration > 1 && retryAttempt < 3) { // Only retry if there's at least 1 second remaining
+        console.log(`[StreamingService] ⚡ HALLUCINATION RECOVERY INITIATED`);
+        console.log(`[StreamingService] ✅ Saved ${validSubtitlesBeforeHallucination.length} valid subtitles`);
+        console.log(`[StreamingService] 🔄 Retrying: ${hallucinationStartTime.toFixed(1)}s → ${segmentEndOffset.toFixed(1)}s (${remainingDuration.toFixed(1)}s remaining)`);
+        console.log(`[StreamingService] 📊 Attempt ${retryAttempt + 1}/3`);
+        
+        // Dispatch event to update UI with the retry sub-range
+        window.dispatchEvent(new CustomEvent('hallucination-recovery', {
+          detail: {
+            originalSegment: options.segmentInfo,
+            retrySegment: {
+              start: hallucinationStartTime,
+              end: segmentEndOffset
+            },
+            attempt: retryAttempt + 1,
+            validSubtitlesCount: validSubtitlesBeforeHallucination.length
+          }
+        }));
+        
+        // Prepare options for retry with updated segment
+        const retryOptions = {
+          ...options,
+          segmentInfo: {
+            ...options.segmentInfo,
+            start: hallucinationStartTime,
+            end: segmentEndOffset
+          }
+        };
+        
+        // Update video metadata for the retry segment
+        if (retryOptions.videoMetadata) {
+          retryOptions.videoMetadata = {
+            ...retryOptions.videoMetadata,
+            start_offset: `${Math.floor(hallucinationStartTime)}s`,
+            end_offset: `${Math.ceil(segmentEndOffset) + 2}s`
+          };
+        }
+        
+        // Retry from the hallucination point
+        try {
+          console.log(`[StreamingService] Starting hallucination recovery retry...`);
+          
+          // Create a wrapper for onChunk to merge with existing valid subtitles
+          const wrappedOnChunk = (chunk) => {
+            if (chunk.subtitles && chunk.subtitles.length > 0) {
+              // Merge valid subtitles from before hallucination with new subtitles
+              const mergedSubtitles = [...validSubtitlesBeforeHallucination, ...chunk.subtitles]
+                .sort((a, b) => a.start - b.start);
+              
+              onChunk({
+                ...chunk,
+                subtitles: mergedSubtitles,
+                isHallucinationRecovery: true,
+                recoverySegment: {
+                  start: hallucinationStartTime,
+                  end: segmentEndOffset
+                }
+              });
+            } else {
+              onChunk(chunk);
+            }
+          };
+          
+          // Create a wrapper for onComplete to merge final results
+          const wrappedOnComplete = (finalText) => {
+            console.log(`[StreamingService] Hallucination recovery completed successfully`);
+            onComplete(finalText);
+          };
+          
+          // Recursive call with updated start offset
+          await streamGeminiContent(
+            file,
+            fileUri,
+            retryOptions,
+            wrappedOnChunk,
+            wrappedOnComplete,
+            onError,
+            hallucinationStartTime,
+            retryAttempt + 1
+          );
+          
+          return; // Exit this function as retry will handle completion
+        } catch (retryError) {
+          console.error(`[StreamingService] Hallucination recovery failed:`, retryError);
+          // Fall through to complete with what we have
+        }
+      } else if (retryAttempt >= 3) {
+        console.log(`[StreamingService] Max retry attempts reached for offset ${hallucinationStartTime}`);
+      } else {
+        console.log(`[StreamingService] Not enough remaining duration for retry (${remainingDuration}s)`);
+      }
+    }
 
-    // If we didn't get a [DONE] signal, still complete with accumulated text
+    // If we didn't get a [DONE] signal or hallucination recovery is not needed/failed
     if (accumulatedText.length > 0) {
       onComplete(accumulatedText);
     } else {
