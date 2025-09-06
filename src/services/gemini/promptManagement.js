@@ -10,57 +10,27 @@ export const PROMPT_PRESETS = [
 {
 id: 'general',
 title: 'General purpose',
-prompt: `Transcribe all spoken content in this ${'{contentType}'}. Format each segment as: [MMmSSsNNNms - MMmSSsNNNms] Transcribed text
-
-Example: [00m30s000ms - 00m35s500ms] This is the transcribed speech
-
-Use leading zeros (00m05s100ms, not 0m5s100ms). Return only the formatted transcript lines.
-
-If no speech is present, return: []`
+prompt: `Transcribe all spoken content in this ${'{contentType}'}. Include the exact start and end times for each segment of speech.`
 },
 {
 id: 'extract-text',
 title: 'Extract text',
-prompt: `Extract only visible text and hardcoded subtitles from this ${'{contentType}'}. Ignore all audio. Format each text appearance as: [MMmSSsNNNms - MMmSSsNNNms] Extracted text
-
-Example: [00m30s000ms - 00m35s500ms] This text appeared on screen
-
-Use leading zeros (00m05s100ms, not 0m5s100ms). Return only the formatted text entries.
-
-If no visible text is present, return: []`
+prompt: `Extract only visible text and hardcoded subtitles from this ${'{contentType}'}. Ignore all audio. Include the exact start and end times for each text appearance.`
 },
 {
 id: 'focus-lyrics',
 title: 'Focus on Lyrics',
-prompt: `Extract only sung lyrics from this ${'{contentType}'}. Ignore spoken words, dialogue, narration, and instrumental music. Format each lyrical segment as: [MMmSSsNNNms - MMmSSsNNNms] Transcribed lyrics
-
-Example: [00m45s100ms - 00m50s250ms] These are the lyrics being sung
-
-Use leading zeros (00m05s100ms, not 0m5s100ms). Return only the formatted lyric lines.
-
-If no sung lyrics are present, return: []`
+prompt: `Extract only sung lyrics from this ${'{contentType}'}. Ignore spoken words, dialogue, narration, and instrumental music. Include the exact start and end times for each lyrical segment.`
 },
 {
 id: 'describe-video',
 title: 'Describe video',
-prompt: `Describe significant visual events and scene changes in this ${'{contentType}'}. Focus only on what is visually happening. Format each description as: [MMmSSsNNNms - MMmSSsNNNms] Visual description
-
-Example: [00m30s000ms - 00m35s500ms] A person walks across the screen
-
-Use leading zeros (00m05s100ms, not 0m5s100ms). Return only the formatted descriptions.
-
-If no significant visual content is present, return: []`
+prompt: `Describe significant visual events and scene changes in this ${'{contentType}'}. Focus only on what is visually happening. Include the exact start and end times for each visual event.`
 },
 {
 id: 'translate-directly',
 title: 'Translate directly',
-prompt: `Identify the spoken language(s) and translate all speech directly into TARGET_LANGUAGE. Format each translated segment as: [MMmSSsNNNms - MMmSSsNNNms] Translated text
-
-Example: [00m30s000ms - 00m35s500ms] This is the translated text
-
-Use leading zeros (00m05s100ms, not 0m5s100ms). Return only the formatted translation lines.
-
-If no speech is present, return: []`
+prompt: `Identify the spoken language(s) and translate all speech directly into TARGET_LANGUAGE. Include the exact start and end times for each translated segment.`
 },
 {
 // Chaptering prompt remains unchanged as requested
@@ -75,11 +45,7 @@ Ensure titles are concise (5-7 words max) and summaries are brief (1-2 sentences
 {
 id: 'diarize-speakers',
 title: 'Identify Speakers',
-prompt: `Transcribe speech and identify speakers in this ${'{contentType}'}. Use consistent labels (Speaker 1, Speaker 2, etc.) throughout. Format each segment as: Speaker Label [MMmSSsNNNms - MMmSSsNNNms] Transcribed text
-
-Example: Speaker 1 [00m05s123ms - 00m10s456ms] This is what the first speaker said
-
-Use leading zeros (00m05s100ms, not 0m5s100ms). Each entry represents one speaker's continuous segment. Return only the formatted speaker transcript lines.`
+prompt: `Transcribe speech and identify speakers in this ${'{contentType}'}. Use consistent labels (Speaker 1, Speaker 2, etc.) throughout. Include the exact start and end times for each speaker's segment. Each entry should represent one speaker's continuous segment.`
 }
 ];
 
@@ -324,21 +290,7 @@ const getDefaultTranslationPromptImpl = (subtitleText, targetLanguage, multiLang
 
         return `Translate the following ${subtitleCount} subtitle texts to these languages: ${languageList}.
 
-IMPORTANT INSTRUCTIONS:
-1. Translate each line of text separately for EACH language.
-2. DO NOT add any timestamps, SRT formatting, or other formatting.
-3. DO NOT include any explanations, comments, or additional text in your response.
-4. DO NOT include any SRT entry numbers, timestamps, or formatting in your translations.
-5. DO NOT include quotes around your translations.
-6. MAINTAIN exactly ${subtitleCount} lines in the same order for each language.
-7. Each line in your response should correspond to the same line in the input.
-8. If a line is empty, keep it empty in your response.
-9. Return your response in a structured format with each language's translations grouped together.
-10. For each subtitle, include BOTH the original text AND its translation to prevent mismatches.
-
-Format your response as a JSON object with this structure:
-${exampleJson}
-`;
+Provide a translation for each subtitle in each requested language. Maintain the exact order of the subtitles.`;
     } else {
         // Updated single language prompt to include original text
         // Build a JSON example with the actual subtitle lines
@@ -356,19 +308,7 @@ ${exampleJson}
 
         return `Translate the following ${subtitleCount} subtitle texts to ${targetLanguage}.
 
-IMPORTANT INSTRUCTIONS:
-1. Translate each line of text separately.
-2. DO NOT add any timestamps, SRT formatting, or other formatting.
-3. DO NOT include any explanations, comments, or additional text in your response.
-4. DO NOT include any SRT entry numbers, timestamps, or formatting in your translations.
-5. DO NOT include quotes around your translations.
-6. MAINTAIN exactly ${subtitleCount} lines in the same order.
-7. Each line in your response should correspond to the same line in the input.
-8. If a line is empty, keep it empty in your response.
-9. For each subtitle, include BOTH the original text AND its translation to prevent mismatches.
-
-Format your response as a JSON array with objects containing both original and translated text:
-${exampleJson}
+Provide a translation for each subtitle. Maintain the exact order of the subtitles.
 
 `;
     }
@@ -385,11 +325,7 @@ I have a collection of subtitles from a video or audio. Please convert these int
 
 ${languageInstruction}
 
-IMPORTANT: Your response should ONLY contain the consolidated document text as plain text.
-DO NOT include any explanations, comments, headers, JSON formatting, or additional text in your response.
-DO NOT structure your response as JSON with title and content fields.
-DO NOT use markdown formatting.
-Just return the plain text of the consolidated document.
+Provide a clear title and well-structured content for the document.
 
 Here are the subtitles:\n\n${subtitlesText}
 
@@ -407,15 +343,7 @@ I have a collection of subtitles from a video or audio. Please create a concise 
 
 ${languageInstruction}
 
-IMPORTANT: Your response should ONLY contain the summary text as plain text.
-DO NOT include any explanations, comments, headers, JSON formatting, or additional text in your response.
-DO NOT structure your response as JSON with title and content fields.
-DO NOT use markdown formatting.
-Just return the plain text of the summary.
-
-IMPORTANT: Your response should ONLY contain the summary text.
-DO NOT include any explanations, comments, headers, or additional text in your response.
-DO NOT include phrases like "Here's a summary" or "In summary" at the beginning.
+Provide both a comprehensive summary and key points from the content.
 
 Here are the subtitles:\n\n${subtitlesText}
 

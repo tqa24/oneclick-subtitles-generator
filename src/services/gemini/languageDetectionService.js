@@ -35,21 +35,12 @@ export const detectSubtitleLanguage = async (subtitles, source = 'original', mod
         const sampleText = sampleSubtitles.map(subtitle => subtitle.text).join('\n');
 
         // Create the prompt for language detection
-        const detectionPrompt = `
-Please analyze the following text and determine its language.
-Return the ISO 639-1 language code, full language name, and whether it contains multiple languages.
-If it contains multiple languages:
-1. Set isMultiLanguage to true
-2. Set languageCode to the primary/dominant language code
-3. Include all detected language codes in the secondaryLanguages array (including the primary language)
+        const detectionPrompt = `Analyze the following text and determine its language. Identify the primary language and any secondary languages if present.
 
 Text to analyze:
 """
 ${sampleText}
-"""
-
-Respond with structured data only.
-`;
+"""`;
 
         // Create request data with structured output
         let requestData = {
