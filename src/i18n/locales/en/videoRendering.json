@@ -39,7 +39,7 @@
   "renderingFrames": "Processing video frames...",
   "renderingFramesDetailed": "Rendering frames: {{rendered}}/{{total}}",
   "encodingFrames": "Encoding and stitching frames...",
-  "downloadingChrome": "Downloading Chrome shell (first time only)",
+  "downloadingChrome": "Downloading Chrome for Testing (first time only)",
   "bundling": "Preparing video components...",
   "selectingComposition": "Setting up video composition...",
   "complete": "Render complete!",

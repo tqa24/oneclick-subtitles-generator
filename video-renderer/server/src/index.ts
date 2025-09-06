@@ -600,8 +600,8 @@ app.post('/render', async (req, res) => {
     console.log = (...args: any[]) => {
       const message = args.join(' ');
       
-      // Check for Chrome download progress messages from Remotion
-      const chromeDownloadMatch = message.match(/Downloading Chrome Headless Shell - ([\d.]+) Mb\/([\d.]+) Mb/);
+      // Check for Chrome download progress messages from Remotion (both Chrome for Testing and Headless Shell)
+      const chromeDownloadMatch = message.match(/Downloading Chrome (?:for Testing|Headless Shell) - ([\d.]+) Mb\/([\d.]+) Mb/);
       if (chromeDownloadMatch) {
         const downloaded = parseFloat(chromeDownloadMatch[1]);
         const total = parseFloat(chromeDownloadMatch[2]);
@@ -620,6 +620,7 @@ app.post('/render', async (req, res) => {
     const composition = await selectComposition({
       serveUrl: bundleResult,
       id: compositionId,
+      chromeMode: "chrome-for-testing",  // Use same Chrome mode as renderMedia to avoid double download
       inputProps: {
         audioUrl: audioUrl,
         lyrics,

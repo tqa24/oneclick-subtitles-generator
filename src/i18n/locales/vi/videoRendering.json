@@ -39,7 +39,7 @@
   "renderingFrames": "Đang xử lý khung hình video...",
   "renderingFramesDetailed": "Đang render khung hình: {{rendered}}/{{total}}",
   "encodingFrames": "Đang mã hóa và ghép nối khung hình...",
-  "downloadingChrome": "Tải Chrome shell cho lần đầu",
+  "downloadingChrome": "Tải Chrome for Testing lần đầu",
   "bundling": "Đang chuẩn bị các thành phần video...",
   "selectingComposition": "Đang thiết lập cấu hình video...",
   "complete": "Render hoàn thành!",

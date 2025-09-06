@@ -375,7 +375,7 @@ const VideoRenderingSection = ({
                 const downloadProgress = Math.round((downloaded / total) * 100);
                 console.log(`[Chrome Download Progress - Reconnection] ${downloaded}MB / ${total}MB = ${downloadProgress}%`);
                 
-                const chromeDownloadStatus = t('videoRendering.downloadingChrome', 'Downloading Chrome shell (first time only)');
+                const chromeDownloadStatus = t('videoRendering.downloadingChrome', 'Downloading Chrome for Testing (first time only)');
                 
                 setRenderProgress(downloadProgress);
                 setRenderStatus(chromeDownloadStatus);
@@ -393,8 +393,8 @@ const VideoRenderingSection = ({
               }
               // Handle Chrome download from other possible formats (fallback)
               else if ((data.type === 'browser-download') || 
-                  (data.message && data.message.includes('Chrome Headless Shell')) ||
-                  (data.message && data.message.includes('Downloading Chrome Headless Shell'))) {
+                  (data.message && (data.message.includes('Chrome Headless Shell') || data.message.includes('Chrome for Testing'))) ||
+                  (data.message && data.message.includes('Downloading Chrome'))) {
                 let downloadProgress = 0;
                 let chromeDownloadStatus = '';
                 
@@ -402,9 +402,11 @@ const VideoRenderingSection = ({
                 } else if (data.type === 'browser-download' && data.downloaded && data.total) {
                   // Format 2: { type: 'browser-download', downloaded: X, total: Y }
                   downloadProgress = Math.round((data.downloaded / data.total) * 100);
-                } else if (data.message && (data.message.includes('Chrome Headless Shell') || data.message.includes('Downloading Chrome'))) {
-                  // Format 3: Parse from message like "Downloading Chrome Headless Shell - 9.5 Mb/102.3 Mb"
-                  // or "[RENDERER] Downloading Chrome Headless Shell - 9.5 Mb/102.3 Mb"
+                } else if (data.message && (data.message.includes('Chrome Headless Shell') || data.message.includes('Chrome for Testing') || data.message.includes('Downloading Chrome'))) {
+                  // Format 3: Parse from message like:
+                  // "Downloading Chrome Headless Shell - 9.5 Mb/102.3 Mb"
+                  // "Downloading Chrome for Testing - 9.5 Mb/158.8 Mb"
+                  // "[RENDERER] Downloading Chrome for Testing - 9.5 Mb/158.8 Mb"
                   const match = data.message.match(/([0-9.]+)\s*Mb\/([0-9.]+)\s*Mb/);
                   if (match) {
                     const downloaded = parseFloat(match[1]);
@@ -416,7 +418,7 @@ const VideoRenderingSection = ({
                   }
                 }
                 
-                chromeDownloadStatus = t('videoRendering.downloadingChrome', 'Downloading Chrome shell (first time only)');
+                chromeDownloadStatus = t('videoRendering.downloadingChrome', 'Downloading Chrome for Testing (first time only)');
                 setRenderProgress(downloadProgress);
                 setRenderStatus(chromeDownloadStatus);
                 
@@ -1132,7 +1134,7 @@ const VideoRenderingSection = ({
                 const downloadProgress = Math.round((downloaded / total) * 100);
                 console.log(`[Chrome Download Progress] ${downloaded}MB / ${total}MB = ${downloadProgress}%`);
                 
-                const chromeDownloadStatus = t('videoRendering.downloadingChrome', 'Downloading Chrome shell (first time only)');
+                const chromeDownloadStatus = t('videoRendering.downloadingChrome', 'Downloading Chrome for Testing (first time only)');
                 
                 // Use real download progress (0-100%)
                 setRenderProgress(downloadProgress);
@@ -1155,8 +1157,8 @@ const VideoRenderingSection = ({
               }
               // Handle Chrome download from other possible formats (fallback)
               else if ((data.type === 'browser-download') || 
-                  (data.message && data.message.includes('Chrome Headless Shell')) ||
-                  (data.message && data.message.includes('Downloading Chrome Headless Shell'))) {
+                  (data.message && (data.message.includes('Chrome Headless Shell') || data.message.includes('Chrome for Testing'))) ||
+                  (data.message && data.message.includes('Downloading Chrome'))) {
                 let downloadProgress = 0;
                 let chromeDownloadStatus = '';
                 
@@ -1164,9 +1166,11 @@ const VideoRenderingSection = ({
                 } else if (data.type === 'browser-download' && data.downloaded && data.total) {
                   // Format 2: { type: 'browser-download', downloaded: X, total: Y }
                   downloadProgress = Math.round((data.downloaded / data.total) * 100);
-                } else if (data.message && (data.message.includes('Chrome Headless Shell') || data.message.includes('Downloading Chrome'))) {
-                  // Format 3: Parse from message like "Downloading Chrome Headless Shell - 9.5 Mb/102.3 Mb"
-                  // or "[RENDERER] Downloading Chrome Headless Shell - 9.5 Mb/102.3 Mb"
+                } else if (data.message && (data.message.includes('Chrome Headless Shell') || data.message.includes('Chrome for Testing') || data.message.includes('Downloading Chrome'))) {
+                  // Format 3: Parse from message like:
+                  // "Downloading Chrome Headless Shell - 9.5 Mb/102.3 Mb"
+                  // "Downloading Chrome for Testing - 9.5 Mb/158.8 Mb"
+                  // "[RENDERER] Downloading Chrome for Testing - 9.5 Mb/158.8 Mb"
                   const match = data.message.match(/([0-9.]+)\s*Mb\/([0-9.]+)\s*Mb/);
                   if (match) {
                     const downloaded = parseFloat(match[1]);
@@ -1178,7 +1182,7 @@ const VideoRenderingSection = ({
                   }
                 }
                 
-                chromeDownloadStatus = t('videoRendering.downloadingChrome', 'Downloading Chrome shell (first time only)');
+                chromeDownloadStatus = t('videoRendering.downloadingChrome', 'Downloading Chrome for Testing (first time only)');
                 
                 // Use real download progress (0-100%) instead of mapping to render progress
                 setRenderProgress(downloadProgress);
