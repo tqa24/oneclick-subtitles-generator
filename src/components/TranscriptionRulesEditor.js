@@ -352,7 +352,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
                   <span className="countdown-text">
                     {t('rulesEditor.autoSaveCountdown', 'Auto-saving in')}
                   </span>
-                  <span className="countdown-number">{countdown}</span>
+                  <span className="countdown-number" data-content={countdown}>{countdown}</span>
                   <span className="countdown-text">
                     {t('rulesEditor.seconds', 'seconds')}
                   </span>
