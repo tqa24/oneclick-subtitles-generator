@@ -95,13 +95,15 @@ router.post('/download-douyin-playwright', async (req, res) => {
       const filename = path.basename(downloadedPath);
 
       console.log(`[DOUYIN-PLAYWRIGHT] Download completed: ${filename}`);
+      console.log(`[DOUYIN-PLAYWRIGHT] Video has been normalized and is ready for processing`);
 
       // Store completed download info for progress polling
       completedDownloads.set(videoId, {
         filename: filename,
         path: downloadedPath,
         url: `/videos/${filename}`,
-        completedAt: Date.now()
+        completedAt: Date.now(),
+        normalized: true  // Track that video was normalized
       });
 
         // Clean up active downloads tracking
