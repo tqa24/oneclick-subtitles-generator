@@ -7,5 +7,13 @@
   "appLogoAlt": "One-click Subtitles Generator Logo",
   "settings": "Settings",
   "settingsAria": "Open Settings",
-  "tagline": "Generate timed subtitles with AI"
+  "tagline": "Generate timed subtitles with AI",
+  "tryNewVersion": "Try new version",
+  "oldVersion": "Use old version",
+  "switching": "Switching...",
+  "switchError": "Failed to switch version. Please try again.",
+  "tryNewVersionTooltip": "Don't worry, you can always go back to the old version",
+  "oldVersionTooltip": "Go back to the old version",
+  "switchingVersions": "Switching versions...",
+  "reloadingPage": "Reloading application..."
 }

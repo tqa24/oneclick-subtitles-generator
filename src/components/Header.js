@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import '../styles/Header.css';
 import GeminiHeaderAnimation from './GeminiHeaderAnimation';
 import specialStarIcon from '../assets/specialStar.svg';
+import LoadingIndicator from './common/LoadingIndicator';
 
 const Header = ({ onSettingsClick }) => {
   const { t } = useTranslation();
@@ -12,6 +13,7 @@ const Header = ({ onSettingsClick }) => {
   const [isInitialShow, setIsInitialShow] = useState(true); // Track if we're in initial show period
   const [hasOpenedSettings, setHasOpenedSettings] = useState(false); // Track if user has ever opened settings
   const [isFullVersion, setIsFullVersion] = useState(false); // Track if running in full mode
+  const [currentBranch, setCurrentBranch] = useState('main'); // Track current branch
 
   // Define the position update function outside useEffect so it can be reused
   const updateFloatingActionsPosition = () => {
@@ -202,6 +204,39 @@ const Header = ({ onSettingsClick }) => {
     detectStartupMode();
   }, []);
 
+  // Detect current Git branch
+  useEffect(() => {
+    const detectGitBranch = async () => {
+      try {
+        const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3031';
+        const response = await fetch(`${API_BASE_URL}/api/git-branch`, {
+          mode: 'cors',
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          // Detect if we're on old_version or main branch
+          const branchName = data.branch || 'old_version';
+          if (branchName === 'main') {
+            setCurrentBranch('main'); // New version
+          } else {
+            setCurrentBranch('old_version'); // Old version
+          }
+        }
+      } catch (error) {
+        console.error('Failed to detect git branch:', error);
+        // Default to old_version if we can't detect
+        setCurrentBranch('old_version');
+      }
+    };
+
+    detectGitBranch();
+  }, []);
+
   // Handle settings click - mark as opened and call original handler
   const handleSettingsClick = () => {
     // Mark that user has opened settings
@@ -212,6 +247,159 @@ const Header = ({ onSettingsClick }) => {
 
     // Call the original settings click handler
     onSettingsClick();
+  };
+
+  // Handle branch switching
+  const handleBranchSwitch = async () => {
+    const targetBranch = currentBranch === 'old_version' ? 'main' : 'old_version';
+    
+    // Show loading state
+    const button = document.querySelector('.branch-switch-button');
+    if (button) {
+      button.disabled = true;
+      button.textContent = t('header.switching');
+    }
+    
+    // Create loading overlay with LoadingIndicator
+    const overlay = document.createElement('div');
+    overlay.className = 'branch-switch-loading-overlay';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    `;
+    
+    // Create container for React component
+    const loadingContainer = document.createElement('div');
+    loadingContainer.id = 'branch-switch-loading';
+    overlay.appendChild(loadingContainer);
+    document.body.appendChild(overlay);
+    
+    // Render LoadingIndicator into the container
+    const React = require('react');
+    const ReactDOM = require('react-dom');
+    ReactDOM.render(
+      React.createElement('div', { 
+        style: { 
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '20px'
+        } 
+      },
+        React.createElement('div', {
+          style: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: '15px'
+          }
+        },
+          React.createElement(LoadingIndicator, { 
+            size: 48, 
+            theme: document.documentElement.getAttribute('data-theme') || 'light',
+            showContainer: true 
+          }),
+          React.createElement('div', { 
+            style: { 
+              color: 'white', 
+              fontSize: '1.2rem',
+              fontWeight: '500'
+            } 
+          }, t('header.switchingVersions'))
+        )
+      ),
+      loadingContainer
+    );
+    
+    try {
+      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3031';
+      const response = await fetch(`${API_BASE_URL}/api/switch-branch`, {
+        method: 'POST',
+        mode: 'cors',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ branch: targetBranch }),
+        // Increase timeout since branch switching takes time
+        signal: AbortSignal.timeout(30000) // 30 second timeout
+      });
+
+      const data = await response.json().catch(() => null);
+      
+      if (response.ok && data && data.success) {
+        // Update loading message
+        const messageDiv = loadingContainer.querySelector('div > div:last-child');
+        if (messageDiv) {
+          messageDiv.textContent = t('header.reloadingPage');
+        }
+        
+        // Wait a bit for the cache clearing to complete
+        setTimeout(() => {
+          // Clear localStorage cache related to modules
+          try {
+            Object.keys(localStorage).forEach(key => {
+              if (key.includes('webpack') || key.includes('module') || key.includes('babel')) {
+                localStorage.removeItem(key);
+              }
+            });
+          } catch (e) {
+            console.log('Could not clear module cache from localStorage');
+          }
+          
+          // Force hard reload to clear all caches
+          window.location.reload(true);
+        }, 1500);
+      } else {
+        // Only show error if we actually failed
+        const errorMessage = data?.error || (response.ok ? null : t('header.switchError'));
+        
+        if (errorMessage) {
+          ReactDOM.unmountComponentAtNode(loadingContainer);
+          document.body.removeChild(overlay);
+          alert(errorMessage);
+          
+          // Re-enable button
+          if (button) {
+            button.disabled = false;
+            button.textContent = currentBranch === 'old_version' ? t('header.tryNewVersion') : t('header.oldVersion');
+          }
+        } else {
+          // Success but no success flag? Reload anyway
+          setTimeout(() => {
+            window.location.reload(true);
+          }, 1500);
+        }
+      }
+    } catch (error) {
+      // Check if it's a timeout error
+      if (error.name === 'AbortError') {
+        // Timeout might mean it succeeded but took too long to respond
+        console.log('Request timed out, reloading anyway...');
+        setTimeout(() => {
+          window.location.reload(true);
+        }, 1500);
+      } else {
+        ReactDOM.unmountComponentAtNode(loadingContainer);
+        document.body.removeChild(overlay);
+        console.error('Failed to switch branch:', error);
+        alert(t('header.switchError'));
+        // Re-enable button
+        if (button) {
+          button.disabled = false;
+          button.textContent = currentBranch === 'old_version' ? t('header.tryNewVersion') : t('header.oldVersion');
+        }
+      }
+    }
   };
 
   return (
@@ -226,6 +414,14 @@ const Header = ({ onSettingsClick }) => {
             {isFullVersion ? ` (${t('header.versionFull')})` : ` (${t('header.versionLite')})`}
           </span>
         </h1>
+        <button
+          className="branch-switch-button"
+          onClick={handleBranchSwitch}
+          aria-label={currentBranch === 'old_version' ? t('header.tryNewVersion') : t('header.oldVersion')}
+          title={currentBranch === 'old_version' ? t('header.tryNewVersionTooltip') : t('header.oldVersionTooltip')}
+        >
+          {currentBranch === 'old_version' ? t('header.tryNewVersion') : t('header.oldVersion')}
+        </button>
       </div>
 
       <button

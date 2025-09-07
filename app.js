@@ -379,4 +379,123 @@ app.post('/api/scan-models', async (req, res) => {
   }
 });
 
+// Git branch detection endpoint
+app.get('/api/git-branch', (req, res) => {
+  const { exec } = require('child_process');
+  
+  exec('git branch --show-current', (error, stdout, stderr) => {
+    if (error) {
+      console.error('Error getting git branch:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to detect git branch',
+        branch: 'old_version' // Default to old_version if detection fails
+      });
+    }
+    
+    const branch = stdout.trim();
+    console.log('Current git branch:', branch);
+    
+    res.json({
+      success: true,
+      branch: branch || 'old_version'
+    });
+  });
+});
+
+// Git branch switching endpoint
+app.post('/api/switch-branch', express.json(), async (req, res) => {
+  const { exec } = require('child_process');
+  const { branch } = req.body;
+  
+  if (!branch) {
+    return res.status(400).json({
+      success: false,
+      error: 'Branch name is required'
+    });
+  }
+  
+  console.log(`Switching to branch: ${branch}`);
+  
+  // First, check if the branch exists
+  exec(`git branch --list ${branch}`, (error, stdout, stderr) => {
+    if (error || !stdout.trim()) {
+      console.error(`Branch ${branch} does not exist`);
+      return res.status(400).json({
+        success: false,
+        error: `Branch '${branch}' does not exist. Please create it first.`
+      });
+    }
+    
+    // Stash any uncommitted changes first
+    exec('git stash', (stashError, stashStdout, stashStderr) => {
+      if (stashError) {
+        console.warn('Warning: Could not stash changes:', stashError);
+      }
+      
+      // Now checkout the requested branch
+      exec(`git checkout ${branch}`, (checkoutError, checkoutStdout, checkoutStderr) => {
+        if (checkoutError) {
+          console.error('Error switching branch:', checkoutError);
+          
+          // Try to pop the stash if checkout failed
+          exec('git stash pop', () => {});
+          
+          return res.status(500).json({
+            success: false,
+            error: `Failed to switch to branch '${branch}': ${checkoutError.message}`
+          });
+        }
+        
+        console.log(`Successfully switched to branch: ${branch}`);
+        
+        // Try to pop the stash after successful checkout
+        exec('git stash pop', (popError) => {
+          if (popError) {
+            console.log('No stashed changes to restore or merge conflict occurred');
+          }
+        });
+        
+        // Send success response immediately
+        res.json({
+          success: true,
+          message: `Successfully switched to branch '${branch}'. Restarting application...`,
+          branch: branch,
+          requiresRestart: true
+        });
+        
+        // Run npm install and then npm run dev/dev:cuda in a new detached process
+        setTimeout(() => {
+          const { spawn } = require('child_process');
+          
+          // Check if we're running in Full version (dev:cuda) or Lite version (dev)
+          const isFullVersion = process.env.START_PYTHON_SERVER === 'true';
+          const runCommand = isFullVersion ? 'npm run dev:cuda' : 'npm run dev';
+          
+          console.log(`Starting new process with npm install and ${runCommand}...`);
+          
+          // Create command to run npm install first, then the appropriate dev command
+          // Using && to chain commands so dev only runs if install succeeds
+          const fullCommand = `npm install && ${runCommand}`;
+          
+          // Start in a new command window
+          spawn('cmd', ['/c', 'start', 'cmd', '/k', fullCommand], {
+            detached: true,
+            stdio: 'ignore',
+            cwd: __dirname,
+            shell: false
+          }).unref();
+          
+          console.log(`New process started (${isFullVersion ? 'Full' : 'Lite'} version). This process will exit shortly...`);
+          
+          // Exit current process after a moment
+          setTimeout(() => {
+            process.exit(0);
+          }, 1000);
+        }, 500);
+      });
+    });
+  });
+});
+
 module.exports = app;
