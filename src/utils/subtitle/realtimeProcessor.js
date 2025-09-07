@@ -226,11 +226,11 @@ export class RealtimeSubtitleProcessor {
       });
 
       this.onStatusUpdate({
-        message: `Processing complete! Generated ${finalSubtitles.length} subtitles.`,
+        message: `Processing complete! Generated ${processedSubtitles.length} subtitles.`,
         type: 'success'
       });
 
-      this.onComplete(finalSubtitles);
+      this.onComplete(processedSubtitles);
     } else {
       // No valid subtitles found
       console.error('[RealtimeProcessor] No valid subtitles found in final response');
