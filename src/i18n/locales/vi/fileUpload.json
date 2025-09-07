@@ -7,5 +7,7 @@
   "converting": "Đang chuyển đổi sang video...",
   "conversionError": "Không thể chuyển đổi âm thanh sang video. Vui lòng thử lại.",
   "copying": "Đang sao chép tập tin lớn...",
-  "copyError": "Không thể sao chép tập tin lớn. Vui lòng thử lại."
+  "copyError": "Không thể sao chép tập tin lớn. Vui lòng thử lại.",
+  "copyErrorShort": "Không thể sao chép tập tin lớn.",
+  "retrySkipMulter": "Thử lại bằng cách bỏ qua Multer?"
 }

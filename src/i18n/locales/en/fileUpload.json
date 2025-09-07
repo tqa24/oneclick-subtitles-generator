@@ -7,5 +7,7 @@
   "converting": "Converting to video...",
   "conversionError": "Failed to convert audio to video. Please try again.",
   "copying": "Copying large file...",
-  "copyError": "Failed to copy large file. Please try again."
+  "copyError": "Failed to copy large file. Please try again.",
+  "copyErrorShort": "Failed to copy large file.",
+  "retrySkipMulter": "Retry by skipping Multer?"
 }

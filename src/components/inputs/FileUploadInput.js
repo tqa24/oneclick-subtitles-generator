@@ -13,19 +13,23 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef(null);
 
+  const lastSelectedFileRef = useRef(null);
+  const skipLargeFileCopyRef = useRef(false);
+
+
   // Maximum file size in MB (5GB = 5120MB)
   const MAX_FILE_SIZE_MB = 5120;
 
   // Supported file formats - wrapped in useMemo to avoid dependency issues
   const SUPPORTED_VIDEO_FORMATS = useMemo(() => [
-    "video/mp4", 
-    "video/mpeg", 
+    "video/mp4",
+    "video/mpeg",
     "video/mov",           // This might be incorrect
-    "video/avi", 
-    "video/x-flv", 
-    "video/mpg", 
-    "video/webm", 
-    "video/wmv", 
+    "video/avi",
+    "video/x-flv",
+    "video/mpg",
+    "video/webm",
+    "video/wmv",
     "video/3gpp",
     "video/quicktime"      // Add this - correct MIME type for .mov files
   ], []);
@@ -105,6 +109,9 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
   // Process the file with improved handling for large files
   const processFile = async (file) => {
     if (file) {
+        // Remember the last selected file so we can retry without Multer if needed
+        lastSelectedFileRef.current = file;
+
       if (validateFile(file)) {
         // Set loading state immediately
         setIsLoading(true);
@@ -155,7 +162,7 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
         // For large files (>500MB), copy to videos directory for better handling
         const fileSizeMB = processedFile.size / (1024 * 1024);
         console.log(`File size: ${fileSizeMB.toFixed(2)} MB`);
-        if (fileSizeMB > 500) {
+        if (fileSizeMB > 500 && !skipLargeFileCopyRef.current) {
           try {
             // Show copying progress for large files
             setFileInfo(prev => ({
@@ -183,7 +190,29 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
             }));
           } catch (error) {
             console.error('Error copying large file:', error);
-            setError(t('fileUpload.copyError', 'Failed to copy large file. Please try again.'));
+            setError(
+              (
+                <>
+                  {t('fileUpload.copyErrorShort', 'Failed to copy large file.')} {' '}
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setError('');
+                      skipLargeFileCopyRef.current = true;
+                      const f = lastSelectedFileRef.current;
+                      if (f) {
+                        // Retry processing but skip Multer-based copy this time
+                        setTimeout(() => processFile(f), 0);
+                      }
+                    }}
+                  >
+                    {t('fileUpload.retrySkipMulter', 'Retry by skipping Multer?')}
+                  </a>
+                </>
+              )
+            );
             setUploadedFile(null);
             setFileInfo(null);
             setIsLoading(false);
@@ -233,6 +262,8 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
 
         // Clear loading state after processing is complete
         setIsLoading(false);
+        // Reset skip flag after successful processing
+        skipLargeFileCopyRef.current = false;
       } else {
         setUploadedFile(null);
         setFileInfo(null);
