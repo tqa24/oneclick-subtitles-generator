@@ -289,7 +289,8 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                     lastChunkWithSubtitles = chunkCount;
                     
                     // Only log significant updates to reduce noise
-                    if (chunkCount % 100 === 0 || newSubtitlesInChunk > 10) {
+                    // PERFORMANCE: Increased threshold to reduce logging overhead
+                    if (chunkCount % 200 === 0 || newSubtitlesInChunk > 20) {
                       console.log(`[StreamingService] Progress: Chunk ${chunkCount}, Total subtitles: ${currentSubtitleCount} (+${newSubtitlesInChunk})`);
                     }
                   } else {
@@ -366,9 +367,19 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                   let recentTextBlocks = [];
                   let blockRepetitionCount = 0;
                   
-                  for (const subtitle of parsedSubtitles) {
+                  // PERFORMANCE: Only check new subtitles for hallucination, not all accumulated ones
+                  // Check last 50 subtitles max to catch patterns while keeping performance good
+                  const subtitlesToCheck = parsedSubtitles.length > 50 
+                    ? parsedSubtitles.slice(-50) 
+                    : parsedSubtitles;
+                  const startIndex = Math.max(0, parsedSubtitles.length - 50);
+                  
+                  for (let i = 0; i < parsedSubtitles.length; i++) {
+                    const subtitle = parsedSubtitles[i];
+                    // Only do expensive hallucination checks on recent subtitles
+                    const shouldCheckHallucination = i >= startIndex;
                     // Check for excessive character repetition in text
-                    if (subtitle.text) {
+                    if (shouldCheckHallucination && subtitle.text) {
                       // Check for single character repeated many times  
                       const singleCharPattern = /(.)\1{29,}/; // Same character repeated 30+ times (raised from 20)
                       if (singleCharPattern.test(subtitle.text)) {
@@ -446,7 +457,7 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                     }
                     
                     // Check for invalid timing (0,0 or both start and end are 0)
-                    if (subtitle.start === 0 && subtitle.end === 0) {
+                    if (shouldCheckHallucination && subtitle.start === 0 && subtitle.end === 0) {
                       invalidTimingCount++;
                       if (invalidTimingCount >= 3) {
                         foundHallucination = true;
@@ -696,7 +707,8 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                   console.warn('[StreamingService] Parse error at chunk', chunkCount, ':', parseError.message);
                   
                   // Log a sample of the accumulated text to see what format we're getting
-                  if (chunkCount % 100 === 0) { // Every 100 chunks, log a sample
+                  // PERFORMANCE: Reduced logging frequency
+                  if (chunkCount % 500 === 0) { // Every 500 chunks, log a sample
                     console.log('[StreamingService] Sample of unparseable content at chunk', chunkCount, ':');
                     console.log('- Text length:', accumulatedText.length);
                     console.log('- Last 500 chars:', accumulatedText.slice(-500));

@@ -156,8 +156,8 @@ export const coordinateParallelStreaming = async (
             segmentSubtitles[index] = adjustedSubtitles;
             segmentTexts[index] = chunk.accumulatedText || '';
             
-            // Only log progress every 10 chunks to reduce noise
-            if (chunk.chunkCount % 10 === 0) {
+            // PERFORMANCE: Reduced logging frequency for better performance with long videos
+            if (chunk.chunkCount % 50 === 0) {
               console.log(`[ParallelCoordinator] Seg ${index + 1}: ${adjustedSubtitles.length} subtitles`);
             }
 
