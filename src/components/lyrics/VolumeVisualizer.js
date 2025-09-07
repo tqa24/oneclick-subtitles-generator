@@ -103,66 +103,158 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
   const animationFrameRef = useRef(null);
   const resizeObserverRef = useRef(null);
   const abortControllerRef = useRef(null);
+  const processingSourceRef = useRef(null);
+  const debounceTimerRef = useRef(null);
 
   // Process audio data once when the component mounts or audioSource changes
   useEffect(() => {
-    console.log('[WAVEFORM] Effect triggered:', {
-      audioSource: audioSource?.substring(0, 100),
-      isProcessed,
-      isProcessing,
-      hasAudio,
-      duration
-    });
+    // Clear any existing debounce timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
     
-    if (!audioSource || isProcessed || isProcessing) {
-      console.log('[WAVEFORM] Skipping processing:', {
-        noSource: !audioSource,
-        alreadyProcessed: isProcessed,
-        currentlyProcessing: isProcessing
+    // Skip if no source
+    if (!audioSource) {
+      console.log('[WAVEFORM] No audio source provided');
+      return;
+    }
+    
+    // Debounce rapid source changes (wait 100ms for source to stabilize)
+    const currentSource = audioSource;
+    const currentDuration = duration;
+    
+    debounceTimerRef.current = setTimeout(() => {
+      console.log('[WAVEFORM] Processing after debounce:', {
+        audioSource: currentSource?.substring(0, 100),
+        isProcessed,
+        isProcessing,
+        hasAudio,
+        duration: currentDuration
       });
+      
+      // If we already have waveform data loaded, skip processing
+      if (waveformLOD && isProcessed) {
+        // Check if it's for the same video (by ID)
+        const currentVideoId = currentSource.match(/\/([a-zA-Z0-9_-]+)\.mp4/)?.[1];
+        if (currentVideoId) {
+          const cachedData = audioDataCache.get(`video_${currentVideoId}`);
+          if (cachedData && cachedData === waveformLOD) {
+            console.log('[WAVEFORM] Already have waveform data for this video, skipping');
+            return;
+          }
+        }
+      }
+      
+      // Skip if already processing this exact source
+      if (isProcessing && processingSourceRef.current === currentSource) {
+        console.log('[WAVEFORM] Already processing this exact source, skipping');
+        return;
+      }
+      
+      // Skip if we're processing a different source - abort it first
+      if (isProcessing && processingSourceRef.current !== currentSource) {
+        console.log('[WAVEFORM] Processing different source, aborting previous');
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+          abortControllerRef.current = null;
+        }
+        setIsProcessing(false);
+        processingSourceRef.current = null;
+      }
+    
+    // Check if this is the same source (handle blob to server URL transition)
+    const isSameVideo = () => {
+      // Extract video ID from URLs
+      const getVideoId = (url) => {
+        const match = url.match(/\/([a-zA-Z0-9_-]+)\.mp4/);
+        return match ? match[1] : null;
+      };
+      
+      const videoId = getVideoId(currentSource);
+      if (videoId) {
+        // First, check if we have cached data specifically for this video ID
+        const videoCache = audioDataCache.get(`video_${videoId}`);
+        if (videoCache && videoCache !== 'NO_AUDIO') {
+          console.log('[WAVEFORM] Found cached data for video ID:', videoId);
+          setWaveformLOD(videoCache);
+          setIsProcessed(true);
+          return true;
+        }
+        
+        // Also check if any other URL has the same video ID
+        for (const [cachedUrl, cachedData] of audioDataCache.entries()) {
+          if (cachedUrl.startsWith('video_')) continue; // Skip video ID entries
+          const cachedVideoId = getVideoId(cachedUrl);
+          if (cachedVideoId === videoId && cachedData !== 'NO_AUDIO') {
+            console.log('[WAVEFORM] Found cached data for same video ID from different URL:', videoId);
+            setWaveformLOD(cachedData);
+            setIsProcessed(true);
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+    
+    // Check if it's the same video with different URL
+    if (isSameVideo()) {
       return;
     }
+    
+      // Skip if already processed for this exact URL
+      if (isProcessed && audioDataCache.has(currentSource)) {
+        console.log('[WAVEFORM] Already processed this exact URL');
+        return;
+      }
 
-    let isActive = true;
-    let localAbortController = new AbortController();
+      let isActive = true;
+      let localAbortController = new AbortController();
+      
+      // Abort any existing request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = localAbortController;
+      processingSourceRef.current = currentSource;
 
-    // Reset states when audioSource changes
-    setHasAudio(true);
-    setAudioError(null);
-    setHasDrawn(false);
+      // Reset states when audioSource changes
+      setHasAudio(true);
+      setAudioError(null);
+      setHasDrawn(false);
 
-    // Skip YouTube URLs as they can't be directly processed due to CORS
-    if (audioSource.includes('youtube.com') || audioSource.includes('youtu.be')) {
-      setHasAudio(false);
-      setAudioError('YouTube videos cannot be processed due to CORS restrictions');
-      return;
-    }
-
-    // Check if we already have this audio data in cache
-    if (audioDataCache.has(audioSource)) {
-      const cachedData = audioDataCache.get(audioSource);
-      if (cachedData === 'NO_AUDIO') {
+      // Skip YouTube URLs as they can't be directly processed due to CORS
+      if (currentSource.includes('youtube.com') || currentSource.includes('youtu.be')) {
         setHasAudio(false);
-        setAudioError('No audio track found in this video');
+        setAudioError('YouTube videos cannot be processed due to CORS restrictions');
+        return;
+      }
+
+      // Check if we already have this audio data in cache
+      if (audioDataCache.has(currentSource)) {
+        const cachedData = audioDataCache.get(currentSource);
+        if (cachedData === 'NO_AUDIO') {
+          setHasAudio(false);
+          setAudioError('No audio track found in this video');
+          setIsProcessed(true);
+          return;
+        }
+        setWaveformLOD(cachedData);
         setIsProcessed(true);
         return;
       }
-      setWaveformLOD(cachedData);
-      setIsProcessed(true);
-      return;
-    }
 
-    // For long videos, use a more efficient approach with downsampling
-    const isLongVideo = duration > 1800; // 30 minutes
+      // For long videos, use a more efficient approach with downsampling
+      const isLongVideo = currentDuration > 1800; // 30 minutes
 
     const processAudio = async () => {
-      console.log('[WAVEFORM] Starting audio processing:', {
-        source: audioSource.substring(0, 100),
-        duration,
-        isLongVideo,
-        isBlobUrl: audioSource.startsWith('blob:'),
-        isLocalFile: audioSource.startsWith('/videos/')
-      });
+        console.log('[WAVEFORM] Starting audio processing:', {
+          source: currentSource.substring(0, 100),
+          duration: currentDuration,
+          isLongVideo,
+          isBlobUrl: currentSource.startsWith('blob:'),
+          isLocalFile: currentSource.startsWith('/videos/')
+        });
       
       try {
         setIsProcessing(true);
@@ -179,24 +271,24 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
         // Fetch the audio data with abort support
         console.log('[WAVEFORM] Fetching audio data...');
         let response;
-        const isBlob = audioSource.startsWith('blob:');
+        const isBlob = currentSource.startsWith('blob:');
         try {
-          if (isBlob && window.__videoBlobMap && window.__videoBlobMap[audioSource]) {
+          if (isBlob && window.__videoBlobMap && window.__videoBlobMap[currentSource]) {
             // Directly use stored blob for faster access
             console.log('[WAVEFORM] Using cached blob');
-            const blob = window.__videoBlobMap[audioSource];
+            const blob = window.__videoBlobMap[currentSource];
             response = new Response(blob);
           } else {
             console.log('[WAVEFORM] Fetching from URL:', {
               isBlob,
               mode: isBlob ? 'no-cors' : 'cors'
             });
-            response = await fetch(audioSource, { signal: localAbortController.signal, cache: 'no-cache', mode: isBlob ? 'no-cors' : 'cors' });
+            response = await fetch(currentSource, { signal: localAbortController.signal, cache: 'no-cache', mode: isBlob ? 'no-cors' : 'cors' });
           }
         } catch (e) {
           console.log('[WAVEFORM] First fetch failed, retrying:', e.message);
           // Retry once without mode override
-          response = await fetch(audioSource, { signal: localAbortController.signal, cache: 'no-cache' });
+          response = await fetch(currentSource, { signal: localAbortController.signal, cache: 'no-cache' });
         }
         console.log('[WAVEFORM] Fetch complete, converting to arrayBuffer...');
         const arrayBuffer = await response.arrayBuffer();
@@ -296,17 +388,26 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
         // Create LOD structure for efficient multi-resolution rendering
         const waveformLOD = new WaveformLOD(volumeData);
 
-        // Store the processed audio data in cache for future use
-        audioDataCache.set(audioSource, waveformLOD);
-
-        // Store the processed audio data only if component is still active
-        if (isActive) {
+        // Store the processed audio data only if component is still active and not aborted
+        if (isActive && !localAbortController.signal.aborted) {
           console.log('[WAVEFORM] Processing complete, storing data');
+          
+          // Store in cache for this URL
+          audioDataCache.set(currentSource, waveformLOD);
+          
+          // Also store by video ID if it's a server URL to share between blob and server URLs
+          const videoIdMatch = currentSource.match(/\/([a-zA-Z0-9_-]+)\.mp4/);
+          if (videoIdMatch) {
+            const videoId = videoIdMatch[1];
+            audioDataCache.set(`video_${videoId}`, waveformLOD);
+            console.log('[WAVEFORM] Also cached for video ID:', videoId);
+          }
+          
           setWaveformLOD(waveformLOD);
           setIsProcessed(true);
           console.log('[WAVEFORM] ✅ Waveform data ready');
         } else {
-          console.log('[WAVEFORM] Component unmounted, discarding data');
+          console.log('[WAVEFORM] Component unmounted or aborted, discarding data');
         }
       } catch (error) {
         // Swallow expected AbortError when unmounting or toggling off
@@ -329,7 +430,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
           setHasAudio(false);
           setAudioError('No audio track found in this video');
           // Cache the fact that this source has no audio
-          audioDataCache.set(audioSource, 'NO_AUDIO');
+          audioDataCache.set(currentSource, 'NO_AUDIO');
         } else {
           setAudioError(`Audio processing failed: ${error.message}`);
         }
@@ -339,23 +440,41 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
       } finally {
         if (isActive) {
           setIsProcessing(false);
+          // Clear the processing source ref when done
+          if (processingSourceRef.current === currentSource) {
+            processingSourceRef.current = null;
+          }
         }
       }
     };
 
     processAudio();
 
-    // Cleanup function
+      // Cleanup function
+      return () => {
+        isActive = false;
+        // Abort any in-flight fetch/processing
+        if (localAbortController) {
+          try { 
+            console.log('[WAVEFORM] Cleanup: aborting fetch');
+            localAbortController.abort(); 
+          } catch {}
+        }
+        // Clear the ref if it's our controller
+        if (abortControllerRef.current === localAbortController) {
+          abortControllerRef.current = null;
+          processingSourceRef.current = null;
+        }
+        // Don't close audio context here - keep it for reuse
+      };
+    }, 100); // End of setTimeout
+    
+    // Cleanup debounce timer on unmount
     return () => {
-      isActive = false;
-      // Abort any in-flight fetch/processing
-      if (localAbortController) {
-        try { 
-          console.log('[WAVEFORM] Cleanup: aborting fetch');
-          localAbortController.abort(); 
-        } catch {}
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
       }
-      // Don't close audio context here - keep it for reuse
     };
   }, [audioSource, duration]); // Remove isProcessed and isProcessing from deps to prevent loops
 
