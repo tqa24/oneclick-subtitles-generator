@@ -1062,7 +1062,7 @@ const TimelineVisualization = ({
                 justifyContent: 'center',
                 padding: '4px 6px',
                 borderRadius: 12,
-                zIndex: 2147483647,
+                zIndex: 999,
                 color: 'var(--md-on-surface)',
                 pointerEvents: 'auto'
               }}

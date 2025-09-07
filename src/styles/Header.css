@@ -118,7 +118,7 @@
 .floating-settings {
   position: absolute;
   /* top and right will be set dynamically by JavaScript */
-  z-index: 1000; /* High z-index to ensure it's above everything */
+  z-index: 2147483646; /* Very high z-index to ensure it's above video controls */
   background: rgba(var(--md-surface-rgb), 0.95) !important;
   backdrop-filter: blur(12px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
