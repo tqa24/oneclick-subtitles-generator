@@ -244,7 +244,7 @@ const ButtonsContainer = ({
   const waitForAnalysisComplete = () => {
     return new Promise((resolve) => {
       let checkCount = 0;
-      const maxChecks = 120; // 2 minutes max wait for analysis
+      // Removed timeout - let analysis run as long as needed
       let modalDetected = false;
       let errorDetected = false;
       
@@ -310,18 +310,12 @@ const ButtonsContainer = ({
           console.log('[AutoFlow] Analysis complete (rules saved without modal)');
           resolve();
           
-        } else if (checkCount >= maxChecks) {
-          // Timeout reached - continue without analysis
-          clearInterval(checkInterval);
-          console.log('[AutoFlow] Analysis timeout reached, continuing without analysis');
-          showInfoToast(t('autoFlow.analysisTimeout', 'Analysis taking too long, continuing without it'), 3000);
-          resolve();
-          
         } else if (autoFlowAbortedRef.current) {
           clearInterval(checkInterval);
           console.log('[AutoFlow] Analysis aborted');
           resolve();
         }
+        // Removed timeout check - analysis will run indefinitely until complete or aborted
       }, 500); // Check every 500ms for faster response
     });
   };
