@@ -317,6 +317,19 @@ async function fullConvertVideo(inputPath) {
  * @returns {Promise<Object>} - Normalization result
  */
 async function normalizeVideo(videoPath, forceNormalize = false) {
+  // TEMPORARY BYPASS FOR TESTING - Set to true to disable all normalization
+  const BYPASS_NORMALIZATION = true;  // <<<< CHANGE THIS TO false TO RE-ENABLE
+  
+  if (BYPASS_NORMALIZATION) {
+    console.log('[UniversalNormalizer] ⚠️ NORMALIZATION BYPASSED FOR TESTING');
+    return {
+      normalized: false,
+      path: videoPath,
+      analysis: { issues: [], needsNormalization: false },
+      message: 'Normalization bypassed for testing'
+    };
+  }
+  
   try {
     console.log('[UniversalNormalizer] Checking video:', path.basename(videoPath));
     
