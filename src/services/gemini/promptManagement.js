@@ -38,14 +38,9 @@ prompt: `Transcribe all spoken content in this ${'{contentType}'} and translate 
 IMPORTANT: The 'text' field in your response must contain the TRANSLATED text in TARGET_LANGUAGE, not the original language.`
 },
 {
-// Chaptering prompt remains unchanged as requested
 id: 'chaptering',
 title: 'Chaptering',
-prompt: `You are an expert content analyst. Your task is to analyze this ${'{contentType}'} and identify distinct chapters or thematic segments based on major topic shifts or significant changes in activity/scene. Format the output as a sequential list, with each chapter on a new line. Each line MUST strictly follow the format: [HH:MM:SS] Chapter Title (5-7 words max) :: Chapter Summary (1-2 sentences). Use the specific timestamp format [HH:MM:SS] (hours, minutes, seconds) representing the chapter's start time. Use ' :: ' (space, two colons, space) as the separator between the title and the summary.
-Example of two chapter lines:
-[00:05:15] Introduction to Topic :: This chapter introduces the main subject discussed and sets the stage for later details.
-[00:15:30] Exploring Detail A :: The speaker dives into the first major detail, providing supporting examples.
-Ensure titles are concise (5-7 words max) and summaries are brief (1-2 sentences). Focus on major segmentation points. Return ONLY the formatted chapter lines following this exact single-line structure. Do not include any introductory text, concluding remarks, blank lines, lists, or any other text or formatting.`
+prompt: `Analyze this ${'{contentType}'} and identify distinct chapters or thematic segments based on major topic shifts or significant changes in activity/scene. For each chapter, provide the exact start and end times, and format the text as "Chapter Title :: Brief description". Chapter titles should be 5-7 words max, descriptions should be 1-2 sentences. Focus on major segmentation points only.`
 },
 {
 id: 'diarize-speakers',
