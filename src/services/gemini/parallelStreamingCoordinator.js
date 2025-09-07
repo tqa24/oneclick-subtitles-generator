@@ -148,7 +148,8 @@ export const coordinateParallelStreaming = async (
             if (autoSplitEnabled && maxWordsPerSubtitle > 0) {
               const beforeSplitCount = adjustedSubtitles.length;
               adjustedSubtitles = autoSplitSubtitles(adjustedSubtitles, maxWordsPerSubtitle);
-              if (adjustedSubtitles.length > beforeSplitCount) {
+              // PERFORMANCE: Only log significant auto-splits to reduce noise
+              if (adjustedSubtitles.length > beforeSplitCount && (adjustedSubtitles.length - beforeSplitCount) > 5) {
                 console.log(`[ParallelCoordinator] Auto-split applied to segment ${index + 1}: ${beforeSplitCount} -> ${adjustedSubtitles.length} subtitles`);
               }
             }

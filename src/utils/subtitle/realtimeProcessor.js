@@ -128,7 +128,10 @@ export class RealtimeSubtitleProcessor {
         let processedSubtitles = parsedSubtitles;
         if (this.autoSplitEnabled && this.maxWordsPerSubtitle > 0) {
           processedSubtitles = autoSplitSubtitles(parsedSubtitles, this.maxWordsPerSubtitle);
-          console.log(`[RealtimeProcessor] Auto-split: ${parsedSubtitles.length} -> ${processedSubtitles.length} subtitles`);
+          // PERFORMANCE: Only log significant auto-splits
+          if (processedSubtitles.length - parsedSubtitles.length > 5) {
+            console.log(`[RealtimeProcessor] Auto-split: ${parsedSubtitles.length} -> ${processedSubtitles.length} subtitles`);
+          }
         }
 
         this.currentSubtitles = processedSubtitles;
@@ -210,6 +213,7 @@ export class RealtimeSubtitleProcessor {
       let processedSubtitles = finalSubtitles;
       if (this.autoSplitEnabled && this.maxWordsPerSubtitle > 0) {
         processedSubtitles = autoSplitSubtitles(finalSubtitles, this.maxWordsPerSubtitle);
+        // Always log final auto-split since it only happens once
         console.log(`[RealtimeProcessor] Final auto-split: ${finalSubtitles.length} -> ${processedSubtitles.length} subtitles`);
       }
       

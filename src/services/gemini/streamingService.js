@@ -662,7 +662,8 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                     let finalSubtitles = validSubtitles;
                     if (autoSplitEnabled && maxWordsPerSubtitle > 0) {
                       finalSubtitles = autoSplitSubtitles(validSubtitles, maxWordsPerSubtitle);
-                      if (finalSubtitles.length > validSubtitles.length) {
+                      // PERFORMANCE: Reduced logging - only log significant splits
+                      if (finalSubtitles.length > validSubtitles.length && (finalSubtitles.length - validSubtitles.length) > 5) {
                         console.log(`[StreamingService] Auto-split applied: ${validSubtitles.length} -> ${finalSubtitles.length} subtitles`);
                       }
                     }
@@ -680,7 +681,8 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                   let finalSubtitles = parsedSubtitles;
                   if (autoSplitEnabled && maxWordsPerSubtitle > 0) {
                     finalSubtitles = autoSplitSubtitles(parsedSubtitles, maxWordsPerSubtitle);
-                    if (finalSubtitles.length > parsedSubtitles.length) {
+                    // PERFORMANCE: Reduced logging - only log significant splits
+                    if (finalSubtitles.length > parsedSubtitles.length && (finalSubtitles.length - parsedSubtitles.length) > 5) {
                       console.log(`[StreamingService] Auto-split applied: ${parsedSubtitles.length} -> ${finalSubtitles.length} subtitles`);
                     }
                   }

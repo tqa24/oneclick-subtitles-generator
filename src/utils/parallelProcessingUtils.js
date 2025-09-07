@@ -63,7 +63,11 @@ export const mergeParallelSubtitles = (segmentResults) => {
     return [];
   }
 
-  console.log(`[MergeParallelSubtitles] Starting merge of ${segmentResults.length} segments`);
+  // PERFORMANCE: Reduced logging - only log first merge and final merge
+  const isFirstOrFinal = segmentResults.some(r => r.subtitles?.length > 50);
+  if (isFirstOrFinal) {
+    console.log(`[MergeParallelSubtitles] Starting merge of ${segmentResults.length} segments`);
+  }
 
   // Collect all subtitles from all segments
   const allSubtitles = [];
@@ -91,7 +95,10 @@ export const mergeParallelSubtitles = (segmentResults) => {
 
   // Sort subtitles by start time
   allSubtitles.sort((a, b) => a.start - b.start);
-  console.log(`[MergeParallelSubtitles] Collected ${allSubtitles.length} total subtitles before deduplication`);
+  // PERFORMANCE: Only log for significant merges
+  if (allSubtitles.length > 100 || isFirstOrFinal) {
+    console.log(`[MergeParallelSubtitles] Collected ${allSubtitles.length} total subtitles before deduplication`);
+  }
 
   // Remove duplicates and overlaps
   const mergedSubtitles = [];
@@ -134,13 +141,19 @@ export const mergeParallelSubtitles = (segmentResults) => {
   // Clean up segment tracking info
   const finalSubtitles = mergedSubtitles.map(({ segmentIndex, ...subtitle }) => subtitle);
 
-  console.log(`[MergeParallelSubtitles] Merge complete:`, {
+  // PERFORMANCE: Only log merge results for significant operations
+  const stats = {
     input: allSubtitles.length,
     output: finalSubtitles.length,
     duplicatesRemoved,
     overlapsAdjusted,
     subtitlesLost: allSubtitles.length - finalSubtitles.length
-  });
+  };
+  
+  // Only log if there were actual changes or it's a large merge
+  if (duplicatesRemoved > 0 || overlapsAdjusted > 0 || allSubtitles.length > 100 || isFirstOrFinal) {
+    console.log(`[MergeParallelSubtitles] Merge complete:`, stats);
+  }
 
   return finalSubtitles;
 };
