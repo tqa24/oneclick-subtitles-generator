@@ -142,29 +142,32 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
   useEffect(() => {
     if (!isOpen) return; // Only run when modal is open
     
-    // PRIORITY 1: Check if there's an analysis-recommended preset (highest priority)
-    const sessionPresetId = sessionStorage.getItem('current_session_preset_id');
-    // PRIORITY 2: Check if Rules Editor has its own saved preset (lower priority)
-    const rulesEditorPresetId = sessionStorage.getItem('rules_editor_preset_id');
-    let detectedPresetId = 'custom'; // Initialize the variable
+    // SIMPLE: Check what's currently saved in localStorage
+    const savedPresetId = localStorage.getItem('video_processing_prompt_preset');
     
-    if (sessionPresetId) {
-      // Always prioritize analysis-recommended preset
-      console.log('[TranscriptionRulesEditor] Using analysis-recommended preset (overrides any saved preset):', sessionPresetId);
+    // If there's an analysis recommendation and no saved preset, use the recommendation as initial value
+    const sessionPresetId = sessionStorage.getItem('current_session_preset_id');
+    
+    let detectedPresetId = 'custom';
+    
+    if (savedPresetId) {
+      // Use what's saved (user's choice)
+      console.log('[TranscriptionRulesEditor] Using saved preset:', savedPresetId);
+      detectedPresetId = savedPresetId === 'settings' ? 'custom' : savedPresetId;
+      setCurrentPresetId(detectedPresetId);
+    } else if (sessionPresetId) {
+      // No saved preference, use analysis recommendation as initial value
+      console.log('[TranscriptionRulesEditor] Using analysis recommendation as initial value:', sessionPresetId);
       detectedPresetId = sessionPresetId;
       setCurrentPresetId(sessionPresetId);
-      // Save it as the Rules Editor preset for this session
-      sessionStorage.setItem('rules_editor_preset_id', sessionPresetId);
-    } else if (rulesEditorPresetId) {
-      // Use the previously selected preset in Rules Editor only if no analysis recommendation
-      console.log('[TranscriptionRulesEditor] Using previously selected preset (no analysis recommendation):', rulesEditorPresetId);
-      detectedPresetId = rulesEditorPresetId;
-      setCurrentPresetId(rulesEditorPresetId);
+      // Save it immediately so it persists
+      localStorage.setItem('video_processing_prompt_preset', sessionPresetId);
     } else {
-      // Default to custom (settings prompt)
-      console.log('[TranscriptionRulesEditor] Using custom prompt from settings (no recommendations or saved presets)');
+      // No saved preference and no recommendation, default to custom
+      console.log('[TranscriptionRulesEditor] No saved preset or recommendation, defaulting to custom');
       detectedPresetId = 'custom';
       setCurrentPresetId('custom');
+      localStorage.setItem('video_processing_prompt_preset', 'settings');
     }
 
     // Set initial state for change tracking
@@ -274,27 +277,25 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
     const newPresetId = e.target.value;
     setCurrentPresetId(newPresetId);
 
+    // SIMPLE: Just save to localStorage directly
     if (newPresetId === 'custom') {
-      // For custom preset, clear the rules editor preset but keep current prompt
-      sessionStorage.removeItem('rules_editor_preset_id');
-      sessionStorage.removeItem('rules_editor_prompt');
-      return;
-    }
-
-    // Find the preset
-    const preset = allPresets.find(p => p.id === newPresetId);
-    if (preset && onChangePrompt) {
-      // Store the Rules Editor's preset separately from Video Processing Options
-      // This prevents the two modals from interfering with each other
-      sessionStorage.setItem('rules_editor_preset_id', newPresetId);
-      sessionStorage.setItem('rules_editor_prompt', preset.prompt);
+      // Custom means use settings prompt
+      localStorage.setItem('video_processing_prompt_preset', 'settings');
+      console.log('[TranscriptionRulesEditor] User selected settings prompt');
       
-      // Note: We do NOT modify 'current_session_preset_id' here
-      // That key is reserved for analysis recommendations only
-      // The user's manual selection in Rules Editor is tracked separately
-
-      // Call the callback to update the prompt in the parent component
-      onChangePrompt(preset);
+      if (onChangePrompt) {
+        onChangePrompt({ id: 'custom' });
+      }
+    } else {
+      // Save the selected preset
+      localStorage.setItem('video_processing_prompt_preset', newPresetId);
+      console.log('[TranscriptionRulesEditor] User selected preset:', newPresetId);
+      
+      // Find the preset and notify parent
+      const preset = allPresets.find(p => p.id === newPresetId);
+      if (preset && onChangePrompt) {
+        onChangePrompt(preset);
+      }
     }
   };
 

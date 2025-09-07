@@ -77,11 +77,11 @@ export const analyzeVideoAndWaitForUserChoice = async (analysisFile, onStatusUpd
       setTranscriptionRules(analysisResult.transcriptionRules);
     }
 
-    // Set the recommended preset in session storage for the rules editor
+    // Set the recommended preset directly in localStorage so it's immediately used
     const recommendedPresetId = analysisResult.recommendedPreset?.id || 'settings';
+    localStorage.setItem('video_processing_prompt_preset', recommendedPresetId);
+    // Also keep in sessionStorage for reference
     sessionStorage.setItem('current_session_preset_id', recommendedPresetId);
-    // Clear any previously manually selected preset in rules editor to ensure analysis takes priority
-    sessionStorage.removeItem('rules_editor_preset_id');
     
     // Store a fingerprint of the analyzed file to tie the recommendation to this specific video
     const videoFingerprint = `${analysisFile.name}_${analysisFile.size}_${analysisFile.lastModified || Date.now()}`;

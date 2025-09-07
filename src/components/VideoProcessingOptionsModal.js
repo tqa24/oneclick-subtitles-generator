@@ -40,24 +40,7 @@ const VideoProcessingOptionsModal = ({
     return saved || 'gemini-2.5-flash';
   });
   const [selectedPromptPreset, setSelectedPromptPreset] = useState(() => {
-    // Check if there's a recommended preset from analysis for the current video
-    const recommendedPresetId = sessionStorage.getItem('current_session_preset_id');
-    const recommendedVideoFingerprint = sessionStorage.getItem('current_session_video_fingerprint');
-    
-    // Calculate current video fingerprint
-    const currentVideo = videoFile || userProvidedSubtitles;
-    const currentFingerprint = currentVideo ? 
-      `${currentVideo.name || 'subtitles'}_${currentVideo.size || userProvidedSubtitles.length}_${currentVideo.lastModified || Date.now()}` : 
-      null;
-    
-    // Only use recommendation if it's for the current video
-    if (recommendedPresetId && recommendedPresetId !== 'settings' && 
-        recommendedVideoFingerprint && currentFingerprint && 
-        recommendedVideoFingerprint === currentFingerprint) {
-      return recommendedPresetId;
-    }
-
-    // Otherwise use the saved preference
+    // SIMPLE: Just use what's saved in localStorage, always
     const saved = localStorage.getItem('video_processing_prompt_preset');
     return saved || 'settings'; // Default to "Prompt from Settings"
   });
@@ -72,28 +55,7 @@ const VideoProcessingOptionsModal = ({
     }
   }, [isOpen, hasUserProvidedSubtitles]);
   
-  // Update preset when new analysis recommendation arrives
-  useEffect(() => {
-    if (isOpen) {
-      const recommendedPresetId = sessionStorage.getItem('current_session_preset_id');
-      const lastRecommendation = sessionStorage.getItem('last_applied_recommendation');
-      
-      if (recommendedPresetId && recommendedPresetId !== 'settings') {
-        // Apply the recommendation if it's new or if we haven't applied any yet
-        if (recommendedPresetId !== lastRecommendation || !lastRecommendation) {
-          console.log('[VideoProcessingModal] Applying analysis recommendation:', recommendedPresetId);
-          setSelectedPromptPreset(recommendedPresetId);
-          sessionStorage.setItem('last_applied_recommendation', recommendedPresetId);
-        }
-      } else if (!recommendedPresetId && lastRecommendation) {
-        // No recommendation available but we had one before - reset to user's preference
-        console.log('[VideoProcessingModal] No recommendation available, resetting to user preference');
-        const savedPreference = localStorage.getItem('video_processing_prompt_preset') || 'settings';
-        setSelectedPromptPreset(savedPreference);
-        sessionStorage.removeItem('last_applied_recommendation');
-      }
-    }
-  }, [isOpen]);
+  // REMOVED: Complex analysis recommendation logic - just use what user selected
 
   // If timing-generation is selected but unavailable, fall back to 'settings'
   useEffect(() => {
@@ -339,12 +301,9 @@ const VideoProcessingOptionsModal = ({
   }, [selectedModel]);
 
   useEffect(() => {
-    // Only persist if it's not a recommended preset from analysis
-    // This prevents the recommended preset from becoming the permanent default
-    const recommendedPresetId = sessionStorage.getItem('current_session_preset_id');
-    if (selectedPromptPreset !== recommendedPresetId) {
-      localStorage.setItem('video_processing_prompt_preset', selectedPromptPreset);
-    }
+    // Always persist user preset selections to localStorage
+    // This ensures user changes in Rules Editor are maintained
+    localStorage.setItem('video_processing_prompt_preset', selectedPromptPreset);
   }, [selectedPromptPreset]);
 
   useEffect(() => {

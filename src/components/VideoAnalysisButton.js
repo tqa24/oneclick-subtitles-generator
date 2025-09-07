@@ -68,12 +68,10 @@ const VideoAnalysisButton = ({ disabled = false, uploadedFile = null, uploadedFi
         setTranscriptionRulesState(transcriptionRules);
         setHasAnalysis(true);
 
-        // Ensure the recommended preset is set in session storage
+        // Save the recommended preset directly to localStorage so it's used immediately
         if (recommendedPresetId) {
+          localStorage.setItem('video_processing_prompt_preset', recommendedPresetId);
           sessionStorage.setItem('current_session_preset_id', recommendedPresetId);
-          // Clear any previously manually selected preset in rules editor
-          // This ensures the analysis recommendation takes priority
-          sessionStorage.removeItem('rules_editor_preset_id');
         }
 
         // Store countdown flag for the rules editor
@@ -244,9 +242,11 @@ const VideoAnalysisButton = ({ disabled = false, uploadedFile = null, uploadedFi
   };
 
   const handleChangePrompt = (preset) => {
-    // Handle prompt changes if needed
-    console.log('Prompt changed to:', preset);
+    // The TranscriptionRulesEditor already saves to localStorage
+    // We just need to log for debugging
+    console.log('[VideoAnalysisButton] Preset changed in Rules Editor:', preset?.id || 'custom');
   };
+
 
   return (
     <>
