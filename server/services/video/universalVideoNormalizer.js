@@ -53,20 +53,29 @@ async function analyzeVideo(videoPath) {
         });
         needsQuickFix = true;
       }
-      // Modern codecs that need full conversion
-      else if (['opus', 'vorbis', 'flac'].includes(audioStream.codec_name?.toLowerCase())) {
+      // Modern codecs - only convert if truly problematic
+      // Opus is actually well-supported in modern browsers, so just warn
+      else if (['vorbis', 'flac'].includes(audioStream.codec_name?.toLowerCase())) {
         issues.push({
           type: 'audio_codec',
           severity: 'medium',
-          description: `Modern audio codec: ${audioStream.codec_name.toUpperCase()}`
+          description: `Uncommon audio codec: ${audioStream.codec_name.toUpperCase()}`
         });
         needsFullConversion = true;
+      } else if (audioStream.codec_name?.toLowerCase() === 'opus') {
+        issues.push({
+          type: 'audio_codec',
+          severity: 'info',
+          description: `Audio uses Opus codec (generally supported)`
+        });
+        // Don't force conversion for Opus
       }
     }
     
     // 3. Check for problematic video codecs
     if (videoStream) {
-      const problematicCodecs = ['av1', 'vp8', 'vp9', 'hevc', 'h265'];
+      // Only convert truly incompatible codecs, NOT HEVC/H.265 which is widely supported
+      const problematicCodecs = ['av1', 'vp8', 'vp9'];
       const codecName = videoStream.codec_name?.toLowerCase();
       
       if (problematicCodecs.includes(codecName)) {
@@ -76,6 +85,16 @@ async function analyzeVideo(videoPath) {
           description: `Incompatible video codec: ${videoStream.codec_name.toUpperCase()}`
         });
         needsFullConversion = true;
+      }
+      
+      // Just log HEVC as info, don't force conversion
+      if (codecName === 'hevc' || codecName === 'h265') {
+        issues.push({
+          type: 'video_codec',
+          severity: 'info',
+          description: `Video uses HEVC/H.265 codec (generally supported)`
+        });
+        // Don't set needsFullConversion for HEVC
       }
     }
     
@@ -186,8 +205,8 @@ async function quickFixVideo(inputPath) {
 }
 
 /**
- * Full conversion for videos with incompatible codecs (AV1, HEVC, VP9, etc.)
- * Slower but handles all codec issues with maximum compatibility
+ * Full conversion for videos with truly incompatible codecs (AV1, VP8, VP9)
+ * Less aggressive version - uses faster settings
  * @param {string} inputPath - Input video path
  * @returns {Promise<string>} - Path to converted video
  */
@@ -203,33 +222,24 @@ async function fullConvertVideo(inputPath) {
     '-i', `"${inputPath}"`,
     '-y',
     
-    // Video settings - H.264 baseline for maximum compatibility
+    // Video settings - less aggressive, faster encoding
     '-c:v', 'libx264',
-    '-profile:v', 'baseline',  // Most compatible H.264 profile
-    '-level', '3.0',           // Widely supported level
-    '-preset', 'medium',       // Balance speed and quality
+    '-profile:v', 'main',      // Main profile (good compatibility, better compression)
+    '-level', '4.0',           // Higher level for better performance
+    '-preset', 'faster',       // Faster encoding (was 'medium')
     '-crf', '23',              // Good quality
     '-pix_fmt', 'yuv420p',
-    '-r', '30',                // Force standard 30 fps for consistency
+    // Don't force framerate - keep original
     
-    // Audio settings - maximize compatibility (especially for waveform processing)
+    // Audio settings - less aggressive
     '-c:a', 'aac',
-    '-strict', 'experimental', // Use FFmpeg's built-in AAC
-    '-b:a', '192k',           // Higher bitrate for better quality
-    '-ar', '48000',           // 48kHz - standard for video (better than 44.1kHz)
-    '-ac', '2',               // Force stereo
-    '-af', 'aformat=channel_layouts=stereo,aresample=48000', // Ensure proper audio format
+    '-b:a', '128k',           // Standard bitrate (was 192k)
+    '-ar', '44100',           // Keep common sample rate (was 48000)
+    '-ac', '2',               // Stereo
     
-    // Container and timestamp fixes
+    // Container optimization
     '-movflags', '+faststart',
-    '-fflags', '+genpts',     // Generate presentation timestamps
-    '-avoid_negative_ts', 'make_zero', // Fix timestamp issues
     '-max_muxing_queue_size', '9999',
-    
-    // Clean metadata
-    '-map_metadata', '-1',    // Remove all metadata
-    '-metadata:s:a:0', 'language=eng', // Set audio language
-    '-metadata:s:v:0', 'language=eng', // Set video language
     
     `"${tempPath}"`
   ].join(' ');
