@@ -307,6 +307,30 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                       console.log(`[StreamingService] Last subtitle received at chunk: ${lastChunkWithSubtitles}`);
                       console.log(`[StreamingService] Terminating stream due to stuck detection`);
                       shouldTerminate = true;
+                      
+                      // Immediately terminate the stream
+                      // Apply auto-split to existing subtitles if enabled
+                      let finalSubtitles = parsedSubtitles || [];
+                      if (autoSplitEnabled && maxWordsPerSubtitle > 0 && finalSubtitles.length > 0) {
+                        finalSubtitles = autoSplitSubtitles(finalSubtitles, maxWordsPerSubtitle);
+                        console.log(`[StreamingService] Auto-split applied before termination: ${parsedSubtitles.length} -> ${finalSubtitles.length} subtitles`);
+                      }
+                      
+                      // Send final chunk with existing subtitles
+                      if (finalSubtitles.length > 0) {
+                        onChunk({
+                          text: textPart.text,
+                          accumulatedText,
+                          subtitles: finalSubtitles,
+                          chunkCount,
+                          isComplete: false
+                        });
+                      }
+                      
+                      // Terminate
+                      reader.cancel();
+                      onComplete(accumulatedText);
+                      return;
                     }
                   }
                 } else if (chunkCount > 10) {
@@ -315,6 +339,11 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
                   if (chunksWithoutNewSubtitles >= 20) {
                     console.log(`[StreamingService] 🚨 STUCK DETECTION: No subtitles at all after ${chunkCount} chunks`);
                     shouldTerminate = true;
+                    
+                    // Immediately terminate the stream
+                    reader.cancel();
+                    onComplete(accumulatedText);
+                    return;
                   }
                 }
                 
