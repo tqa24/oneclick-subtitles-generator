@@ -163,23 +163,41 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId
           console.log(`[ytdlpDownloader] Checking for file: ${tempPath}`);
           // Check if the file exists
           if (fs.existsSync(tempPath)) {
-            console.log(`[ytdlpDownloader] File exists, setting progress to 100% for: ${videoId}`);
-            // Set progress to 100% before moving file
+            console.log(`[ytdlpDownloader] File exists, preparing to move...`);
+            // Set progress to 95% while moving file (not 100% yet)
             if (videoId) {
-              setDownloadProgress(videoId, 100, 'completed');
+              setDownloadProgress(videoId, 95, 'finalizing');
             }
 
             // Use safeMoveFile to avoid EPERM errors on Windows
             // This uses copy-then-delete instead of rename
+            console.log(`[ytdlpDownloader] Moving file from ${tempPath} to ${outputPath}`);
             safeMoveFile(tempPath, outputPath)
               .then(() => {
-                resolve(true);
+                // Verify the file was actually moved
+                if (fs.existsSync(outputPath)) {
+                  const stats = fs.statSync(outputPath);
+                  console.log(`[ytdlpDownloader] File successfully moved to ${outputPath} (${Math.round(stats.size / 1024 / 1024 * 100) / 100} MB)`);
+                  // Don't set to 100% here - let the route handle it after normalization
+                  if (videoId) {
+                    setDownloadProgress(videoId, 98, 'processing');
+                  }
+                  resolve(true);
+                } else {
+                  console.error(`[ytdlpDownloader] File move reported success but file not found at ${outputPath}`);
+                  if (videoId) {
+                    setDownloadProgress(videoId, 0, 'error');
+                  }
+                  reject(new Error('File move failed - destination file not found'));
+                }
               })
               .catch((err) => {
                 if (videoId) {
                   setDownloadProgress(videoId, 0, 'error');
                 }
-                console.error(`Error moving yt-dlp downloaded file: ${err.message}`);
+                console.error(`[ytdlpDownloader] Error moving yt-dlp downloaded file: ${err.message}`);
+                console.error(`[ytdlpDownloader] Source path: ${tempPath}, exists: ${fs.existsSync(tempPath)}`);
+                console.error(`[ytdlpDownloader] Dest path: ${outputPath}, exists: ${fs.existsSync(outputPath)}`);
                 reject(err);
               });
           } else {

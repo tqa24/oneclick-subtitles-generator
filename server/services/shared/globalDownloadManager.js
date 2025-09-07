@@ -3,7 +3,7 @@
  */
 
 // Global locks across all routes
-const globalActiveDownloads = new Map(); // videoId -> { route, startTime, processId }
+const globalActiveDownloads = new Map(); // videoId -> { route, startTime, processId, timeout }
 
 /**
  * Check if a video is currently being downloaded
@@ -28,13 +28,22 @@ function lockDownload(videoId, route, processId = null) {
     return false;
   }
 
+  // Set up auto-release timeout (5 minutes)
+  const timeout = setTimeout(() => {
+    if (globalActiveDownloads.has(videoId)) {
+      console.log(`[GlobalDownloadManager] AUTO-UNLOCK: Releasing stale lock for ${videoId} (was held by ${route})`);
+      globalActiveDownloads.delete(videoId);
+    }
+  }, 5 * 60 * 1000); // 5 minutes
+
   globalActiveDownloads.set(videoId, {
     route,
     startTime: Date.now(),
-    processId
+    processId,
+    timeout
   });
 
-  console.log(`[GlobalDownloadManager] LOCKED: ${route} acquired lock for ${videoId}`);
+  console.log(`[GlobalDownloadManager] LOCKED: ${route} acquired lock for ${videoId} (auto-release in 5 minutes)`);
   return true;
 }
 
@@ -45,6 +54,11 @@ function lockDownload(videoId, route, processId = null) {
  */
 function unlockDownload(videoId, route) {
   if (globalActiveDownloads.has(videoId)) {
+    const info = globalActiveDownloads.get(videoId);
+    // Clear the auto-release timeout
+    if (info.timeout) {
+      clearTimeout(info.timeout);
+    }
     globalActiveDownloads.delete(videoId);
     console.log(`[GlobalDownloadManager] UNLOCKED: ${route} released lock for ${videoId}`);
   }
@@ -92,6 +106,10 @@ function cleanupStaleDownloads(thresholdMinutes = 10) {
 function forceCleanupDownload(videoId) {
   if (globalActiveDownloads.has(videoId)) {
     const info = globalActiveDownloads.get(videoId);
+    // Clear the auto-release timeout
+    if (info.timeout) {
+      clearTimeout(info.timeout);
+    }
     console.log(`[GlobalDownloadManager] FORCE CLEANUP: Removing download lock for ${videoId} (${info.route})`);
     globalActiveDownloads.delete(videoId);
     return true;

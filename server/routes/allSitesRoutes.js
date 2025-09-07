@@ -52,6 +52,7 @@ router.post('/download-generic-video', async (req, res) => {
     });
   }
 
+  let lockReleased = false;
   try {
     // Download the video using yt-dlp with retry and fallback
     const result = await downloadVideoWithRetry(videoId, url, quality, useCookies);
@@ -60,14 +61,38 @@ router.post('/download-generic-video', async (req, res) => {
     if (fs.existsSync(videoPath)) {
       // Normalize the downloaded video if needed
       console.log('[ALL-SITES] Checking downloaded video for compatibility issues...');
+      const { setDownloadProgress } = require('../services/shared/progressTracker');
+      
+      // Update progress to show normalization is happening
+      setDownloadProgress(videoId, 99, 'normalizing');
+      
       const normalizationResult = await normalizeVideo(videoPath);
       
       if (normalizationResult.normalized) {
         console.log(`[ALL-SITES] Video normalized using ${normalizationResult.method}`);
+        
+        // Add a small delay to ensure file is fully written and handles are released
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Verify the file is accessible and not corrupted
+        try {
+          const stats = fs.statSync(videoPath);
+          if (stats.size < 100 * 1024) { // Less than 100KB
+            throw new Error(`Video file is too small (${stats.size} bytes)`);
+          }
+          console.log(`[ALL-SITES] Verified normalized video: ${Math.round(stats.size / 1024 / 1024 * 100) / 100} MB`);
+        } catch (verifyError) {
+          console.error('[ALL-SITES] File verification failed:', verifyError);
+          throw new Error('Video file verification failed after normalization');
+        }
       }
+      
+      // NOW set progress to 100% after everything is done
+      setDownloadProgress(videoId, 100, 'completed');
 
-      // Release the lock AFTER normalization completes
+      // Release the lock AFTER normalization completes and file is verified
       unlockDownload(videoId, 'all-sites');
+      lockReleased = true;
       console.log(`[ALL-SITES] Released download lock for ${videoId}`);
 
       return res.json({
@@ -99,9 +124,11 @@ router.post('/download-generic-video', async (req, res) => {
       console.error('Error cleaning up incomplete file:', e);
     }
 
-    // Release lock on error
-    unlockDownload(videoId, 'all-sites');
-    console.log(`[ALL-SITES] Released download lock for ${videoId} due to error`);
+    // Release lock on error (if not already released)
+    if (!lockReleased) {
+      unlockDownload(videoId, 'all-sites');
+      console.log(`[ALL-SITES] Released download lock for ${videoId} due to error`);
+    }
 
     return res.status(500).json({
       error: 'Failed to download video',

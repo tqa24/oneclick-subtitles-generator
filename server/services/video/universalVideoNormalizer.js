@@ -190,9 +190,31 @@ async function quickFixVideo(inputPath) {
   try {
     await execPromise(ffmpegCmd, { maxBuffer: 10 * 1024 * 1024 });
     
-    // Replace original with fixed version
-    await fs.unlink(inputPath);
-    await fs.rename(tempPath, inputPath);
+    // Verify the temp file exists and has content
+    const tempStats = await fs.stat(tempPath);
+    if (tempStats.size < 1000) {
+      throw new Error('Converted file is too small, likely corrupted');
+    }
+    
+    // Make the replacement atomic to avoid corruption
+    const backupPath = `${inputPath}.backup`;
+    try {
+      // Create backup first
+      await fs.rename(inputPath, backupPath);
+      // Move new file to original location
+      await fs.rename(tempPath, inputPath);
+      // Delete backup only after successful replacement
+      await fs.unlink(backupPath);
+      
+      // Wait a bit to ensure file handles are fully released
+      await new Promise(resolve => setTimeout(resolve, 200));
+    } catch (replaceError) {
+      // If replacement fails, restore backup
+      try {
+        await fs.rename(backupPath, inputPath);
+      } catch {}
+      throw replaceError;
+    }
     
     console.log('[UniversalNormalizer] Quick fix completed');
     return inputPath;
@@ -248,9 +270,31 @@ async function fullConvertVideo(inputPath) {
     console.log('[UniversalNormalizer] Converting video codecs...');
     await execPromise(ffmpegCmd, { maxBuffer: 10 * 1024 * 1024 });
     
-    // Replace original with converted version
-    await fs.unlink(inputPath);
-    await fs.rename(tempPath, inputPath);
+    // Verify the temp file exists and has content
+    const tempStats = await fs.stat(tempPath);
+    if (tempStats.size < 1000) {
+      throw new Error('Converted file is too small, likely corrupted');
+    }
+    
+    // Make the replacement atomic to avoid corruption
+    const backupPath = `${inputPath}.backup`;
+    try {
+      // Create backup first
+      await fs.rename(inputPath, backupPath);
+      // Move new file to original location
+      await fs.rename(tempPath, inputPath);
+      // Delete backup only after successful replacement
+      await fs.unlink(backupPath);
+      
+      // Wait a bit to ensure file handles are fully released
+      await new Promise(resolve => setTimeout(resolve, 200));
+    } catch (replaceError) {
+      // If replacement fails, restore backup
+      try {
+        await fs.rename(backupPath, inputPath);
+      } catch {}
+      throw replaceError;
+    }
     
     const stats = await fs.stat(inputPath);
     console.log('[UniversalNormalizer] Full conversion completed:', {

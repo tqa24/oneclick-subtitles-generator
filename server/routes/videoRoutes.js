@@ -389,12 +389,18 @@ router.post('/download-video', async (req, res) => {
     });
   }
 
+  let lockReleased = false;
   try {
     // Download the video using JavaScript libraries with audio prioritized
     const result = await downloadYouTubeVideo(videoId, useCookies);
 
     // Check if download was cancelled
     if (result.cancelled) {
+      // Release lock for cancelled downloads
+      unlockDownload(videoId, 'video-route');
+      lockReleased = true;
+      console.log(`[VIDEO-ROUTE] Released download lock for cancelled download: ${videoId}`);
+      
       return res.json({
         success: false,
         cancelled: true,
@@ -407,14 +413,38 @@ router.post('/download-video', async (req, res) => {
     if (fs.existsSync(videoPath)) {
       // Normalize the downloaded video if needed
       console.log('[DOWNLOAD] Checking downloaded video for compatibility issues...');
+      const { setDownloadProgress } = require('../services/shared/progressTracker');
+      
+      // Update progress to show normalization is happening
+      setDownloadProgress(videoId, 99, 'normalizing');
+      
       const normalizationResult = await normalizeVideo(videoPath);
       
       if (normalizationResult.normalized) {
         console.log(`[DOWNLOAD] Video normalized using ${normalizationResult.method}`);
+        
+        // Add a small delay to ensure file is fully written and handles are released
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Verify the file is accessible and not corrupted
+        try {
+          const stats = fs.statSync(videoPath);
+          if (stats.size < 100 * 1024) { // Less than 100KB
+            throw new Error(`Video file is too small (${stats.size} bytes)`);
+          }
+          console.log(`[DOWNLOAD] Verified normalized video: ${Math.round(stats.size / 1024 / 1024 * 100) / 100} MB`);
+        } catch (verifyError) {
+          console.error('[DOWNLOAD] File verification failed:', verifyError);
+          throw new Error('Video file verification failed after normalization');
+        }
       }
       
-      // Release the lock AFTER normalization completes
+      // NOW set progress to 100% after everything is done
+      setDownloadProgress(videoId, 100, 'completed');
+      
+      // Release the lock AFTER normalization completes and file is verified
       unlockDownload(videoId, 'video-route');
+      lockReleased = true;
       console.log(`[VIDEO-ROUTE] Released download lock for ${videoId}`);
       
       return res.json({
@@ -461,9 +491,11 @@ router.post('/download-video', async (req, res) => {
       canRetry = false;
     }
 
-    // Release lock on error
-    unlockDownload(videoId, 'video-route');
-    console.log(`[VIDEO-ROUTE] Released download lock for ${videoId} due to error`);
+    // Release lock on error (if not already released)
+    if (!lockReleased) {
+      unlockDownload(videoId, 'video-route');
+      console.log(`[VIDEO-ROUTE] Released download lock for ${videoId} due to error`);
+    }
     
     return res.status(500).json({
       error: errorMessage,

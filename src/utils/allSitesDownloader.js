@@ -36,41 +36,55 @@ const isVideoAlreadyDownloaded = async (videoId) => {
  * @returns {Promise<File>} - File object for the video
  */
 const fetchVideoAsFile = async (videoId) => {
-  const response = await fetch(`${SERVER_URL}/videos/${videoId}.mp4?t=${Date.now()}`, {
-    method: 'GET',
-    cache: 'no-cache'
-  });
+  let lastError = null;
+  const maxRetries = 3;
+  const retryDelay = 500; // ms
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Add a small delay before fetching (except first attempt)
+      if (attempt > 1) {
+        console.log(`[fetchVideoAsFile] Retry attempt ${attempt} for ${videoId}`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+      }
+      
+      const response = await fetch(`${SERVER_URL}/videos/${videoId}.mp4?t=${Date.now()}`, {
+        method: 'GET',
+        cache: 'no-cache'
+      });
 
-  if (!response.ok) {
-    throw new Error(`Error fetching video file: ${response.status} ${response.statusText}`);
-  }
+      if (!response.ok) {
+        throw new Error(`Error fetching video file: ${response.status} ${response.statusText}`);
+      }
 
-  const blob = await response.blob();
+      const blob = await response.blob();
 
-  // Check if the blob has a reasonable size
-  if (blob.size < 100 * 1024) { // Less than 100KB
-    console.error(`Downloaded blob is too small (${blob.size} bytes), likely not a valid video`);
-    
-    // Try one more time
-    const retryResponse = await fetch(`${SERVER_URL}/videos/${videoId}.mp4?t=${Date.now()}`, {
-      method: 'GET',
-      cache: 'no-cache'
-    });
+      // Check if the blob has a reasonable size
+      if (blob.size < 100 * 1024) { // Less than 100KB
+        console.error(`[fetchVideoAsFile] Downloaded blob is too small (${blob.size} bytes) on attempt ${attempt}`);
+        if (attempt === maxRetries) {
+          throw new Error(`Downloaded blob is too small (${blob.size} bytes), likely not a valid video`);
+        }
+        lastError = new Error(`Blob too small: ${blob.size} bytes`);
+        continue; // Retry
+      }
 
-    if (!retryResponse.ok) {
-      throw new Error(`Error fetching video file on retry: ${retryResponse.status} ${retryResponse.statusText}`);
+      // Success - return the file
+      console.log(`[fetchVideoAsFile] Successfully fetched ${videoId}: ${Math.round(blob.size / 1024 / 1024 * 100) / 100} MB`);
+      return new File([blob], `${videoId}.mp4`, { type: 'video/mp4' });
+      
+    } catch (error) {
+      console.error(`[fetchVideoAsFile] Attempt ${attempt} failed:`, error.message);
+      lastError = error;
+      
+      if (attempt === maxRetries) {
+        throw lastError;
+      }
     }
-
-    const retryBlob = await retryResponse.blob();
-    
-    if (retryBlob.size < 100 * 1024) {
-      throw new Error(`Downloaded blob is too small (${retryBlob.size} bytes), likely not a valid video`);
-    }
-
-    return new File([retryBlob], `${videoId}.mp4`, { type: 'video/mp4' });
   }
-
-  return new File([blob], `${videoId}.mp4`, { type: 'video/mp4' });
+  
+  // Shouldn't reach here, but just in case
+  throw lastError || new Error('Failed to fetch video file after retries');
 };
 
 /**

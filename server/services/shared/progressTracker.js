@@ -21,7 +21,32 @@ function getDownloadProgress(videoId) {
  * @param {string} status - Download status
  */
 function setDownloadProgress(videoId, progress, status = 'downloading') {
-  downloadProgress.set(videoId, { progress, status, timestamp: Date.now() });
+  // Map status to user-friendly phase names
+  let phase = status;
+  if (status === 'finalizing') phase = 'finalizing';
+  else if (status === 'processing') phase = 'moving file';
+  else if (status === 'normalizing') phase = 'normalizing video';
+  else if (status === 'completed') phase = 'completed';
+  else if (status === 'error') phase = 'error';
+  else if (status === 'cancelled') phase = 'cancelled';
+  else if (status === 'downloading') phase = 'downloading';
+  else if (status === 'merge') phase = 'merging';
+  
+  downloadProgress.set(videoId, { 
+    progress, 
+    status, 
+    phase,
+    timestamp: Date.now() 
+  });
+  
+  // Broadcast to WebSocket clients
+  try {
+    const { broadcastProgress } = require('./progressWebSocket');
+    broadcastProgress(videoId, progress, status, phase);
+    console.log(`[Progress] ${videoId}: ${progress}% - ${phase}`);
+  } catch (error) {
+    // WebSocket module might not be initialized yet
+  }
 }
 
 /**

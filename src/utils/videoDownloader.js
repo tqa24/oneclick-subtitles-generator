@@ -109,10 +109,10 @@ export const startYoutubeVideoDownload = (youtubeUrl, forceRefresh = false, useC
         return; // Exit early for cancelled downloads
       }
 
-      // Update queue entry with success
-      downloadQueue[videoId].status = 'completed';
-      downloadQueue[videoId].progress = 100;
+      // Store the URL but don't mark as completed yet - wait for WebSocket to confirm
+      // The download might still need normalization
       downloadQueue[videoId].url = `${SERVER_URL}${downloadData.url}`;
+      console.log(`[startYoutubeVideoDownload] Download response received for ${videoId}, waiting for completion via WebSocket...`);
 
 
     } catch (error) {
@@ -192,9 +192,14 @@ export const downloadYoutubeVideo = async (youtubeUrl, onProgress = () => {}, fo
               downloadQueue[videoId].url = existingUrl;
             }
             // If download is completed and we don't have a URL, construct it
-            if (progressData.status === 'completed' && !downloadQueue[videoId].url) {
-              downloadQueue[videoId].url = `${SERVER_URL}/videos/${videoId}.mp4`;
-              console.log(`[WebSocket] Set URL for completed download ${videoId}: ${downloadQueue[videoId].url}`);
+            if (progressData.status === 'completed') {
+              if (!downloadQueue[videoId].url) {
+                downloadQueue[videoId].url = `${SERVER_URL}/videos/${videoId}.mp4`;
+                console.log(`[WebSocket] Set URL for completed download ${videoId}: ${downloadQueue[videoId].url}`);
+              }
+              // Mark as truly completed only when WebSocket says so (after normalization)
+              downloadQueue[videoId].status = 'completed';
+              downloadQueue[videoId].progress = 100;
             }
           }
           onProgress(progressData.progress);
