@@ -71,6 +71,9 @@ const VideoAnalysisButton = ({ disabled = false, uploadedFile = null, uploadedFi
         // Ensure the recommended preset is set in session storage
         if (recommendedPresetId) {
           sessionStorage.setItem('current_session_preset_id', recommendedPresetId);
+          // Clear any previously manually selected preset in rules editor
+          // This ensures the analysis recommendation takes priority
+          sessionStorage.removeItem('rules_editor_preset_id');
         }
 
         // Store countdown flag for the rules editor
@@ -185,8 +188,12 @@ const VideoAnalysisButton = ({ disabled = false, uploadedFile = null, uploadedFi
       return;
     }
 
-    // Video analysis is always enabled
-
+    // Clear any previous recommendation before starting new analysis
+    sessionStorage.removeItem('current_session_preset_id');
+    sessionStorage.removeItem('last_applied_recommendation');
+    sessionStorage.removeItem('current_session_video_fingerprint');
+    sessionStorage.removeItem('current_session_prompt');
+    
     setIsAnalyzing(true);
 
     try {
@@ -225,6 +232,11 @@ const VideoAnalysisButton = ({ disabled = false, uploadedFile = null, uploadedFi
     await clearTranscriptionRules();
     setHasAnalysis(false);
     setTranscriptionRulesState(null);
+    // Clear the recommended preset as well
+    sessionStorage.removeItem('current_session_preset_id');
+    sessionStorage.removeItem('last_applied_recommendation');
+    sessionStorage.removeItem('current_session_video_fingerprint');
+    sessionStorage.removeItem('current_session_prompt');
   };
 
   const handleCloseRulesEditor = () => {

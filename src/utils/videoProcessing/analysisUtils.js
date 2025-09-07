@@ -80,6 +80,12 @@ export const analyzeVideoAndWaitForUserChoice = async (analysisFile, onStatusUpd
     // Set the recommended preset in session storage for the rules editor
     const recommendedPresetId = analysisResult.recommendedPreset?.id || 'settings';
     sessionStorage.setItem('current_session_preset_id', recommendedPresetId);
+    // Clear any previously manually selected preset in rules editor to ensure analysis takes priority
+    sessionStorage.removeItem('rules_editor_preset_id');
+    
+    // Store a fingerprint of the analyzed file to tie the recommendation to this specific video
+    const videoFingerprint = `${analysisFile.name}_${analysisFile.size}_${analysisFile.lastModified || Date.now()}`;
+    sessionStorage.setItem('current_session_video_fingerprint', videoFingerprint);
 
     // Also set the prompt if we have the preset
     if (recommendedPresetId !== 'settings') {

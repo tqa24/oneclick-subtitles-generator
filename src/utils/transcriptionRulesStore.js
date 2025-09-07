@@ -200,6 +200,13 @@ export const clearTranscriptionRules = async () => {
   // Clear from localStorage
   localStorage.removeItem(TRANSCRIPTION_RULES_KEY);
   localStorage.removeItem(RULES_VIDEO_ID_KEY);
+  
+  // Also clear the recommended preset since it's tied to the analysis
+  sessionStorage.removeItem('current_session_preset_id');
+  sessionStorage.removeItem('last_applied_recommendation');
+  sessionStorage.removeItem('current_session_video_fingerprint');
+  sessionStorage.removeItem('current_session_prompt');
+  localStorage.removeItem('video_analysis_result');
 
   // Clear from cache if we have a cache ID
   if (currentCacheId) {

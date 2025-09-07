@@ -41,11 +41,15 @@ const sanitizeAnalysisResult = (analysisResult) => {
     // Create a deep copy to avoid modifying the original
     const sanitized = JSON.parse(JSON.stringify(analysisResult));
 
-    // Ensure we have the required structure
-    if (!sanitized.recommendedPreset) {
+    // List of valid preset IDs
+    const validPresetIds = ['general', 'focus-lyrics', 'extract-text', 'describe-video', 'diarize-speakers', 'chaptering', 'translate-directly'];
+
+    // Ensure we have the required structure and valid preset ID
+    if (!sanitized.recommendedPreset || !sanitized.recommendedPreset.id || !validPresetIds.includes(sanitized.recommendedPreset.id)) {
+      console.warn('[VideoAnalysis] Invalid or missing preset ID:', sanitized.recommendedPreset?.id, '- defaulting to general');
       sanitized.recommendedPreset = {
         id: 'general',
-        reason: 'Default preset selected due to missing recommendation'
+        reason: sanitized.recommendedPreset?.reason || 'Default preset selected due to invalid or missing recommendation'
       };
     }
 
@@ -182,16 +186,27 @@ Provide your analysis in a structured format that can be used to guide the trans
     
     // Extract analysis result from the response
     let analysisResult;
-    if (result && result.length > 0 && result[0].text) {
-      // The result is in subtitle format, but contains our analysis
+    
+    // Check if result is already structured JSON (from schema response)
+    if (result && typeof result === 'object' && !Array.isArray(result)) {
+      // Result is already parsed structured JSON from the API
+      console.log('[VideoAnalysis] Received structured JSON response from API');
+      analysisResult = result;
+      console.log('[VideoAnalysis] Recommended preset:', analysisResult.recommendedPreset?.id);
+    } 
+    // Check if result is in text format that needs parsing
+    else if (result && result.length > 0 && result[0].text) {
+      // The result is in text format, needs parsing
       const analysisText = result[0].text;
       
       try {
         // Try to parse as JSON if the model returned structured data
         analysisResult = JSON.parse(analysisText);
+        console.log('[VideoAnalysis] Parsed JSON from text response');
+        console.log('[VideoAnalysis] Recommended preset:', analysisResult.recommendedPreset?.id);
       } catch (e) {
         // If not JSON, create a structured result from the text
-        console.log('Analysis result is not JSON, processing as text');
+        console.log('[VideoAnalysis] Analysis result is not JSON, processing as text');
         analysisResult = {
           rawResponse: analysisText.substring(0, 1000),
           recommendedPreset: {

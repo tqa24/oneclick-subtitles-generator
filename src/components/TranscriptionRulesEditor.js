@@ -138,33 +138,33 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
     }
   };
   
-  // Effect to determine the current preset and set initial state - run only once on mount
+  // Effect to determine the current preset and set initial state - run when modal opens
   useEffect(() => {
-    // Check if Rules Editor has its own saved preset
+    if (!isOpen) return; // Only run when modal is open
+    
+    // PRIORITY 1: Check if there's an analysis-recommended preset (highest priority)
+    const sessionPresetId = sessionStorage.getItem('current_session_preset_id');
+    // PRIORITY 2: Check if Rules Editor has its own saved preset (lower priority)
     const rulesEditorPresetId = sessionStorage.getItem('rules_editor_preset_id');
     let detectedPresetId = 'custom'; // Initialize the variable
     
-    if (rulesEditorPresetId) {
-      // Use the previously selected preset in Rules Editor
-      console.log('[TranscriptionRulesEditor] Using previously selected preset:', rulesEditorPresetId);
+    if (sessionPresetId) {
+      // Always prioritize analysis-recommended preset
+      console.log('[TranscriptionRulesEditor] Using analysis-recommended preset (overrides any saved preset):', sessionPresetId);
+      detectedPresetId = sessionPresetId;
+      setCurrentPresetId(sessionPresetId);
+      // Save it as the Rules Editor preset for this session
+      sessionStorage.setItem('rules_editor_preset_id', sessionPresetId);
+    } else if (rulesEditorPresetId) {
+      // Use the previously selected preset in Rules Editor only if no analysis recommendation
+      console.log('[TranscriptionRulesEditor] Using previously selected preset (no analysis recommendation):', rulesEditorPresetId);
       detectedPresetId = rulesEditorPresetId;
       setCurrentPresetId(rulesEditorPresetId);
     } else {
-      // Check if there's an analysis-recommended preset
-      const sessionPresetId = sessionStorage.getItem('current_session_preset_id');
-      
-      if (sessionPresetId) {
-        console.log('[TranscriptionRulesEditor] Using analysis-recommended preset:', sessionPresetId);
-        detectedPresetId = sessionPresetId;
-        setCurrentPresetId(sessionPresetId);
-        // Save it as the Rules Editor preset
-        sessionStorage.setItem('rules_editor_preset_id', sessionPresetId);
-      } else {
-        // Default to custom (settings prompt)
-        console.log('[TranscriptionRulesEditor] Using custom prompt from settings');
-        detectedPresetId = 'custom';
-        setCurrentPresetId('custom');
-      }
+      // Default to custom (settings prompt)
+      console.log('[TranscriptionRulesEditor] Using custom prompt from settings (no recommendations or saved presets)');
+      detectedPresetId = 'custom';
+      setCurrentPresetId('custom');
     }
 
     // Set initial state for change tracking
@@ -183,7 +183,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
 
     // Load user presets
     setUserPromptPresets(getUserPromptPresets());
-  }, []); // Empty dependency array - run only once on mount
+  }, [isOpen, initialRules]); // Re-run when modal opens or initial rules change
 
   // Handle ESC key to close modal
   useEffect(() => {
@@ -275,7 +275,9 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
     setCurrentPresetId(newPresetId);
 
     if (newPresetId === 'custom') {
-      // For custom preset, do nothing as we're keeping the current prompt
+      // For custom preset, clear the rules editor preset but keep current prompt
+      sessionStorage.removeItem('rules_editor_preset_id');
+      sessionStorage.removeItem('rules_editor_prompt');
       return;
     }
 
@@ -287,12 +289,9 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
       sessionStorage.setItem('rules_editor_preset_id', newPresetId);
       sessionStorage.setItem('rules_editor_prompt', preset.prompt);
       
-      // Also update the recommended preset if it was from analysis
-      const analysisPresetId = sessionStorage.getItem('current_session_preset_id');
-      if (analysisPresetId === newPresetId) {
-        // Keep the analysis recommendation updated
-        sessionStorage.setItem('current_session_preset_id', newPresetId);
-      }
+      // Note: We do NOT modify 'current_session_preset_id' here
+      // That key is reserved for analysis recommendations only
+      // The user's manual selection in Rules Editor is tracked separately
 
       // Call the callback to update the prompt in the parent component
       onChangePrompt(preset);
