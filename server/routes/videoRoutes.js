@@ -12,6 +12,7 @@ const { VIDEOS_DIR, SERVER_URL } = require('../config');
 const { downloadYouTubeVideo } = require('../services/youtube');
 const { getDownloadProgress, setDownloadProgress } = require('../services/shared/progressTracker');
 const { lockDownload, unlockDownload, isDownloadActive, getDownloadInfo } = require('../services/shared/globalDownloadManager');
+const { normalizeVideo } = require('../services/video/universalVideoNormalizer');
 const { cancelYtdlpProcess } = require('../services/youtube/ytdlpDownloader');
 const { getFfmpegPath } = require('../services/shared/ffmpegUtils');
 // Legacy video processing is deprecated
@@ -252,13 +253,25 @@ router.post('/copy-large-file', upload.single('file'), async (req, res) => {
     const filePath = req.file.path;
     const filename = req.file.filename;
 
+    // Normalize the video if needed (fix codec/stream issues)
+    console.log('[UPLOAD] Checking video for compatibility issues...');
+    const normalizationResult = await normalizeVideo(filePath);
+    
+    if (normalizationResult.normalized) {
+      console.log(`[UPLOAD] Video normalized using ${normalizationResult.method}`);
+    }
+
     // Return the file path for the client to reference
     res.json({
       success: true,
       filePath: `/videos/${filename}`,
       serverPath: filePath,
       size: req.file.size,
-      message: 'Large file copied successfully'
+      normalized: normalizationResult.normalized,
+      normalizationMethod: normalizationResult.method || null,
+      message: normalizationResult.normalized ? 
+        'File uploaded and normalized successfully' : 
+        'Large file copied successfully'
     });
   } catch (error) {
     console.error('Error copying large file:', error);
@@ -392,10 +405,26 @@ router.post('/download-video', async (req, res) => {
 
     // Check if the file was created successfully
     if (fs.existsSync(videoPath)) {
+      // Normalize the downloaded video if needed
+      console.log('[DOWNLOAD] Checking downloaded video for compatibility issues...');
+      const normalizationResult = await normalizeVideo(videoPath);
+      
+      if (normalizationResult.normalized) {
+        console.log(`[DOWNLOAD] Video normalized using ${normalizationResult.method}`);
+      }
+      
+      // Release the lock AFTER normalization completes
+      unlockDownload(videoId, 'video-route');
+      console.log(`[VIDEO-ROUTE] Released download lock for ${videoId}`);
+      
       return res.json({
         success: true,
-        message: result.message || 'Video downloaded successfully',
-        url: `/videos/${videoId}.mp4`
+        message: normalizationResult.normalized ? 
+          'Video downloaded and normalized successfully' : 
+          (result.message || 'Video downloaded successfully'),
+        url: `/videos/${videoId}.mp4`,
+        normalized: normalizationResult.normalized,
+        normalizationMethod: normalizationResult.method || null
       });
     } else {
       throw new Error('Download completed but video file was not found');
@@ -432,15 +461,16 @@ router.post('/download-video', async (req, res) => {
       canRetry = false;
     }
 
+    // Release lock on error
+    unlockDownload(videoId, 'video-route');
+    console.log(`[VIDEO-ROUTE] Released download lock for ${videoId} due to error`);
+    
     return res.status(500).json({
       error: errorMessage,
       details: error.message,
       videoId: videoId,
       canRetry: canRetry
     });
-  } finally {
-    // Always release the global download lock
-    unlockDownload(videoId, 'video-route');
   }
 });
 

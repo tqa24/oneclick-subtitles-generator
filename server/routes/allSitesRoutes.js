@@ -9,6 +9,8 @@ const path = require('path');
 const { VIDEOS_DIR } = require('../config');
 const { downloadVideoWithRetry } = require('../services/allSites/downloader');
 const { getDownloadProgress } = require('../services/shared/progressTracker');
+const { normalizeVideo } = require('../services/video/universalVideoNormalizer');
+const { lockDownload, unlockDownload, isDownloadActive, getDownloadInfo } = require('../services/shared/globalDownloadManager');
 
 /**
  * POST /api/download-generic-video - Download a video from any supported site
@@ -16,10 +18,19 @@ const { getDownloadProgress } = require('../services/shared/progressTracker');
 router.post('/download-generic-video', async (req, res) => {
   const { videoId, url, quality = '360p', useCookies = false } = req.body;
 
-
-
   if (!videoId || !url) {
     return res.status(400).json({ error: 'Video ID and URL are required' });
+  }
+
+  // Check if download is already in progress
+  if (isDownloadActive(videoId)) {
+    const downloadInfo = getDownloadInfo(videoId);
+    console.log(`[ALL-SITES] Download blocked: ${videoId} is already being downloaded by ${downloadInfo.route}`);
+    return res.status(409).json({
+      error: 'Video is already being downloaded',
+      activeRoute: downloadInfo.route,
+      videoId: videoId
+    });
   }
 
   const videoPath = path.join(VIDEOS_DIR, `${videoId}.mp4`);
@@ -33,18 +44,41 @@ router.post('/download-generic-video', async (req, res) => {
     });
   }
 
+  // Acquire download lock
+  if (!lockDownload(videoId, 'all-sites')) {
+    return res.status(409).json({
+      error: 'Failed to acquire download lock',
+      videoId: videoId
+    });
+  }
+
   try {
     // Download the video using yt-dlp with retry and fallback
     const result = await downloadVideoWithRetry(videoId, url, quality, useCookies);
 
     // Check if the file was created successfully
     if (fs.existsSync(videoPath)) {
+      // Normalize the downloaded video if needed
+      console.log('[ALL-SITES] Checking downloaded video for compatibility issues...');
+      const normalizationResult = await normalizeVideo(videoPath);
+      
+      if (normalizationResult.normalized) {
+        console.log(`[ALL-SITES] Video normalized using ${normalizationResult.method}`);
+      }
+
+      // Release the lock AFTER normalization completes
+      unlockDownload(videoId, 'all-sites');
+      console.log(`[ALL-SITES] Released download lock for ${videoId}`);
 
       return res.json({
         success: true,
-        message: result.message || 'Video downloaded successfully',
+        message: normalizationResult.normalized ? 
+          'Video downloaded and normalized successfully' : 
+          (result.message || 'Video downloaded successfully'),
         url: `/videos/${videoId}.mp4`,
-        method: result.method
+        method: result.method,
+        normalized: normalizationResult.normalized,
+        normalizationMethod: normalizationResult.method || null
       });
     } else {
       throw new Error('Download completed but video file was not found');
@@ -64,6 +98,10 @@ router.post('/download-generic-video', async (req, res) => {
     } catch (e) {
       console.error('Error cleaning up incomplete file:', e);
     }
+
+    // Release lock on error
+    unlockDownload(videoId, 'all-sites');
+    console.log(`[ALL-SITES] Released download lock for ${videoId} due to error`);
 
     return res.status(500).json({
       error: 'Failed to download video',

@@ -185,6 +185,12 @@ export const downloadAndPrepareYouTubeVideo = async (
 
         // Create an object URL for the file
         videoUrl = URL.createObjectURL(videoFile);
+        
+        // Store blob URL and file in proper places for waveform processing
+        localStorage.setItem('current_file_url', videoUrl);
+        if (!window.__videoBlobMap) window.__videoBlobMap = {};
+        window.__videoBlobMap[videoUrl] = videoFile;
+        console.log('[VideoProcessingHandlers] Created and stored blob URL for all-sites video:', videoUrl);
 
         // Store the file for later use
         window.downloadedVideoFile = videoFile;
@@ -225,6 +231,12 @@ export const downloadAndPrepareYouTubeVideo = async (
 
           // Create an object URL for the file
           videoUrl = URL.createObjectURL(videoFile);
+          
+          // Store blob URL and file in proper places for waveform processing
+          localStorage.setItem('current_file_url', videoUrl);
+          if (!window.__videoBlobMap) window.__videoBlobMap = {};
+          window.__videoBlobMap[videoUrl] = videoFile;
+          console.log('[VideoProcessingHandlers] Created and stored blob URL for fallback video:', videoUrl);
 
           // Store the file for later use
           window.downloadedVideoFile = videoFile;

@@ -106,9 +106,25 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
 
   // Process audio data once when the component mounts or audioSource changes
   useEffect(() => {
-    if (!audioSource || isProcessed || isProcessing) return;
+    console.log('[WAVEFORM] Effect triggered:', {
+      audioSource: audioSource?.substring(0, 100),
+      isProcessed,
+      isProcessing,
+      hasAudio,
+      duration
+    });
+    
+    if (!audioSource || isProcessed || isProcessing) {
+      console.log('[WAVEFORM] Skipping processing:', {
+        noSource: !audioSource,
+        alreadyProcessed: isProcessed,
+        currentlyProcessing: isProcessing
+      });
+      return;
+    }
 
     let isActive = true;
+    let localAbortController = new AbortController();
 
     // Reset states when audioSource changes
     setHasAudio(true);
@@ -140,6 +156,14 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
     const isLongVideo = duration > 1800; // 30 minutes
 
     const processAudio = async () => {
+      console.log('[WAVEFORM] Starting audio processing:', {
+        source: audioSource.substring(0, 100),
+        duration,
+        isLongVideo,
+        isBlobUrl: audioSource.startsWith('blob:'),
+        isLocalFile: audioSource.startsWith('/videos/')
+      });
+      
       try {
         setIsProcessing(true);
 
@@ -149,28 +173,40 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
           audioContextRef.current = new AudioContext();
         }
 
-        // Setup abort controller for fetch and decoding
-        abortControllerRef.current = new AbortController();
+        // Use local abort controller instead of ref to avoid conflicts
+        // abortControllerRef.current = localAbortController;
 
         // Fetch the audio data with abort support
+        console.log('[WAVEFORM] Fetching audio data...');
         let response;
         const isBlob = audioSource.startsWith('blob:');
         try {
           if (isBlob && window.__videoBlobMap && window.__videoBlobMap[audioSource]) {
             // Directly use stored blob for faster access
+            console.log('[WAVEFORM] Using cached blob');
             const blob = window.__videoBlobMap[audioSource];
             response = new Response(blob);
           } else {
-            response = await fetch(audioSource, { signal: abortControllerRef.current.signal, cache: 'no-cache', mode: isBlob ? 'no-cors' : 'cors' });
+            console.log('[WAVEFORM] Fetching from URL:', {
+              isBlob,
+              mode: isBlob ? 'no-cors' : 'cors'
+            });
+            response = await fetch(audioSource, { signal: localAbortController.signal, cache: 'no-cache', mode: isBlob ? 'no-cors' : 'cors' });
           }
         } catch (e) {
+          console.log('[WAVEFORM] First fetch failed, retrying:', e.message);
           // Retry once without mode override
-          response = await fetch(audioSource, { signal: abortControllerRef.current.signal, cache: 'no-cache' });
+          response = await fetch(audioSource, { signal: localAbortController.signal, cache: 'no-cache' });
         }
+        console.log('[WAVEFORM] Fetch complete, converting to arrayBuffer...');
         const arrayBuffer = await response.arrayBuffer();
+        console.log('[WAVEFORM] ArrayBuffer size:', arrayBuffer.byteLength);
 
         // Decode the audio data with timeout to avoid hanging
+        console.log('[WAVEFORM] Decoding audio data with timeout:', isLongVideo ? 15000 : 10000, 'ms');
+        const startDecodeTime = Date.now();
         const audioBuffer = await decodeWithTimeout(audioContextRef.current, arrayBuffer, isLongVideo ? 15000 : 10000);
+        console.log('[WAVEFORM] Audio decoded in', Date.now() - startDecodeTime, 'ms');
 
         // Check if the audio buffer has any channels (i.e., if there's actually audio)
         if (!audioBuffer || audioBuffer.numberOfChannels === 0) {
@@ -263,17 +299,27 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
         // Store the processed audio data in cache for future use
         audioDataCache.set(audioSource, waveformLOD);
 
-        // Store the processed audio data
-        setWaveformLOD(waveformLOD);
-        setIsProcessed(true);
+        // Store the processed audio data only if component is still active
+        if (isActive) {
+          console.log('[WAVEFORM] Processing complete, storing data');
+          setWaveformLOD(waveformLOD);
+          setIsProcessed(true);
+          console.log('[WAVEFORM] ✅ Waveform data ready');
+        } else {
+          console.log('[WAVEFORM] Component unmounted, discarding data');
+        }
       } catch (error) {
         // Swallow expected AbortError when unmounting or toggling off
         if (error && (error.name === 'AbortError' || error.message?.includes('aborted'))) {
-          // Do not log or set errors for expected aborts
+          console.log('[WAVEFORM] Processing aborted (expected)');
           return;
         }
 
-        console.error('Error processing audio for visualization:', error);
+        console.error('[WAVEFORM] ❌ Error processing audio:', {
+          error: error.message,
+          name: error.name,
+          stack: error.stack?.substring(0, 500)
+        });
 
         // Check if this is an audio decoding error (no audio track)
         if (error.name === 'EncodingError' ||
@@ -287,9 +333,13 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
         } else {
           setAudioError(`Audio processing failed: ${error.message}`);
         }
-        setIsProcessed(true);
+        if (isActive) {
+          setIsProcessed(true);
+        }
       } finally {
-        setIsProcessing(false);
+        if (isActive) {
+          setIsProcessing(false);
+        }
       }
     };
 
@@ -297,17 +347,17 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
 
     // Cleanup function
     return () => {
+      isActive = false;
       // Abort any in-flight fetch/processing
-      if (abortControllerRef.current) {
-        try { abortControllerRef.current.abort(); } catch {}
+      if (localAbortController) {
+        try { 
+          console.log('[WAVEFORM] Cleanup: aborting fetch');
+          localAbortController.abort(); 
+        } catch {}
       }
-      try {
-        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-          audioContextRef.current.close();
-        }
-      } catch {}
+      // Don't close audio context here - keep it for reuse
     };
-  }, [audioSource, isProcessed, isProcessing, duration]);
+  }, [audioSource, duration]); // Remove isProcessed and isProcessing from deps to prevent loops
 
   // Professional waveform rendering function
   const renderWaveform = useCallback((canvas, containerWidth) => {

@@ -10,7 +10,6 @@ const https = require('https');
 const http = require('http');
 const { VIDEOS_DIR } = require('../../config');
 const { setDownloadProgress } = require('../shared/progressTracker');
-const { quickNormalizeDouyinVideo, checkVideoIssues } = require('./videoNormalizer');
 
 // Cache for browser instance to avoid repeated launches
 let browserInstance = null;
@@ -371,40 +370,8 @@ async function downloadDouyinVideo(douyinUrl, videoId, quality = '720p', useCook
     await downloadVideoFromUrl(videoUrl, outputPath, videoId);
     
     console.log('[PlaywrightDouyin] Download completed successfully:', filename);
-    setDownloadProgress(videoId, 90);
-    
-    // Check and fix video format issues
-    console.log('[PlaywrightDouyin] Checking video for format issues...');
-    const issues = await checkVideoIssues(outputPath);
-    
-    if (issues.needsNormalization) {
-      console.log('[PlaywrightDouyin] Video needs normalization. Issues found:', issues.issues);
-      console.log('[PlaywrightDouyin] Applying quick fix normalization...');
-      
-      try {
-        const normalizedPath = await quickNormalizeDouyinVideo(outputPath);
-        
-        // Delete the original problematic video
-        const fs = require('fs');
-        fs.unlinkSync(outputPath);
-        
-        // Rename normalized video to original name
-        fs.renameSync(normalizedPath, outputPath);
-        
-        console.log('[PlaywrightDouyin] Video normalization completed');
-        setDownloadProgress(videoId, 100);
-        return outputPath;
-      } catch (normError) {
-        console.error('[PlaywrightDouyin] Normalization failed:', normError.message);
-        console.warn('[PlaywrightDouyin] Returning original video despite issues');
-        setDownloadProgress(videoId, 100);
-        return outputPath;
-      }
-    } else {
-      console.log('[PlaywrightDouyin] Video format is already compatible');
-      setDownloadProgress(videoId, 100);
-      return outputPath;
-    }
+    setDownloadProgress(videoId, 100);
+    return outputPath;
     
   } catch (error) {
     console.error('[PlaywrightDouyin] Download failed:', error);
