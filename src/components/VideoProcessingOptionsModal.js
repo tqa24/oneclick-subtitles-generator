@@ -230,8 +230,9 @@ const VideoProcessingOptionsModal = ({
     const builtInModels = [
       { value: 'gemini-2.5-pro', label: t('settings.modelBestAccuracy', 'Gemini 2.5 Pro (Độ chính xác tốt nhất, dễ bị quá tải)'), maxTokens: 2000000 },
       { value: 'gemini-2.5-flash', label: t('settings.modelSmartFast', 'Gemini 2.5 Flash (Độ chính xác thứ hai)'), maxTokens: 1048575 },
-      { value: 'gemini-2.5-flash-lite', label: t('settings.modelFlash25Lite', 'Gemini 2.5 Flash Lite (Mô hình 2.5 nhanh nhất, dễ lỗi khi tạo sub)'), maxTokens: 1048575 }
-      // Note: Gemini 2.0 models removed as they don't support offset-style requests for timeline segments
+      { value: 'gemini-2.5-flash-lite', label: t('settings.modelFlash25Lite', 'Gemini 2.5 Flash Lite (Mô hình 2.5 nhanh nhất, dễ lỗi khi tạo sub)'), maxTokens: 1048575 },
+      { value: 'gemini-2.0-flash', label: t('settings.modelThirdBest', 'Gemini 2.0 Flash (Độ chính xác tốt, tốc độ trung bình)'), maxTokens: 1048575 },
+      { value: 'gemini-2.0-flash-lite', label: t('settings.modelFastest', 'Gemini 2.0 Flash Lite (Nhanh nhất, độ chính xác thấp nhất - chỉ thử nghiệm)'), maxTokens: 1048575 }
     ];
 
     const customModels = customGeminiModels.map(model => ({
@@ -241,7 +242,33 @@ const VideoProcessingOptionsModal = ({
       isCustom: true
     }));
 
-    return [...builtInModels, ...customModels];
+    // Disable Gemini 2.0 models when segment start is not near 0 (allow < 5s slack)
+    const startOffsetSec = (typeof selectedSegment?.start === 'number') ? selectedSegment.start : 0;
+    const exceedsStartAllowance = startOffsetSec >= 5; // allow small margin under 5s
+
+    const allModels = [...builtInModels, ...customModels];
+
+    if (exceedsStartAllowance) {
+      return allModels.map(m => {
+        if (m.value === 'gemini-2.0-flash') {
+          return {
+            ...m,
+            disabled: true,
+            label: t('settings.model20FlashDisabled', 'Gemini 2.0 Flash (Điểm bắt đầu phân đoạn phải ở đầu video)')
+          };
+        }
+        if (m.value === 'gemini-2.0-flash-lite') {
+          return {
+            ...m,
+            disabled: true,
+            label: t('settings.model20FlashLiteDisabled', 'Gemini 2.0 Flash Lite (Điểm bắt đầu phân đoạn phải ở đầu video)')
+          };
+        }
+        return m;
+      });
+    }
+
+    return allModels;
   };
 
   const modelOptions = getAllAvailableModels();
@@ -865,7 +892,8 @@ const VideoProcessingOptionsModal = ({
                     onChange={(value) => setSelectedModel(value)}
                     options={modelOptions.map(option => ({
                       value: option.value,
-                      label: option.label
+                      label: option.label,
+                      disabled: option.disabled
                     }))}
                     placeholder={t('processing.selectModel', 'Select Model')}
                   />
