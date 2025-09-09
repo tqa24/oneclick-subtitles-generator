@@ -120,6 +120,12 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
         localStorage.removeItem('current_video_url');
         localStorage.removeItem('current_file_cache_id');
         localStorage.removeItem('split_result'); // Clear any cached split result
+        // Also clear any cached Gemini Files API URIs to avoid reusing old file_uri
+        try {
+          Object.keys(localStorage)
+            .filter(k => k.startsWith('gemini_file_'))
+            .forEach(k => localStorage.removeItem(k));
+        } catch {}
 
         // Revoke any existing object URLs to prevent memory leaks
         if (localStorage.getItem('current_file_url')) {
@@ -445,16 +451,38 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
                   e.stopPropagation();
                   setFileInfo(null);
                   setUploadedFile(null);
-                  if (localStorage.getItem('current_file_url')) {
-                    URL.revokeObjectURL(localStorage.getItem('current_file_url'));
+
+                  // Revoke and clear current file URL
+                  const existingUrl = localStorage.getItem('current_file_url');
+                  if (existingUrl) {
+                    try { URL.revokeObjectURL(existingUrl); } catch {}
                     localStorage.removeItem('current_file_url');
                   }
 
-                  // Always switch to SRT-only mode when removing the video source
-                  // if there's subtitles data in localStorage
+                  // Clear any file/cache identifiers and stale Gemini Files API URIs
+                  try {
+                    localStorage.removeItem('current_file_cache_id');
+                    localStorage.removeItem('current_video_url');
+                    Object.keys(localStorage)
+                      .filter(k => k.startsWith('gemini_file_'))
+                      .forEach(k => localStorage.removeItem(k));
+                  } catch {}
+
+                  // Prefer clearing old subtitles so UI doesn't show stale ones after remove
+                  try {
+                    localStorage.removeItem('subtitles_data');
+                    localStorage.removeItem('latest_segment_subtitles');
+                  } catch {}
+
+                  // Also reset any segment UI state if handlers provided
+                  try {
+                    if (setVideoSegments) setVideoSegments([]);
+                    if (setSegmentsStatus) setSegmentsStatus([]);
+                  } catch {}
+
+                  // If there are still subtitles to work with, switch to SRT-only mode
                   const subtitlesData = localStorage.getItem('subtitles_data');
                   if (subtitlesData && setIsSrtOnlyMode) {
-
                     setIsSrtOnlyMode(true);
                   }
                 }}
