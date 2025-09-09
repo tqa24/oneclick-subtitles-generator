@@ -279,7 +279,7 @@ export const useAppHandlers = (appState) => {
 
     // Kick off auto subtitle fetch in parallel (do not await)
     try {
-      if ((activeTab.includes("youtube") || activeTab === "unified-url") && selectedVideo?.url) {
+      if ((activeTab.includes("youtube") || activeTab === "unified-url") && selectedVideo?.url && (typeof localStorage === 'undefined' || localStorage.getItem('auto_import_site_subtitles') !== 'false')) {
         const videoUrl = selectedVideo.url;
         const storedPrefs = typeof localStorage !== 'undefined' ? localStorage.getItem('preferred_subtitle_langs') : null;
         const navLang = (typeof navigator !== 'undefined' && navigator.language) ? navigator.language : 'en-US';
