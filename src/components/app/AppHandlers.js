@@ -582,7 +582,11 @@ export const useAppHandlers = (appState) => {
           const { content, fileName } = pendingAutoSubtitleRef.current;
           pendingAutoSubtitleRef.current = null;
           await handleSrtUpload(content, fileName || 'site-subtitle.srt');
-          setStatus({ message: t('output.subtitleUploadSuccess', 'SRT file uploaded successfully!'), type: 'success' });
+          // Special notice for auto-downloaded subtitle (not green, with glow/particles)
+          setStatus({
+            message: t('output.autoSubtitleNotice', 'Below are subtitles provided while the video is downloading. If you don’t like them, press Ctrl+A to select all and delete/regenerate'),
+            type: 'auto-subtitle'
+          });
         }
       } catch (e) {
         console.warn('[AppHandlers] Failed to apply pending auto subtitle:', e);
