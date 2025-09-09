@@ -120,12 +120,7 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
         localStorage.removeItem('current_video_url');
         localStorage.removeItem('current_file_cache_id');
         localStorage.removeItem('split_result'); // Clear any cached split result
-        // Also clear any cached Gemini Files API URIs to avoid reusing old file_uri
-        try {
-          Object.keys(localStorage)
-            .filter(k => k.startsWith('gemini_file_'))
-            .forEach(k => localStorage.removeItem(k));
-        } catch {}
+        // Preserve gemini_file_* cache entries so identical files can reuse Files API URIs
 
         // Revoke any existing object URLs to prevent memory leaks
         if (localStorage.getItem('current_file_url')) {
@@ -459,18 +454,14 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
                     localStorage.removeItem('current_file_url');
                   }
 
-                  // Clear any file/cache identifiers and stale Gemini Files API URIs
+                  // Clear only session pointers; preserve gemini_file_* caches for reuse
                   try {
                     localStorage.removeItem('current_file_cache_id');
                     localStorage.removeItem('current_video_url');
-                    Object.keys(localStorage)
-                      .filter(k => k.startsWith('gemini_file_'))
-                      .forEach(k => localStorage.removeItem(k));
                   } catch {}
 
-                  // Prefer clearing old subtitles so UI doesn't show stale ones after remove
+                  // Preserve subtitles_data for SRT-only mode; clear only transient latest segment output
                   try {
-                    localStorage.removeItem('subtitles_data');
                     localStorage.removeItem('latest_segment_subtitles');
                   } catch {}
 
