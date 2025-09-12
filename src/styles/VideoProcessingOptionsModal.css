@@ -508,6 +508,39 @@
 .video-processing-modal .combined-option-half:first-child .custom-dropdown {
   max-width: 200px;
 }
+/* When a slider is disabled, also dim the value display to avoid confusion */
+.video-processing-modal .slider-with-value .standard-slider-container.disabled ~ .slider-value-display,
+.video-processing-modal .slider-with-value .standard-slider-container.state-Disabled ~ .slider-value-display {
+  opacity: 0.55;
+}
+
+/* Dim and gray-out disabled sliders (match chatterbox behavior) */
+.video-processing-modal .slider-with-value .standard-slider-container.disabled,
+.video-processing-modal .slider-with-value .standard-slider-container.state-Disabled {
+  position: relative;
+  overflow: hidden;
+  background: none !important;
+  filter: grayscale(50%);
+  opacity: 0.65; /* subtle global dim */
+}
+.video-processing-modal .slider-with-value .standard-slider-container.disabled::after,
+.video-processing-modal .slider-with-value .standard-slider-container.state-Disabled::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(var(--md-surface-rgb, 255, 255, 255), 0.05);
+  z-index: 3;
+  pointer-events: none; /* do not block interactions (though disabled anyway) */
+}
+.video-processing-modal .slider-with-value .standard-slider-container.disabled .standard-slider-active-track,
+.video-processing-modal .slider-with-value .standard-slider-container.state-Disabled .standard-slider-active-track {
+  opacity: 0.35 !important;
+}
+.video-processing-modal .slider-with-value .standard-slider-container.disabled .standard-slider-handle,
+.video-processing-modal .slider-with-value .standard-slider-container.state-Disabled .standard-slider-handle {
+  box-shadow: none !important;
+}
+
 
 /* Additional info (like parallel requests) should be on its own line */
 .video-processing-modal .slider-value-display .parallel-info {
