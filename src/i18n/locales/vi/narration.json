@@ -286,5 +286,36 @@
   "selectModelExplanation": "Chọn mô hình thuyết minh hỗ trợ ngôn ngữ phụ đề của bạn để có kết quả tốt nhất.",
   "matchingLanguageModels": "Mô hình được đề xuất",
   "otherModels": "Các mô hình khác có sẵn",
-  "noModelsAvailable": "Không có mô hình khác"
+  "noModelsAvailable": "Không có mô hình khác",
+
+  "language": "Ngôn ngữ",
+  "recommendedLanguages": "Ngôn ngữ được đề xuất",
+  "otherLanguages": "Ngôn ngữ khác",
+  "selectLanguageExplanation": "Chọn ngôn ngữ đích cho Chatterbox đa ngôn ngữ (Multilingual) TTS.",
+  "chatterboxMultilingual": "Chatterbox đa ngôn ngữ",
+  "languages": {
+    "ar": "Tiếng Ả Rập",
+    "da": "Tiếng Đan Mạch",
+    "de": "Tiếng Đức",
+    "el": "Tiếng Hy Lạp",
+    "en": "Tiếng Anh",
+    "es": "Tiếng Tây Ban Nha",
+    "fi": "Tiếng Phần Lan",
+    "fr": "Tiếng Pháp",
+    "he": "Tiếng Do Thái",
+    "hi": "Tiếng Hindi",
+    "it": "Tiếng Ý",
+    "ja": "Tiếng Nhật",
+    "ko": "Tiếng Hàn",
+    "ms": "Tiếng Mã Lai",
+    "nl": "Tiếng Hà Lan",
+    "no": "Tiếng Na Uy",
+    "pl": "Tiếng Ba Lan",
+    "pt": "Tiếng Bồ Đào Nha",
+    "ru": "Tiếng Nga",
+    "sv": "Tiếng Thụy Điển",
+    "sw": "Tiếng Swahili",
+    "tr": "Tiếng Thổ Nhĩ Kỳ",
+    "zh": "Tiếng Trung"
+  }
 }

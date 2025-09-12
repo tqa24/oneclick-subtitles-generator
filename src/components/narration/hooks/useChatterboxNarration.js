@@ -63,6 +63,7 @@ const useChatterboxNarration = ({
   translatedLanguage,
   exaggeration,
   cfgWeight,
+  chatterboxLanguage,
   referenceAudio,
   useGroupedSubtitles,
   setUseGroupedSubtitles,
@@ -201,6 +202,7 @@ const useChatterboxNarration = ({
 
       const audioBlob = await generateChatterboxSpeech(
         subtitle.text,
+        chatterboxLanguage,
         exaggeration,
         cfgWeight,
         voiceFile,
@@ -232,7 +234,7 @@ const useChatterboxNarration = ({
         method: 'chatterbox'
       };
     }
-  }, [exaggeration, cfgWeight, t, setGenerationStatus]);
+  }, [exaggeration, cfgWeight, chatterboxLanguage, t, setGenerationStatus]);
 
   /**
    * Handle Chatterbox narration generation

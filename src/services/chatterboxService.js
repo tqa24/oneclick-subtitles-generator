@@ -275,7 +275,7 @@ export const checkChatterboxAvailability = async (maxAttempts = 5, delayMs = 200
  * @param {string|null} voiceFilePath - Optional voice reference file path (more efficient than uploading)
  * @returns {Promise<Blob>} - Audio blob
  */
-export const generateChatterboxSpeech = async (text, exaggeration = 0.5, cfgWeight = 0.5, voiceFile = null, voiceFilePath = null) => {
+export const generateChatterboxSpeech = async (text, languageId = 'en', exaggeration = 0.5, cfgWeight = 0.5, voiceFile = null, voiceFilePath = null) => {
   try {
     // Reference audio is now required for all Chatterbox generation
     if (!voiceFile && !voiceFilePath) {
@@ -311,6 +311,7 @@ export const generateChatterboxSpeech = async (text, exaggeration = 0.5, cfgWeig
         // Use the converted file
         const formData = new FormData();
         formData.append('text', text);
+        formData.append('language_id', languageId);
         formData.append('exaggeration', exaggeration.toString());
         formData.append('cfg_weight', cfgWeight.toString());
         formData.append('voice_file', file);
@@ -325,6 +326,7 @@ export const generateChatterboxSpeech = async (text, exaggeration = 0.5, cfgWeig
       // Use FormData for file upload (the only supported method now)
       const formData = new FormData();
       formData.append('text', text);
+      formData.append('language_id', languageId);
       formData.append('exaggeration', exaggeration.toString());
       formData.append('cfg_weight', cfgWeight.toString());
       formData.append('voice_file', voiceFile);

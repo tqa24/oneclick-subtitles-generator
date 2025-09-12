@@ -20,7 +20,7 @@ import uvicorn
 sys.path.append(str(Path(__file__).parent.parent / "server"))
 from config.cors_config import get_fastapi_cors_config
 
-from chatterbox.tts import ChatterboxTTS
+from chatterbox import ChatterboxMultilingualTTS
 from chatterbox.vc import ChatterboxVC
 
 
@@ -122,9 +122,9 @@ async def wake_up_service():
         print(f"Wake-up request received, loading models on device: {DEVICE}")
 
         if tts_model is None:
-            print("Loading TTS model...")
-            tts_model = ChatterboxTTS.from_pretrained(DEVICE)
-            print("TTS model loaded successfully")
+            print("Loading Multilingual TTS model...")
+            tts_model = ChatterboxMultilingualTTS.from_pretrained(DEVICE)
+            print("Multilingual TTS model loaded successfully")
 
         if vc_model is None:
             print("Loading VC model...")
@@ -157,6 +157,7 @@ async def wake_up_service():
 @app.post("/tts/generate")
 async def generate_speech(
     text: str = Form(..., description="Text to synthesize", max_length=300),
+    language_id: str = Form(..., description="Language code (e.g., en, es, zh)"),
     exaggeration: float = Form(0.5, description="Emotional intensity (0.25-2.0)", ge=0.25, le=2.0),
     cfg_weight: float = Form(0.5, description="CFG/Pace control (0.0-1.0)", ge=0.0, le=1.0),
     voice_file: UploadFile = File(..., description="Reference voice audio file")
@@ -183,13 +184,14 @@ async def generate_speech(
         # Generate speech with voice reference
         wav = tts_model.generate(
             text=text,
+            language_id=language_id,
             audio_prompt_path=temp_voice_path,
             exaggeration=exaggeration,
             cfg_weight=cfg_weight,
             # Optimal defaults (not exposed to user)
             temperature=0.8,
         )
-        
+
         # Convert to bytes
         buffer = io.BytesIO()
         ta.save(buffer, wav, tts_model.sr, format="wav")
