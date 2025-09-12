@@ -211,6 +211,7 @@
   "cfgWeight": "Điều khiển nhịp độ",
   "cfgWeightTooltip": "Điều khiển sức mạnh tạo và nhịp độ (0.0-1.0)",
   "cfgWeightDesc": "Điều chỉnh sức mạnh tạo và tốc độ nói",
+  "chatterboxEnglishOnlyControls": "Hiện chỉ tiếng Anh hỗ trợ các điều khiển này",
   "chatterboxWarmingUp": "Đang đánh thức server thuyết minh cho lần đầu chạy...",
   "chatterboxStarting": "Bắt đầu tạo thuyết minh Chatterbox...",
   "chatterboxGeneratingProgress": "Đang tạo {{progress}} trên {{total}} thuyết minh với Chatterbox...",

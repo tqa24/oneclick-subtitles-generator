@@ -709,6 +709,7 @@ const UnifiedNarrationSection = ({
             cfgWeight={cfgWeight}
             setCfgWeight={setCfgWeight}
             isGenerating={isGenerating}
+            chatterboxLanguage={chatterboxLanguage}
           />
 
           {/* Generate Button - reuse from F5-TTS */}

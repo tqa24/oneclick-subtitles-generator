@@ -231,11 +231,14 @@ const useChatterboxNarration = ({
         total
       }));
 
+      const sendAdvanced = /^en/i.test(chatterboxLanguage || '');
+      const exArg = sendAdvanced ? exaggeration : undefined;
+      const cfgArg = sendAdvanced ? cfgWeight : undefined;
       const audioBlob = await generateChatterboxSpeech(
         subtitle.text,
         chatterboxLanguage,
-        exaggeration,
-        cfgWeight,
+        exArg,
+        cfgArg,
         voiceFile,
         voiceFilePath
       );
