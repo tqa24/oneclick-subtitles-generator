@@ -6,7 +6,7 @@ import { getNextAvailableKey } from '../services/gemini/keyManager';
 import { PROMPT_PRESETS, getUserPromptPresets, DEFAULT_TRANSCRIPTION_PROMPT } from '../services/gemini';
 import CloseButton from './common/CloseButton';
 import MaterialSwitch from './common/MaterialSwitch';
-import StandardSlider from './common/StandardSlider';
+import SliderWithValue from './common/SliderWithValue';
 import CustomDropdown from './common/CustomDropdown';
 
 /**
@@ -839,26 +839,22 @@ const VideoProcessingOptionsModal = ({
                       </div>
                     )}
                   </div>
-                  <div className="slider-with-value fps-slider-container">
-                    <StandardSlider
+                  <div>
+                    <SliderWithValue
                       value={fps}
-                      onChange={(value) => setFps(parseFloat(value))}
+                      onChange={(v) => setFps(parseFloat(v))}
                       min={selectedModel === 'gemini-2.5-pro' ? 1 : 0.25}
                       max={5}
                       step={0.25}
                       orientation="Horizontal"
                       size="XSmall"
                       state="Enabled"
-                      showValueIndicator={false}
-                      showIcon={false}
-                      showStops={false}
                       className="fps-slider"
                       id="fps-slider"
                       ariaLabel={t('processing.frameRate', 'Frame Rate')}
+                      defaultValue={selectedModel === 'gemini-2.5-pro' ? 1 : 0.25}
+                      formatValue={(v) => getFpsValue(v)}
                     />
-                    <div className="slider-value-display">
-                      {getFpsValue(fps)}
-                    </div>
                   </div>
                 </div>
 
@@ -935,37 +931,32 @@ const VideoProcessingOptionsModal = ({
                       </svg>
                     </div>
                   </div>
-                  <div className="slider-with-value duration-slider-container">
-                    <StandardSlider
+                  <div>
+                    <SliderWithValue
                       value={maxDurationPerRequest}
-                      onChange={(value) => setMaxDurationPerRequest(parseInt(value))}
+                      onChange={(v) => setMaxDurationPerRequest(parseInt(v))}
                       min={1}
                       max={20}
                       step={1}
                       orientation="Horizontal"
                       size="XSmall"
                       state="Enabled"
-                      showValueIndicator={false}
-                      showIcon={false}
-                      showStops={false}
                       id="max-duration-slider"
                       ariaLabel={t('processing.maxDurationPerRequest', 'Max duration per request')}
+                      defaultValue={10}
+                      formatValue={(v) => (
+                        <>
+                          {t('processing.minutesValue', '{{value}} minutes', { value: v })}
+                          {selectedSegment && (() => {
+                            const segmentDuration = (selectedSegment.end - selectedSegment.start) / 60;
+                            const numRequests = Math.ceil(segmentDuration / Number(v || 1));
+                            return numRequests > 1 ? (
+                              <span className="parallel-info">{' '}({t('processing.parallelRequestsInfo', 'Will split into {{count}} parallel requests', { count: numRequests })})</span>
+                            ) : null;
+                          })()}
+                        </>
+                      )}
                     />
-                    <div className="slider-value-display">
-                      {t('processing.minutesValue', '{{value}} minutes', { value: maxDurationPerRequest })}
-                      {selectedSegment && (() => {
-                        const segmentDuration = (selectedSegment.end - selectedSegment.start) / 60; // Convert to minutes
-                        const numRequests = Math.ceil(segmentDuration / maxDurationPerRequest);
-                        if (numRequests > 1) {
-                          return (
-                            <span className="parallel-info">
-                              {' '}({t('processing.parallelRequestsInfo', 'Will split into {{count}} parallel requests', { count: numRequests })})
-                            </span>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -1220,30 +1211,24 @@ const VideoProcessingOptionsModal = ({
                       </svg>
                     </div>
                   </div>
-                  <div className="slider-with-value context-slider-container">
-                    <StandardSlider
+                  <div>
+                    <SliderWithValue
                       value={outsideContextRange}
-                      onChange={(value) => setOutsideContextRange(Number(value))}
+                      onChange={(v) => setOutsideContextRange(Number(v))}
                       min={1}
                       max={21}
                       step={1}
                       orientation="Horizontal"
                       size="XSmall"
                       state={outsideContextAvailable && useOutsideResultsContext ? 'Enabled' : 'Disabled'}
-                      showValueIndicator={false}
-                      showIcon={false}
-                      showStops={false}
                       id="outside-context-range"
                       ariaLabel={t('processing.outsideContextRange', 'Context coverage')}
                       disabled={!outsideContextAvailable || !useOutsideResultsContext}
                       showValueBadge={true}
                       valueBadgeFormatter={(v) => (Math.round(Number(v)) >= 21 ? t('processing.unlimited', 'Unlimited') : Math.round(Number(v)))}
+                      defaultValue={5}
+                      formatValue={(v) => (Number(v) === 21 ? t('processing.unlimited', 'Unlimited') : t('processing.linesCount', '{{count}} lines', { count: Number(v) }))}
                     />
-                    <div className="slider-value-display">
-                      {outsideContextRange === 21
-                        ? t('processing.unlimited', 'Unlimited')
-                        : t('processing.linesCount', '{{count}} lines', { count: outsideContextRange })}
-                    </div>
                   </div>
                 </div>
               </div>
@@ -1296,32 +1281,28 @@ const VideoProcessingOptionsModal = ({
                       </svg>
                     </div>
                   </div>
-                  <div className="slider-with-value words-slider-container">
-                    <StandardSlider
+                  <div>
+                    <SliderWithValue
                       value={maxWordsPerSubtitle}
-                      onChange={(value) => setMaxWordsPerSubtitle(parseInt(value))}
+                      onChange={(v) => setMaxWordsPerSubtitle(parseInt(v))}
                       min={1}
                       max={30}
                       step={1}
                       orientation="Horizontal"
                       size="XSmall"
                       state={autoSplitSubtitles ? 'Enabled' : 'Disabled'}
-                      showValueIndicator={false}
-                      showIcon={false}
-                      showStops={false}
                       className="max-words-slider"
                       id="max-words-slider"
                       ariaLabel={t('processing.maxWordsPerSubtitle', 'Maximum words per subtitle')}
                       disabled={!autoSplitSubtitles}
                       showValueBadge={true}
                       valueBadgeFormatter={(v) => Math.round(Number(v))}
-                    />
-                    <div className="slider-value-display">
-                      {t('processing.wordsLimit', '{{count}} {{unit}}', {
-                        count: maxWordsPerSubtitle,
-                        unit: maxWordsPerSubtitle === 1 ? t('processing.word', 'word') : t('processing.words', 'words')
+                      defaultValue={12}
+                      formatValue={(v) => t('processing.wordsLimit', '{{count}} {{unit}}', {
+                        count: Number(v),
+                        unit: Number(v) === 1 ? t('processing.word', 'word') : t('processing.words', 'words')
                       })}
-                    </div>
+                    />
                   </div>
                 </div>
               </div>
