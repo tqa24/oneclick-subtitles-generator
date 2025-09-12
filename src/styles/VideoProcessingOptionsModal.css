@@ -283,7 +283,12 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  align-items: flex-start;
+  align-items: stretch; /* Allow children to span full width */
+}
+
+/* Ensure inner wrappers expand to full width so sliders can fill */
+.video-processing-modal .combined-option-half > div {
+  width: 100%;
 }
 
 .combined-option-half label {
