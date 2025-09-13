@@ -218,7 +218,7 @@ const VideoBottomControls = ({
                       {/* Expanding Volume Pill */}
                       <LiquidGlass
                         width={50}
-                        height={isVolumeSliderVisible ? 180 : 50}
+                        height={180} // Keep LiquidGlass at full height to maintain effect continuity
                         borderRadius="25px"
                         className="content-center interactive theme-secondary volume-pill-slow video-control"
                         cursor="pointer"
@@ -231,10 +231,14 @@ const VideoBottomControls = ({
                         updateOnMouseMove={true}
 
                         style={{
+                          // Animate only CSS height and transform; keep LiquidGlass filter at full size
+                          height: isVolumeSliderVisible ? '180px' : '50px',
+                          overflow: 'hidden',
+                          willChange: 'height, transform, opacity',
                           transform: isVolumeSliderVisible ? 'translateY(-65px)' : 'translateY(0px)', // Shoot upward
                           transformOrigin: 'bottom center', // Expand from bottom
                           opacity: isFullscreen ? (controlsVisible ? 1 : 0) : (isVideoHovered || controlsVisible) ? 1 : 0,
-                          transition: 'opacity 0.6s ease-in-out, transform 0.6s ease-in-out',
+                          transition: 'height 0.3s ease-in-out, opacity 0.6s ease-in-out, transform 0.6s ease-in-out',
                           pointerEvents: isFullscreen ? (controlsVisible ? 'auto' : 'none') : (isVideoHovered || controlsVisible) ? 'auto' : 'none'
                         }}
                       >
