@@ -424,6 +424,11 @@ const TimelineVisualization = ({
       if (range.url) {
         sessionStorage.setItem('processing_modal_cached_url', range.url);
       }
+
+      // Mark this specific offline range as "retrying" so the timeline animates only this segment
+      const key = `${range.start}-${range.end}`;
+      setRetryingOfflineKeys(prev => (prev && prev.includes(key)) ? prev : [...(prev || []), key]);
+
       // Open the processing options modal for this range
       if (onSegmentSelect) {
         onSegmentSelect({ start: range.start, end: range.end });
@@ -516,12 +521,15 @@ const TimelineVisualization = ({
       return { start: r.start, end: r.end, index: (processingRanges?.length || 0) + idx, animate };
     }).filter(Boolean);
 
-    const combinedProcessingRanges = Array.isArray(processingRanges)
-      ? [...processingRanges, ...offlineRangesForDraw]
-      : offlineRangesForDraw;
+    // If a retry is active, show only the retried offline cut(s) as processing; otherwise use normal processingRanges
+    const combinedProcessingRanges = (retryKeySet.size > 0)
+      ? offlineRangesForDraw
+      : (Array.isArray(processingRanges) ? [...processingRanges, ...offlineRangesForDraw] : offlineRangesForDraw);
 
-    // Selected band should only animate if it is actually the retried range or we are in a real processing run
-    const selectedIsProcessing = !!isProcessingSegment || (effectiveSelected && retryKeySet.has(`${effectiveSelected.start}-${effectiveSelected.end}`));
+    // Selected band animates only if: (a) a normal processing run is on, or (b) it exactly matches the retried range
+    const selectedIsProcessing = (retryKeySet.size > 0)
+      ? (effectiveSelected && retryKeySet.has(`${effectiveSelected.start}-${effectiveSelected.end}`))
+      : !!isProcessingSegment;
 
     const segmentData = {
       selectedSegment: effectiveSelected,
