@@ -113,11 +113,43 @@ const VideoProcessingOptionsModal = ({
   const [tokenCountError, setTokenCountError] = useState(null);
 
   const [inlineExtraction, setInlineExtraction] = useState(() => {
+    // If opened via retry, force old method immediately to avoid any flash of the new method
+    const retryOpening = sessionStorage.getItem('processing_modal_open_with_retry') === 'true';
+    if (retryOpening) return true;
     const saved = localStorage.getItem('video_processing_inline_extraction');
     return saved === 'true';
   });
 
   // Compute outside-range subtitles context (limited to nearby lines)
+  // When opened via retry-from-cache, lock certain controls and force old method
+  const [retryLock, setRetryLock] = useState(() => (sessionStorage.getItem('processing_modal_open_reason') === 'retry-offline'));
+  const openedInitRef = useRef(false);
+
+  // Initialize lock/reason exactly once per open, even under React StrictMode
+  useEffect(() => {
+    if (isOpen && !openedInitRef.current) {
+      const reason = sessionStorage.getItem('processing_modal_open_reason') || 'unknown';
+      const lock = (reason === 'retry-offline');
+      console.info('[VideoProcessingModal] Opened', { reason, retryLock: lock });
+      setRetryLock(lock);
+      if (lock) setInlineExtraction(true);
+      openedInitRef.current = true;
+    }
+  }, [isOpen]);
+
+  // Only clear flags when the modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      openedInitRef.current = false;
+      try {
+        sessionStorage.removeItem('processing_modal_open_with_retry');
+        sessionStorage.removeItem('processing_modal_cached_url');
+        sessionStorage.removeItem('processing_modal_open_reason');
+      } catch {}
+      setRetryLock(false);
+    }
+  }, [isOpen]);
+
   const outsideContext = useMemo(() => {
     if (!Array.isArray(subtitlesData) || !selectedSegment) return { available: false, before: [], after: [] };
     const { start, end } = selectedSegment;
@@ -779,6 +811,14 @@ const VideoProcessingOptionsModal = ({
       inlineExtraction
     };
 
+    // In retry-from-cache mode, force old method and prevent further splitting
+    if (retryLock) {
+      options.inlineExtraction = true;
+      const segLen = Math.max(1, Math.round((selectedSegment?.end || 0) - (selectedSegment?.start || 0)));
+      options.maxDurationPerRequest = segLen; // seconds
+      options.retryFromCache = true;
+    }
+
     onProcess(options);
   };
 
@@ -814,7 +854,7 @@ const VideoProcessingOptionsModal = ({
                 {' '}({Math.round((selectedSegment?.end || 0) - (selectedSegment?.start || 0))}s)
               </span>
             </h3>
-            <div className="header-switch-group" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className={`header-switch-group ${retryLock ? 'disabled' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <label style={{ minWidth: 64 }}>{t('processing.methodLabel', 'Method')}</label>
               <CustomDropdown
                 value={inlineExtraction ? 'old' : 'new'}
@@ -828,6 +868,7 @@ const VideoProcessingOptionsModal = ({
                   { value: 'old', label: t('processing.methodOldOption', 'Old: Cut the video locally, then send to Gemini') }
                 ]}
                 placeholder={t('processing.methodLabel', 'Method')}
+                disabled={retryLock}
               />
               <div
                 className="help-icon-container"
@@ -950,7 +991,7 @@ const VideoProcessingOptionsModal = ({
 
                 {/* Right half: Max duration per request */}
                 <div className="combined-option-half">
-                  <div className="label-with-help">
+                  <div className={`label-with-help ${retryLock ? 'disabled' : ''}`} aria-disabled={retryLock ? 'true' : 'false'}>
                     <label>{t('processing.maxDurationPerRequest', 'Max duration per request')}</label>
                     <div
                       className="help-icon-container"
@@ -972,7 +1013,7 @@ const VideoProcessingOptionsModal = ({
                       step={1}
                       orientation="Horizontal"
                       size="XSmall"
-                      state="Enabled"
+                      state={retryLock ? 'Disabled' : 'Enabled'}
                       id="max-duration-slider"
                       ariaLabel={t('processing.maxDurationPerRequest', 'Max duration per request')}
                       defaultValue={10}

@@ -54,6 +54,11 @@
 }
 
 
+/* Dim header method group when locked by retry */
+.video-processing-modal .header-switch-group.disabled {
+  opacity: 0.6;
+}
+
 .header-content h3 {
   display: flex;
   align-items: center;
@@ -609,6 +614,19 @@
   opacity: 0.8;
   font-weight: normal;
   margin-left: 6px;
+}
+
+/* Gray out label/help when group is disabled */
+.video-processing-modal .label-with-help.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Ensure disabled standard slider shows no border/outline */
+.video-processing-modal .slider-with-value .standard-slider-container.disabled,
+.video-processing-modal .slider-with-value .standard-slider-container.state-Disabled {
+  border: none !important;
+  outline: none !important;
 }
 
 /* Modal footer styles */

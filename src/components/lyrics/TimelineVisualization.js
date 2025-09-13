@@ -413,19 +413,30 @@ const TimelineVisualization = ({
     }
   }, [offlineSegments]);
 
-  // Retry an offline range using cached clip
+  // Retry an offline range: open processing modal with locked settings
   const handleRetryOfflineRange = useCallback((range) => {
-    if (!range || !range.url) return;
+    if (!range) return;
     try {
-      const key = `${range.start}-${range.end}`;
-      setRetryingOfflineKeys(prev => (prev.includes(key) ? prev : [...prev, key]));
-      window.dispatchEvent(new CustomEvent('retry-segment-from-cache', {
-        detail: { start: range.start, end: range.end, url: range.url }
-      }));
+      // Set session flag so the modal knows to lock controls and force old method
+      sessionStorage.setItem('processing_modal_open_with_retry', 'true');
+      sessionStorage.setItem('processing_modal_open_reason', 'retry-offline');
+      console.info('[Timeline] Opening Processing Modal (reason=retry-offline)', range);
+      if (range.url) {
+        sessionStorage.setItem('processing_modal_cached_url', range.url);
+      }
+      // Open the processing options modal for this range
+      if (onSegmentSelect) {
+        onSegmentSelect({ start: range.start, end: range.end });
+      } else if (range.url) {
+        // Fallback to original behavior if modal cannot be opened
+        window.dispatchEvent(new CustomEvent('retry-segment-from-cache', {
+          detail: { start: range.start, end: range.end, url: range.url }
+        }));
+      }
     } catch (e) {
-      console.error('[Timeline] Failed to dispatch retry-segment-from-cache:', e);
+      console.error('[Timeline] Failed to initiate retry from cache:', e);
     }
-  }, []);
+  }, [onSegmentSelect]);
 
   // Clear loading state when retry completes (success or failure)
   useEffect(() => {
@@ -771,6 +782,9 @@ const TimelineVisualization = ({
             setHiddenActionBarRange({ start: startTime, end: endTime });
           } else {
             // Open video processing modal for entire range
+            sessionStorage.removeItem('processing_modal_open_with_retry');
+            sessionStorage.setItem('processing_modal_open_reason', 'drag-selection');
+            console.info('[Timeline] Opening Processing Modal (reason=drag-selection)', { start: startTime, end: endTime });
             onSegmentSelect({ start: startTime, end: endTime });
           }
         }, 500); // 0.5 second delay to show blue highlight
@@ -907,6 +921,9 @@ const TimelineVisualization = ({
       // Check if the click is within the selected segment range
       if (clickTime >= selectedSegment.start && clickTime <= selectedSegment.end) {
         console.log('[Timeline] Right-click on selected segment - opening video processing modal');
+        sessionStorage.removeItem('processing_modal_open_with_retry');
+        sessionStorage.setItem('processing_modal_open_reason', 'context-menu');
+        console.info('[Timeline] Opening Processing Modal (reason=context-menu)', selectedSegment);
         // Trigger the segment selection callback to open the modal
         onSegmentSelect(selectedSegment);
       }
@@ -1073,6 +1090,9 @@ const TimelineVisualization = ({
               setActionBarRange({ start, end });
               setHiddenActionBarRange({ start, end });
             } else {
+              sessionStorage.removeItem('processing_modal_open_with_retry');
+              sessionStorage.setItem('processing_modal_open_reason', 'drag-selection');
+              console.info('[Timeline] Opening Processing Modal (reason=drag-selection)', { start, end });
               onSegmentSelect({ start, end });
             }
           } else {
@@ -1426,6 +1446,9 @@ const TimelineVisualization = ({
                 className="btn-base btn-primary btn-small"
                 onClick={(e) => {
                   e.stopPropagation();
+                  sessionStorage.removeItem('processing_modal_open_with_retry');
+                  sessionStorage.setItem('processing_modal_open_reason', 'action-bar-regenerate');
+                  console.info('[Timeline] Opening Processing Modal (reason=action-bar-regenerate)', actionBarRange);
                   onSegmentSelect && onSegmentSelect(actionBarRange);
                   setActionBarRange(null);
                   setHiddenActionBarRange(null);
