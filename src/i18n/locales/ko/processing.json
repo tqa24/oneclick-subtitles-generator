@@ -59,4 +59,8 @@
   "selectModel": "모델 선택",
   "selectPreset": "프리셋 선택",
   "gemini20Warning": "Gemini 2.0 모델 계열은 새로운 오프셋 메커니즘과 잘 작동하지 않습니다"
+  ,
+  "inlineExtractionHelp": "선택한 범위를 로컬에서 추출하여 Gemini에 인라인으로 전송합니다 (더 빠르고 타임라인 정렬이 정확함).",
+  "inlineExtractionLabel": "로컬에서 추출하여 인라인으로 전송 (오프셋 없음)"
+
 }

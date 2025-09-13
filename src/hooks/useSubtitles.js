@@ -64,6 +64,7 @@ export const useSubtitles = (t) => {
         window.addEventListener('gemini-requests-aborted', handleAbort);
 
         // Clean up
+
         return () => {
             window.removeEventListener('gemini-requests-aborted', handleAbort);
         };
@@ -135,6 +136,7 @@ export const useSubtitles = (t) => {
 
     const generateSubtitles = useCallback(async (input, inputType, apiKeysSet, options = {}) => {
         // Extract options
+
         const { userProvidedSubtitles, segment, fps, mediaResolution, model } = options; // inlineExtraction supported via options.inlineExtraction
         if (!apiKeysSet.gemini) {
             setStatus({ message: t('errors.apiKeyRequired'), type: 'error' });
@@ -1046,6 +1048,118 @@ export const useSubtitles = (t) => {
     }, [subtitlesData, t]);
 
 
+
+    // Retry a specific segment using a previously cached cut (from Timeline)
+    useEffect(() => {
+        const handler = async (e) => {
+            try {
+                const detail = e && e.detail;
+                if (!detail) return;
+                const { start, end, url } = detail;
+                if (typeof start !== 'number' || typeof end !== 'number' || !url) return;
+
+                setIsGenerating(true);
+                setStatus({ message: t('output.processingVideo', 'Processing video...'), type: 'loading' });
+
+                // Fetch cached clip as File
+                const resp = await fetch(url);
+                if (!resp.ok) throw new Error(`Failed to fetch cached clip: ${resp.statusText}`);
+                const blob = await resp.blob();
+                const filename = url.split('?')[0].split('/').pop() || 'segment.mp4';
+                const file = new File([blob], filename, { type: blob.type || 'video/mp4' });
+
+                const segment = { start, end };
+                const fps = parseFloat(localStorage.getItem('video_processing_fps') || '1');
+                const mediaResolution = localStorage.getItem('media_resolution') || 'medium';
+                const model = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
+
+                const { processSegmentWithStreaming } = await import('../utils/videoProcessing/processingUtils');
+                const { mergeStreamingSubtitlesProgressively } = await import('../utils/subtitle/subtitleMerger');
+
+                let appliedAnyUpdate = false;
+                // Throttle progressive merges similar to normal segment processing
+                let lastMergeTime = 0;
+                let pendingUpdate = null;
+                let updateTimer = null;
+                const THROTTLE_MS = 500;
+
+                const onStreamingUpdate = (streamingSubtitles, isStreaming) => {
+                    if (!streamingSubtitles || streamingSubtitles.length === 0) return;
+                    appliedAnyUpdate = true;
+
+                    const applyMerge = (subs) => {
+                        setSubtitlesData(current => {
+                            const existing = current || [];
+                            return mergeStreamingSubtitlesProgressively(existing, subs, segment);
+                        });
+                    };
+
+                    const now = Date.now();
+                    if (now - lastMergeTime >= THROTTLE_MS) {
+                        lastMergeTime = now;
+                        applyMerge(streamingSubtitles);
+                    } else {
+                        pendingUpdate = streamingSubtitles;
+                        if (!updateTimer) {
+                            updateTimer = setTimeout(() => {
+                                lastMergeTime = Date.now();
+                                if (pendingUpdate) applyMerge(pendingUpdate);
+                                pendingUpdate = null;
+                                updateTimer = null;
+                            }, Math.max(0, THROTTLE_MS - (now - lastMergeTime)));
+                        }
+                    }
+
+                    if (isStreaming) {
+                        setStatus({ message: t('output.streamingProgress', 'Streaming...'), type: 'loading' });
+                    }
+                };
+
+                const finalSubtitles = await processSegmentWithStreaming(
+                    file,
+                    segment,
+                    {
+                        fps,
+                        mediaResolution,
+                        model,
+                        userProvidedSubtitles: null,
+                        forceInline: true
+                    },
+                    setStatus,
+                    onStreamingUpdate,
+                    t
+                );
+
+                // Ensure final result is applied even if no progressive updates arrived
+                if (!appliedAnyUpdate && Array.isArray(finalSubtitles) && finalSubtitles.length > 0) {
+                    setSubtitlesData(current => {
+                        const existingSubtitles = current || [];
+                        const nonOverlappingSubtitles = existingSubtitles.filter(sub => {
+                            return sub.end <= segment.start || sub.start >= segment.end;
+                        });
+                        return [...nonOverlappingSubtitles, ...finalSubtitles].sort((a, b) => a.start - b.start);
+                    });
+                }
+
+                setIsGenerating(false);
+                setStatus({ message: t('output.generationSuccess', 'Subtitles updated successfully!'), type: 'success' });
+
+                // Notify UI that the retry for this specific range completed
+                window.dispatchEvent(new CustomEvent('retry-segment-from-cache-complete', {
+                    detail: { start, end, success: true }
+                }));
+            } catch (err) {
+                console.error('[useSubtitles] Retry from cache failed:', err);
+                setIsGenerating(false);
+                setStatus({ message: err.message || 'Retry failed', type: 'error' });
+                window.dispatchEvent(new CustomEvent('retry-segment-from-cache-complete', {
+                    detail: { start: (e?.detail?.start), end: (e?.detail?.end), success: false, error: err?.message }
+                }));
+            }
+        };
+        window.addEventListener('retry-segment-from-cache', handler);
+        return () => window.removeEventListener('retry-segment-from-cache', handler);
+    }, [t]);
 
     return {
         subtitlesData,

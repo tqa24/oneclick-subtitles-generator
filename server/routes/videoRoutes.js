@@ -1523,4 +1523,38 @@ router.post('/extract-video-segment', streamingUpload.single('file'), async (req
   }
 });
 
+/**
+ * POST /api/delete-videos - Delete cached video files by URL list
+ */
+router.post('/delete-videos', async (req, res) => {
+  try {
+    const urls = (req.body && req.body.urls) || [];
+    if (!Array.isArray(urls)) {
+      return res.status(400).json({ success: false, error: 'urls must be an array' });
+    }
+    let deleted = 0;
+    let errors = [];
+    for (const url of urls) {
+      try {
+        if (!url) continue;
+        // Extract filename (supports absolute or relative)
+        const filename = url.split('?')[0].split('/').pop();
+        if (!filename) continue;
+        const filePath = path.join(VIDEOS_DIR, filename);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+          deleted++;
+        }
+      } catch (e) {
+        errors.push({ url, message: e.message });
+      }
+    }
+    res.json({ success: true, deleted, errors });
+  } catch (e) {
+    console.error('[DELETE-VIDEOS] Error deleting videos:', e);
+    res.status(500).json({ success: false, error: e.message || 'Failed to delete videos' });
+  }
+});
+
+
 module.exports = router;

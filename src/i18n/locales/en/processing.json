@@ -59,4 +59,8 @@
   "selectModel": "Select Model",
   "selectPreset": "Select Preset",
   "gemini20Warning": "Gemini 2.0 models do not work well with the new offset mechanism"
+  ,
+  "inlineExtractionHelp": "Extract the selected range locally and send it inline to Gemini (faster, accurate timeline alignment).",
+  "inlineExtractionLabel": "Extract locally and send inline (no offsets)"
+
 }

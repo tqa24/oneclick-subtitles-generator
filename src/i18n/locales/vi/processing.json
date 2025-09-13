@@ -59,4 +59,8 @@
   "selectModel": "Chọn mô hình",
   "selectPreset": "Chọn mẫu có sẵn",
   "gemini20Warning": "Họ model Gemini 2.0 không hoạt động tốt với cơ chế offset mới"
+  ,
+  "inlineExtractionHelp": "Nên dùng khi cách mới gặp lỗi, có thể chậm hơn tuỳ trường hợp",
+  "inlineExtractionLabel": "Cắt video trên máy rồi gửi Gemini sau"
+
 }

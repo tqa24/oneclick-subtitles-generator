@@ -189,41 +189,33 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
             }
           }
 
-          // Filter subtitles for Gemini 2.0 models that don't respect segment offsets
+          // Normalize potential relative times to absolute BEFORE filtering/clipping
           let filteredSubtitles = data.subtitles;
           if (isGemini20Model && data.subtitles && data.subtitles.length > 0) {
             const segmentStart = segment.start;
             const segmentEnd = segment.end;
+            const segDuration = segmentEnd - segmentStart;
 
-            filteredSubtitles = data.subtitles.filter(sub => {
-              // Keep subtitles that overlap with the segment
-              return sub.start < segmentEnd && sub.end > segmentStart;
-            }).map(sub => {
-              // Clip subtitles to segment boundaries
-              return {
+            // Detect segment-relative timestamps from the model and offset first
+            const maxEndRaw = Math.max(...data.subtitles.map(s => s.end || 0));
+            const looksRelative = maxEndRaw <= (segDuration + 1);
+            let normalized = looksRelative
+              ? data.subtitles.map(sub => ({
+                  ...sub,
+                  start: (sub.start || 0) + segmentStart,
+                  end: (sub.end || 0) + segmentStart
+                }))
+              : data.subtitles;
+
+            // Then filter and clip
+            filteredSubtitles = normalized.filter(sub => (sub.start < segmentEnd && sub.end > segmentStart))
+              .map(sub => ({
                 ...sub,
                 start: Math.max(sub.start, segmentStart),
                 end: Math.min(sub.end, segmentEnd)
-              };
-            });
+              }));
 
             console.log(`[ProcessingUtils] Filtered ${data.subtitles.length} subtitles to ${filteredSubtitles.length} for segment ${segmentStart}-${segmentEnd}`);
-          }
-
-          // If model returned segment-relative times (common in user-provided timing mode), offset to absolute
-          if (filteredSubtitles && filteredSubtitles.length > 0) {
-            const segmentStart = segment.start;
-            const segDuration = segment.end - segment.start;
-            const maxEnd = Math.max(...filteredSubtitles.map(s => s.end || 0));
-            // Heuristic: if the largest end is within the segment duration + slack, treat as relative
-            const looksRelative = maxEnd <= (segDuration + 1);
-            if (looksRelative) {
-              filteredSubtitles = filteredSubtitles.map(sub => ({
-                ...sub,
-                start: sub.start + segmentStart,
-                end: sub.end + segmentStart
-              }));
-            }
           }
 
 
@@ -260,23 +252,29 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
 
           console.log('[ProcessingUtils] Streaming complete:', finalSubtitles.length, 'subtitles');
 
-          // Filter final subtitles for Gemini 2.0 models
+          // Normalize potential relative times to absolute BEFORE final filtering/clipping
           let filteredFinal = finalSubtitles;
           if (isGemini20Model && finalSubtitles && finalSubtitles.length > 0) {
             const segmentStart = segment.start;
             const segmentEnd = segment.end;
+            const segDuration = segmentEnd - segmentStart;
 
-            filteredFinal = finalSubtitles.filter(sub => {
-              // Keep subtitles that overlap with the segment
-              return sub.start < segmentEnd && sub.end > segmentStart;
-            }).map(sub => {
-              // Clip subtitles to segment boundaries
-              return {
+            const maxEndRaw = Math.max(...finalSubtitles.map(s => s.end || 0));
+            const looksRelative = maxEndRaw <= (segDuration + 1);
+            const normalized = looksRelative
+              ? finalSubtitles.map(sub => ({
+                  ...sub,
+                  start: (sub.start || 0) + segmentStart,
+                  end: (sub.end || 0) + segmentStart
+                }))
+              : finalSubtitles;
+
+            filteredFinal = normalized.filter(sub => (sub.start < segmentEnd && sub.end > segmentStart))
+              .map(sub => ({
                 ...sub,
                 start: Math.max(sub.start, segmentStart),
                 end: Math.min(sub.end, segmentEnd)
-              };
-            });
+              }));
 
             console.log(`[ProcessingUtils] Final filter: ${finalSubtitles.length} subtitles to ${filteredFinal.length} for segment ${segmentStart}-${segmentEnd}`);
           }
