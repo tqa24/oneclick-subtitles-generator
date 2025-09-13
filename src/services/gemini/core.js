@@ -247,19 +247,34 @@ export const streamGeminiApiInline = async (file, options = {}, onChunk, onCompl
     maxDurationPerRequest
   );
 
-  const streamFunction = useParallel ? coordinateParallelInlineStreaming : streamGeminiContent;
   console.log(`[GeminiAPI] Using ${useParallel ? 'parallel INLINE' : 'single INLINE'} streaming`);
 
   try {
-    await streamFunction(
-      file,
-      null, // no fileUri for inline
-      inlineOptions,
-      onChunk,
-      onComplete,
-      onError,
-      onProgress
-    );
+    if (useParallel) {
+      await coordinateParallelInlineStreaming(
+        file,
+        null,
+        inlineOptions,
+        onChunk,
+        onComplete,
+        onError,
+        onProgress
+      );
+    } else {
+      // For non-parallel INLINE with a segment, cut locally to reduce payload and avoid limits
+      if (inlineOptions.segmentInfo) {
+        try {
+          const { extractVideoSegmentLocally } = await import('../../utils/videoSegmenter');
+          const { start, end } = inlineOptions.segmentInfo;
+          const clipped = await extractVideoSegmentLocally(file, start, end);
+          await streamGeminiContent(clipped, null, inlineOptions, onChunk, onComplete, onError);
+          return;
+        } catch (e) {
+          console.warn('[GeminiAPI] Inline single-stream: segment clipping failed, streaming full source inline', e);
+        }
+      }
+      await streamGeminiContent(file, null, inlineOptions, onChunk, onComplete, onError);
+    }
   } catch (err) {
     console.error('[GeminiAPI] Error in inline streaming:', err);
     onError(err);
