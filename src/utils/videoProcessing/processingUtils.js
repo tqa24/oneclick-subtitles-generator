@@ -6,6 +6,11 @@
  * the old segment-based processing approach. All functions now redirect to
  * the new simplified processing system for better performance.
  */
+// Debug logging gate (enable by setting localStorage.debug_logs = 'true')
+const DEBUG_LOGS = (typeof window !== 'undefined') && (localStorage.getItem('debug_logs') === 'true');
+const dbg = (...args) => { if (DEBUG_LOGS) console.log(...args); };
+const dbgw = (...args) => { if (DEBUG_LOGS) console.warn(...args); };
+
 /**
  * Process a short video/audio file (shorter than max segment duration)
  * @deprecated Use processVideoWithFilesApi from simplifiedProcessing.js instead
@@ -16,7 +21,7 @@
  * @returns {Promise<Array>} - Array of subtitle objects
  */
 export const processShortMedia = async (mediaFile, onStatusUpdate, t, options = {}) => {
-  console.warn('[LEGACY] processShortMedia is deprecated. Redirecting to simplified processing.');
+  dbgw('[LEGACY] processShortMedia is deprecated. Redirecting to simplified processing.');
 
   // Show a helpful message to the user
   onStatusUpdate({
@@ -39,7 +44,7 @@ export const processShortMedia = async (mediaFile, onStatusUpdate, t, options = 
  * @returns {Promise<Array>} - Array of subtitle objects
  */
 export const processLongVideo = async (mediaFile, onStatusUpdate, t, options = {}) => {
-  console.warn('[LEGACY] processLongVideo is deprecated. Redirecting to simplified processing.');
+  dbgw('[LEGACY] processLongVideo is deprecated. Redirecting to simplified processing.');
 
   // Show a helpful message to the user
   onStatusUpdate({
@@ -134,7 +139,7 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
     // Check if this is a Gemini 2.0 model (they don't respect video_metadata offsets)
     const isGemini20Model = model && (model.includes('gemini-2.0') || model.includes('gemini-1.5'));
     if (isGemini20Model) {
-      console.warn(`[ProcessingUtils] Model ${model} may not respect video segment offsets - will filter results and use early stopping`);
+      dbgw(`[ProcessingUtils] Model ${model} may not respect video segment offsets - will filter results and use early stopping`);
     }
 
     // Track if we've stopped early due to subtitles going past segment
@@ -162,7 +167,7 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
             const lastSubtitle = data.subtitles[data.subtitles.length - 1];
 
             if (lastSubtitle && lastSubtitle.start > (segmentEnd + bufferTime)) {
-              console.warn(`[ProcessingUtils] Early stopping: Last subtitle at ${lastSubtitle.start}s exceeds segment end ${segmentEnd}s by more than ${bufferTime}s`);
+              dbgw(`[ProcessingUtils] Early stopping: Last subtitle at ${lastSubtitle.start}s exceeds segment end ${segmentEnd}s by more than ${bufferTime}s`);
               hasStoppedEarly = true;
 
               // Trigger early completion with filtered subtitles
@@ -176,7 +181,7 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
                 };
               });
 
-              console.log(`[ProcessingUtils] Early stop: Completing with ${filteredForCompletion.length} subtitles (from ${data.subtitles.length} total)`);
+              dbg(`[ProcessingUtils] Early stop: Completing with ${filteredForCompletion.length} subtitles (from ${data.subtitles.length} total)`);
 
               // Cancel the streaming if we have a controller
               if (earlyStopController && typeof earlyStopController.abort === 'function') {
@@ -215,7 +220,7 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
                 end: Math.min(sub.end, segmentEnd)
               }));
 
-            console.log(`[ProcessingUtils] Filtered ${data.subtitles.length} subtitles to ${filteredSubtitles.length} for segment ${segmentStart}-${segmentEnd}`);
+            dbg(`[ProcessingUtils] Filtered ${data.subtitles.length} subtitles to ${filteredSubtitles.length} for segment ${segmentStart}-${segmentEnd}`);
           }
 
 
@@ -239,18 +244,18 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
           let finalSubtitles;
           if (result && result.isSegmentResult) {
             // This is from parallel processing - extract subtitles
-            console.log('[ProcessingUtils] Received parallel processing segment result');
+            dbg('[ProcessingUtils] Received parallel processing segment result');
             finalSubtitles = result.subtitles;
           } else if (Array.isArray(result)) {
             // Direct subtitle array from single streaming
             finalSubtitles = result;
           } else {
             // Might be text or other format, try to handle it
-            console.warn('[ProcessingUtils] Unexpected result format:', typeof result);
+            dbgw('[ProcessingUtils] Unexpected result format:', typeof result);
             finalSubtitles = [];
           }
 
-          console.log('[ProcessingUtils] Streaming complete:', finalSubtitles.length, 'subtitles');
+          dbg('[ProcessingUtils] Streaming complete:', finalSubtitles.length, 'subtitles');
 
           // Normalize potential relative times to absolute BEFORE final filtering/clipping
           let filteredFinal = finalSubtitles;
@@ -276,7 +281,7 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
                 end: Math.min(sub.end, segmentEnd)
               }));
 
-            console.log(`[ProcessingUtils] Final filter: ${finalSubtitles.length} subtitles to ${filteredFinal.length} for segment ${segmentStart}-${segmentEnd}`);
+            dbg(`[ProcessingUtils] Final filter: ${finalSubtitles.length} subtitles to ${filteredFinal.length} for segment ${segmentStart}-${segmentEnd}`);
           }
 
           // Dispatch streaming-complete event for timeline animations
@@ -337,7 +342,7 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
           (progress) => {
             // Handle parallel processing progress updates
             if (progress && progress.segmentProgress) {
-              console.log('[ProcessingUtils] Parallel processing progress:', progress);
+              dbg('[ProcessingUtils] Parallel processing progress:', progress);
               // Dispatch progress event for UI updates
               window.dispatchEvent(new CustomEvent('parallel-processing-progress', {
                 detail: progress
