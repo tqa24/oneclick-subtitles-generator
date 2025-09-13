@@ -16,6 +16,8 @@ import { clearUnusedChunks } from '../../utils/optimizedVideoStreaming';
 // Import LiquidGlass component
 import LiquidGlass from '../common/LiquidGlass';
 
+import { showWarningToast } from '../../utils/toastUtils';
+
 const TimelineVisualization = ({
   lyrics,
   currentTime,
@@ -774,7 +776,9 @@ const TimelineVisualization = ({
           };
 
           // Check if there are subtitles in the range
-          if (checkForSubtitles(startTime, endTime)) {
+          if (offlineSegments.length > 0) {
+            // When offline cuts exist, do not trigger the range action bar or open the modal
+          } else if (checkForSubtitles(startTime, endTime)) {
             // Show action bar instead of opening modal
             setActionBarRange({ start: startTime, end: endTime });
             setHiddenActionBarRange({ start: startTime, end: endTime });
@@ -974,8 +978,8 @@ const TimelineVisualization = ({
     // Check if hovering within the hidden action bar range
     const range = hiddenActionBarRange || actionBarRange;
     if (range && hoverTime >= range.start && hoverTime <= range.end) {
-      // Show the action bar if it was hidden
-      if (hiddenActionBarRange && !actionBarRange) {
+      // Show the action bar if it was hidden (only when no offline cuts exist)
+      if (hiddenActionBarRange && !actionBarRange && offlineSegments.length === 0) {
         setActionBarRange(hiddenActionBarRange);
       }
     }
@@ -984,7 +988,7 @@ const TimelineVisualization = ({
     if (selectedSegment && !actionBarRange &&
         hoverTime >= selectedSegment.start && hoverTime <= selectedSegment.end) {
       // Check if there are subtitles in this segment
-      if (hasSubtitlesInRange(selectedSegment.start, selectedSegment.end)) {
+      if (hasSubtitlesInRange(selectedSegment.start, selectedSegment.end) && offlineSegments.length === 0) {
         // Show action bar for the selected segment
         setActionBarRange(selectedSegment);
         setHiddenActionBarRange(selectedSegment);
@@ -1037,6 +1041,9 @@ const TimelineVisualization = ({
       setActionBarRange(null);
       setHiddenActionBarRange(null);
       setMoveDragOffsetPx(0);
+    } else if (offlineSegments.length > 0) {
+      // Notify user that selection is disabled while offline cuts exist
+      showWarningToast(t('timeline.clearOfflineFirst', 'Please clear offline segments to exit this mode first'));
     }
 
     const handlePointerMove = (moveClientX) => {
@@ -1079,7 +1086,9 @@ const TimelineVisualization = ({
           // Only create segment if there's a meaningful duration (at least 1 second)
           if (end - start >= 1) {
             console.log('[Timeline] Selection:', start.toFixed(2), '-', end.toFixed(2), 's');
-            if (hasSubtitlesInRange(start, end)) {
+            if (offlineSegments.length > 0) {
+              // When offline cuts exist, do not trigger the range action bar or open the modal
+            } else if (hasSubtitlesInRange(start, end)) {
               // Show action bar instead of opening modal
               setActionBarRange({ start, end });
               setHiddenActionBarRange({ start, end });
@@ -1106,9 +1115,9 @@ const TimelineVisualization = ({
           // Tap/click inside range - set flag to prevent hiding
           isClickingInsideRef.current = true;
 
-          // Ensure action bar is shown
+          // Ensure action bar is shown (only when no offline cuts exist)
           if (!actionBarRange && activeRange) {
-            if (hasSubtitlesInRange(activeRange.start, activeRange.end)) {
+            if (hasSubtitlesInRange(activeRange.start, activeRange.end) && offlineSegments.length === 0) {
               setActionBarRange(activeRange);
               setHiddenActionBarRange(activeRange);
             }
@@ -1236,7 +1245,11 @@ const TimelineVisualization = ({
               <button
                 className="btn-base btn-tonal btn-small"
                 onClick={(e) => { e.stopPropagation(); handleClearOfflineSegments(); }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 24, minHeight: 24, padding: '0 8px', borderRadius: 12, backgroundColor: 'var(--md-surface-variant)', color: 'var(--md-on-surface-variant)', border: '1px solid var(--md-outline-variant)' }}
               >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 -960 960 960" aria-hidden style={{ color: 'currentColor' }}>
+                  <path fill="currentColor" d="M763-272h94q27 0 45.5 18.5T921-208q0 26-18.5 45T857-144H635l128-128ZM217-144q-14 0-25-5t-20-14L67-268q-38-38-38-89t39-90l426-414q38-38 90-38t91 39l174 174q37 38 38 90t-38 90L501-164q-8 9-19.5 14.5T457-144H217Zm212-128 328-322-174-176-423 414 83 84h186Zm51-208Z"/>
+                </svg>
                 {t('timeline.clearOfflineSegments', 'Clear offline segments')}
               </button>
             </div>
@@ -1280,10 +1293,10 @@ const TimelineVisualization = ({
                   className="btn-base btn-primary btn-small"
                   title={t('timeline.retryFromCache', 'Retry this cut (reuse cached clip)')}
                   onClick={(e) => { e.stopPropagation(); handleRetryOfflineRange(hoveredOfflineRange); }}
-                  style={{ width: 36, height: 36, minWidth: 36, padding: 0, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  style={{ width: 30, height: 30, minWidth: 30, padding: 0, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 -960 960 960" aria-hidden style={{ color: 'var(--md-on-primary)' }}>
-                    <path fill="currentColor" d="M480-160q-133 0-226.5-93.5T160-480q0-133 93.5-226.5T480-800q92 0 166 46.5T776-632v-88h64v200H640v-64h120q-37-88-115.5-140T480-736q-117 0-198.5 81.5T200-456q0 117 81.5 198.5T480-176q79 0 145.5-39.5T741-320l47 38q-37 63-105 102.5T480-160Z"/>
+                  <svg xmlns="http://www.w3.org/2000/svg" height="16" viewBox="0 -960 960 960" width="16" aria-hidden style={{ color: 'var(--md-on-primary)' }}>
+                    <path fill="currentColor" d="M289-482q0 9 1 17.5t1 16.5q5 24-2 50t-31 39q-23 12-48 4t-33-31q-7-23-11.5-46.5T161-482q0-128 89-221.5T465-799l-3-4q-16-15-15.5-33.5T463-871q15-15 34-15t34 15l91 91q19 19 19 45t-19 46l-92 91q-15 15-33 14.5T464-599q-16-15-15.5-34.5T464-668l2-2h3q-75 1-127.5 56.5T289-482Zm382 3q0-9-1-17t0-16q-5-26 2.5-51t30.5-39q23-13 47-6t32 29q7 24 12 48t5 52q0 126-89 221t-215 96l2 3q17 15 16 34t-16 34q-16 16-34.5 16T428-91l-91-90q-19-20-18.5-45.5T337-271l93-91q15-15 33.5-16t34.5 15q16 15 16 34t-16 35l-4 4h-3q75-1 127.5-57T671-479Z"/>
                   </svg>
                 </button>
               )}
