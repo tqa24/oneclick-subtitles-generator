@@ -54,11 +54,9 @@
   font-weight: 500;
   box-shadow: inset 0 0 8px color-mix(in srgb, var(--md-primary), transparent 80%);
   /* Add subtle slide-in effect when becoming current */
-  transform: translateX(2px);
   /* Slightly higher z-index for current item */
   z-index: 2;
   /* Apply smooth focus animation */
-  animation: lyric-focus-slide var(--md-duration-medium3) var(--md-easing-emphasized) forwards;
 }
 
 /* Material Design 3 lyric content - improved for multi-line text */
