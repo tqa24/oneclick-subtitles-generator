@@ -1029,6 +1029,8 @@ const TimelineVisualization = ({
     let hasMoved = false;
     let dragThreshold = isTouch ? 10 : 5; // pixels - higher threshold for touch to avoid accidental drags
 
+    let warned = false;
+
     console.log(`[Timeline] ${isTouch ? 'Touch' : 'Mouse'} down at time:`, startTime.toFixed(2), 's');
 
     // Initialize drag state for segment selection (if enabled) - disabled when offline segments linger
@@ -1041,13 +1043,21 @@ const TimelineVisualization = ({
       setActionBarRange(null);
       setHiddenActionBarRange(null);
       setMoveDragOffsetPx(0);
-    } else if (offlineSegments.length > 0) {
-      // Notify user that selection is disabled while offline cuts exist
-      showWarningToast(t('timeline.clearOfflineFirst', 'Please clear offline segments to exit this mode first'));
     }
+
+
 
     const handlePointerMove = (moveClientX) => {
       const deltaX = Math.abs(moveClientX - startX);
+
+      // If offline cuts exist, only warn when user starts dragging; allow single-click seeking
+      if (offlineSegments.length > 0) {
+        if (deltaX > dragThreshold && !warned) {
+          showWarningToast(t('timeline.clearOfflineFirst', 'Please clear offline segments to exit this mode first'));
+          warned = true;
+        }
+        return;
+      }
 
       // Check if we've moved enough to consider this a drag
       if (deltaX > dragThreshold) {
