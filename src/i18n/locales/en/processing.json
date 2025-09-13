@@ -60,7 +60,10 @@
   "selectPreset": "Select Preset",
   "gemini20Warning": "Gemini 2.0 models do not work well with the new offset mechanism"
   ,
-  "inlineExtractionHelp": "Extract the selected range locally and send it inline to Gemini (faster, accurate timeline alignment).",
-  "inlineExtractionLabel": "Extract locally and send inline (no offsets)"
+  "inlineExtractionHelp": "Use the old method when the new method fails; may be slower depending on the situation",
+  "inlineExtractionLabel": "Cut the video locally, then send to Gemini",
+  "methodLabel": "Method",
+  "methodNewOption": "New: Interact with video on Files API",
+  "methodOldOption": "Old: Cut the video locally, then send to Gemini"
 
 }

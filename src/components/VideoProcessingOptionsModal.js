@@ -815,31 +815,29 @@ const VideoProcessingOptionsModal = ({
               </span>
             </h3>
             <div className="header-switch-group" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <label style={{ minWidth: 64 }}>{t('processing.methodLabel', 'Method')}</label>
+              <CustomDropdown
+                value={inlineExtraction ? 'old' : 'new'}
+                onChange={(value) => {
+                  const useOld = value === 'old';
+                  setInlineExtraction(useOld);
+                  localStorage.setItem('video_processing_inline_extraction', useOld ? 'true' : 'false');
+                }}
+                options={[
+                  { value: 'new', label: t('processing.methodNewOption', 'New: Interact with video on Files API') },
+                  { value: 'old', label: t('processing.methodOldOption', 'Old: Cut the video locally, then send to Gemini') }
+                ]}
+                placeholder={t('processing.methodLabel', 'Method')}
+              />
               <div
                 className="help-icon-container"
-                title={t('processing.inlineExtractionHelp', 'Extract the selected range locally and send it inline to Gemini (faster, accurate timeline alignment).')}
+                title={t('processing.inlineExtractionHelp', 'Use the old method when the new method fails; may be slower depending on the situation')}
               >
                 <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
                   <circle cx="12" cy="12" r="10"></circle>
                   <line x1="12" y1="16" x2="12" y2="12"></line>
                   <line x1="12" y1="8" x2="12.01" y2="8"></line>
                 </svg>
-              </div>
-              <div className="material-switch-container">
-                <MaterialSwitch
-                  id="inline-extraction"
-                  checked={inlineExtraction}
-                  onChange={(e) => {
-                    const v = e.target.checked;
-                    setInlineExtraction(v);
-                    localStorage.setItem('video_processing_inline_extraction', v ? 'true' : 'false');
-                  }}
-                  ariaLabel={t('processing.inlineExtraction', 'Inline segment extraction (no offsets)')}
-                  icons={true}
-                />
-                <label htmlFor="inline-extraction" className="material-switch-label">
-                  {t('processing.inlineExtractionLabel', 'Extract locally and send inline (no offsets)')}
-                </label>
               </div>
             </div>
           </div>

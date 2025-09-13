@@ -41,6 +41,18 @@
   background-color: #00000000;
   box-shadow: var(--md-elevation-level1);
 }
+.header-content {
+  display: contents;
+}
+
+/* Ensure label aligns to the right and sits close to the dropdown in the header group */
+.video-processing-modal .header-switch-group label {
+  display: inline-block;
+  text-align: right;
+  min-width: 80px; /* give room for text to align to the right edge */
+  margin: 0;
+}
+
 
 .header-content h3 {
   display: flex;
@@ -506,6 +518,9 @@
 
 /* Model dropdown in combined row - limit width */
 .video-processing-modal .combined-option-half:first-child .custom-dropdown {
+  max-width: 200px;
+}
+.video-processing-modal .header-content .custom-dropdown {
   max-width: 200px;
 }
 /* When a slider is disabled, also dim the value display to avoid confusion */
