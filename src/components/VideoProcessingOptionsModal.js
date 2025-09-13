@@ -112,6 +112,11 @@ const VideoProcessingOptionsModal = ({
   const [realTokenCount, setRealTokenCount] = useState(null);
   const [tokenCountError, setTokenCountError] = useState(null);
 
+  const [inlineExtraction, setInlineExtraction] = useState(() => {
+    const saved = localStorage.getItem('video_processing_inline_extraction');
+    return saved === 'true';
+  });
+
   // Compute outside-range subtitles context (limited to nearby lines)
   const outsideContext = useMemo(() => {
     if (!Array.isArray(subtitlesData) || !selectedSegment) return { available: false, before: [], after: [] };
@@ -770,7 +775,8 @@ const VideoProcessingOptionsModal = ({
       useTranscriptionRules, // Include the transcription rules setting
       maxDurationPerRequest: maxDurationPerRequest * 60, // Convert to seconds
       autoSplitSubtitles,
-      maxWordsPerSubtitle
+      maxWordsPerSubtitle,
+      inlineExtraction
     };
 
     onProcess(options);
@@ -808,6 +814,34 @@ const VideoProcessingOptionsModal = ({
                 {' '}({Math.round((selectedSegment?.end || 0) - (selectedSegment?.start || 0))}s)
               </span>
             </h3>
+            <div className="header-switch-group" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div
+                className="help-icon-container"
+                title={t('processing.inlineExtractionHelp', 'Extract the selected range locally and send it inline to Gemini (faster, accurate timeline alignment).')}
+              >
+                <svg className="help-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </div>
+              <div className="material-switch-container">
+                <MaterialSwitch
+                  id="inline-extraction"
+                  checked={inlineExtraction}
+                  onChange={(e) => {
+                    const v = e.target.checked;
+                    setInlineExtraction(v);
+                    localStorage.setItem('video_processing_inline_extraction', v ? 'true' : 'false');
+                  }}
+                  ariaLabel={t('processing.inlineExtraction', 'Inline segment extraction (no offsets)')}
+                  icons={true}
+                />
+                <label htmlFor="inline-extraction" className="material-switch-label">
+                  {t('processing.inlineExtractionLabel', 'Extract locally and send inline (no offsets)')}
+                </label>
+              </div>
+            </div>
           </div>
           <CloseButton onClick={onClose} variant="modal" size="medium" />
         </div>
@@ -1301,6 +1335,8 @@ const VideoProcessingOptionsModal = ({
                       formatValue={(v) => t('processing.wordsLimit', '{{count}} {{unit}}', {
                         count: Number(v),
                         unit: Number(v) === 1 ? t('processing.word', 'word') : t('processing.words', 'words')
+
+
                       })}
                     />
                   </div>
@@ -1319,6 +1355,8 @@ const VideoProcessingOptionsModal = ({
             </div>
           )}
         </div>
+
+
 
         <div className="modal-footer">
           <div className="footer-content">
@@ -1343,6 +1381,8 @@ const VideoProcessingOptionsModal = ({
                 </div>
               )}
               {tokenCountError && (
+
+
                 <div className="token-error">
                   {t('processing.tokenCountError', 'Error counting tokens')}: {tokenCountError}
                 </div>

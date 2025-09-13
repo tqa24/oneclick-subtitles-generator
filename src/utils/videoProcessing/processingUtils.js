@@ -310,10 +310,9 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
       const mappedMediaResolution = mapMediaResolution(mediaResolution);
 
       // Prepare options for streaming API call
-      const apiOptions = {
+      const baseApiOptions = {
         userProvidedSubtitles,
         modelId: model,
-        videoMetadata,
         mediaResolution: mappedMediaResolution,
         segmentInfo: {
           start: segment.start,
@@ -324,13 +323,16 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
         autoSplitSubtitles: autoSplitSubtitles, // Pass auto-split settings to streaming API
         maxWordsPerSubtitle: maxWordsPerSubtitle
       };
-      
-      // Start streaming
-      import('../../services/gemini').then(({ streamGeminiApiWithFilesApi }) => {
-        // Pass the apiOptions which includes auto-split settings
-        streamGeminiApiWithFilesApi(
+
+      const useInline = options.forceInline === true || options.inlineExtraction === true;
+      const apiOptions = useInline ? { ...baseApiOptions, forceInline: true } : { ...baseApiOptions, videoMetadata };
+
+      // Start streaming (Files API vs INLINE)
+      import('../../services/gemini').then(({ streamGeminiApiWithFilesApi, streamGeminiApiInline }) => {
+        const streamFn = useInline ? streamGeminiApiInline : streamGeminiApiWithFilesApi;
+        streamFn(
           file,
-          apiOptions,  // This already includes autoSplitSubtitles and maxWordsPerSubtitle
+          apiOptions,
           (chunk) => processor.processChunk(chunk),
           (finalText) => processor.complete(finalText),
           (error) => processor.error(error),
@@ -348,4 +350,47 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
       }).catch(reject);
     }).catch(reject);
   });
+};
+
+
+/**
+ * Extract the selected segment locally and send inline to Gemini (no offsets)
+ */
+export const processSegmentWithInlineExtraction = async (file, segment, options, setStatus, t) => {
+  try {
+    const { model, userProvidedSubtitles } = options || {};
+    setStatus({ message: t('processing.extractingSegment', 'Extracting selected segment locally...'), type: 'loading' });
+
+    const { extractVideoSegmentLocally } = await import('../videoSegmenter');
+    const segmentFile = await extractVideoSegmentLocally(file, segment.start, segment.end);
+
+    setStatus({ message: t('processing.sendingToGemini', 'Sending extracted segment to Gemini...'), type: 'loading' });
+    const { callGeminiApi } = await import('../../services/gemini');
+
+    const rawSubtitles = await callGeminiApi(segmentFile, 'file-upload', {
+      userProvidedSubtitles,
+      modelId: model,
+      segmentInfo: { start: segment.start, end: segment.end, duration: segment.end - segment.start },
+      forceInline: true
+    });
+
+    let adjusted = Array.isArray(rawSubtitles) ? rawSubtitles : [];
+    if (adjusted.length > 0) {
+      const segDuration = segment.end - segment.start;
+      const maxEnd = Math.max(...adjusted.map(s => s.end || 0));
+      const looksRelative = maxEnd <= (segDuration + 1);
+      if (looksRelative) {
+        adjusted = adjusted.map(s => ({
+          ...s,
+          start: (s.start || 0) + segment.start,
+          end: (s.end || 0) + segment.start
+        }));
+      }
+    }
+
+    return adjusted;
+  } catch (error) {
+    console.error('Error processing segment with inline extraction:', error);
+    throw error;
+  }
 };

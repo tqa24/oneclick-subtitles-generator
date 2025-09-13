@@ -99,3 +99,31 @@ export const fetchVideoSegment = async (segmentUrl) => {
     throw error;
   }
 };
+
+
+/**
+ * Extract a video segment locally on the server using ffmpeg and return it as a File
+ * @param {File} videoFile - Source video file
+ * @param {number} startSec - Start time in seconds
+ * @param {number} endSec - End time in seconds
+ * @returns {Promise<File>} - Extracted segment as a File
+ */
+export const extractVideoSegmentLocally = async (videoFile, startSec, endSec) => {
+  const url = `${SERVER_URL}/api/extract-video-segment?start=${encodeURIComponent(startSec)}&end=${encodeURIComponent(endSec)}`;
+  const formData = new FormData();
+  formData.append('file', videoFile);
+
+  const res = await fetch(url, { method: 'POST', body: formData });
+  if (!res.ok) {
+    let msg = `Failed to extract segment (Status: ${res.status})`;
+    try { const data = await res.json(); if (data?.error) msg = data.error; } catch {}
+    throw new Error(msg);
+  }
+  const data = await res.json();
+  const clipUrl = data.url?.startsWith('http') ? data.url : `${SERVER_URL}${data.url}`;
+  const resp2 = await fetch(clipUrl);
+  if (!resp2.ok) throw new Error(`Failed to fetch extracted segment: ${resp2.statusText}`);
+  const blob = await resp2.blob();
+  const name = (clipUrl.split('/').pop()) || 'segment.mp4';
+  return new File([blob], name, { type: blob.type || 'video/mp4' });
+};
