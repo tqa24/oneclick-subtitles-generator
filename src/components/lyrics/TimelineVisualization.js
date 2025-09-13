@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useCallback, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -1232,38 +1232,53 @@ const TimelineVisualization = ({
   // Helper overlay component that follows the timeline canvas without leaking rAF
   const OverlayFollower = ({ canvasRef, deps = [], computeStyle, children }) => {
     const containerRef = useRef(null);
-    useEffect(() => {
+    const computeStyleRef = useRef(computeStyle);
+    const scheduleRef = useRef(() => {});
+
+    // Always keep latest computeStyle without tearing down listeners
+    useEffect(() => { computeStyleRef.current = computeStyle; }, [computeStyle]);
+
+    // Do initial measure before paint to avoid 0,0 flash; keep listeners stable
+    useLayoutEffect(() => {
       const canvas = canvasRef.current;
       const el = containerRef.current;
       if (!canvas || !el) return;
-      let rafId;
+      let rafId = 0;
       const update = () => {
         const bounds = canvas.getBoundingClientRect();
-        const style = computeStyle(bounds);
-        if (style && el) {
-          Object.assign(el.style, style);
-        }
+        const style = computeStyleRef.current(bounds);
+        if (style && el) Object.assign(el.style, style);
+        if (el.style.visibility !== 'visible') el.style.visibility = 'visible';
       };
       const schedule = () => {
         if (rafId) cancelAnimationFrame(rafId);
         rafId = requestAnimationFrame(update);
       };
+      scheduleRef.current = schedule;
+
+      // Initial sync update to avoid flicker
+      try { update(); } catch {}
+
       const ro = new ResizeObserver(schedule);
       ro.observe(canvas);
       window.addEventListener('scroll', schedule, true);
       window.addEventListener('resize', schedule);
-      schedule();
+
       return () => {
         ro.disconnect();
         window.removeEventListener('scroll', schedule, true);
         window.removeEventListener('resize', schedule);
         if (rafId) cancelAnimationFrame(rafId);
+        scheduleRef.current = () => {};
       };
-    }, [canvasRef, computeStyle, ...deps]);
+    }, [canvasRef]);
+
+    // When deps change (zoom/pan/lyrics/time), just schedule an update; don't teardown
+    useEffect(() => { scheduleRef.current(); }, [computeStyle, ...deps]);
 
     return (
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none' }}>
-        <div ref={containerRef} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'auto', zIndex: 1000 }}>
+        <div ref={containerRef} style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'auto', zIndex: 1000, visibility: 'hidden' }}>
           {children}
         </div>
       </div>
