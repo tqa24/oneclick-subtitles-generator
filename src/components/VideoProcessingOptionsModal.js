@@ -114,8 +114,8 @@ const VideoProcessingOptionsModal = ({
 
   const [inlineExtraction, setInlineExtraction] = useState(() => {
     // If opened via retry, force old method immediately to avoid any flash of the new method
-    const retryOpening = sessionStorage.getItem('processing_modal_open_with_retry') === 'true';
-    if (retryOpening) return true;
+    const reason = sessionStorage.getItem('processing_modal_open_reason');
+    if (reason === 'retry-offline') return true;
     const saved = localStorage.getItem('video_processing_inline_extraction');
     return saved === 'true';
   });
@@ -130,7 +130,6 @@ const VideoProcessingOptionsModal = ({
     if (isOpen && !openedInitRef.current) {
       const reason = sessionStorage.getItem('processing_modal_open_reason') || 'unknown';
       const lock = (reason === 'retry-offline');
-      console.info('[VideoProcessingModal] Opened', { reason, retryLock: lock });
       setRetryLock(lock);
       if (lock) setInlineExtraction(true);
       openedInitRef.current = true;
@@ -279,26 +278,38 @@ const VideoProcessingOptionsModal = ({
       isCustom: true
     }));
 
-    // Disable Gemini 2.0 models when segment start is not near 0 (allow < 5s slack)
+    // Conditions for greying out Gemini 2.0 models
     const startOffsetSec = (typeof selectedSegment?.start === 'number') ? selectedSegment.start : 0;
     const exceedsStartAllowance = startOffsetSec >= 5; // allow small margin under 5s
 
+    // Determine if the segment will be split into multiple requests by the slider
+    const segmentDurationSec = (typeof selectedSegment?.end === 'number' && typeof selectedSegment?.start === 'number')
+      ? (selectedSegment.end - selectedSegment.start)
+      : 0;
+    const requestWindowSec = Math.max(1, Number(maxDurationPerRequest || 0) * 60);
+    const numRequests = requestWindowSec > 0 ? Math.ceil(segmentDurationSec / requestWindowSec) : 1;
+    const hasSplitParts = numRequests > 1;
+
+    // Only grey out 2.0 models when the chosen method is NEW
+    const isNewMethod = !inlineExtraction; // inlineExtraction=true means Old method
+    const shouldDisable20 = isNewMethod && (exceedsStartAllowance || hasSplitParts);
+
     const allModels = [...builtInModels, ...customModels];
 
-    if (exceedsStartAllowance) {
+    if (shouldDisable20) {
       return allModels.map(m => {
         if (m.value === 'gemini-2.0-flash') {
           return {
             ...m,
             disabled: true,
-            label: t('settings.model20FlashDisabled', 'Gemini 2.0 Flash (Điểm bắt đầu phân đoạn phải ở đầu video)')
+            label: t('settings.model20FlashDisabled', 'Gemini 2.0 Flash (Không khả dụng với phương pháp mới khi có offset hoặc chia nhỏ đoạn)')
           };
         }
         if (m.value === 'gemini-2.0-flash-lite') {
           return {
             ...m,
             disabled: true,
-            label: t('settings.model20FlashLiteDisabled', 'Gemini 2.0 Flash Lite (Điểm bắt đầu phân đoạn phải ở đầu video)')
+            label: t('settings.model20FlashLiteDisabled', 'Gemini 2.0 Flash Lite (Không khả dụng với phương pháp mới khi có offset hoặc chia nhỏ đoạn)')
           };
         }
         return m;
