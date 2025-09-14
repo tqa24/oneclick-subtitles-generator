@@ -19,7 +19,6 @@ const VideoCropControls = ({
   onCancel,
   onClear,
   videoDimensions,
-  containerDimensions,
   hasAppliedCrop = false
 }) => {
   const { t } = useTranslation();
@@ -37,95 +36,100 @@ const VideoCropControls = ({
 
   // Find and track the actual video element position
   useEffect(() => {
-    if (isEnabled) {
-      const findVideoElement = () => {
-        // Find the container element first
-        const containerElement = document.querySelector('.video-preview-panel');
-        if (!containerElement) return;
-        
-        const containerRect = containerElement.getBoundingClientRect();
-        
-        // Find the actual video element
-        const videoElement = containerElement.querySelector('video');
-        
-        if (videoElement) {
-          // Get the actual rendered size of the video
-          const videoRect = videoElement.getBoundingClientRect();
-          
-          // Check if video has letterboxing by comparing aspect ratios
-          const videoAspectRatio = videoElement.videoWidth / videoElement.videoHeight;
-          const displayAspectRatio = videoRect.width / videoRect.height;
-          
-          let actualVideoRect = {
-            left: videoRect.left,
-            top: videoRect.top,
-            width: videoRect.width,
-            height: videoRect.height
-          };
-          
-          // Adjust for letterboxing if present
-          if (Math.abs(videoAspectRatio - displayAspectRatio) > 0.01) {
-            if (videoAspectRatio > displayAspectRatio) {
-              // Video is wider - black bars on top/bottom
-              const actualHeight = videoRect.width / videoAspectRatio;
-              const letterboxHeight = (videoRect.height - actualHeight) / 2;
-              actualVideoRect.top += letterboxHeight;
-              actualVideoRect.height = actualHeight;
-            } else {
-              // Video is taller - black bars on left/right
-              const actualWidth = videoRect.height * videoAspectRatio;
-              const letterboxWidth = (videoRect.width - actualWidth) / 2;
-              actualVideoRect.left += letterboxWidth;
-              actualVideoRect.width = actualWidth;
-            }
-          }
-          
-          setVideoRect({
-            left: actualVideoRect.left - containerRect.left,
-            top: actualVideoRect.top - containerRect.top,
-            width: actualVideoRect.width,
-            height: actualVideoRect.height
-          });
-          
-          console.log('Video element found:', {
-            videoWidth: videoElement.videoWidth,
-            videoHeight: videoElement.videoHeight,
-            displayWidth: actualVideoRect.width,
-            displayHeight: actualVideoRect.height,
-            aspectRatio: videoAspectRatio
-          });
-        } else {
-          // Fallback: Try to find any element with video-like dimensions
-          const playerElement = containerElement.querySelector('[style*="border-radius"]');
-          if (playerElement) {
-            const rect = playerElement.getBoundingClientRect();
-            // Assume controls take up bottom 40px
-            setVideoRect({
-              left: rect.left - containerRect.left,
-              top: rect.top - containerRect.top,
-              width: rect.width,
-              height: rect.height - 40
-            });
+    if (!isEnabled) {
+      setVideoRect(null);
+      return;
+    }
+
+    let interval;
+
+    const setRectIfChanged = (newRect) => {
+      setVideoRect((prev) => {
+        if (
+          prev &&
+          Math.abs(prev.left - newRect.left) < 0.5 &&
+          Math.abs(prev.top - newRect.top) < 0.5 &&
+          Math.abs(prev.width - newRect.width) < 0.5 &&
+          Math.abs(prev.height - newRect.height) < 0.5
+        ) {
+          return prev; // avoid unnecessary re-renders
+        }
+        return newRect;
+      });
+    };
+
+    const findVideoElement = () => {
+      const containerElement = document.querySelector('.video-preview-panel');
+      if (!containerElement) return;
+
+      const containerRect = containerElement.getBoundingClientRect();
+      const videoElement = containerElement.querySelector('video');
+
+      if (videoElement) {
+        const videoRect = videoElement.getBoundingClientRect();
+        const hasMeta = !!(videoElement.videoWidth && videoElement.videoHeight);
+        const videoAspectRatio = hasMeta
+          ? videoElement.videoWidth / videoElement.videoHeight
+          : videoRect.width / videoRect.height;
+        const displayAspectRatio = videoRect.width / videoRect.height;
+
+        let actualVideoRect = {
+          left: videoRect.left,
+          top: videoRect.top,
+          width: videoRect.width,
+          height: videoRect.height,
+        };
+
+        if (hasMeta && Math.abs(videoAspectRatio - displayAspectRatio) > 0.01) {
+          if (videoAspectRatio > displayAspectRatio) {
+            const actualHeight = videoRect.width / videoAspectRatio;
+            const letterboxHeight = (videoRect.height - actualHeight) / 2;
+            actualVideoRect.top += letterboxHeight;
+            actualVideoRect.height = actualHeight;
+          } else {
+            const actualWidth = videoRect.height * videoAspectRatio;
+            const letterboxWidth = (videoRect.width - actualWidth) / 2;
+            actualVideoRect.left += letterboxWidth;
+            actualVideoRect.width = actualWidth;
           }
         }
-      };
 
-      // Initial check with delay to ensure player is loaded
-      setTimeout(findVideoElement, 100);
-      
-      // Check periodically in case video loads later
-      const interval = setInterval(findVideoElement, 500);
-      
-      // Also check on window resize
-      window.addEventListener('resize', findVideoElement);
-      
-      return () => {
-        clearInterval(interval);
-        window.removeEventListener('resize', findVideoElement);
-      };
-    } else {
-      setVideoRect(null);
-    }
+        const newRect = {
+          left: actualVideoRect.left - containerRect.left,
+          top: actualVideoRect.top - containerRect.top,
+          width: actualVideoRect.width,
+          height: actualVideoRect.height,
+        };
+        setRectIfChanged(newRect);
+
+        if (interval) {
+          clearInterval(interval);
+          interval = null;
+        }
+      } else {
+        const playerElement = containerElement.querySelector('[style*="border-radius"]');
+        if (playerElement) {
+          const rect = playerElement.getBoundingClientRect();
+          const newRect = {
+            left: rect.left - containerRect.left,
+            top: rect.top - containerRect.top,
+            width: rect.width,
+            height: Math.max(0, rect.height - 40),
+          };
+          setRectIfChanged(newRect);
+        }
+      }
+    };
+
+    const timeoutId = setTimeout(findVideoElement, 100);
+    interval = setInterval(findVideoElement, 500);
+    window.addEventListener('resize', findVideoElement);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (interval) clearInterval(interval);
+      window.removeEventListener('resize', findVideoElement);
+    };
   }, [isEnabled]);
 
   // Calculate crop area dimensions based on aspect ratio
