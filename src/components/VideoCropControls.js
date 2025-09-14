@@ -42,9 +42,11 @@ const VideoCropControls = ({
     }
 
     let resizeObserverContainer = null;
+    let resizeObserverWrapper = null;
     let resizeObserverVideo = null;
     let mutationObserver = null;
     let videoEl = null;
+    let rafId = null;
 
     const setRectIfChanged = (newRect) => {
       setVideoRect((prev) => {
@@ -60,6 +62,17 @@ const VideoCropControls = ({
         return newRect;
       });
     };
+
+    // Batch rect computations to one per animation frame
+    const scheduleCompute = (container, video) => {
+      if (!container || !video) return;
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        computeAndSetRect(container, video);
+        rafId = null;
+      });
+    };
+
 
     const computeAndSetRect = (containerElement, videoElement) => {
       if (!containerElement || !videoElement) return;
@@ -107,9 +120,22 @@ const VideoCropControls = ({
 
       // Observe container size changes
       resizeObserverContainer = new ResizeObserver(() => {
-        if (videoEl) computeAndSetRect(containerElement, videoEl);
+        if (videoEl) scheduleCompute(containerElement, videoEl);
       });
       resizeObserverContainer.observe(containerElement);
+
+	      // Observe wrapper changes (e.g., player wrapper / video wrapper)
+	      const wrapperEl =
+	        containerElement.querySelector('.video-wrapper') ||
+	        containerElement.querySelector('.remotion-player') ||
+	        containerElement.querySelector('[data-remotion-player]');
+	      if (wrapperEl) {
+	        resizeObserverWrapper = new ResizeObserver(() => {
+	          if (videoEl) scheduleCompute(containerElement, videoEl);
+	        });
+	        resizeObserverWrapper.observe(wrapperEl);
+	      }
+
 
       // Find or wait for the video element inside container
       const tryAttachVideo = () => {
@@ -122,11 +148,11 @@ const VideoCropControls = ({
         videoEl.addEventListener('loadedmetadata', onMeta, { once: true });
 
         // Observe video size changes
-        resizeObserverVideo = new ResizeObserver(() => computeAndSetRect(containerElement, videoEl));
+        resizeObserverVideo = new ResizeObserver(() => scheduleCompute(containerElement, videoEl));
         resizeObserverVideo.observe(videoEl);
 
         // Initial compute
-        computeAndSetRect(containerElement, videoEl);
+        scheduleCompute(containerElement, videoEl);
         return true;
       };
 
@@ -145,13 +171,17 @@ const VideoCropControls = ({
     const containerElement = document.querySelector('.video-preview-panel');
     setupObservers(containerElement);
 
-    window.addEventListener('resize', () => computeAndSetRect(containerElement, videoEl));
+    const onWindowResize = () => scheduleCompute(containerElement, videoEl);
+    window.addEventListener('resize', onWindowResize);
 
     return () => {
       if (resizeObserverContainer) resizeObserverContainer.disconnect();
       if (resizeObserverVideo) resizeObserverVideo.disconnect();
       if (mutationObserver) mutationObserver.disconnect();
-      window.removeEventListener('resize', () => computeAndSetRect(containerElement, videoEl));
+      if (resizeObserverWrapper) resizeObserverWrapper.disconnect();
+      if (rafId) cancelAnimationFrame(rafId);
+
+      window.removeEventListener('resize', onWindowResize);
     };
   }, [isEnabled]);
 
@@ -177,7 +207,7 @@ const VideoCropControls = ({
     } else {
       // Calculate crop to maintain aspect ratio
       const videoAspect = videoWidth / videoHeight;
-      
+
       if (aspectRatio > videoAspect) {
         // Crop is wider than video - fit width
         cropWidth = 100;
@@ -241,11 +271,11 @@ const VideoCropControls = ({
           // For aspect ratio, use the dominant movement direction
           const aspectRatio = selectedAspectRatio;
           const videoAspect = videoDimensions.width / videoDimensions.height;
-          
+
           // Determine which direction moved more
           const absDeltaX = Math.abs(deltaX);
           const absDeltaY = Math.abs(deltaY);
-          
+
           if (absDeltaX > absDeltaY) {
             // X movement is dominant
             newCrop.x = Math.max(0, Math.min(tempCrop.x + tempCrop.width - 10, tempCrop.x + deltaX));
@@ -261,7 +291,7 @@ const VideoCropControls = ({
             newCrop.width = newCrop.height * aspectRatio / videoAspect;
             newCrop.x = tempCrop.x + tempCrop.width - newCrop.width;
           }
-          
+
           // Ensure within bounds
           newCrop.x = Math.max(0, newCrop.x);
           newCrop.y = Math.max(0, newCrop.y);
@@ -280,10 +310,10 @@ const VideoCropControls = ({
         if (selectedAspectRatio && selectedAspectRatio !== 'custom' && selectedAspectRatio !== null) {
           const aspectRatio = selectedAspectRatio;
           const videoAspect = videoDimensions.width / videoDimensions.height;
-          
+
           const absDeltaX = Math.abs(deltaX);
           const absDeltaY = Math.abs(deltaY);
-          
+
           if (absDeltaX > absDeltaY) {
             // X movement is dominant
             newCrop.width = Math.max(10, Math.min(100 - tempCrop.x, tempCrop.width + deltaX));
@@ -299,7 +329,7 @@ const VideoCropControls = ({
             newCrop.width = newCrop.height * aspectRatio / videoAspect;
             newCrop.x = tempCrop.x;
           }
-          
+
           // Ensure within bounds
           newCrop.x = Math.max(0, newCrop.x);
           newCrop.y = Math.max(0, newCrop.y);
@@ -318,10 +348,10 @@ const VideoCropControls = ({
         if (selectedAspectRatio && selectedAspectRatio !== 'custom' && selectedAspectRatio !== null) {
           const aspectRatio = selectedAspectRatio;
           const videoAspect = videoDimensions.width / videoDimensions.height;
-          
+
           const absDeltaX = Math.abs(deltaX);
           const absDeltaY = Math.abs(deltaY);
-          
+
           if (absDeltaX > absDeltaY) {
             // X movement is dominant
             newCrop.x = Math.max(0, Math.min(tempCrop.x + tempCrop.width - 10, tempCrop.x + deltaX));
@@ -337,7 +367,7 @@ const VideoCropControls = ({
             newCrop.width = newCrop.height * aspectRatio / videoAspect;
             newCrop.x = tempCrop.x + tempCrop.width - newCrop.width;
           }
-          
+
           // Ensure within bounds
           newCrop.x = Math.max(0, newCrop.x);
           newCrop.y = Math.max(0, newCrop.y);
@@ -356,10 +386,10 @@ const VideoCropControls = ({
         if (selectedAspectRatio && selectedAspectRatio !== 'custom' && selectedAspectRatio !== null) {
           const aspectRatio = selectedAspectRatio;
           const videoAspect = videoDimensions.width / videoDimensions.height;
-          
+
           const absDeltaX = Math.abs(deltaX);
           const absDeltaY = Math.abs(deltaY);
-          
+
           if (absDeltaX > absDeltaY) {
             // X movement is dominant
             newCrop.width = Math.max(10, Math.min(100 - tempCrop.x, tempCrop.width + deltaX));
@@ -375,7 +405,7 @@ const VideoCropControls = ({
             newCrop.x = tempCrop.x;
             newCrop.y = tempCrop.y;
           }
-          
+
           // Ensure within bounds
           newCrop.width = Math.min(100 - newCrop.x, newCrop.width);
           newCrop.height = Math.min(100 - newCrop.y, newCrop.height);
@@ -497,7 +527,7 @@ const VideoCropControls = ({
             <span className="crop-indicator">✓</span>
           )}
         </button>
-        
+
         {/* Clear crop button - only show when crop is applied and not editing */}
         {hasAppliedCrop && !isEnabled && (
           <button
@@ -571,7 +601,7 @@ const VideoCropControls = ({
           </div>
 
           {/* Crop overlay - positioned on actual video */}
-          <div 
+          <div
             ref={cropAreaRef}
             className="crop-overlay-container"
             style={{
@@ -648,7 +678,7 @@ const VideoCropControls = ({
               <div className="crop-handle edge s" onMouseDown={(e) => handleMouseDown(e, 's')} />
               <div className="crop-handle edge e" onMouseDown={(e) => handleMouseDown(e, 'e')} />
               <div className="crop-handle edge w" onMouseDown={(e) => handleMouseDown(e, 'w')} />
-              
+
               {/* Size display in center */}
               <div className="crop-size-display">
                 {Math.round(tempCrop.width)}% × {Math.round(tempCrop.height)}%
