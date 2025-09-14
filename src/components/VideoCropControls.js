@@ -2,12 +2,35 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/VideoCropControls.css';
 
+const IconFree = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M3 12h18M12 3v18" opacity=".6" />
+    <path d="M8 5l-3 3M16 5l3 3M8 19l-3-3M16 19l3-3" />
+  </svg>
+);
+const Icon169 = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="3" y="7" width="18" height="10" rx="2" /></svg>
+);
+const Icon916 = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="7" y="3" width="10" height="18" rx="2" /></svg>
+);
+const Icon11 = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="5" y="5" width="14" height="14" rx="2" /></svg>
+);
+const Icon45 = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="6" y="4.5" width="12" height="15" rx="2" /></svg>
+);
+
 const PRESET_ASPECT_RATIOS = [
-  { label: 'Free', value: null, icon: '↔' },
-  { label: '16:9', value: 16/9, icon: '📺' },
-  { label: '9:16', value: 9/16, icon: '📱' },
-  { label: '1:1', value: 1, icon: '⬜' },
-  { label: '4:5', value: 4/5, icon: '📷' },
+  { label: 'Free', value: null, renderIcon: () => <IconFree /> },
+  { label: '16:9', value: 16/9, renderIcon: () => <Icon169 /> },
+  { label: '9:16', value: 9/16, renderIcon: () => <Icon916 /> },
+  { label: '1:1', value: 1, renderIcon: () => <Icon11 /> },
+  { label: '4:5', value: 4/5, renderIcon: () => <Icon45 /> },
 ];
 
 const VideoCropControls = ({
@@ -519,9 +542,8 @@ const VideoCropControls = ({
           onClick={onToggle}
           title={hasAppliedCrop ? t('videoRendering.editCrop', 'Edit crop') : t('videoRendering.toggleCrop', 'Add crop')}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M6 2L2 6v12a2 2 0 002 2h12l4-4" />
-            <path d="M13 2h5a2 2 0 012 2v5" />
+          <svg width="20" height="20" viewBox="0 -960 960 960" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M475 13Q299.99 13 168.49-94 37-201-2-365q-6-21.36 8.5-39.18t37-21.32q21.34-2.5 40.97 9.84T110-382q29 103 108.5 179T405-107l-9-10q-15-15-15-33t15-34q15-16 34.5-16.5T465-186L611.55-39.45q7.45 7.45 4.7 20.18Q613.5-6.53 601.39-2.7 565 5 533 9q-32 4-58 4ZM374-277q-39.89 0-68.44-28.56Q277-334.11 277-374v-212h-49q-19.28 0-33.64-14.29T180-634.79q0-19.78 14.65-34Q209.3-683 229-683h48v-49q0-19.27 14.37-33.64Q305.74-780 326.07-780q19.91 0 33.92 14.36Q374-751.27 374-732v358h348q19.87 0 33.94 13.89Q770-346.23 770-326.61 770-307 755.94-292q-14.07 15-33.94 15h-39v49q0 19.28-14.01 33.64-14 14.36-33.8 14.36-19.79 0-34.49-14.65Q586-209.3 586-229v-48H374Zm212-154v-155H431v-97h155q41.29 0 69.14 27.86Q683-627.29 683-586v155h-97ZM485-973q175.01 0 306.51 108Q923-757 962-594q6 20.98-8.5 38.99t-37.23 20.51q-22.74 2.5-41.56-10.34Q855.9-557.68 850-578q-29-103-108.5-179T555-854l9 11q15 15 15 32.5T564-777q-15 16-34.5 17T495-775L348.45-920.55Q341-929 343.82-941.6q2.82-12.6 15.18-16.4 36-8 68-11.5t58-3.5Z"/>
           </svg>
           {hasAppliedCrop && !isEnabled && (
             <span className="crop-indicator">✓</span>
@@ -535,9 +557,8 @@ const VideoCropControls = ({
             onClick={onClear}
             title={t('videoRendering.clearCrop', 'Clear crop')}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
+            <svg width="20" height="20" viewBox="0 -960 960 960" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M480-390 334-244q-20 20-45 19.5T245-245q-20-20-20-45t20-45l145-145-146-147q-20-20-19.5-45t20.5-45q19-20 44.5-20t45.5 20l145 146 146-146q20-20 45.5-20t44.5 20q20 20 20 45t-20 45L570-480l146 146q20 20 20 44.5T716-245q-19 20-44.5 20T626-245L480-390Z"/>
             </svg>
           </button>
         )}
@@ -563,7 +584,7 @@ const VideoCropControls = ({
                 onClick={() => handleAspectRatioChange(preset.value)}
                 title={preset.label}
               >
-                <span className="aspect-icon">{preset.icon}</span>
+                {preset.renderIcon && preset.renderIcon()}
                 <span className="aspect-label">{preset.label}</span>
               </button>
             ))}
@@ -583,9 +604,8 @@ const VideoCropControls = ({
               className="crop-action-btn cancel"
               onClick={onCancel}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
+              <svg width="16" height="16" viewBox="0 -960 960 960" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M480-390 334-244q-20 20-45 19.5T245-245q-20-20-20-45t20-45l145-145-146-147q-20-20-19.5-45t20.5-45q19-20 44.5-20t45.5 20l145 146 146-146q20-20 45.5-20t44.5 20q20 20 20 45t-20 45L570-480l146 146q20 20 20 44.5T716-245q-19 20-44.5 20T626-245L480-390Z"/>
               </svg>
               {t('videoRendering.cancel', 'Cancel')}
             </button>
@@ -593,15 +613,16 @@ const VideoCropControls = ({
               className="crop-action-btn apply"
               onClick={onApply}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="20 6 9 17 4 12"></polyline>
+              <svg width="16" height="16" viewBox="0 -960 960 960" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="m389-408 281-281q19-19 46-19t46 18.79q19 18.79 19 45.58t-18.61 45.4L435-272q-18.73 19-45.36 19Q363-253 344-272L200-415q-19-19.73-19.5-45.87Q180-487 198.79-506q19.79-20 46.17-20 26.37 0 45.04 20l99 98Z"/>
               </svg>
               {t('videoRendering.applyCrop', 'Apply Crop')}
             </button>
           </div>
 
           {/* Crop overlay - positioned on actual video */}
-          <div
+          {videoRect && (
+            <div
             ref={cropAreaRef}
             className="crop-overlay-container"
             style={{
@@ -630,7 +651,6 @@ const VideoCropControls = ({
                 left: 0,
                 right: 0,
                 bottom: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.6)',
                 clipPath: `polygon(
                   0 0, 100% 0, 100% 100%, 0 100%, 0 0,
                   ${tempCrop.x}% ${tempCrop.y}%,
@@ -652,8 +672,6 @@ const VideoCropControls = ({
                 top: `${tempCrop.y}%`,
                 width: `${tempCrop.width}%`,
                 height: `${tempCrop.height}%`,
-                border: '2px solid #fff',
-                boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.6)',
                 pointerEvents: 'auto',
                 cursor: 'move'
               }}
@@ -685,6 +703,7 @@ const VideoCropControls = ({
               </div>
             </div>
           </div>
+          )}
         </>
       )}
     </>
