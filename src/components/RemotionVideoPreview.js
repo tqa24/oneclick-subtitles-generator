@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Player } from '@remotion/player';
 import { SubtitledVideoComposition } from './SubtitledVideoComposition';
+import VideoCropControls from './VideoCropControls';
 import '../styles/VideoPreviewPanel.css';
 
 const RemotionVideoPreview = ({
@@ -15,7 +16,9 @@ const RemotionVideoPreview = ({
   onDurationChange,
   onPlay,
   onPause,
-  onSeek
+  onSeek,
+  cropSettings,
+  onCropChange
 }) => {
   const { t } = useTranslation();
   const [videoUrl, setVideoUrl] = useState(null);
@@ -24,7 +27,23 @@ const RemotionVideoPreview = ({
   const [duration, setDuration] = useState(0);
   const [isVideoFile, setIsVideoFile] = useState(false);
   const [videoDimensions, setVideoDimensions] = useState(null);
+  const [isCropEnabled, setIsCropEnabled] = useState(false);
+  const [tempCropSettings, setTempCropSettings] = useState({
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
+    aspectRatio: null
+  });
+  const [appliedCropSettings, setAppliedCropSettings] = useState({
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
+    aspectRatio: null
+  });
   const playerRef = useRef(null);
+  const containerRef = useRef(null);
 
   // Create video URL from file
   useEffect(() => {
@@ -132,6 +151,64 @@ const RemotionVideoPreview = ({
     console.log('[RemotionVideoPreview] videoDimensions changed:', videoDimensions);
   }, [videoDimensions]);
 
+  // Sync crop settings with parent if provided
+  useEffect(() => {
+    if (cropSettings) {
+      setAppliedCropSettings(cropSettings);
+      setTempCropSettings(cropSettings);
+    }
+  }, [cropSettings]);
+
+  // Handle crop toggle
+  const handleCropToggle = () => {
+    const newEnabled = !isCropEnabled;
+    setIsCropEnabled(newEnabled);
+    if (newEnabled) {
+      // When enabling, start with current applied settings
+      setTempCropSettings(appliedCropSettings);
+    } else {
+      // When disabling without applying, revert to applied settings
+      setTempCropSettings(appliedCropSettings);
+    }
+  };
+
+  // Handle temporary crop change (while adjusting)
+  const handleTempCropChange = (newCrop) => {
+    setTempCropSettings(newCrop);
+  };
+
+  // Handle applying the crop
+  const handleApplyCrop = () => {
+    setAppliedCropSettings(tempCropSettings);
+    if (onCropChange) {
+      onCropChange(tempCropSettings);
+    }
+    setIsCropEnabled(false);
+  };
+
+  // Handle canceling the crop
+  const handleCancelCrop = () => {
+    setTempCropSettings(appliedCropSettings);
+    setIsCropEnabled(false);
+  };
+
+  // Handle clearing the crop entirely
+  const handleClearCrop = () => {
+    const resetCrop = {
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+      aspectRatio: null
+    };
+    setAppliedCropSettings(resetCrop);
+    setTempCropSettings(resetCrop);
+    if (onCropChange) {
+      onCropChange(resetCrop);
+    }
+    setIsCropEnabled(false);
+  };
+
   // Calculate composition dimensions based on actual video dimensions or resolution fallback
   const getCompositionDimensions = () => {
     // If we have actual video dimensions, use them with the target resolution height
@@ -164,14 +241,34 @@ const RemotionVideoPreview = ({
           break;
       }
 
-      // Calculate width based on actual aspect ratio
-      const targetWidth = Math.round(targetHeight * videoDimensions.aspectRatio);
+      // Check if crop is applied and adjust aspect ratio accordingly
+      let effectiveAspectRatio = videoDimensions.aspectRatio;
+      
+      if (appliedCropSettings && (appliedCropSettings.width < 100 || appliedCropSettings.height < 100)) {
+        // Calculate new aspect ratio based on crop
+        const cropWidthRatio = appliedCropSettings.width / 100;
+        const cropHeightRatio = appliedCropSettings.height / 100;
+        
+        // Original video dimensions in crop coordinates
+        const originalWidth = videoDimensions.width;
+        const originalHeight = videoDimensions.height;
+        
+        // Cropped dimensions
+        const croppedWidth = originalWidth * cropWidthRatio;
+        const croppedHeight = originalHeight * cropHeightRatio;
+        
+        // New aspect ratio after crop
+        effectiveAspectRatio = croppedWidth / croppedHeight;
+      }
+
+      // Calculate width based on effective aspect ratio
+      const targetWidth = Math.round(targetHeight * effectiveAspectRatio);
 
       // Ensure dimensions are even numbers (required for video encoding)
       const width = targetWidth % 2 === 0 ? targetWidth : targetWidth + 1;
       const height = targetHeight % 2 === 0 ? targetHeight : targetHeight + 1;
 
-      console.log(`[RemotionVideoPreview] Using actual video dimensions: ${width}x${height} (aspect ratio: ${videoDimensions.aspectRatio.toFixed(2)})`);
+      console.log(`[RemotionVideoPreview] Using dimensions: ${width}x${height} (aspect ratio: ${effectiveAspectRatio.toFixed(2)})`);
       return { width, height };
     }
 
@@ -299,7 +396,8 @@ const RemotionVideoPreview = ({
   const safeHeight = height > 0 ? height : 1080;
 
   return (
-    <>
+    <div style={{ position: 'relative', width: '100%', height: '100%' }} ref={containerRef}>
+      {/* Video player */}
       <Player
         key={`${safeWidth}x${safeHeight}`} // Force re-render when dimensions change
         ref={playerRef}
@@ -327,15 +425,30 @@ const RemotionVideoPreview = ({
           isVideoFile: isVideoFile,
           originalAudioVolume: originalAudioVolume,
           narrationVolume: narrationVolume,
+          cropSettings: (appliedCropSettings.width < 100 || appliedCropSettings.height < 100) ? appliedCropSettings : null,
         }}
         onFrame={handlePlayerTimeUpdate}
         onPlay={handlePlay}
         onPause={handlePause}
         onSeek={handleSeek}
       />
-
-
-    </>
+      
+      {/* Crop controls overlay - directly on video */}
+      {videoFile && videoDimensions && (
+        <VideoCropControls
+          isEnabled={isCropEnabled}
+          onToggle={handleCropToggle}
+          cropSettings={tempCropSettings}
+          onCropChange={handleTempCropChange}
+          onApply={handleApplyCrop}
+          onCancel={handleCancelCrop}
+          onClear={handleClearCrop}
+          videoDimensions={videoDimensions}
+          containerDimensions={containerRef.current?.getBoundingClientRect()}
+          hasAppliedCrop={appliedCropSettings.width < 100 || appliedCropSettings.height < 100}
+        />
+      )}
+    </div>
   );
 };
 

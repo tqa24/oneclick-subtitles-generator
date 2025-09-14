@@ -50,6 +50,16 @@ const VideoRenderingSection = ({
     const saved = localStorage.getItem('videoRender_subtitleCustomization');
     return saved ? JSON.parse(saved) : defaultCustomization;
   });
+  const [cropSettings, setCropSettings] = useState(() => {
+    const saved = localStorage.getItem('videoRender_cropSettings');
+    return saved ? JSON.parse(saved) : {
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+      aspectRatio: null
+    };
+  });
   const [renderQueue, setRenderQueue] = useState([]);
   const [currentQueueItem, setCurrentQueueItem] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -239,6 +249,10 @@ const VideoRenderingSection = ({
   useEffect(() => {
     localStorage.setItem('videoRender_subtitleCustomization', JSON.stringify(subtitleCustomization));
   }, [subtitleCustomization]);
+  
+  useEffect(() => {
+    localStorage.setItem('videoRender_cropSettings', JSON.stringify(cropSettings));
+  }, [cropSettings]);
   useEffect(() => {
     localStorage.setItem('videoRender_leftPanelWidth', leftPanelWidth.toString());
   }, [leftPanelWidth]);
@@ -940,6 +954,7 @@ const VideoRenderingSection = ({
       subtitles: selectedSubtitles,
       settings: renderSettings,
       customization: subtitleCustomization,
+      cropSettings: cropSettings,
       status: isRendering ? 'pending' : 'processing',
       progress: 0,
       timestamp: Date.now(), // Store as timestamp number, not formatted string
@@ -1058,7 +1073,8 @@ const VideoRenderingSection = ({
         lyrics: currentSubtitles,
         metadata: {
           ...renderSettings,
-          subtitleCustomization: queueItem.customization // Include subtitle customization in metadata
+          subtitleCustomization: queueItem.customization, // Include subtitle customization in metadata
+          cropSettings: queueItem.cropSettings // Include crop settings in metadata
         },
         narrationUrl: narrationUrl, // Use HTTP URL instead of blob URL
         isVideoFile: true
@@ -1776,6 +1792,8 @@ const VideoRenderingSection = ({
                 }}
                 originalAudioVolume={renderSettings.originalAudioVolume}
                 narrationVolume={renderSettings.narrationVolume}
+                cropSettings={cropSettings}
+                onCropChange={setCropSettings}
               />
             </div>
 
