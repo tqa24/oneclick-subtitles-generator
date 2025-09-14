@@ -41,7 +41,10 @@ const VideoCropControls = ({
       return;
     }
 
-    let interval;
+    let resizeObserverContainer = null;
+    let resizeObserverVideo = null;
+    let mutationObserver = null;
+    let videoEl = null;
 
     const setRectIfChanged = (newRect) => {
       setVideoRect((prev) => {
@@ -58,77 +61,97 @@ const VideoCropControls = ({
       });
     };
 
-    const findVideoElement = () => {
-      const containerElement = document.querySelector('.video-preview-panel');
+    const computeAndSetRect = (containerElement, videoElement) => {
+      if (!containerElement || !videoElement) return;
+      const containerRect = containerElement.getBoundingClientRect();
+      const videoRect = videoElement.getBoundingClientRect();
+      const hasMeta = !!(videoElement.videoWidth && videoElement.videoHeight);
+
+      const videoAspectRatio = hasMeta
+        ? videoElement.videoWidth / videoElement.videoHeight
+        : (videoRect.width > 0 && videoRect.height > 0 ? videoRect.width / videoRect.height : 1);
+      const displayAspectRatio = (videoRect.width > 0 && videoRect.height > 0) ? (videoRect.width / videoRect.height) : videoAspectRatio;
+
+      let actualVideoRect = {
+        left: videoRect.left,
+        top: videoRect.top,
+        width: videoRect.width,
+        height: videoRect.height,
+      };
+
+      if (hasMeta && Math.abs(videoAspectRatio - displayAspectRatio) > 0.01) {
+        if (videoAspectRatio > displayAspectRatio) {
+          const actualHeight = videoRect.width / videoAspectRatio;
+          const letterboxHeight = (videoRect.height - actualHeight) / 2;
+          actualVideoRect.top += letterboxHeight;
+          actualVideoRect.height = actualHeight;
+        } else {
+          const actualWidth = videoRect.height * videoAspectRatio;
+          const letterboxWidth = (videoRect.width - actualWidth) / 2;
+          actualVideoRect.left += letterboxWidth;
+          actualVideoRect.width = actualWidth;
+        }
+      }
+
+      const newRect = {
+        left: actualVideoRect.left - containerRect.left,
+        top: actualVideoRect.top - containerRect.top,
+        width: actualVideoRect.width,
+        height: actualVideoRect.height,
+      };
+      setRectIfChanged(newRect);
+    };
+
+    const setupObservers = (containerElement) => {
       if (!containerElement) return;
 
-      const containerRect = containerElement.getBoundingClientRect();
-      const videoElement = containerElement.querySelector('video');
+      // Observe container size changes
+      resizeObserverContainer = new ResizeObserver(() => {
+        if (videoEl) computeAndSetRect(containerElement, videoEl);
+      });
+      resizeObserverContainer.observe(containerElement);
 
-      if (videoElement) {
-        const videoRect = videoElement.getBoundingClientRect();
-        const hasMeta = !!(videoElement.videoWidth && videoElement.videoHeight);
-        const videoAspectRatio = hasMeta
-          ? videoElement.videoWidth / videoElement.videoHeight
-          : videoRect.width / videoRect.height;
-        const displayAspectRatio = videoRect.width / videoRect.height;
+      // Find or wait for the video element inside container
+      const tryAttachVideo = () => {
+        const found = containerElement.querySelector('video');
+        if (!found) return false;
 
-        let actualVideoRect = {
-          left: videoRect.left,
-          top: videoRect.top,
-          width: videoRect.width,
-          height: videoRect.height,
-        };
+        videoEl = found;
+        // Recompute on video metadata load
+        const onMeta = () => computeAndSetRect(containerElement, videoEl);
+        videoEl.addEventListener('loadedmetadata', onMeta, { once: true });
 
-        if (hasMeta && Math.abs(videoAspectRatio - displayAspectRatio) > 0.01) {
-          if (videoAspectRatio > displayAspectRatio) {
-            const actualHeight = videoRect.width / videoAspectRatio;
-            const letterboxHeight = (videoRect.height - actualHeight) / 2;
-            actualVideoRect.top += letterboxHeight;
-            actualVideoRect.height = actualHeight;
-          } else {
-            const actualWidth = videoRect.height * videoAspectRatio;
-            const letterboxWidth = (videoRect.width - actualWidth) / 2;
-            actualVideoRect.left += letterboxWidth;
-            actualVideoRect.width = actualWidth;
+        // Observe video size changes
+        resizeObserverVideo = new ResizeObserver(() => computeAndSetRect(containerElement, videoEl));
+        resizeObserverVideo.observe(videoEl);
+
+        // Initial compute
+        computeAndSetRect(containerElement, videoEl);
+        return true;
+      };
+
+      if (!tryAttachVideo()) {
+        // Watch for DOM changes to attach when the video appears
+        mutationObserver = new MutationObserver(() => {
+          if (tryAttachVideo() && mutationObserver) {
+            mutationObserver.disconnect();
+            mutationObserver = null;
           }
-        }
-
-        const newRect = {
-          left: actualVideoRect.left - containerRect.left,
-          top: actualVideoRect.top - containerRect.top,
-          width: actualVideoRect.width,
-          height: actualVideoRect.height,
-        };
-        setRectIfChanged(newRect);
-
-        if (interval) {
-          clearInterval(interval);
-          interval = null;
-        }
-      } else {
-        const playerElement = containerElement.querySelector('[style*="border-radius"]');
-        if (playerElement) {
-          const rect = playerElement.getBoundingClientRect();
-          const newRect = {
-            left: rect.left - containerRect.left,
-            top: rect.top - containerRect.top,
-            width: rect.width,
-            height: Math.max(0, rect.height - 40),
-          };
-          setRectIfChanged(newRect);
-        }
+        });
+        mutationObserver.observe(containerElement, { childList: true, subtree: true });
       }
     };
 
-    const timeoutId = setTimeout(findVideoElement, 100);
-    interval = setInterval(findVideoElement, 500);
-    window.addEventListener('resize', findVideoElement);
+    const containerElement = document.querySelector('.video-preview-panel');
+    setupObservers(containerElement);
+
+    window.addEventListener('resize', () => computeAndSetRect(containerElement, videoEl));
 
     return () => {
-      clearTimeout(timeoutId);
-      if (interval) clearInterval(interval);
-      window.removeEventListener('resize', findVideoElement);
+      if (resizeObserverContainer) resizeObserverContainer.disconnect();
+      if (resizeObserverVideo) resizeObserverVideo.disconnect();
+      if (mutationObserver) mutationObserver.disconnect();
+      window.removeEventListener('resize', () => computeAndSetRect(containerElement, videoEl));
     };
   }, [isEnabled]);
 

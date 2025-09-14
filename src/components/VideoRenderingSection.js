@@ -453,7 +453,7 @@ const VideoRenderingSection = ({
 
                 // Simple debug to see if frame data is received
                 if (data.renderedFrames && data.durationInFrames) {
-                  console.log(`Frames: ${data.renderedFrames}/${data.durationInFrames}`);
+
                 }
 
                 setRenderQueue(prev => prev.map(item =>
@@ -1130,7 +1130,7 @@ const VideoRenderingSection = ({
               const data = JSON.parse(line.slice(6));
               
               // LOG EVERYTHING to understand what server is actually sending
-              console.log('[SERVER SSE DATA]', JSON.stringify(data));
+
               
               // Debug logging to understand what the server is sending
               if (data.message && data.message.includes('Chrome')) {
@@ -1269,7 +1269,7 @@ const VideoRenderingSection = ({
 
                 // Simple debug to see if frame data is received
                 if (data.renderedFrames && data.durationInFrames) {
-                  console.log(`Main render frames: ${data.renderedFrames}/${data.durationInFrames}`);
+
                 }
 
                 // Update the queue item's progress (use passed queueItem or fallback to currentQueueItem)
