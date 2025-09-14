@@ -478,6 +478,22 @@ const TimelineVisualization = ({
     };
   }, []);
 
+  // Stop retry animation if the processing modal is closed without confirming (cancelled)
+  useEffect(() => {
+    const onRetryModalClosed = (e) => {
+      const d = e && e.detail;
+      if (d && typeof d.start === 'number' && typeof d.end === 'number' && (d.confirmed === false)) {
+        const key = `${d.start}-${d.end}`;
+        setRetryingOfflineKeys(prev => prev.filter(k => k !== key));
+      }
+    };
+    window.addEventListener('retry-offline-modal-closed', onRetryModalClosed);
+    return () => {
+      window.removeEventListener('retry-offline-modal-closed', onRetryModalClosed);
+    };
+  }, []);
+
+
   const isClickingInsideRef = useRef(false); // Track if we're clicking inside the range
 
   // Notify parent component when selected range changes
@@ -1274,7 +1290,10 @@ const TimelineVisualization = ({
         const bounds = canvas.getBoundingClientRect();
         const style = computeStyleRef.current(bounds);
         if (style && el) Object.assign(el.style, style);
-        if (el.style.visibility !== 'visible') el.style.visibility = 'visible';
+        // Only interactable/visible when there is actual child content (e.g., a button)
+        const hasChild = !!(el && el.firstElementChild);
+        el.style.visibility = hasChild ? 'visible' : 'hidden';
+        el.style.pointerEvents = hasChild ? 'auto' : 'none';
       };
       const schedule = () => {
         if (rafId) cancelAnimationFrame(rafId);
@@ -1313,11 +1332,10 @@ const TimelineVisualization = ({
 
   return (
     <div className="timeline-container" style={{ position: 'relative' }}>
-      {/* Clear offline segments button (portal in timeline-header-overlays-root) */}
-      {offlineSegments.length > 0 && (() => {
+      {/* Clear offline segments button (hidden during processing/retry to avoid blocking) */}
+      {offlineSegments.length > 0 && (retryingOfflineKeys.length === 0) && (() => {
         const canvas = timelineRef.current;
-        const overlayRoot = document.getElementById('timeline-header-overlays-root');
-        if (!overlayRoot || !canvas) return null;
+        if (!canvas) return null;
         const computeStyle = (bounds) => ({ top: `${(bounds.top || 0) - 36}px`, left: `${(bounds.left || 0) + 8}px` });
         const overlay = (
           <OverlayFollower canvasRef={timelineRef} computeStyle={computeStyle}>
@@ -1333,14 +1351,13 @@ const TimelineVisualization = ({
             </button>
           </OverlayFollower>
         );
-        return createPortal(overlay, overlayRoot);
+        return createPortal(overlay, document.body);
       })() }
 
       {/* Hover refresh icon (portal) at colorful bits' vertical center */}
       {hoveredOfflineRange && (() => {
         const canvas = timelineRef.current;
-        const overlayRoot = document.getElementById('timeline-header-overlays-root');
-        if (!overlayRoot || !canvas) return null;
+        if (!canvas) return null;
         const rangeKey = `${hoveredOfflineRange.start}-${hoveredOfflineRange.end}`;
         const isRetrying = retryingOfflineKeys.includes(rangeKey);
         const computeStyle = (bounds) => {
@@ -1362,7 +1379,7 @@ const TimelineVisualization = ({
                 className="btn-base btn-primary btn-small"
                 title={t('timeline.retryFromCache', 'Retry this cut (reuse cached clip)')}
                 onClick={(e) => { e.stopPropagation(); handleRetryOfflineRange(hoveredOfflineRange); }}
-                style={{ width: 30, height: 30, minWidth: 30, padding: 0, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ width: 30, height: 30, minWidth: 30, padding: 0, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2147483646, pointerEvents: 'auto' }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" height="16" viewBox="0 -960 960 960" width="16" aria-hidden style={{ color: 'var(--md-on-primary)' }}>
                   <path fill="currentColor" d="M289-482q0 9 1 17.5t1 16.5q5 24-2 50t-31 39q-23 12-48 4t-33-31q-7-23-11.5-46.5T161-482q0-128 89-221.5T465-799l-3-4q-16-15-15.5-33.5T463-871q15-15 34-15t34 15l91 91q19 19 19 45t-19 46l-92 91q-15 15-33 14.5T464-599q-16-15-15.5-34.5T464-668l2-2h3q-75 1-127.5 56.5T289-482Zm382 3q0-9-1-17t0-16q-5-26 2.5-51t30.5-39q23-13 47-6t32 29q7 24 12 48t5 52q0 126-89 221t-215 96l2 3q17 15 16 34t-16 34q-16 16-34.5 16T428-91l-91-90q-19-20-18.5-45.5T337-271l93-91q15-15 33.5-16t34.5 15q16 15 16 34t-16 35l-4 4h-3q75-1 127.5-57T671-479Z"/>
@@ -1371,11 +1388,11 @@ const TimelineVisualization = ({
             )}
           </OverlayFollower>
         );
-        return createPortal(overlay, overlayRoot);
+        return createPortal(overlay, document.body);
       })()}
 
       {/* Range action header placed vertically above the timeline canvas */}
-      {actionBarRange && (() => {
+      {actionBarRange && (retryingOfflineKeys.length === 0) && (() => {
         const canvas = timelineRef.current;
         const { start: visStart, end: visEnd } = getTimeRange();
         const width = canvas?.clientWidth || 1;
@@ -1457,8 +1474,7 @@ const TimelineVisualization = ({
           document.addEventListener('touchcancel', onUp);
         };
 
-        const overlayRoot = document.getElementById('timeline-header-overlays-root');
-        if (!overlayRoot || !canvas) return null;
+        if (!canvas) return null;
         const computeStyle = (bounds) => ({ top: `${(bounds.top || 0) - 36}px`, left: `${(bounds.left || 0) + barLeft}px` });
 
         const overlay = (
@@ -1543,7 +1559,7 @@ const TimelineVisualization = ({
           </OverlayFollower>
         );
 
-        return createPortal(overlay, overlayRoot);
+        return createPortal(overlay, document.body);
 
       })()}
 
