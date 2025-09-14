@@ -1,3 +1,10 @@
+/* Compact variant for smaller segmented controls (used in DownloadOptionsModal process type) */
+.input-tabs.compact { --pill-height: 34px; }
+.input-tabs.compact::before { height: var(--pill-height); }
+.input-tabs.compact .pill-overlay .goo-blob { height: var(--pill-height); }
+.input-tabs.compact .tab-btn { padding: 6px 12px; font-size: 0.95em; line-height: 1.1; }
+
+
 /* tabs.css - Styles for tab components */
 
 .input-tabs {
