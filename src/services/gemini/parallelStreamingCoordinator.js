@@ -516,7 +516,7 @@ export const coordinateParallelInlineStreaming = async (
       error.message.includes('rate limit')
     ));
     const RETRY_DELAYS = [5, 10, 15, 20, 25]; // seconds
-    const INLINE_LARGE_SEGMENT_THRESHOLD_BYTES = 8 * 1024 * 1024; // 8MB
+    const INLINE_LARGE_SEGMENT_THRESHOLD_BYTES = 20 * 1024 * 1024; // 20MB (align with Google recommendation)
 
     // Stream a prepared (already-clipped) sub-segment with retries and large-clip Files API fallback
     const streamSubSegmentWithRetry = async (clipped, subSeg, index, attempt = 0, maxRetries = 5) => {

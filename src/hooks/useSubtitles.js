@@ -1173,7 +1173,7 @@ export const useSubtitles = (t) => {
                 error.message.includes('rate limit')
             ));
             const RETRY_DELAYS = [5, 10, 15, 20, 25]; // seconds
-            const INLINE_LARGE_SEGMENT_THRESHOLD_BYTES = 8 * 1024 * 1024; // 8MB
+            const INLINE_LARGE_SEGMENT_THRESHOLD_BYTES = 20 * 1024 * 1024; // 20MB (align with Google recommendation)
 
             // Determine whether to force Files API for large cached clips (no offsets)
             const isLargeClip = file && file.size > INLINE_LARGE_SEGMENT_THRESHOLD_BYTES;
