@@ -1744,7 +1744,7 @@ const VideoRenderingSection = ({
                       type="button"
                       className="refresh-icon-button"
                       onClick={handleRefreshNarration}
-                      disabled={isRefreshingNarration || !hasNarrationSegments()}
+                      disabled={isRefreshingNarration}
                       style={{
                         animation: (hasNarrationSegments() && !isRefreshingNarration)
                           ? 'breathe 2s ease-in-out infinite'
@@ -1816,14 +1816,14 @@ const VideoRenderingSection = ({
               <RemotionVideoPreview
                 videoFile={selectedVideoFile}
                 subtitles={getCurrentSubtitles()}
-                narrationAudioUrl={isAlignedNarrationAvailable() ? window.alignedNarrationCache?.url : null}
+                narrationAudioUrl={(selectedNarration === 'generated' && isAlignedNarrationAvailable()) ? window.alignedNarrationCache?.url : null}
                 subtitleCustomization={{
                   ...subtitleCustomization,
                   resolution: renderSettings.resolution,
                   frameRate: renderSettings.frameRate
                 }}
                 originalAudioVolume={renderSettings.originalAudioVolume}
-                narrationVolume={renderSettings.narrationVolume}
+                narrationVolume={selectedNarration === 'none' ? 0 : renderSettings.narrationVolume}
                 cropSettings={cropSettings}
                 onCropChange={setCropSettings}
               />
