@@ -56,6 +56,19 @@ const VideoCropControls = ({
   const dragBaseRectRef = useRef(null);
   const dragBaseCropRef = useRef(null);
 
+  // Draggable UI positions (percentages within videoRect)
+  const defaultUiPos = {
+    aspect: { xPct: 50, yPct: 2 },
+    toggle: { xPct: 96, yPct: 2 },
+    actions: { xPct: 50, yPct: 96 }
+  };
+  const [uiPos, setUiPos] = useState(defaultUiPos);
+  const resetUiPositions = useCallback(() => { setUiPos(defaultUiPos); uiInitializedRef.current = false; }, []);
+  const [uiDrag, setUiDrag] = useState(null);
+  const uiInitializedRef = useRef(false);
+  const didDragRef = useRef(false);
+
+
   useEffect(() => {
     // Normalize incoming crop settings, preserving any extra fields
     const normalized = {
@@ -560,84 +573,204 @@ const VideoCropControls = ({
     };
   }, [isDragging, handleMouseMove, handleMouseUp, dragType]);
 
+  // Dragging for floating UI during crop mode
+  const onUiMouseDown = (e, kind) => {
+    if (!isEnabled) return;
+    if (!cropAreaRef.current) return;
+    didDragRef.current = false;
+    setUiDrag({
+      kind,
+      startX: e.clientX,
+      startY: e.clientY,
+      startPos: { ...(uiPos[kind] || { xPct: 50, yPct: 50 }) }
+    });
+  };
+
+  useEffect(() => {
+    if (!uiDrag) return;
+    const onMove = (e) => {
+      if (!cropAreaRef.current) return;
+      const rect = cropAreaRef.current.getBoundingClientRect();
+      const dxPx = (e.clientX - uiDrag.startX);
+      const dyPx = (e.clientY - uiDrag.startY);
+      const moved = Math.abs(dxPx) > 3 || Math.abs(dyPx) > 3;
+      if (moved) didDragRef.current = true;
+      const dxPct = rect.width ? (dxPx / rect.width) * 100 : 0;
+      const dyPct = rect.height ? (dyPx / rect.height) * 100 : 0;
+      setUiPos((prev) => {
+        const start = uiDrag.startPos || prev[uiDrag.kind] || { xPct: 50, yPct: 50 };
+        const next = {
+          ...prev,
+          [uiDrag.kind]: {
+            xPct: Math.max(0, Math.min(100, start.xPct + dxPct)),
+            yPct: Math.max(0, Math.min(100, start.yPct + dyPct)),
+          }
+        };
+        return next;
+      });
+    };
+    const onUp = () => setUiDrag(null);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp, { once: true });
+    document.body.style.cursor = 'grabbing';
+    document.body.style.userSelect = 'none';
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [uiDrag]);
+  const suppressClickIfDragged = (e) => {
+    if (didDragRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      didDragRef.current = false;
+    }
+  };
+  // Initialize default draggable positions to match old fixed positions when overlay opens
+  useEffect(() => {
+    if (isEnabled && videoRect && !uiInitializedRef.current) {
+      const vw = videoRect.width || 1;
+      const vh = videoRect.height || 1;
+      setUiPos({
+        aspect: { xPct: 50, yPct: (14 / vh) * 100 }, // top:14px, centered
+        toggle: { xPct: ((vw - 10) / vw) * 100, yPct: (10 / vh) * 100 }, // right:10px, top:10px
+        actions: { xPct: 50, yPct: ((vh - 20) / vh) * 100 } // bottom:20px, centered
+      });
+      uiInitializedRef.current = true;
+    }
+  }, [isEnabled, videoRect]);
+
+
+  // Reset floating UI positions when leaving crop mode
+  useEffect(() => {
+    if (!isEnabled) {
+      resetUiPositions();
+    }
+  }, [isEnabled, resetUiPositions]);
+
+  const handleApplyAndReset = () => {
+    if (onApply) onApply();
+    resetUiPositions();
+  };
+
 
 
 
 
   return (
     <>
-      {/* Crop control buttons - positioned at top-right of video */}
-      <div style={{
-        position: 'absolute',
-        top: '10px',
-        right: '10px',
-        display: 'flex',
-        gap: '8px',
-        zIndex: 20,
-      }}>
-        <button
-          className={`crop-toggle-btn ${isEnabled ? 'editing' : hasAppliedCrop ? 'active' : ''}`}
-          onClick={onToggle}
-          title={hasAppliedCrop ? t('videoRendering.editCrop', 'Edit crop') : t('videoRendering.toggleCrop', 'Add crop')}
-        >
-          <svg width="20" height="20" viewBox="0 -960 960 960" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-            <path d="M654-92v-79H306q-55.73 0-95.86-39.44Q170-249.88 170-307v-347H92q-29 0-48.5-20.2T24-722q0-29 19.5-48.5T92-790h78v-78q0-29 20.2-48.5T238-936q29 0 48.5 19.5T306-868v561h562q29 0 48.5 20.2T936-239q0 29-19.5 48.5T868-171h-78v79q0 27.6-20.2 47.8Q749.6-24 722-24q-29 0-48.5-20.2T654-92Zm0-295v-267H386v-136h268q57.13 0 96.56 39.44Q790-711.13 790-654v267H654Z"/>
-          </svg>
-          {hasAppliedCrop && !isEnabled && <span className="crop-indicator">✓</span>}
-        </button>
-
-        {/* Clear crop button - only show when crop is applied and not editing */}
-        {hasAppliedCrop && !isEnabled && (
+      {/* Crop control buttons - only show fixed position when NOT editing */}
+      {!isEnabled && (
+        <div style={{
+          position: 'absolute',
+          top: '10px',
+          right: '10px',
+          display: 'flex',
+          gap: '8px',
+          zIndex: 20,
+        }}>
           <button
-            className="crop-clear-btn"
-            onClick={onClear}
-            title={t('videoRendering.clearCrop', 'Clear crop')}
+            className={`crop-toggle-btn ${hasAppliedCrop ? 'active' : ''}`}
+            onClick={onToggle}
+            title={hasAppliedCrop ? t('videoRendering.editCrop', 'Edit crop') : t('videoRendering.toggleCrop', 'Add crop')}
           >
             <svg width="20" height="20" viewBox="0 -960 960 960" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-              <path d="M480-390 334-244q-20 20-45 19.5T245-245q-20-20-20-45t20-45l145-145-146-147q-20-20-19.5-45t20.5-45q19-20 44.5-20t45.5 20l145 146 146-146q20-20 45.5-20t44.5 20q20 20 20 45t-20 45L570-480l146 146q20 20 20 44.5T716-245q-19 20-44.5 20T626-245L480-390Z"/>
+              <path d="M654-92v-79H306q-55.73 0-95.86-39.44Q170-249.88 170-307v-347H92q-29 0-48.5-20.2T24-722q0-29 19.5-48.5T92-790h78v-78q0-29 20.2-48.5T238-936q29 0 48.5 19.5T306-868v561h562q29 0 48.5 20.2T936-239q0 29-19.5 48.5T868-171h-78v79q0 27.6-20.2 47.8Q749.6-24 722-24q-29 0-48.5-20.2T654-92Zm0-295v-267H386v-136h268q57.13 0 96.56 39.44Q790-711.13 790-654v267H654Z"/>
             </svg>
+            {hasAppliedCrop && <span className="crop-indicator">✓</span>}
           </button>
-        )}
-      </div>
+
+          {hasAppliedCrop && (
+            <button
+              className="crop-clear-btn"
+              onClick={onClear}
+              title={t('videoRendering.clearCrop', 'Clear crop')}
+            >
+              <svg width="20" height="20" viewBox="0 -960 960 960" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M480-390 334-244q-20 20-45 19.5T245-245q-20-20-20-45t20-45l145-145-146-147q-20-20-19.5-45t20.5-45q19-20 44.5-20t45.5 20l145 146 146-146q20-20 45.5-20t44.5 20q20 20 20 45t-20 45L570-480l146 146q20 20 20 44.5T716-245q-19 20-44.5 20T626-245L480-390Z"/>
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Crop overlay when enabled */}
       {isEnabled && (
         <>
-          {/* Aspect ratio buttons - positioned at top of video */}
+          {/* Draggable crop toggle inside overlay when editing */}
+          <div
+            className="draggable-crop-toggle"
+            style={{
+              position: 'absolute',
+              left: `${uiPos.toggle.xPct}%`,
+              top: `${uiPos.toggle.yPct}%`,
+              transform: 'translateX(-100%)',
+              zIndex: 21,
+              pointerEvents: 'auto',
+              cursor: uiDrag?.kind === 'toggle' ? 'grabbing' : 'grab'
+            }}
+            onMouseDown={(e) => onUiMouseDown(e, 'toggle')}
+            title={t('videoRendering.exitCrop', 'Exit crop')}
+          >
+            <button
+              className={`crop-toggle-btn editing`}
+              onClick={(e) => { suppressClickIfDragged(e); if (!didDragRef.current) { resetUiPositions(); onToggle && onToggle(); } }}
+              onClickCapture={suppressClickIfDragged}
+              title={t('videoRendering.exitCrop', 'Exit crop')}
+              style={{ cursor: uiDrag?.kind === 'toggle' ? 'grabbing' : 'grab' }}
+            >
+              <svg width="20" height="20" viewBox="0 -960 960 960" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                <path d="M654-92v-79H306q-55.73 0-95.86-39.44Q170-249.88 170-307v-347H92q-29 0-48.5-20.2T24-722q0-29 19.5-48.5T92-790h78v-78q0-29 20.2-48.5T238-936q29 0 48.5 19.5T306-868v561h562q29 0 48.5 20.2T936-239q0 29-19.5 48.5T868-171h-78v79q0 27.6-20.2 47.8Q749.6-24 722-24q-29 0-48.5-20.2T654-92Zm0-295v-267H386v-136h268q57.13 0 96.56 39.44Q790-711.13 790-654v267H654Z"/>
+              </svg>
+            </button>
+          </div>
+
+          {/* Aspect ratio buttons - draggable */}
           <div className="crop-aspect-buttons" style={{
             position: 'absolute',
-            top: '14px',
-            left: '50%',
+            left: `${uiPos.aspect.xPct}%`,
+            top: `${uiPos.aspect.yPct}%`,
             transform: 'translateX(-50%)',
             display: 'flex',
             gap: '8px',
             zIndex: 20,
-          }}>
+            pointerEvents: 'auto',
+            cursor: uiDrag?.kind === 'aspect' ? 'grabbing' : 'grab'
+          }}
+            onMouseDown={(e) => onUiMouseDown(e, 'aspect')}
+            title={t('videoRendering.dragToReposition','Drag to reposition')}
+          >
             {PRESET_ASPECT_RATIOS.map((preset) => (
               <button
                 key={preset.label}
                 className={`aspect-btn ${selectedAspectRatio === preset.value ? 'active' : ''}`}
-                onClick={() => handleAspectRatioChange(preset.value)}
+                onClick={(e) => { suppressClickIfDragged(e); if (!didDragRef.current) handleAspectRatioChange(preset.value); }}
+                onClickCapture={suppressClickIfDragged}
                 title={preset.value == null ? t('videoRendering.free','Free') : preset.label}
+                style={{ cursor: uiDrag?.kind === 'aspect' ? 'grabbing' : 'grab' }}
               >
                 {preset.renderIcon && preset.renderIcon()}
                 <span className="aspect-label">{preset.value == null ? t('videoRendering.free','Free') : preset.label}</span>
               </button>
             ))}
-
-
           </div>
 
-          {/* Apply and Cancel buttons */}
+          {/* Apply and Cancel buttons - draggable */}
           <div className="crop-action-buttons" style={{
             position: 'absolute',
-            bottom: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
+            left: `${uiPos.actions.xPct}%`,
+            top: `${uiPos.actions.yPct}%`,
+            transform: 'translate(-50%, -100%)',
             display: 'flex',
             gap: '12px',
             zIndex: 20,
-          }}>
+            pointerEvents: 'auto',
+            cursor: uiDrag?.kind === 'actions' ? 'grabbing' : 'grab'
+          }}
+            onMouseDown={(e) => onUiMouseDown(e, 'actions')}
+            title={t('videoRendering.dragToReposition','Drag to reposition')}
+          >
             {/* Canvas settings - only when padding is detected */}
             {(tempCrop && (
               tempCrop.width > 100 || tempCrop.height > 100 || tempCrop.x < 0 || tempCrop.y < 0 ||
@@ -719,8 +852,9 @@ const VideoCropControls = ({
 
             <button
               className="crop-action-btn cancel"
-
-              onClick={onCancel}
+              onClick={(e) => { suppressClickIfDragged(e); if (!didDragRef.current) onCancel && onCancel(e); }}
+              onClickCapture={suppressClickIfDragged}
+              style={{ cursor: uiDrag?.kind === 'actions' ? 'grabbing' : 'grab' }}
             >
               <svg width="16" height="16" viewBox="0 -960 960 960" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path d="M480-390 334-244q-20 20-45 19.5T245-245q-20-20-20-45t20-45l145-145-146-147q-20-20-19.5-45t20.5-45q19-20 44.5-20t45.5 20l145 146 146-146q20-20 45.5-20t44.5 20q20 20 20 45t-20 45L570-480l146 146q20 20 20 44.5T716-245q-19 20-44.5 20T626-245L480-390Z"/>
@@ -729,7 +863,9 @@ const VideoCropControls = ({
             </button>
             <button
               className="crop-action-btn apply"
-              onClick={onApply}
+              onClick={(e) => { suppressClickIfDragged(e); if (!didDragRef.current) handleApplyAndReset(); }}
+              onClickCapture={suppressClickIfDragged}
+              style={{ cursor: uiDrag?.kind === 'actions' ? 'grabbing' : 'grab' }}
             >
               <svg width="16" height="16" viewBox="0 -960 960 960" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path d="m389-408 281-281q19-19 46-19t46 18.79q19 18.79 19 45.58t-18.61 45.4L435-272q-18.73 19-45.36 19Q363-253 344-272L200-415q-19-19.73-19.5-45.87Q180-487 198.79-506q19.79-20 46.17-20 26.37 0 45.04 20l99 98Z"/>
