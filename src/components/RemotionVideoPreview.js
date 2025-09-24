@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Player } from '@remotion/player';
 import { SubtitledVideoComposition } from './SubtitledVideoComposition';
 import VideoCropControls from './VideoCropControls';
+import VideoTransformControls from './VideoTransformControls';
 import '../styles/VideoPreviewPanel.css';
 
 const RemotionVideoPreview = ({
@@ -18,7 +19,9 @@ const RemotionVideoPreview = ({
   onPause,
   onSeek,
   cropSettings,
-  onCropChange
+  onCropChange,
+  transformSettings,
+  onTransformChange
 }) => {
   const { t } = useTranslation();
   const [videoUrl, setVideoUrl] = useState(null);
@@ -41,6 +44,18 @@ const RemotionVideoPreview = ({
     width: 100,
     height: 100,
     aspectRatio: null
+  });
+
+  const [isTransformEnabled, setIsTransformEnabled] = useState(false);
+  const [tempTransformSettings, setTempTransformSettings] = useState({
+    rotation: 0,
+    flipH: false,
+    flipV: false
+  });
+  const [appliedTransformSettings, setAppliedTransformSettings] = useState({
+    rotation: 0,
+    flipH: false,
+    flipV: false
   });
   const playerRef = useRef(null);
 
@@ -182,6 +197,52 @@ const RemotionVideoPreview = ({
     }
     setIsCropEnabled(false);
   };
+  // Sync transform settings with parent
+  useEffect(() => {
+    if (transformSettings) {
+      setAppliedTransformSettings(transformSettings);
+      setTempTransformSettings(transformSettings);
+    }
+  }, [transformSettings]);
+
+  // Transform controls
+  const handleTransformToggle = () => {
+    const newEnabled = !isTransformEnabled;
+    setIsTransformEnabled(newEnabled);
+    if (newEnabled) {
+      setTempTransformSettings(appliedTransformSettings);
+    } else {
+      setTempTransformSettings(appliedTransformSettings);
+    }
+  };
+
+  const handleTempTransformChange = (next) => {
+    setTempTransformSettings(next);
+  };
+
+  const handleApplyTransform = () => {
+    setAppliedTransformSettings(tempTransformSettings);
+    if (onTransformChange) {
+      onTransformChange(tempTransformSettings);
+    }
+    setIsTransformEnabled(false);
+  };
+
+  const handleCancelTransform = () => {
+    setTempTransformSettings(appliedTransformSettings);
+    setIsTransformEnabled(false);
+  };
+
+  const handleClearTransform = () => {
+    const reset = { rotation: 0, flipH: false, flipV: false };
+    setAppliedTransformSettings(reset);
+    setTempTransformSettings(reset);
+    if (onTransformChange) {
+      onTransformChange(reset);
+    }
+    setIsTransformEnabled(false);
+  };
+
 
   // Calculate composition dimensions based on actual video dimensions or resolution fallback
   const getCompositionDimensions = () => {
@@ -215,17 +276,14 @@ const RemotionVideoPreview = ({
           break;
       }
 
-      // Check if crop is applied and adjust aspect ratio accordingly
+      // Adjust composition aspect ratio based on crop width/height, including expand-only
+      const cs = isCropEnabled ? tempCropSettings : appliedCropSettings;
       let effectiveAspectRatio = videoDimensions.aspectRatio;
-
-      if (appliedCropSettings && (appliedCropSettings.width < 100 || appliedCropSettings.height < 100)) {
-        const cropWidthRatio = appliedCropSettings.width / 100;
-        const cropHeightRatio = appliedCropSettings.height / 100;
-        const originalWidth = videoDimensions.width;
-        const originalHeight = videoDimensions.height;
-        const croppedWidth = originalWidth * cropWidthRatio;
-        const croppedHeight = originalHeight * cropHeightRatio;
-        effectiveAspectRatio = croppedWidth / croppedHeight;
+      if (cs && (cs.width !== 100 || cs.height !== 100)) {
+        const cropWidthRatio = cs.width / 100;
+        const cropHeightRatio = cs.height / 100;
+        // New AR = originalAR * (cropWidthRatio / cropHeightRatio)
+        effectiveAspectRatio = videoDimensions.aspectRatio * (cropWidthRatio / cropHeightRatio);
       }
 
       const targetWidth = Math.round(targetHeight * effectiveAspectRatio);
@@ -362,7 +420,6 @@ const RemotionVideoPreview = ({
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       {/* Video player */}
       <Player
-        key={`${safeWidth}x${safeHeight}`} // Force re-render when dimensions change
         ref={playerRef}
         component={SubtitledVideoComposition}
         durationInFrames={durationInFrames}
@@ -384,18 +441,22 @@ const RemotionVideoPreview = ({
             subtitleCustomization: subtitleCustomization,
             resolution: subtitleCustomization?.resolution || '1080p',
             frameRate: frameRate,
+            transformSettings: appliedTransformSettings,
           },
           isVideoFile: isVideoFile,
           originalAudioVolume: originalAudioVolume,
           narrationVolume: narrationVolume,
-          cropSettings: (appliedCropSettings.width < 100 || appliedCropSettings.height < 100) ? appliedCropSettings : null,
+          cropSettings: (() => {
+            const cs = isCropEnabled ? tempCropSettings : appliedCropSettings;
+            return cs ?? null;
+          })(),
         }}
         onFrame={handlePlayerTimeUpdate}
         onPlay={handlePlay}
         onPause={handlePause}
         onSeek={handleSeek}
       />
-      
+
       {/* Crop controls overlay - directly on video */}
       {videoFile && videoDimensions && (
         <VideoCropControls
@@ -408,7 +469,39 @@ const RemotionVideoPreview = ({
           onClear={handleClearCrop}
           videoDimensions={videoDimensions}
 
-          hasAppliedCrop={appliedCropSettings.width < 100 || appliedCropSettings.height < 100}
+          hasAppliedCrop={
+            (appliedCropSettings.width !== 100 ||
+             appliedCropSettings.height !== 100 ||
+             appliedCropSettings.x !== 0 ||
+             appliedCropSettings.y !== 0)
+          }
+
+          isTransformEnabled={isTransformEnabled}
+          onTransformToggle={handleTransformToggle}
+          hasAppliedTransform={
+            ((appliedTransformSettings.rotation ?? 0) % 360) !== 0 ||
+            !!appliedTransformSettings.flipH ||
+            !!appliedTransformSettings.flipV
+          }
+        />
+      )}
+
+      {/* Transform controls overlay - separate UI */}
+      {videoFile && videoDimensions && (
+        <VideoTransformControls
+          isEnabled={isTransformEnabled}
+          onToggle={handleTransformToggle}
+          transformSettings={tempTransformSettings}
+          onChange={handleTempTransformChange}
+          onApply={handleApplyTransform}
+          onCancel={handleCancelTransform}
+          onClear={handleClearTransform}
+          videoDimensions={videoDimensions}
+          hasAppliedTransform={
+            ((appliedTransformSettings.rotation ?? 0) % 360) !== 0 ||
+            !!appliedTransformSettings.flipH ||
+            !!appliedTransformSettings.flipV
+          }
         />
       )}
     </div>

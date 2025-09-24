@@ -98,6 +98,16 @@ export const SubtitledVideoComposition = ({
   narrationVolume = 100,
   cropSettings
 }) => {
+  const transformSettings = metadata?.transformSettings || { rotation: 0, flipH: false, flipV: false };
+  const computeTransformCss = (ts) => {
+    const r = ((ts.rotation ?? 0) % 360 + 360) % 360;
+    const rotate = r ? ` rotate(${r}deg)` : '';
+    const flipH = ts.flipH ? ' scaleX(-1)' : '';
+    const flipV = ts.flipV ? ' scaleY(-1)' : '';
+    const result = `${rotate}${flipH}${flipV}`.trim();
+    return result.length ? result : 'none';
+  };
+  const containerTransform = computeTransformCss(transformSettings);
   const frame = useCurrentFrame();
   const { fps, height: compositionHeight } = useVideoConfig();
   const currentTimeInSeconds = frame / fps;
@@ -314,14 +324,34 @@ export const SubtitledVideoComposition = ({
             height: '100%',
             backgroundColor: '#000',
             position: 'relative',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            transformOrigin: 'center center',
+            transform: containerTransform !== 'none' ? containerTransform : undefined
           }}>
+            {/* Canvas background when padding is detected */}
+            {cropSettings && (
+              (cropSettings.width > 100 || cropSettings.height > 100 || cropSettings.x < 0 || cropSettings.y < 0 ||
+               (cropSettings.x + cropSettings.width) > 100 || (cropSettings.y + cropSettings.height) > 100)
+            ) && (
+              <>
+                {cropSettings.canvasBgMode === 'solid' && (
+                  <div style={{ position: 'absolute', inset: 0, backgroundColor: cropSettings.canvasBgColor || '#000' }} />
+                )}
+                {cropSettings.canvasBgMode === 'blur' && showVideo && (
+                  <Video
+                    src={videoUrl}
+                    volume={0}
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: `blur(${(cropSettings.canvasBgBlur ?? 24)}px) brightness(0.7)`, transform: 'scale(1.06)' }}
+                  />
+                )}
+              </>
+            )}
             <Video
               src={videoUrl}
               volume={originalAudioVolume / 100}
               style={{
                 // When cropping, scale up the video and reposition
-                ...(cropSettings && (cropSettings.width < 100 || cropSettings.height < 100) ? {
+                ...(cropSettings && (cropSettings.width !== 100 || cropSettings.height !== 100 || cropSettings.x !== 0 || cropSettings.y !== 0) ? {
                   position: 'absolute',
                   width: `${(100 / cropSettings.width) * 100}%`,
                   height: `${(100 / cropSettings.height) * 100}%`,
