@@ -43,10 +43,6 @@ const VideoCropControls = ({
   onClear,
   videoDimensions,
   hasAppliedCrop = false,
-  // New: separate transform control toggle
-  isTransformEnabled = false,
-  onTransformToggle,
-  hasAppliedTransform = false,
 }) => {
   const { t } = useTranslation();
   const [selectedAspectRatio, setSelectedAspectRatio] = useState(null);
@@ -69,9 +65,6 @@ const VideoCropControls = ({
       width: cropSettings.width ?? 100,
       height: cropSettings.height ?? 100,
       aspectRatio: cropSettings.aspectRatio ?? null,
-      rotation: cropSettings.rotation ?? 0,
-      flipH: cropSettings.flipH ?? false,
-      flipV: cropSettings.flipV ?? false,
       canvasBgMode: cropSettings.canvasBgMode ?? 'solid',
       canvasBgColor: cropSettings.canvasBgColor ?? '#000000',
       canvasBgBlur: cropSettings.canvasBgBlur ?? 24,
@@ -593,17 +586,6 @@ const VideoCropControls = ({
           {hasAppliedCrop && !isEnabled && <span className="crop-indicator">✓</span>}
         </button>
 
-        <button
-          className={`crop-toggle-btn ${isTransformEnabled ? 'editing' : hasAppliedTransform ? 'active' : ''}`}
-          onClick={onTransformToggle}
-          title={hasAppliedTransform ? t('videoRendering.editTransform', 'Edit transforms') : t('videoRendering.toggleTransform', 'Add transforms')}
-        >
-          <svg width="20" height="20" viewBox="0 -960 960 960" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-            <path d="M480-886q80 0 150 30t122 82q52 52 82 122t30 150h-92q0-117-87-204t-205-87q-117 0-204 87T189-502h116l-160 160-160-160h116q0-80 30-150t82-122q52-52 122-82t150-30Zm291 264 160 160H815q0 80-30 150t-82 122q-52 52-122 82t-150 30q-80 0-150-30t-122-82q-52-52-82-122t-30-150h92q0 117 87 204t205 87q117 0 204-87t87-204H771l160-160Z"/>
-          </svg>
-          {isTransformEnabled ? t('videoRendering.editTransform', 'Edit transforms') : hasAppliedTransform ? t('videoRendering.editTransform', 'Edit transforms') : t('videoRendering.toggleTransform', 'Add transforms')}
-        </button>
-
         {/* Clear crop button - only show when crop is applied and not editing */}
         {hasAppliedCrop && !isEnabled && (
           <button
@@ -686,7 +668,6 @@ const VideoCropControls = ({
                     setTempCrop(next);
                     onCropChange(next);
                   }}
-                  style={{ minWidth: 160 }}
                   options={[
                     { value: 'solid', label: t('videoRendering.solidCanvas','Solid') },
                     { value: 'blur', label: t('videoRendering.blurredVideo','Blurred video') },

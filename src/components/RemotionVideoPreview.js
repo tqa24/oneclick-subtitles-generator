@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { Player } from '@remotion/player';
 import { SubtitledVideoComposition } from './SubtitledVideoComposition';
 import VideoCropControls from './VideoCropControls';
-import VideoTransformControls from './VideoTransformControls';
 import '../styles/VideoPreviewPanel.css';
 
 const RemotionVideoPreview = ({
@@ -19,9 +18,7 @@ const RemotionVideoPreview = ({
   onPause,
   onSeek,
   cropSettings,
-  onCropChange,
-  transformSettings,
-  onTransformChange
+  onCropChange
 }) => {
   const { t } = useTranslation();
   const [videoUrl, setVideoUrl] = useState(null);
@@ -46,17 +43,6 @@ const RemotionVideoPreview = ({
     aspectRatio: null
   });
 
-  const [isTransformEnabled, setIsTransformEnabled] = useState(false);
-  const [tempTransformSettings, setTempTransformSettings] = useState({
-    rotation: 0,
-    flipH: false,
-    flipV: false
-  });
-  const [appliedTransformSettings, setAppliedTransformSettings] = useState({
-    rotation: 0,
-    flipH: false,
-    flipV: false
-  });
   const playerRef = useRef(null);
 
 
@@ -196,51 +182,6 @@ const RemotionVideoPreview = ({
       onCropChange(resetCrop);
     }
     setIsCropEnabled(false);
-  };
-  // Sync transform settings with parent
-  useEffect(() => {
-    if (transformSettings) {
-      setAppliedTransformSettings(transformSettings);
-      setTempTransformSettings(transformSettings);
-    }
-  }, [transformSettings]);
-
-  // Transform controls
-  const handleTransformToggle = () => {
-    const newEnabled = !isTransformEnabled;
-    setIsTransformEnabled(newEnabled);
-    if (newEnabled) {
-      setTempTransformSettings(appliedTransformSettings);
-    } else {
-      setTempTransformSettings(appliedTransformSettings);
-    }
-  };
-
-  const handleTempTransformChange = (next) => {
-    setTempTransformSettings(next);
-  };
-
-  const handleApplyTransform = () => {
-    setAppliedTransformSettings(tempTransformSettings);
-    if (onTransformChange) {
-      onTransformChange(tempTransformSettings);
-    }
-    setIsTransformEnabled(false);
-  };
-
-  const handleCancelTransform = () => {
-    setTempTransformSettings(appliedTransformSettings);
-    setIsTransformEnabled(false);
-  };
-
-  const handleClearTransform = () => {
-    const reset = { rotation: 0, flipH: false, flipV: false };
-    setAppliedTransformSettings(reset);
-    setTempTransformSettings(reset);
-    if (onTransformChange) {
-      onTransformChange(reset);
-    }
-    setIsTransformEnabled(false);
   };
 
 
@@ -441,7 +382,6 @@ const RemotionVideoPreview = ({
             subtitleCustomization: subtitleCustomization,
             resolution: subtitleCustomization?.resolution || '1080p',
             frameRate: frameRate,
-            transformSettings: appliedTransformSettings,
           },
           isVideoFile: isVideoFile,
           originalAudioVolume: originalAudioVolume,
@@ -474,33 +414,6 @@ const RemotionVideoPreview = ({
              appliedCropSettings.height !== 100 ||
              appliedCropSettings.x !== 0 ||
              appliedCropSettings.y !== 0)
-          }
-
-          isTransformEnabled={isTransformEnabled}
-          onTransformToggle={handleTransformToggle}
-          hasAppliedTransform={
-            ((appliedTransformSettings.rotation ?? 0) % 360) !== 0 ||
-            !!appliedTransformSettings.flipH ||
-            !!appliedTransformSettings.flipV
-          }
-        />
-      )}
-
-      {/* Transform controls overlay - separate UI */}
-      {videoFile && videoDimensions && (
-        <VideoTransformControls
-          isEnabled={isTransformEnabled}
-          onToggle={handleTransformToggle}
-          transformSettings={tempTransformSettings}
-          onChange={handleTempTransformChange}
-          onApply={handleApplyTransform}
-          onCancel={handleCancelTransform}
-          onClear={handleClearTransform}
-          videoDimensions={videoDimensions}
-          hasAppliedTransform={
-            ((appliedTransformSettings.rotation ?? 0) % 360) !== 0 ||
-            !!appliedTransformSettings.flipH ||
-            !!appliedTransformSettings.flipV
           }
         />
       )}

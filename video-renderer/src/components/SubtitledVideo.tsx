@@ -56,16 +56,6 @@ export const SubtitledVideoContent: React.FC<Props> = ({
 
   // Determine if we should show video or just audio with background
   const showVideo = isVideoFile;
-  const transformSettings = (metadata as any)?.transformSettings || { rotation: 0, flipH: false, flipV: false };
-  const computeTransformCss = (ts: {rotation?: number; flipH?: boolean; flipV?: boolean}) => {
-    const r = (((ts.rotation ?? 0) % 360) + 360) % 360;
-    const rotate = r ? ` rotate(${r}deg)` : '';
-    const flipH = ts.flipH ? ' scaleX(-1)' : '';
-    const flipV = ts.flipV ? ' scaleY(-1)' : '';
-    const res = `${rotate}${flipH}${flipV}`.trim();
-    return res.length ? res : 'none';
-  };
-  const containerTransform = computeTransformCss(transformSettings);
 
 
   // Memoize customization settings
@@ -270,9 +260,7 @@ export const SubtitledVideoContent: React.FC<Props> = ({
             height: '100%',
             backgroundColor: '#000',
             position: 'relative',
-            overflow: 'hidden',
-            transformOrigin: 'center center',
-            transform: containerTransform !== 'none' ? (containerTransform as any) : undefined
+            overflow: 'hidden'
           }}>
             {/* Canvas background when padding is detected */}
             {metadata.cropSettings && (

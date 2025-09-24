@@ -98,16 +98,6 @@ export const SubtitledVideoComposition = ({
   narrationVolume = 100,
   cropSettings
 }) => {
-  const transformSettings = metadata?.transformSettings || { rotation: 0, flipH: false, flipV: false };
-  const computeTransformCss = (ts) => {
-    const r = ((ts.rotation ?? 0) % 360 + 360) % 360;
-    const rotate = r ? ` rotate(${r}deg)` : '';
-    const flipH = ts.flipH ? ' scaleX(-1)' : '';
-    const flipV = ts.flipV ? ' scaleY(-1)' : '';
-    const result = `${rotate}${flipH}${flipV}`.trim();
-    return result.length ? result : 'none';
-  };
-  const containerTransform = computeTransformCss(transformSettings);
   const frame = useCurrentFrame();
   const { fps, height: compositionHeight } = useVideoConfig();
   const currentTimeInSeconds = frame / fps;
@@ -324,9 +314,7 @@ export const SubtitledVideoComposition = ({
             height: '100%',
             backgroundColor: '#000',
             position: 'relative',
-            overflow: 'hidden',
-            transformOrigin: 'center center',
-            transform: containerTransform !== 'none' ? containerTransform : undefined
+            overflow: 'hidden'
           }}>
             {/* Canvas background when padding is detected */}
             {cropSettings && (
