@@ -851,7 +851,7 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
                 />
 
                 {/* Max words per subtitle (post-split) - default: Unlimited */}
-                <div className="translation-row post-split-max-words-row">
+                <div className="translation-row rest-time-row">
                   <div className="row-label">
                     <label>{t('processing.maxWordsPerSubtitle', 'Max words per subtitle')}:</label>
                   </div>
