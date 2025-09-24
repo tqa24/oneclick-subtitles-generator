@@ -132,7 +132,7 @@ const PositionControls = ({ customization, onChange }) => {
               value={customization.marginBottom}
               onChange={(value) => updateCustomization({ marginBottom: parseInt(value) })}
               min={0}
-              max={400}
+              max={2000}
               step={1}
               orientation="horizontal"
               size="xsmall"
@@ -160,7 +160,7 @@ const PositionControls = ({ customization, onChange }) => {
               value={customization.marginTop}
               onChange={(value) => updateCustomization({ marginTop: parseInt(value) })}
               min={0}
-              max={400}
+              max={2000}
               step={1}
               orientation="horizontal"
               size="xsmall"
@@ -188,7 +188,7 @@ const PositionControls = ({ customization, onChange }) => {
               value={customization.marginLeft}
               onChange={(value) => updateCustomization({ marginLeft: parseInt(value) })}
               min={0}
-              max={400}
+              max={2000}
               step={1}
               orientation="horizontal"
               size="xsmall"
@@ -216,7 +216,7 @@ const PositionControls = ({ customization, onChange }) => {
               value={customization.marginRight}
               onChange={(value) => updateCustomization({ marginRight: parseInt(value) })}
               min={0}
-              max={400}
+              max={2000}
               step={1}
               orientation="horizontal"
               size="xsmall"
