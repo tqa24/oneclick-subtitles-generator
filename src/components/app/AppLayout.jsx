@@ -195,8 +195,22 @@ const AppLayout = ({
   };
   // Handler for render video action
   const handleRenderVideo = () => {
-    // Check if we have video info and should show quality modal
+    // If we have video info, decide whether the quality modal would present more than one option
     if (videoInfo) {
+      const infoForModal = getVideoInfoForModal()?.videoInfo || videoInfo;
+      // Mirror VideoQualityModal's option visibility logic
+      const showRedownloadOption = !!(infoForModal?.source &&
+        ['youtube', 'all-sites'].includes(infoForModal.source) &&
+        infoForModal.url);
+      const showVersionOption = Array.isArray(availableVersions) && availableVersions.length > 0;
+
+      // If there would be only the "current" option, skip the modal and auto-scroll to rendering
+      if (!showRedownloadOption && !showVersionOption) {
+        proceedWithVideoRendering(null, true); // will expand + scroll (source set to 'video-quality-modal')
+        return;
+      }
+
+      // Otherwise, show the quality modal
       setShowVideoQualityModal(true);
     } else {
       // Fallback to original behavior if no video info - no auto-scroll for fallback
