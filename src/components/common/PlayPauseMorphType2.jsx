@@ -173,8 +173,8 @@ function usePathSampler(playD, pauseD, samples) {
 function springInterpolation(t) {
   // Damped harmonic motion: e^{-d t} (cos(w t) + (d/w) sin(w t))
   // Choose parameters for subtle overshoot
-  const damping = 5.5; // higher = faster settle
-  const freq = 14; // oscillation frequency
+  const damping = 7; // higher = less bounce
+  const freq = 10; // lower = softer spring
   const exp = Math.exp(-damping * t);
   return 1 - exp * (Math.cos(freq * t) + (damping / freq) * Math.sin(freq * t));
 }
@@ -184,7 +184,7 @@ export default function PlayPauseMorphType2({
   onToggle,
   size = 48,
   color = 'currentColor',
-  duration = 520, // slightly longer for bouncy feel
+  duration = 950, // even slower, for a gentler morph
   samples = 220,
   title = 'Play/Pause',
   className,
