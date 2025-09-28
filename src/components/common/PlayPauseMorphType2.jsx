@@ -20,13 +20,6 @@ const PAUSE_D = 'M675.48-128q-56.48 0-95.98-39.31Q540-206.63 540-264v-433q0-55.9
 // Simple helpers (duplicated to keep the file standalone)
 const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
 
-function centroid(points) {
-  let sx = 0, sy = 0;
-  for (const p of points) { sx += p.x; sy += p.y; }
-  const n = points.length || 1;
-  return { x: sx / n, y: sy / n };
-}
-
 function meanSquaredDistance(a, b) {
   let s = 0;
   for (let i = 0; i < a.length; i++) {
@@ -34,7 +27,7 @@ function meanSquaredDistance(a, b) {
     const dy = a[i].y - b[i].y;
     s += dx * dx + dy * dy;
   }
-  return s / a.length;
+  return s / (a.length || 1);
 }
 
 function circularShift(arr, k) {
@@ -46,72 +39,102 @@ function circularShift(arr, k) {
 
 function reversed(arr) { return arr.slice().reverse(); }
 
-function bestAlignType1(target, reference) {
-  if (!target || !reference || target.length !== reference.length) return target || reference;
-  const refC = centroid(reference);
-  const refN = reference.map((p) => ({ x: p.x - refC.x, y: p.y - refC.y }));
-  let bestScore = Infinity, bestShift = 0, bestIsReversed = false;
-  const candidates = [target, reversed(target)];
-  for (let i = 0; i < candidates.length; i++) {
-    const cand = candidates[i];
-    const candC = centroid(cand);
-    const candN = cand.map((p) => ({ x: p.x - candC.x, y: p.y - candC.y }));
-    for (let k = 0; k < candN.length; k++) {
-      const shiftedN = circularShift(candN, k);
-      const score = meanSquaredDistance(refN, shiftedN);
-      if (score < bestScore) { bestScore = score; bestShift = k; bestIsReversed = (i === 1); }
-    }
-  }
-  const finalCand = bestIsReversed ? candidates[1] : candidates[0];
-  return circularShift(finalCand, bestShift);
-}
+function computeBreaks(points, isPause) {
+  if (!isPause || !points || points.length < 4) return [];
 
-function computeBreaks(points) {
-  if (!points || points.length < 2) return [];
+  // Detect discontinuities by looking at large jumps between consecutive samples
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const p of points) {
     if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
     if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y;
   }
-  const n = points.length;
   const diag = Math.hypot(maxX - minX, maxY - minY) || 1;
-  const threshold = Math.max(16, diag * 0.25);
+  const n = points.length;
+
   const dists = new Array(n).fill(0);
   for (let i = 1; i < n; i++) {
     const dx = points[i].x - points[i - 1].x;
     const dy = points[i].y - points[i - 1].y;
     dists[i] = Math.hypot(dx, dy);
   }
+
+  // Threshold tuned to catch subpath jumps but ignore normal edge steps
+  const threshold = Math.max(diag * 0.18, 12);
+
   const candidates = [];
   for (let i = 1; i < n; i++) if (dists[i] > threshold) candidates.push({ i, d: dists[i] });
   candidates.sort((a, b) => b.d - a.d);
-  const maxBreaks = 8, minGap = 4;
-  const selected = [];
+
+  const breaks = [];
+  const minGap = Math.max(4, Math.floor(n * 0.02));
   for (const c of candidates) {
-    if (selected.length >= maxBreaks) break;
-    if (selected.some(s => Math.abs(s - c.i) < minGap)) continue;
-    selected.push(c.i);
+    if (breaks.some((b) => Math.abs(b - c.i) < minGap)) continue;
+    breaks.push(c.i);
+    // We only expect one break for a pause icon (two bars), but keep it generic
+    if (breaks.length >= 4) break;
   }
-  return selected.sort((a, b) => a - b);
+
+  return breaks.sort((a, b) => a - b);
 }
 
-function pointsToPath(points, breaks = []) {
+// This is the core logic for finding the best way to map the points
+// of one shape onto another to minimize travel distance during morphing.
+function findBestAlignment(from, to) {
+  let bestScore = Infinity;
+  let bestAligned = from;
+
+  const candidates = [from, reversed(from)];
+  for (const cand of candidates) {
+    for (let k = 0; k < cand.length; k++) {
+      const shifted = circularShift(cand, k);
+      const score = meanSquaredDistance(shifted, to);
+      if (score < bestScore) {
+        bestScore = score;
+        bestAligned = shifted;
+      }
+    }
+  }
+  return bestAligned;
+}
+
+function useCanonicalAlignment(playPoints, pausePoints) {
+  return useMemo(() => {
+    if (!playPoints || !pausePoints) return { playAligned: null, pauseAligned: null };
+
+    // Find the best way to map pause points onto play points
+    const pauseAligned = findBestAlignment(pausePoints, playPoints);
+
+    // For the reverse, we don't need to search again. We can apply the *inverse*
+    // of the transformation we found above. This guarantees stability.
+    const playAligned = findBestAlignment(playPoints, pauseAligned);
+
+    return { playAligned, pauseAligned };
+
+  }, [playPoints, pausePoints]);
+}
+
+function pointsToPath(points, breaks = [], isPause = false) {
   if (!points || points.length === 0) return '';
   const n = points.length;
-  let starts = [0, ...breaks.filter((i) => i > 0 && i < n)].sort((a, b) => a - b);
-  let ends = [...starts.slice(1), n];
+
   const segments = [];
-  for (let s = 0; s < starts.length; s++) {
-    const a = starts[s];
-    const b = ends[s];
-    if (b - a >= 3) segments.push([a, b]);
+  if (isPause && breaks.length > 0) {
+    let starts = [0, ...breaks.filter((i) => i > 0 && i < n)].sort((a, b) => a - b);
+    let ends = [...starts.slice(1), n];
+    for (let s = 0; s < starts.length; s++) {
+      const a = starts[s];
+      const b = ends[s];
+      if (b - a >= 3) segments.push([a, b, true]); // Close these segments
+    }
+  } else {
+    segments.push([0, n, true]); // A single, closed path
   }
-  if (segments.length === 0) segments.push([0, n]);
+
   const cmds = [];
-  for (const [a, b] of segments) {
+  for (const [a, b, shouldClose] of segments) {
     cmds.push(`M ${points[a].x} ${points[a].y}`);
     for (let i = a + 1; i < b; i++) cmds.push(`L ${points[i].x} ${points[i].y}`);
-    cmds.push('Z');
+    if (shouldClose) cmds.push('Z');
   }
   return cmds.join(' ');
 }
@@ -172,78 +195,73 @@ export default function PlayPauseMorphType2({
   const playing = isControlled ? controlledPlaying : uncontrolledPlaying;
 
   const { hiddenDefs, playPoints, pausePoints } = usePathSampler(PLAY_D, PAUSE_D, samples);
+  const { playAligned, pauseAligned } = useCanonicalAlignment(playPoints, pausePoints);
+
   const [renderPts, setRenderPts] = useState(null);
   const [currentBreaks, setCurrentBreaks] = useState([]);
   const animRef = useRef(null);
-  const animState = useRef({ from: null, to: null, start: 0, duration, breaks: [] });
   const [pulse, setPulse] = useState(0); // 0..1 recent toggle pulse
 
-  // Prepare initial render points when samples ready
+  // Set initial state without animation
   useEffect(() => {
-    if (!playPoints || !pausePoints) return;
-    const init = playing ? bestAlignType1(pausePoints, playPoints) : playPoints;
-    setRenderPts(init);
-    setCurrentBreaks(computeBreaks(init));
-  }, [playPoints, pausePoints, playing]);
+    if (!playAligned || !pauseAligned) return;
+    const initPts = playing ? pauseAligned : playAligned;
+    setRenderPts(initPts);
+    setCurrentBreaks(computeBreaks(initPts, playing));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playAligned, pauseAligned]);
 
-  // Helper to start animation to a target
-  const startAnim = useCallback((toTarget) => {
-    if (!toTarget) return;
-    const align = (fromRef) => bestAlignType1(toTarget, fromRef);
+  // Respond to playing change, kick off animation
+  useEffect(() => {
+    if (!playAligned || !pauseAligned || !renderPts) return;
 
-    if (!renderPts) {
-      const snap = align(toTarget);
-      setRenderPts(snap);
-      setCurrentBreaks(computeBreaks(snap));
-      return;
-    }
+    const from = playing ? playAligned : pauseAligned;
+    const to = playing ? pauseAligned : playAligned;
 
-    const from = renderPts;
-    const to = align(from);
-    animState.current = { from, to, start: performance.now(), duration, breaks: computeBreaks(from) };
+    const animState = { from, to, start: performance.now(), duration };
+    setCurrentBreaks(computeBreaks(to, playing));
 
     if (animRef.current) cancelAnimationFrame(animRef.current);
-    const tick = (now) => {
-      const { from, to, start } = animState.current;
-      const t = Math.min(1, (now - start) / duration);
 
+    const tick = (now) => {
+      const { from, to, start, duration } = animState;
+      const t = Math.min(1, (now - start) / duration);
       const e = springInterpolation(t);
 
-      // Interpolate between aligned shapes
       const next = from.map((p, i) => ({
         x: p.x + (to[i].x - p.x) * e,
         y: p.y + (to[i].y - p.y) * e,
       }));
 
       setRenderPts(next);
+
       if (t < 1) {
         animRef.current = requestAnimationFrame(tick);
       } else {
-        setCurrentBreaks(computeBreaks(next));
+        // Final state
+        setRenderPts(to);
+        setCurrentBreaks(computeBreaks(to, playing));
       }
     };
+
     animRef.current = requestAnimationFrame(tick);
-  }, [renderPts, duration]);
 
-  // Respond to playing change, kick pulse
-  useEffect(() => {
-    if (!playPoints || !pausePoints || !renderPts) return;
-    const target = playing ? pausePoints : playPoints;
-    startAnim(target);
-
-    // trigger pulse ring animation
+    // Pulse animation
     const t0 = performance.now();
     const PULSE_MS = 650;
-    let raf;
+    let pulseRaf;
     const pulseTick = (now) => {
       const tt = Math.min(1, (now - t0) / PULSE_MS);
       setPulse(1 - easeOutCubic(tt));
-      if (tt < 1) raf = requestAnimationFrame(pulseTick);
+      if (tt < 1) pulseRaf = requestAnimationFrame(pulseTick);
     };
-    raf = requestAnimationFrame(pulseTick);
-    return () => raf && cancelAnimationFrame(raf);
+    pulseRaf = requestAnimationFrame(pulseTick);
+
+    return () => {
+      if (pulseRaf) cancelAnimationFrame(pulseRaf);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing, playPoints, pausePoints]);
+  }, [playing, playAligned, pauseAligned, duration]);
 
   // Click handler
   const handleClick = useCallback(() => {
@@ -251,7 +269,7 @@ export default function PlayPauseMorphType2({
     if (!isControlled) setUncontrolledPlaying((p) => !p);
   }, [onToggle, isControlled]);
 
-  const pathD = useMemo(() => pointsToPath(renderPts || [], currentBreaks), [renderPts, currentBreaks]);
+  const pathD = useMemo(() => pointsToPath(renderPts || [], currentBreaks, playing), [renderPts, currentBreaks, playing]);
 
   // Visual transforms for playful feel
   const rot = useMemo(() => (playing ? 3 : -3), [playing]); // degrees
@@ -287,7 +305,7 @@ export default function PlayPauseMorphType2({
         </g>
 
         {/* Icon with transform and hybrid stroke/fill style */}
-        <g transform={`translate(0,0) rotate(${rot},480,-480) scale(${scale})`}>
+        <g style={{ transformOrigin: '480px -480px' }} transform={`rotate(${rot}) scale(${scale})`}>
           <path d={pathD} fill={color} fillOpacity={0.75} />
           <path d={pathD} fill="none" stroke={stroke} strokeLinejoin="round" strokeLinecap="round" strokeWidth={strokeWidth} />
         </g>
