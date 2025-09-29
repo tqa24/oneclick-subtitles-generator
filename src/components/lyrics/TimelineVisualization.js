@@ -16,7 +16,7 @@ import { clearUnusedChunks } from '../../utils/optimizedVideoStreaming';
 // Import LiquidGlass component
 import LiquidGlass from '../common/LiquidGlass';
 
-import { showWarningToast } from '../../utils/toastUtils';
+// import { showWarningToast } from '../../utils/toastUtils';
 
 const TimelineVisualization = ({
   lyrics,
@@ -335,6 +335,10 @@ const TimelineVisualization = ({
   // Track which offline ranges are currently retrying (keys: "start-end")
   const [retryingOfflineKeys, setRetryingOfflineKeys] = useState([]);
 
+  // Subtle, non-intrusive inline notices (no toast)
+  const [clearInfoVisible, setClearInfoVisible] = useState(false);
+  const [warnOfflineDragVisible, setWarnOfflineDragVisible] = useState(false);
+
 
   // Handle processing animation (streaming or retry) — placed after retryingOfflineKeys to avoid TDZ
   useEffect(() => {
@@ -361,20 +365,41 @@ const TimelineVisualization = ({
     }
   }, [isProcessingSegment, retryingOfflineKeys, isStreamingActive]);
 
-  // Load offline segments for current video on mount and when current file changes
+  // Load offline segments for current video; on a fresh session, do not restore stale state
   useEffect(() => {
-    const loadOffline = () => {
+    const SESSION_FLAG = 'session_offline_loaded_v1';
+    const isFreshSession = !sessionStorage.getItem(SESSION_FLAG);
+
+    const loadOrResetOffline = () => {
       try {
         const videoKey = localStorage.getItem('current_file_cache_id')
           || localStorage.getItem('current_file_url')
           || localStorage.getItem('current_video_url');
+
+        // On a brand-new session, clear cached offline segments for current video to avoid stuck UI
+        if (isFreshSession && videoKey) {
+          try {
+            const raw0 = localStorage.getItem('offline_segments_cache');
+            const cache0 = raw0 ? JSON.parse(raw0) : {};
+            if (cache0[videoKey]) {
+              delete cache0[videoKey];
+              localStorage.setItem('offline_segments_cache', JSON.stringify(cache0));
+            }
+          } catch {}
+          setOfflineSegments([]);
+          sessionStorage.setItem(SESSION_FLAG, '1');
+          return; // don't load any list on first session restore
+        }
+
+        // Normal path: load existing offline segments for this video (if any)
         const raw = localStorage.getItem('offline_segments_cache');
         const cache = raw ? JSON.parse(raw) : {};
         const list = (videoKey && Array.isArray(cache[videoKey])) ? cache[videoKey] : [];
         setOfflineSegments(list);
       } catch {}
     };
-    loadOffline();
+
+    loadOrResetOffline();
 
     // Update when a new offline segment is cached
     const onCached = (e) => {
@@ -435,12 +460,9 @@ const TimelineVisualization = ({
       setHoveredOfflineRange(null);
       try { window.dispatchEvent(new CustomEvent('offline-segments-cleared')); } catch {}
 
-      // Let the user know files may remain briefly due to OS locks
-      try {
-        showWarningToast(
-          t('timeline.offlineClearNotice', 'Cleared offline segments from UI. Actual files will be removed in background and may persist briefly due to OS locks.')
-        );
-      } catch {}
+      // Show a subtle inline confirmation instead of a toast
+      setClearInfoVisible(true);
+      try { setTimeout(() => setClearInfoVisible(false), 4000); } catch {}
     } catch (e) {
       console.error('[Timeline] Error clearing offline segments (UI proceeded):', e);
       // Even on unexpected errors, keep UI consistent
@@ -1329,7 +1351,8 @@ const TimelineVisualization = ({
       // If offline cuts exist, only warn when user starts dragging; allow single-click seeking
       if (offlineSegments.length > 0) {
         if (deltaX > dragThreshold && !warned) {
-          showWarningToast(t('timeline.clearOfflineFirst', 'Please clear offline segments to exit this mode first'));
+          setWarnOfflineDragVisible(true);
+          try { setTimeout(() => setWarnOfflineDragVisible(false), 3500); } catch {}
           warned = true;
         }
         return;
@@ -1573,20 +1596,36 @@ const TimelineVisualization = ({
         const computeStyle = (bounds) => ({ top: `${(bounds.top || 0) - 36}px`, left: `${(bounds.left || 0) + 8}px` });
         const overlay = (
           <OverlayFollower canvasRef={timelineRef} computeStyle={computeStyle}>
-            <button
-              className="btn-base btn-tonal btn-small"
-              onClick={(e) => { e.stopPropagation(); handleClearOfflineSegments(); }}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 24, minHeight: 24, padding: '0 8px', borderRadius: 12, backgroundColor: 'var(--md-surface-variant)', color: 'var(--md-on-surface-variant)', border: '1px solid var(--md-outline-variant)' }}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 -960 960 960" aria-hidden style={{ color: 'currentColor' }}>
-                <path fill="currentColor" d="M763-272h94q27 0 45.5 18.5T921-208q0 26-18.5 45T857-144H635l128-128ZM217-144q-14 0-25-5t-20-14L67-268q-38-38-38-89t39-90l426-414q38-38 90-38t91 39l174 174q37 38 38 90t-38 90L501-164q-8 9-19.5 14.5T457-144H217Zm212-128 328-322-174-176-423 414 83 84h186Zm51-208Z"/>
-              </svg>
-              {t('timeline.clearOfflineSegments', 'Clear offline segments')}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button
+                className="btn-base btn-tonal btn-small"
+                onClick={(e) => { e.stopPropagation(); handleClearOfflineSegments(); }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 24, minHeight: 24, padding: '0 8px', borderRadius: 12, backgroundColor: 'var(--md-surface-variant)', color: 'var(--md-on-surface-variant)', border: '1px solid var(--md-outline-variant)' }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 -960 960 960" aria-hidden style={{ color: 'currentColor' }}>
+                  <path fill="currentColor" d="M763-272h94q27 0 45.5 18.5T921-208q0 26-18.5 45T857-144H635l128-128ZM217-144q-14 0-25-5t-20-14L67-268q-38-38-38-89t39-90l426-414q38-38 90-38t91 39l174 174q37 38 38 90t-38 90L501-164q-8 9-19.5 14.5T457-144H217Zm212-128 328-322-174-176-423 414 83 84h186Zm51-208Z"/>
+                </svg>
+                {t('timeline.clearOfflineSegments', 'Clear offline segments')}
+              </button>
+              {clearInfoVisible && (
+                <span role="status" aria-live="polite" style={{ whiteSpace: 'nowrap', fontSize: 12, padding: '2px 8px', borderRadius: 10, color: 'var(--md-on-surface-variant)', backgroundColor: 'var(--md-surface-variant)', border: '1px solid var(--md-outline-variant)' }}>
+                  {t('timeline.offlineClearNotice', 'Cleared offline segments from UI. Files will be removed in background and may persist briefly due to OS locks.')}
+                </span>
+              )}
+            </div>
           </OverlayFollower>
         );
         return createPortal(overlay, document.body);
       })() }
+
+      {/* Subtle warning when user tries to drag while offline segments exist */}
+      {warnOfflineDragVisible && (
+        <div style={{ position: 'absolute', top: 6, right: 8, zIndex: 5 }}>
+          <span role="status" aria-live="polite" style={{ whiteSpace: 'nowrap', fontSize: 12, padding: '2px 8px', borderRadius: 10, color: 'var(--md-on-surface-variant)', backgroundColor: 'var(--md-surface-variant)', border: '1px solid var(--md-outline-variant)' }}>
+            {t('timeline.clearOfflineFirst', 'Please clear offline segments to exit this mode first')}
+          </span>
+        </div>
+      )}
 
       {/* Hover refresh icon (portal) at colorful bits' vertical center */}
       {/* Retry button is rendered via a dedicated body-level layer, independent of canvas animation */}
