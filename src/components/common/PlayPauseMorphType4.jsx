@@ -26,10 +26,6 @@ export const TYPE4_DEFAULTS = {
   morphOvershoot: 0.0,      // 0..0.35 extrapolation beyond target for elastic feel
   morphMidOffset: 0.7,      // 0..1 position of the overshoot keyframe
   keyframeEasings: null,    // optional array like ['ease-out','ease-in']
-  // Force-enable clip-path morphing by default (can be set false if needed)
-  forceClipMorph: true,
-  // Enable verbose console logs for debugging timing issues
-  debug: true,
 };
 // Utility to build intermediate polygon with overshoot
 function lerpPoints(a, b, t) {
@@ -117,7 +113,7 @@ function useSampledPoints(playD, pauseD, samples) {
     const qPts = sample(p2);
     setPlayPts(pPts);
     setPausePts(qPts);
-    try { if (window?.__PPM4_DEBUG__) window.__PPM4_DEBUG__('sampled', { play: pPts.length, pause: qPts.length }); } catch {}
+
   }, [samples]);
 
   return { hidden, playPts, pausePts };
@@ -213,16 +209,13 @@ export default function PlayPauseMorphType4({
 
   useEffect(() => { setReady(!!(playPts && pausePts)); }, [playPts, pausePts]);
 
-  const dbg = useCallback((...a) => { if (cfg.debug) console.info('[PPM4]', ...a); }, [cfg.debug]);
-
   const handleClick = useCallback(() => {
     const next = !playing;
-    dbg('click', { prev: playing, next });
     if (onToggle) {
       try { onToggle.length > 0 ? onToggle(next) : onToggle(); } catch { onToggle(); }
     }
     if (!isControlled) setUncontrolledPlaying(next);
-  }, [onToggle, isControlled, dbg, playing]);
+  }, [onToggle, isControlled, playing]);
 
   const pulseAnim = useMemo(() => 'ppm4_pulse_' + Math.random().toString(36).slice(2), []);
   useEffect(() => {
@@ -239,13 +232,12 @@ export default function PlayPauseMorphType4({
   useEffect(() => {
     if (!ready) return;
     const token = ++animTokenRef.current;
-    dbg('retarget', { token, playing, split: !!split });
 
     const parts = split ? [
-      { fromPts: playing ? split.playA : split.pauseA, toPts: playing ? split.pauseA : split.playA, el: boxRef1.current, animRef: anim1Ref, slot: 1, lastClipRef: lastClip1Ref },
-      { fromPts: playing ? split.playB : split.pauseB, toPts: playing ? split.pauseB : split.playB, el: boxRef2.current, animRef: anim2Ref, slot: 2, lastClipRef: lastClip2Ref },
+      { fromPts: playing ? split.playA : split.pauseA, toPts: playing ? split.pauseA : split.playA, el: boxRef1.current, animRef: anim1Ref, lastClipRef: lastClip1Ref },
+      { fromPts: playing ? split.playB : split.pauseB, toPts: playing ? split.pauseB : split.playB, el: boxRef2.current, animRef: anim2Ref, lastClipRef: lastClip2Ref },
     ] : [
-      { fromPts: playing ? playPts : pausePts, toPts: playing ? pausePts : playPts, el: boxRef1.current, animRef: anim1Ref, slot: 1, lastClipRef: lastClip1Ref },
+      { fromPts: playing ? playPts : pausePts, toPts: playing ? pausePts : playPts, el: boxRef1.current, animRef: anim1Ref, lastClipRef: lastClip1Ref },
     ];
 
     const validParts = parts.filter(p => p.el && typeof p.el.animate === 'function');
@@ -269,14 +261,13 @@ export default function PlayPauseMorphType4({
       }
     });
 
-    validParts.forEach(({ fromPts, toPts, el, animRef, slot, lastClipRef }) => {
+    validParts.forEach(({ fromPts, toPts, el, animRef, lastClipRef }) => {
       const fromPath = startPaths.get(el);
       const toPath = toCssPolygon(toPts);
 
       el.style.clipPath = fromPath;
       el.style.webkitClipPath = fromPath;
       lastClipRef.current = fromPath;
-      dbg('commit & start', { token, slot, fromHead: String(fromPath).slice(0, 40) });
 
       const overshoot = Math.max(0, Math.min(0.35, cfg.morphOvershoot || 0));
       const midOffset = Math.max(0.05, Math.min(0.95, cfg.morphMidOffset || 0.7));
@@ -296,7 +287,6 @@ export default function PlayPauseMorphType4({
         if (cfg.keyframeEasings[idx]) endFrame.easing = cfg.keyframeEasings[idx];
       }
       frames.push(endFrame);
-      dbg('frames', { token, slot, count: frames.length, offsets: frames.map(f => f.offset) });
 
       try {
         const anim = el.animate(frames, { duration: Math.max(250, Math.min(1600, cfg.duration)), easing: cfg.easing, fill: 'forwards' });
@@ -305,19 +295,15 @@ export default function PlayPauseMorphType4({
           if (animTokenRef.current === token) {
             el.style.clipPath = toPath; el.style.webkitClipPath = toPath;
             lastClipRef.current = toPath;
-            dbg('finish', { token, slot });
-          } else {
-            dbg('finish-stale', { token, current: animTokenRef.current, slot });
           }
         };
       } catch (e) {
         el.style.clipPath = toPath;
         el.style.webkitClipPath = toPath;
         lastClipRef.current = toPath;
-        dbg('waapi-error', { token, slot, error: String(e) });
       }
     });
-  }, [playing, ready, playPts, pausePts, split, cfg.duration, cfg.easing, cfg.morphOvershoot, cfg.morphMidOffset, cfg.keyframeEasings, dbg]);
+  }, [playing, ready, playPts, pausePts, split, cfg.duration, cfg.easing, cfg.morphOvershoot, cfg.morphMidOffset, cfg.keyframeEasings]);
 
   const rot = useMemo(() => (playing ? cfg.rotateDegrees : -cfg.rotateDegrees), [playing, cfg.rotateDegrees]);
 
