@@ -9,10 +9,10 @@
 }
 
 /* Material Design 3 list item for lyrics - improved for multi-line text */
+/* Important: remove vertical padding from the hover target to avoid early hover in virtualized lists. */
 .lyric-item {
   position: relative;
-  padding: 12px 16px;
-  padding-right: 16px; /* Standard padding */
+  padding: 0; /* Vertical padding moved to inner content to prevent early hover */
   border-bottom: 1px solid var(--md-outline-variant);
   cursor: pointer;
   transition: background-color var(--md-duration-medium3) var(--md-easing-emphasized),
@@ -65,6 +65,7 @@
 }
 
 /* Material Design 3 lyric content - improved for multi-line text */
+/* Use top padding (no bottom) to nudge content down without affecting neighbor hover in virtualized lists. */
 .lyric-content {
   display: flex;
   align-items: flex-start; /* Align to top for multi-line text */
@@ -72,6 +73,8 @@
   position: relative;
   width: 100%;
   flex-wrap: wrap; /* Allow wrapping for very long content */
+  padding: 8px 16px 0 16px; /* Nudge content down; only horizontal + top padding */
+  margin: 0; /* Avoid margin collapse with parent that could shift hover boundary */
 }
 
 /* Lyric numbering */
@@ -102,7 +105,7 @@
   margin-right: 16px; /* Space between text and timing controls */
   line-height: 1.5; /* Increased line height for better readability */
   word-break: break-word; /* Break long words if needed */
-  padding: 4px 0; /* Add some vertical padding */
+  padding: 0; /* No vertical padding to avoid affecting hover boundaries */
   min-height: 24px; /* Minimum height to prevent collapsing */
   display: block; /* Ensure block display for proper wrapping */
   width: 100%; /* Use full width available */
@@ -266,7 +269,6 @@
   position: relative; /* For positioning */
   min-width: 140px; /* Ensure minimum width for timing controls */
   align-self: flex-start; /* Align to top of container for multi-line text */
-  margin-top: 4px; /* Small top margin for alignment */
 }
 
 /* Material Design 3 time control - larger and more visible */
@@ -295,7 +297,6 @@
   background-color: var(--md-primary-container);
   border-color: var(--md-primary);
   color: var(--md-on-primary-container);
-  transform: translateY(-2px);
 }
 
 /* Material Design 3 time control dragging state */
