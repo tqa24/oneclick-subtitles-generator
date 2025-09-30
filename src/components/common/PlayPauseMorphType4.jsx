@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 /**
  * PlayPauseMorphType4
@@ -17,7 +17,7 @@ export const TYPE4_DEFAULTS = {
   samples: 150,             // number of sampled points along the path
   easing: 'cubic-bezier(0.2, 0, 0, 1)',
   rotateDegrees: 3,         // degrees applied depending on state
-  fillOpacity: 0.8,         // opacity of fill layer
+  fillOpacity: 1,         // opacity of fill layer
   outlineScale: 1,          // scales the drop-shadow “stroke” intensity
   outlineShadow1Px: 1,      // base px for first shadow
   outlineShadow2Px: 2,      // base px for second shadow
@@ -26,12 +26,17 @@ export const TYPE4_DEFAULTS = {
   morphOvershoot: 0.0,      // 0..0.35 extrapolation beyond target for elastic feel
   morphMidOffset: 0.7,      // 0..1 position of the overshoot keyframe
   keyframeEasings: null,    // optional array like ['ease-out','ease-in']
+  // Force-enable clip-path morphing by default (can be set false if needed)
+  forceClipMorph: true,
+  // Enable verbose console logs for debugging timing issues
+  debug: true,
 };
 // Utility to build intermediate polygon with overshoot
 function lerpPoints(a, b, t) {
-  if (!a || !b || a.length !== b.length) return a || b || [];
-  const out = new Array(a.length);
-  for (let i = 0; i < a.length; i++) {
+  if (!a || !b) return a || b || [];
+  const n = Math.min(a.length, b.length);
+  const out = new Array(n);
+  for (let i = 0; i < n; i++) {
     const ax = a[i][0], ay = a[i][1];
     const bx = b[i][0], by = b[i][1];
     out[i] = [ax + (bx - ax) * t, ay + (by - ay) * t];
@@ -39,6 +44,41 @@ function lerpPoints(a, b, t) {
   return out;
 }
 
+
+// Detect the largest jump between consecutive points and split into two sequences.
+function splitByLargestJump(points) {
+  if (!points || points.length < 4) return null;
+  let maxDist = -1;
+  let idx = -1;
+  for (let i = 1; i < points.length; i++) {
+    const dx = points[i][0] - points[i - 1][0];
+    const dy = points[i][1] - points[i - 1][1];
+    const d2 = dx * dx + dy * dy;
+    if (d2 > maxDist) { maxDist = d2; idx = i; }
+  }
+  if (idx <= 0 || idx >= points.length - 1) return null;
+  const a = points.slice(0, idx);
+  const b = points.slice(idx);
+  // Heuristic: ensure the two parts are reasonably sized
+  if (a.length < 8 || b.length < 8) return null;
+  return [a, b];
+}
+
+// Simple resampler to produce "count" points from an existing sequence
+function resamplePoints(points, count) {
+  if (!points || points.length === 0 || count <= 0) return [];
+  const res = new Array(count);
+  for (let i = 0; i < count; i++) {
+    const t = (i / count) * (points.length - 1);
+    const i0 = Math.floor(t);
+    const i1 = Math.min(points.length - 1, i0 + 1);
+    const frac = t - i0;
+    const x = points[i0][0] + (points[i1][0] - points[i0][0]) * frac;
+    const y = points[i0][1] + (points[i1][1] - points[i0][1]) * frac;
+    res[i] = [x, y];
+  }
+  return res;
+}
 
 const VIEW_BOX = '0 -960 960 960';
 
@@ -73,19 +113,34 @@ function useSampledPoints(playD, pauseD, samples) {
       }
       return pts;
     };
-    setPlayPts(sample(p1));
-    setPausePts(sample(p2));
+    const pPts = sample(p1);
+    const qPts = sample(p2);
+    setPlayPts(pPts);
+    setPausePts(qPts);
+    try { if (window?.__PPM4_DEBUG__) window.__PPM4_DEBUG__('sampled', { play: pPts.length, pause: qPts.length }); } catch {}
   }, [samples]);
 
   return { hidden, playPts, pausePts };
 }
 
+// Ensure polygon has a consistent winding to reduce self-intersections
+function normalizePolygon(points) {
+  if (!points || points.length < 3) return points || [];
+  let cx = 0, cy = 0;
+  for (const [x, y] of points) { cx += x; cy += y; }
+  cx /= points.length; cy /= points.length;
+  const pts = points.slice().map(([x, y]) => ({ x, y, a: Math.atan2(y - cy, x - cx) }));
+  pts.sort((p, q) => p.a - q.a);
+  return pts.map(p => [p.x, p.y]);
+}
+
 // Convert sampled SVG points to a CSS polygon() string in percentages
 function toCssPolygon(points) {
   if (!points || !points.length) return 'polygon(50% 50%, 50% 50%, 50% 50%)';
-  const coords = points.map(([px, py]) => {
+  const norm = normalizePolygon(points);
+  const coords = norm.map(([px, py]) => {
     const x = (px / 960) * 100;
-    const y = ((-py) / 960) * 100; // invert Y axis from SVG to CSS
+    const y = ((py + 960) / 960) * 100;
     return `${x.toFixed(2)}% ${y.toFixed(2)}%`;
   });
   return `polygon(${coords.join(', ')})`;
@@ -109,17 +164,66 @@ export default function PlayPauseMorphType4({
 
   const { hidden, playPts, pausePts } = useSampledPoints(PLAY_D, PAUSE_D, cfg.samples);
 
-  const boxRef = useRef(null);
+  // [FIX] Reworked split logic to be geometric, preventing seams in the play icon.
+  const split = useMemo(() => {
+    if (!playPts || !pausePts) return null;
+
+    const qSplit = splitByLargestJump(pausePts);
+    if (!qSplit) return null;
+
+    let [qA_raw, qB_raw] = qSplit;
+
+    const avgX = (pts) => pts.reduce((sum, p) => sum + p[0], 0) / pts.length;
+    if (avgX(qA_raw) > avgX(qB_raw)) {
+      [qA_raw, qB_raw] = [qB_raw, qA_raw];
+    }
+
+    // --- New Play Triangle Geometric Split Logic ---
+    let minX = Infinity, maxX = -Infinity;
+    playPts.forEach(([x]) => {
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+    });
+
+    const centerX = (minX + maxX) / 2;
+    // Create a generous overlap area to ensure no gaps from anti-aliasing.
+    const overlapWidth = (maxX - minX) * 0.25; // 25% of total width
+
+    // Left polygon contains all points left of center, plus the overlap.
+    const pA_raw = playPts.filter(([x]) => x < centerX + overlapWidth);
+    // Right polygon contains all points right of center, plus the overlap.
+    const pB_raw = playPts.filter(([x]) => x > centerX - overlapWidth);
+    
+    // Resample to a consistent point count for smooth animation.
+    const perPart = Math.max(20, Math.floor(cfg.samples / 2));
+
+    return {
+      playA: resamplePoints(pA_raw, perPart),
+      playB: resamplePoints(pB_raw, perPart),
+      pauseA: resamplePoints(qA_raw, perPart),
+      pauseB: resamplePoints(qB_raw, perPart),
+    };
+  }, [playPts, pausePts, cfg.samples]);
+
+
+  const boxRef1 = useRef(null);
+  const boxRef2 = useRef(null);
   const [ready, setReady] = useState(false);
+  const animTokenRef = useRef(0);
 
   useEffect(() => { setReady(!!(playPts && pausePts)); }, [playPts, pausePts]);
 
-  const handleClick = useCallback(() => {
-    if (onToggle) onToggle();
-    if (!isControlled) setUncontrolledPlaying((p) => !p);
-  }, [onToggle, isControlled]);
+  const dbg = useCallback((...a) => { if (cfg.debug) console.info('[PPM4]', ...a); }, [cfg.debug]);
 
-  // Pulse CSS keyframe injection
+  const handleClick = useCallback(() => {
+    const next = !playing;
+    dbg('click', { prev: playing, next });
+    if (onToggle) {
+      try { onToggle.length > 0 ? onToggle(next) : onToggle(); } catch { onToggle(); }
+    }
+    if (!isControlled) setUncontrolledPlaying(next);
+  }, [onToggle, isControlled, dbg, playing]);
+
   const pulseAnim = useMemo(() => 'ppm4_pulse_' + Math.random().toString(36).slice(2), []);
   useEffect(() => {
     const el = document.createElement('style');
@@ -129,67 +233,107 @@ export default function PlayPauseMorphType4({
     return () => { try { document.head.removeChild(el); } catch(_){} };
   }, [pulseAnim]);
 
-  // Animate clip-path via WAAPI when playing changes
+  const anim1Ref = useRef(null);
+  const anim2Ref = useRef(null);
+
   useEffect(() => {
     if (!ready) return;
-    const el = boxRef.current;
-    if (!el || !el.animate) return;
+    const token = ++animTokenRef.current;
+    dbg('retarget', { token, playing, split: !!split });
 
-    // Arrays of points for direction
-    const fromPtsArr = playing ? playPts : pausePts;
-    const toPtsArr = playing ? pausePts : playPts;
+    const parts = split ? [
+      { fromPts: playing ? split.playA : split.pauseA, toPts: playing ? split.pauseA : split.playA, el: boxRef1.current, animRef: anim1Ref, slot: 1, lastClipRef: lastClip1Ref },
+      { fromPts: playing ? split.playB : split.pauseB, toPts: playing ? split.pauseB : split.playB, el: boxRef2.current, animRef: anim2Ref, slot: 2, lastClipRef: lastClip2Ref },
+    ] : [
+      { fromPts: playing ? playPts : pausePts, toPts: playing ? pausePts : playPts, el: boxRef1.current, animRef: anim1Ref, slot: 1, lastClipRef: lastClip1Ref },
+    ];
 
-    // Build keyframes: optional overshoot mid-shape
-    const overshoot = Math.max(0, Math.min(0.35, cfg.morphOvershoot || 0));
-    const midOffset = Math.max(0.05, Math.min(0.95, cfg.morphMidOffset || 0.7));
+    const validParts = parts.filter(p => p.el && typeof p.el.animate === 'function');
+    if (validParts.length === 0) return;
 
-    const fromPath = toCssPolygon(fromPtsArr);
-    const toPath = toCssPolygon(toPtsArr);
+    const startPaths = new Map();
+    validParts.forEach(({ el, fromPts, lastClipRef }) => {
+      const cs = getComputedStyle(el);
+      let currentClip = cs.clipPath || cs.webkitClipPath;
+      if (!currentClip || currentClip === 'none') {
+        currentClip = lastClipRef.current || toCssPolygon(fromPts);
+      }
+      startPaths.set(el, currentClip);
+    });
 
-    const frames = [];
-    frames.push({ clipPath: fromPath, offset: 0 });
-    if (overshoot > 0) {
-      const midPts = lerpPoints(fromPtsArr, toPtsArr, 1 + overshoot);
-      const midPath = toCssPolygon(midPts);
-      const midFrame = { clipPath: midPath, offset: midOffset };
-      if (Array.isArray(cfg.keyframeEasings) && cfg.keyframeEasings[0]) midFrame.easing = cfg.keyframeEasings[0];
-      frames.push(midFrame);
-    }
-    const endFrame = { clipPath: toPath, offset: 1 };
-    if (Array.isArray(cfg.keyframeEasings)) {
-      const idx = overshoot > 0 ? 1 : 0;
-      if (cfg.keyframeEasings[idx]) endFrame.easing = cfg.keyframeEasings[idx];
-    }
-    frames.push(endFrame);
+    validParts.forEach(({ el, animRef }) => {
+      el.getAnimations?.().forEach(a => a.cancel());
+      if (animRef.current) {
+        try { animRef.current.cancel(); } catch {}
+        animRef.current = null;
+      }
+    });
 
-    // Ensure initial state
-    const cs = getComputedStyle(el);
-    const currentClip = cs.clipPath || cs.webkitClipPath;
-    if (!currentClip || currentClip === 'none') {
+    validParts.forEach(({ fromPts, toPts, el, animRef, slot, lastClipRef }) => {
+      const fromPath = startPaths.get(el);
+      const toPath = toCssPolygon(toPts);
+
       el.style.clipPath = fromPath;
       el.style.webkitClipPath = fromPath;
-    }
+      lastClipRef.current = fromPath;
+      dbg('commit & start', { token, slot, fromHead: String(fromPath).slice(0, 40) });
 
-    try {
-      const anim = el.animate(
-        frames,
-        { duration: Math.max(250, Math.min(1600, cfg.duration)), easing: cfg.easing, fill: 'forwards' }
-      );
-      anim.onfinish = () => { el.style.clipPath = toPath; el.style.webkitClipPath = toPath; };
-    } catch (e) {
-      el.style.clipPath = toPath;
-      el.style.webkitClipPath = toPath;
-    }
-  }, [playing, ready, playPts, pausePts, cfg.duration, cfg.easing, cfg.morphOvershoot, cfg.morphMidOffset, cfg.keyframeEasings]);
+      const overshoot = Math.max(0, Math.min(0.35, cfg.morphOvershoot || 0));
+      const midOffset = Math.max(0.05, Math.min(0.95, cfg.morphMidOffset || 0.7));
 
-  const initialClip = useMemo(() => toCssPolygon(playing ? pausePts : playPts), [playing, playPts, pausePts]);
+      const frames = [];
+      frames.push({ clipPath: fromPath, offset: 0 });
+      if (overshoot > 0) {
+        const midPts = lerpPoints(fromPts, toPts, 1 + overshoot);
+        const midPath = toCssPolygon(midPts);
+        const midFrame = { clipPath: midPath, offset: midOffset };
+        if (Array.isArray(cfg.keyframeEasings) && cfg.keyframeEasings[0]) midFrame.easing = cfg.keyframeEasings[0];
+        frames.push(midFrame);
+      }
+      const endFrame = { clipPath: toPath, offset: 1 };
+      if (Array.isArray(cfg.keyframeEasings)) {
+        const idx = overshoot > 0 ? 1 : 0;
+        if (cfg.keyframeEasings[idx]) endFrame.easing = cfg.keyframeEasings[idx];
+      }
+      frames.push(endFrame);
+      dbg('frames', { token, slot, count: frames.length, offsets: frames.map(f => f.offset) });
 
-  const supportsClip = typeof CSS !== 'undefined' && CSS.supports && CSS.supports('clip-path', 'polygon(0 0, 100% 0, 100% 100%)');
-  const supportsWAAPI = typeof document !== 'undefined' && !!(HTMLElement.prototype.animate);
-  const canDoClipAnim = supportsClip && supportsWAAPI;
+      try {
+        const anim = el.animate(frames, { duration: Math.max(250, Math.min(1600, cfg.duration)), easing: cfg.easing, fill: 'forwards' });
+        animRef.current = anim;
+        anim.onfinish = () => {
+          if (animTokenRef.current === token) {
+            el.style.clipPath = toPath; el.style.webkitClipPath = toPath;
+            lastClipRef.current = toPath;
+            dbg('finish', { token, slot });
+          } else {
+            dbg('finish-stale', { token, current: animTokenRef.current, slot });
+          }
+        };
+      } catch (e) {
+        el.style.clipPath = toPath;
+        el.style.webkitClipPath = toPath;
+        lastClipRef.current = toPath;
+        dbg('waapi-error', { token, slot, error: String(e) });
+      }
+    });
+  }, [playing, ready, playPts, pausePts, split, cfg.duration, cfg.easing, cfg.morphOvershoot, cfg.morphMidOffset, cfg.keyframeEasings, dbg]);
 
-  // Slight rotation like Type 2 (configurable)
   const rot = useMemo(() => (playing ? cfg.rotateDegrees : -cfg.rotateDegrees), [playing, cfg.rotateDegrees]);
+
+  const lastClip1Ref = useRef(null);
+  const lastClip2Ref = useRef(null);
+
+  const defaultStart = useMemo(() => {
+    if (!ready) return ['none', 'none'];
+    if (split) {
+      return [
+        toCssPolygon(playing ? split.playA : split.pauseA),
+        toCssPolygon(playing ? split.playB : split.pauseB),
+      ];
+    }
+    return [toCssPolygon(playing ? playPts : pausePts)];
+  }, [ready, split, playing, playPts, pausePts]);
 
   return (
     <div
@@ -202,41 +346,53 @@ export default function PlayPauseMorphType4({
     >
       {hidden}
 
-      {/* Morphing shape via clip-path polygon */}
-      {canDoClipAnim && ready ? (
-        <div style={{ position: 'relative', width: size, height: size, transform: `rotate(${rot}deg)`, animation: `${pulseAnim} 650ms ease-out` }}>
-          {/* Fill layer (semi-transparent like Type 2) */}
+      <div style={{ position: 'relative', width: size, height: size, transform: `rotate(${rot}deg)`, animation: `${pulseAnim} 650ms ease-out` }}>
+        {/* Fill layer(s) */}
+        <div
+          ref={boxRef1}
+          style={{
+            position: 'absolute', inset: 0,
+            background: color,
+            opacity: cfg.fillOpacity,
+            clipPath: lastClip1Ref.current || defaultStart[0],
+            willChange: 'clip-path, transform',
+          }}
+        />
+        {split && (
           <div
-            ref={boxRef}
+            ref={boxRef2}
             style={{
               position: 'absolute', inset: 0,
               background: color,
               opacity: cfg.fillOpacity,
-              clipPath: initialClip,
+              clipPath: lastClip2Ref.current || defaultStart[1],
               willChange: 'clip-path, transform',
             }}
           />
-          {/* Stroke-ish layer using drop-shadow along the clip edge */}
+        )}
+
+        {/* Stroke-ish layer(s) */}
+        <div
+          style={{
+            position: 'absolute', inset: 0,
+            background: 'transparent',
+            clipPath: lastClip1Ref.current || defaultStart[0],
+            filter: `drop-shadow(0 0 ${cfg.outlineShadow1Px * cfg.outlineScale}px ${color}) drop-shadow(0 0 ${cfg.outlineShadow2Px * cfg.outlineScale}px ${color})`,
+            pointerEvents: 'none',
+          }}
+        />
+        {split && (
           <div
             style={{
               position: 'absolute', inset: 0,
               background: 'transparent',
-              clipPath: initialClip,
+              clipPath: lastClip2Ref.current || defaultStart[1],
               filter: `drop-shadow(0 0 ${cfg.outlineShadow1Px * cfg.outlineScale}px ${color}) drop-shadow(0 0 ${cfg.outlineShadow2Px * cfg.outlineScale}px ${color})`,
               pointerEvents: 'none',
             }}
           />
-        </div>
-      ) : (
-        // Fallback: SVG crossfade
-        <svg viewBox={VIEW_BOX} width={size} height={size} style={{ display: 'block' }} xmlns="http://www.w3.org/2000/svg">
-          <g>
-            <path d={PAUSE_D} fill={color} opacity={playing ? 1 : 0} style={{ transition: 'opacity 250ms ease-out' }} />
-            <path d={PLAY_D} fill={color} opacity={playing ? 0 : 1} style={{ transition: 'opacity 250ms ease-out' }} />
-          </g>
-        </svg>
-      )}
+        )}
+      </div>
     </div>
   );
 }
-
