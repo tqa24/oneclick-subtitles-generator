@@ -45,6 +45,8 @@
 /* Prevent hover effect when arrow buttons are being interacted with */
 .lyric-item.arrow-hover {
   background-color: transparent;
+  z-index: 1000; /* Ensure this row sits above neighboring rows while interacting with arrows */
+  position: relative;
 }
 
 .lyric-item.current {

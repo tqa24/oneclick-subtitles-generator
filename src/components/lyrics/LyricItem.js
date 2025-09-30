@@ -101,6 +101,10 @@ const LyricItem = ({
   const [showMergeArrows, setShowMergeArrows] = useState(false);
   const mergeTimeoutRef = useRef(null);
 
+  // Track when user is interacting with any arrow so we can raise z-index and prevent hover steal
+  const [isArrowHover, setIsArrowHover] = useState(false);
+
+
   // Handle insert container mouse enter
   const handleInsertMouseEnter = () => {
     if (insertTimeoutRef.current) {
@@ -108,6 +112,7 @@ const LyricItem = ({
       insertTimeoutRef.current = null;
     }
     setShowInsertArrows(true);
+    setIsArrowHover(true);
   };
 
   // Handle insert container mouse leave
@@ -125,8 +130,20 @@ const LyricItem = ({
 
       if (!isOverArrow) {
         setShowInsertArrows(false);
+        setIsArrowHover(false);
       }
-    }, 300); // 300ms delay before hiding
+    }, 600); // reasonable delay without causing overlap issues
+  };
+
+  // Hide insert arrows shortly after leaving arrow buttons if not over container
+  const handleInsertArrowMouseLeave = () => {
+    insertTimeoutRef.current = setTimeout(() => {
+      const anyHover = document.querySelector('.insert-lyric-button-container .arrow-button:hover');
+      if (!anyHover) {
+        setShowInsertArrows(false);
+        setIsArrowHover(false);
+      }
+    }, 250);
   };
 
   // Handle merge container mouse enter
@@ -136,6 +153,7 @@ const LyricItem = ({
       mergeTimeoutRef.current = null;
     }
     setShowMergeArrows(true);
+    setIsArrowHover(true);
   };
 
   // Handle merge container mouse leave
@@ -153,8 +171,20 @@ const LyricItem = ({
 
       if (!isOverArrow) {
         setShowMergeArrows(false);
+        setIsArrowHover(false);
       }
-    }, 300); // 300ms delay before hiding
+    }, 600);
+  };
+
+  // Hide merge arrows shortly after leaving arrow buttons if not over container
+  const handleMergeArrowMouseLeave = () => {
+    mergeTimeoutRef.current = setTimeout(() => {
+      const anyHover = document.querySelector('.merge-lyrics-button-container .arrow-button:hover');
+      if (!anyHover) {
+        setShowMergeArrows(false);
+        setIsArrowHover(false);
+      }
+    }, 250);
   };
 
   // Clean up timeouts on unmount
@@ -166,6 +196,7 @@ const LyricItem = ({
       if (mergeTimeoutRef.current) {
         clearTimeout(mergeTimeoutRef.current);
       }
+
     };
   }, []);
 
@@ -229,10 +260,10 @@ const LyricItem = ({
   };
 
   return (
-    <div className="lyric-item-container">
+    <div className={`lyric-item-container ${(showInsertArrows || showMergeArrows || isArrowHover) ? 'arrow-hover' : ''}`}>
       <div
         data-lyric-index={index}
-        className={`lyric-item ${isCurrentLyric ? 'current' : ''}`}
+        className={`lyric-item ${isCurrentLyric ? 'current' : ''} ${(showInsertArrows || showMergeArrows || isArrowHover) ? 'arrow-hover' : ''}`}
         onClick={() => {
           if (Date.now() - getLastDragEnd() < 100) {
             return;
@@ -297,7 +328,9 @@ const LyricItem = ({
                           clearTimeout(insertTimeoutRef.current);
                           insertTimeoutRef.current = null;
                         }
+                        setIsArrowHover(true);
                       }}
+                      onMouseLeave={handleInsertArrowMouseLeave}
                     >
                       <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
                         <polyline points="18 15 12 9 6 15"></polyline>
@@ -312,7 +345,9 @@ const LyricItem = ({
                           clearTimeout(insertTimeoutRef.current);
                           insertTimeoutRef.current = null;
                         }
+                        setIsArrowHover(true);
                       }}
+                      onMouseLeave={handleInsertArrowMouseLeave}
                     >
                       <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
                         <polyline points="6 9 12 15 18 9"></polyline>
@@ -346,7 +381,9 @@ const LyricItem = ({
                           clearTimeout(mergeTimeoutRef.current);
                           mergeTimeoutRef.current = null;
                         }
+                        setIsArrowHover(true);
                       }}
+                      onMouseLeave={handleMergeArrowMouseLeave}
                     >
                       <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
                         <polyline points="18 15 12 9 6 15"></polyline>
@@ -362,7 +399,9 @@ const LyricItem = ({
                           clearTimeout(mergeTimeoutRef.current);
                           mergeTimeoutRef.current = null;
                         }
+                        setIsArrowHover(true);
                       }}
+                      onMouseLeave={handleMergeArrowMouseLeave}
                     >
                       <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
                         <polyline points="6 9 12 15 18 9"></polyline>
