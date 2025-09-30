@@ -16,7 +16,7 @@ export const TYPE4_DEFAULTS = {
   duration: 700,            // ms morph duration
   samples: 150,             // number of sampled points along the path
   easing: 'cubic-bezier(0.2, 0, 0, 1)',
-  rotateDegrees: 3,         // degrees applied depending on state
+  rotateDegrees: 5,         // degrees applied depending on state
   fillOpacity: 1,         // opacity of fill layer
   outlineScale: 1,          // scales the drop-shadow “stroke” intensity
   outlineShadow1Px: 1,      // base px for first shadow
@@ -332,7 +332,14 @@ export default function PlayPauseMorphType4({
     >
       {hidden}
 
-      <div style={{ position: 'relative', width: size, height: size, transform: `rotate(${rot}deg)`, animation: `${pulseAnim} 650ms ease-out` }}>
+      <div style={{
+        position: 'relative',
+        width: size,
+        height: size,
+        transform: `rotate(${rot}deg)`,
+        animation: `${pulseAnim} 650ms ease-out`,
+        transition: `transform ${cfg.duration}ms ${cfg.easing}`
+      }}>
         {/* Fill layer(s) */}
         <div
           ref={boxRef1}
