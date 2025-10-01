@@ -160,7 +160,6 @@ export default function PlayPauseMorphType4({
 
   const { hidden, playPts, pausePts } = useSampledPoints(PLAY_D, PAUSE_D, cfg.samples);
 
-  // [FIX] Reworked split logic to be geometric, preventing seams in the play icon.
   const split = useMemo(() => {
     if (!playPts || !pausePts) return null;
 
@@ -174,7 +173,6 @@ export default function PlayPauseMorphType4({
       [qA_raw, qB_raw] = [qB_raw, qA_raw];
     }
 
-    // --- New Play Triangle Geometric Split Logic ---
     let minX = Infinity, maxX = -Infinity;
     playPts.forEach(([x]) => {
       if (x < minX) minX = x;
@@ -182,15 +180,11 @@ export default function PlayPauseMorphType4({
     });
 
     const centerX = (minX + maxX) / 2;
-    // Create a generous overlap area to ensure no gaps from anti-aliasing.
-    const overlapWidth = (maxX - minX) * 0.25; // 25% of total width
+    const overlapWidth = (maxX - minX) * 0.25;
 
-    // Left polygon contains all points left of center, plus the overlap.
     const pA_raw = playPts.filter(([x]) => x < centerX + overlapWidth);
-    // Right polygon contains all points right of center, plus the overlap.
     const pB_raw = playPts.filter(([x]) => x > centerX - overlapWidth);
     
-    // Resample to a consistent point count for smooth animation.
     const perPart = Math.max(20, Math.floor(cfg.samples / 2));
 
     return {
@@ -202,6 +196,7 @@ export default function PlayPauseMorphType4({
   }, [playPts, pausePts, cfg.samples]);
 
 
+  const containerRef = useRef(null); // [FIX] Add a ref for the rotating container
   const boxRef1 = useRef(null);
   const boxRef2 = useRef(null);
   const [ready, setReady] = useState(false);
@@ -228,10 +223,22 @@ export default function PlayPauseMorphType4({
 
   const anim1Ref = useRef(null);
   const anim2Ref = useRef(null);
+  const animContainerRef = useRef(null); // [FIX] Add a ref to hold the container's animation instance
 
   useEffect(() => {
     if (!ready) return;
     const token = ++animTokenRef.current;
+
+    // --- [FIX] START: Rotation animation logic ---
+    const containerEl = containerRef.current;
+    if (animContainerRef.current) {
+        try { animContainerRef.current.cancel(); } catch {}
+        animContainerRef.current = null;
+    }
+    // Define the start and end rotation states
+    const fromRot = playing ? -cfg.rotateDegrees : cfg.rotateDegrees;
+    const toRot = playing ? cfg.rotateDegrees : -cfg.rotateDegrees;
+    // --- [FIX] END: Rotation animation logic ---
 
     const parts = split ? [
       { fromPts: playing ? split.playA : split.pauseA, toPts: playing ? split.pauseA : split.playA, el: boxRef1.current, animRef: anim1Ref, lastClipRef: lastClip1Ref },
@@ -241,7 +248,7 @@ export default function PlayPauseMorphType4({
     ];
 
     const validParts = parts.filter(p => p.el && typeof p.el.animate === 'function');
-    if (validParts.length === 0) return;
+    if (validParts.length === 0 && !containerEl) return;
 
     const startPaths = new Map();
     validParts.forEach(({ el, fromPts, lastClipRef }) => {
@@ -260,6 +267,14 @@ export default function PlayPauseMorphType4({
         animRef.current = null;
       }
     });
+
+    // --- [FIX] Animate the container's rotation using WAAPI ---
+    if (containerEl && typeof containerEl.animate === 'function') {
+        animContainerRef.current = containerEl.animate(
+            [{ transform: `rotate(${fromRot}deg)` }, { transform: `rotate(${toRot}deg)` }],
+            { duration: Math.max(250, Math.min(1600, cfg.duration)), easing: cfg.easing, fill: 'forwards' }
+        );
+    }
 
     validParts.forEach(({ fromPts, toPts, el, animRef, lastClipRef }) => {
       const fromPath = startPaths.get(el);
@@ -303,9 +318,10 @@ export default function PlayPauseMorphType4({
         lastClipRef.current = toPath;
       }
     });
-  }, [playing, ready, playPts, pausePts, split, cfg.duration, cfg.easing, cfg.morphOvershoot, cfg.morphMidOffset, cfg.keyframeEasings]);
+  }, [playing, ready, playPts, pausePts, split, cfg.duration, cfg.easing, cfg.morphOvershoot, cfg.morphMidOffset, cfg.keyframeEasings, cfg.rotateDegrees]);
 
-  const rot = useMemo(() => (playing ? cfg.rotateDegrees : -cfg.rotateDegrees), [playing, cfg.rotateDegrees]);
+  // [FIX] This is no longer needed for the transition but useful for setting the initial state.
+  const currentRotation = playing ? cfg.rotateDegrees : -cfg.rotateDegrees;
 
   const lastClip1Ref = useRef(null);
   const lastClip2Ref = useRef(null);
@@ -331,15 +347,21 @@ export default function PlayPauseMorphType4({
       title={title}
     >
       {hidden}
-
-      <div style={{
-        position: 'relative',
-        width: size,
-        height: size,
-        transform: `rotate(${rot}deg)`,
-        animation: `${pulseAnim} 650ms ease-out`,
-        transition: `transform ${cfg.duration}ms ${cfg.easing}`
-      }}>
+      
+      {/* [FIX] The container now gets a ref and has its transition properties removed. */}
+      <div
+        ref={containerRef}
+        style={{
+          position: 'relative',
+          width: size,
+          height: size,
+          animation: `${pulseAnim} 650ms ease-out`,
+          // The WAAPI will control the transform, but we set the initial state here
+          // to prevent a jump on first render before the animation runs.
+          transform: `rotate(${currentRotation}deg)`,
+          // NO `transition` property here anymore!
+        }}
+      >
         {/* Fill layer(s) */}
         <div
           ref={boxRef1}
