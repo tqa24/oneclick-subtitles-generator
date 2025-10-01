@@ -779,8 +779,13 @@ app.post('/render', async (req, res) => {
       const args = [
         '-y',
         '-r', String(fps),
+        // input 0: frames (video)
         '-i', path.join(framesDir, '%06d.jpg'),
+        // input 1: audio (or original uploaded video containing audio)
         '-i', audioInput,
+        // Force stream mapping: video from input 0, audio from input 1
+        '-map', '0:v:0',
+        '-map', '1:a:0',
         '-c:v', 'h264_nvenc',
         '-preset', (metadata?.nvenc?.preset) || 'p4',
         '-b:v', videoBitrate,
