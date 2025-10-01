@@ -3,8 +3,10 @@ import cors from 'cors';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
+import { pathToFileURL } from 'url';
+
 import { bundle } from '@remotion/bundler';
-import { renderMedia, selectComposition, getCompositions, makeCancelSignal } from '@remotion/renderer';
+import { selectComposition, makeCancelSignal, renderFrames } from '@remotion/renderer';
 
 // Set Remotion environment variables for REAL GPU acceleration
 process.env.REMOTION_CHROME_MODE = "chrome-for-testing"; // CRITICAL: Use chrome-for-testing for GPU
@@ -540,7 +542,7 @@ app.post('/render', async (req, res) => {
         // Calculate width based on aspect ratio
         width = Math.round(targetHeight * aspectRatio);
         height = targetHeight;
-        
+
         // Check if crop settings are provided and adjust dimensions
         if (metadata.cropSettings && (metadata.cropSettings.width !== 100 || metadata.cropSettings.height !== 100)) {
           console.log(`[RENDER] Crop settings detected (affecting AR):`, metadata.cropSettings);
@@ -686,6 +688,130 @@ app.post('/render', async (req, res) => {
     console.log(`- Duration: ${composition.durationInFrames} frames`);
     console.log(`- Resolution: ${width}x${height} (${resolution})`);
     console.log(`- Frame rate: ${fps} fps`);
+    // Helper: Two-step NVENC pipeline (sequential for now; can be extended to overlap)
+    const encodeWithNvenc = async () => {
+      const os = require('os');
+      const { spawn } = require('child_process');
+      const tmpBase = fs.mkdtempSync(path.join(os.tmpdir(), 'remotion-nvenc-'));
+      const framesDir = path.join(tmpBase, 'frames');
+      // Use the already-uploaded media as audio input directly (avoid compositor extractAudio)
+      const audioInput = path.join(__dirname, '../uploads', finalAudioFile);
+      fs.mkdirSync(framesDir, { recursive: true });
+
+      // 1) Render frames to disk
+      try {
+        await renderFrames({
+          composition,
+          serveUrl: bundleResult,
+          outputDir: framesDir,
+          imageFormat: 'jpeg',
+          jpegQuality: 80,
+          muted: true,
+          inputProps: {
+            audioUrl: audioUrl,
+            lyrics,
+            metadata,
+            narrationUrl,
+            isVideoFile
+          },
+          onStart: () => {},
+          chromiumOptions: {
+            disableWebSecurity: true,
+            ignoreCertificateErrors: true,
+            gl: 'angle',
+            enableMultiProcessOnLinux: true,
+            headless: true,
+          },
+          chromeMode: 'chrome-for-testing',
+          concurrency: (() => {
+            const cpuCount = require('os').cpus().length;
+            if (cpuCount <= 4) return 2;
+            if (cpuCount <= 8) return 3;
+            if (cpuCount <= 16) return 4;
+            return Math.min(6, Math.floor(cpuCount * 0.25));
+          })(),
+          cancelSignal,
+          onFrameUpdate: (frame: number) => {
+            const activeRender = activeRenders.get(renderId);
+            if (activeRender) {
+              const progress = Math.min(1, frame / Math.max(1, durationInFrames));
+              activeRender.progress = progress;
+              if (!activeRender.response.writableEnded) {
+                activeRender.response.write(`data: ${JSON.stringify({
+                  phase: 'rendering',
+                  phaseDescription: 'Rendering video frames',
+                  renderedFrames: frame,
+                  durationInFrames,
+                  progress
+                })}\n\n`);
+              }
+            }
+          }
+        });
+      } catch (e) {
+        console.error('[NVENC] renderFrames failed:', e);
+        throw e;
+      }
+
+      // 2) Optionally rename frames to %06d.jpg
+      const files = fs.readdirSync(framesDir).filter((f: string) => /\.(jpe?g|png)$/i.test(f)).sort();
+      files.forEach((f: string, idx: number) => {
+        const target = path.join(framesDir, `${String(idx + 1).padStart(6, '0')}.jpg`);
+        const src = path.join(framesDir, f);
+        if (src !== target) {
+          fs.renameSync(src, target);
+        }
+      });
+
+      // 3) Encode with system ffmpeg (NVENC) using the uploaded media as audio input
+      const videoBitrate = (metadata?.nvenc?.bitrate) || '10M';
+      const maxRate = (metadata?.nvenc?.maxrate) || '20M';
+      const bufSize = (metadata?.nvenc?.bufsize) || '40M';
+      const audioBitrate = '320k';
+      const ffmpegPath = (() => {
+        // reuse the same resolution we detected earlier in wantNvenc detection scope
+        const which = process.platform === 'win32' ? 'where' : 'which';
+        const res = spawnSync(which, ['ffmpeg'], { encoding: 'utf8' });
+        const out = (res.stdout || '').trim().split(/\r?\n/).filter(Boolean);
+        return out[0] || 'ffmpeg';
+      })();
+
+      const args = [
+        '-y',
+        '-r', String(fps),
+        '-i', path.join(framesDir, '%06d.jpg'),
+        '-i', audioInput,
+        '-c:v', 'h264_nvenc',
+        '-preset', (metadata?.nvenc?.preset) || 'p4',
+        '-b:v', videoBitrate,
+        '-maxrate', maxRate,
+        '-bufsize', bufSize,
+        '-pix_fmt', 'yuv420p',
+        '-r', String(fps),
+        '-c:a', 'aac',
+        '-b:a', audioBitrate,
+        '-shortest',
+        '-movflags', '+faststart',
+        outputPath,
+      ];
+
+      const ff = spawn(ffmpegPath, args);
+      ff.stderr.setEncoding('utf8');
+      ff.stderr.on('data', (chunk: string) => {
+        const activeRender = activeRenders.get(renderId);
+        if (activeRender && !activeRender.response.writableEnded) {
+          activeRender.response.write(`data: ${JSON.stringify({ phase: 'encoding', phaseDescription: 'NVENC encoding', ffmpeg: chunk.toString().slice(0, 400) })}\n\n`);
+        }
+      });
+
+      await new Promise((resolve, reject) => {
+        ff.on('error', reject);
+        ff.on('close', (code: number) => {
+          if (code === 0) resolve(null);
+          else reject(new Error(`ffmpeg exited with code ${code}`));
+        });
+      });
+    };
 
     // Note: console.log interception already set up before selectComposition
     // to catch Chrome download messages
@@ -693,92 +819,103 @@ app.post('/render', async (req, res) => {
     // Throttle console progress logs to 1% increments across render + retry
     let lastLoggedPercent = -1;
 
+    // Detect FFmpeg NVENC availability and prepare override
+    const { spawnSync } = require('child_process');
+    const pathMod = require('path');
+    const fsMod = require('fs');
+    const { getFfmpegPath } = require('../../../server/services/shared/ffmpegUtils');
+    let wantNvenc = false;
+    let externalBinariesDir: string | null = null;
+    try {
+      // Resolve the exact ffmpeg/ffprobe paths the app would use
+      let ffmpegPath: string = getFfmpegPath();
+      if (!pathMod.isAbsolute(ffmpegPath)) {
+        // On Windows, use 'where', on POSIX, use 'which'
+        const whichCmd = process.platform === 'win32' ? 'where' : 'which';
+        const resolved = spawnSync(whichCmd, ['ffmpeg'], { encoding: 'utf8' });
+        const out = (resolved.stdout || '').trim().split(/\r?\n/).filter(Boolean);
+        if (out.length > 0) {
+          ffmpegPath = out[0];
+        }
+      }
+      let ffprobePath: string | null = null;
+      if (process.platform === 'win32') {
+        const resolvedProbe = spawnSync('where', ['ffprobe'], { encoding: 'utf8' });
+        const outProbe = (resolvedProbe.stdout || '').trim().split(/\r?\n/).filter(Boolean);
+        if (outProbe.length > 0) {
+          ffprobePath = outProbe[0];
+        }
+      } else {
+        const resolvedProbe = spawnSync('which', ['ffprobe'], { encoding: 'utf8' });
+        const outProbe = (resolvedProbe.stdout || '').trim().split(/\r?\n/).filter(Boolean);
+        if (outProbe.length > 0) {
+          ffprobePath = outProbe[0];
+        }
+      }
+
+      // Detect NVENC availability from the resolved ffmpeg
+      const encList = spawnSync(ffmpegPath, ['-hide_banner', '-encoders'], { encoding: 'utf8' });
+      const encodersText = (encList.stdout || '') + '\n' + (encList.stderr || '');
+      const hasH264Nvenc = /\bh264_nvenc\b/.test(encodersText);
+      // Force auto preference internally; do not rely on request body
+      const encoderPreference = 'auto';
+      wantNvenc = hasH264Nvenc;
+
+      // Note: We deliberately do NOT set binariesDirectory; Remotion must use its own compositor
+      const candidateDir = pathMod.dirname(ffmpegPath);
+      const ffmpegOk = fsMod.existsSync(ffmpegPath);
+      const ffprobeOk = ffprobePath ? fsMod.existsSync(ffprobePath) : fsMod.existsSync(pathMod.join(candidateDir, process.platform === 'win32' ? 'ffprobe.exe' : 'ffprobe'));
+      if (ffmpegOk && ffprobeOk) {
+        externalBinariesDir = candidateDir;
+      }
+
+      console.log(`[NVENC] FFmpeg h264_nvenc detected: ${hasH264Nvenc}. Preference: ${encoderPreference}. Using NVENC: ${wantNvenc}. BinariesDir: ${externalBinariesDir ?? 'internal'} (ffmpeg: ${ffmpegPath}${ffprobePath ? ', ffprobe: ' + ffprobePath : ''})`);
+    } catch (e) {
+      console.log('[NVENC] Skipping NVENC detection:', (e as Error).message);
+    }
+
+    const buildFfmpegOverride = (useNvenc: boolean) => (params: { type: 'stitcher' | 'pre-stitcher'; args: string[] }) => {
+      const { type, args } = params;
+      if (type !== 'pre-stitcher' || !useNvenc) return args;
+      const out = [...args];
+      // Ensure NVENC video codec
+      const cvidx = out.indexOf('-c:v');
+      if (cvidx !== -1 && out[cvidx + 1]) {
+        out[cvidx + 1] = 'h264_nvenc';
+      } else {
+        out.push('-c:v', 'h264_nvenc');
+      }
+      // Pull optional tuning from metadata
+      const nvenc = (metadata && (metadata as any).nvenc) || {};
+      const preset = nvenc.preset || 'p4';
+      const b = nvenc.bitrate || '10M';
+      const maxrate = nvenc.maxrate || '20M';
+      const bufsize = nvenc.bufsize || '40M';
+      // Remove any existing flags to avoid duplicates
+      const removeFlagAndValue = (flag: string) => {
+        let i;
+        while ((i = out.indexOf(flag)) !== -1) {
+          out.splice(i, 2);
+        }
+      };
+      ['-preset','-b:v','-maxrate','-bufsize'].forEach(removeFlagAndValue);
+      out.push(
+        '-preset', preset,
+        // Avoid -rc/-cq for maximum compatibility across FFmpeg builds
+        '-b:v', b,
+        '-maxrate', maxrate,
+        '-bufsize', bufsize,
+        '-pix_fmt', 'yuv420p'
+      );
+      return out;
+    };
+
     try {
       // Double-check that temp directories exist right before rendering
       ensureRemotionTempDirs();
 
-
-      await renderMedia({
-        composition,
-        serveUrl: bundleResult,
-        codec: 'h264',
-        audioCodec: 'mp3', // MP3 is much faster to encode than AAC
-        outputLocation: outputPath,
-        // CRITICAL: Use chrome-for-testing for GPU acceleration
-        chromeMode: "chrome-for-testing",
-        // Enable hardware acceleration for encoding if available
-        hardwareAcceleration: "if-possible",
-        // Adaptive concurrency based on CPU cores - optimal balance for different machines
-        concurrency: (() => {
-          const cpuCount = require('os').cpus().length;
-          // Use roughly 25-30% of available cores, with reasonable min/max bounds
-          if (cpuCount <= 4) return 2;        // 2 cores on 4-core machines (50%)
-          if (cpuCount <= 8) return 3;        // 3 cores on 6-8 core machines (~37-50%)
-          if (cpuCount <= 16) return 4;       // 4 cores on 12-16 core machines (25-33%)
-          return Math.min(6, Math.floor(cpuCount * 0.25)); // Max 6 cores, 25% of total for high-end machines
-        })(),
-        inputProps: {
-          audioUrl: audioUrl,
-          lyrics,
-          metadata,
-          narrationUrl,
-          isVideoFile
-        },
-        chromiumOptions: {
-          disableWebSecurity: true,
-          ignoreCertificateErrors: true,
-          gl: "angle",
-          // Enable multi-process for better GPU utilization
-          enableMultiProcessOnLinux: true,
-          // Additional performance optimizations
-          headless: true,
-          // Aggressive performance settings
-          userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        },
-        // More aggressive performance settings
-        verbose: false, // Reduce logging overhead
-        browserExecutable: undefined, // Let Remotion choose the best browser
-        logLevel: 'info', // Reduce logging overhead
-        timeoutInMilliseconds: 120000, // Increase timeout to 2 minutes
-        // Additional performance optimizations
-        puppeteerInstance: undefined, // Let Remotion manage browser instances efficiently
-        cancelSignal,
-        onProgress: ({ renderedFrames, encodedFrames }) => {
-          const progress = renderedFrames / durationInFrames;
-          const percent = Math.floor(progress * 100);
-          if (percent > lastLoggedPercent) {
-            lastLoggedPercent = percent;
-            console.log(`Progress: ${percent}% (${renderedFrames}/${durationInFrames})`);
-          }
-
-          // Update progress in activeRenders
-          const activeRender = activeRenders.get(renderId);
-          if (activeRender) {
-            activeRender.progress = progress;
-
-            // Determine phase: show 'encoding' only after frames are fully rendered
-            let phase = 'rendering';
-            let phaseDescription = 'Rendering video frames';
-
-            if (renderedFrames >= durationInFrames) {
-              phase = 'encoding';
-              phaseDescription = 'Encoding and stitching frames';
-            }
-
-            // Use the current response object (which may have been updated on reconnection)
-            if (!activeRender.response.writableEnded) {
-              activeRender.response.write(`data: ${JSON.stringify({
-                progress,
-                renderedFrames,
-                encodedFrames,
-                durationInFrames,
-                phase,
-                phaseDescription
-              })}\n\n`);
-            }
-          }
-        }
-      });
+      // Always use NVENC two-step pipeline to avoid compositor video stitching
+      await encodeWithNvenc();
 
       // Restore original console.log
       console.log = originalConsoleLog;
@@ -786,7 +923,7 @@ app.post('/render', async (req, res) => {
       // Restore original console.log in case of error
       console.log = originalConsoleLog;
       const renderError = error as Error;
-      console.error('Error during renderMedia:', renderError);
+      console.error('Render error:', renderError);
 
       // Try to create the specific directory mentioned in the error if it's a directory issue
       if (renderError.message && renderError.message.includes('No such file or directory')) {
@@ -799,87 +936,7 @@ app.post('/render', async (req, res) => {
 
             // Retry rendering after creating the directory
             console.log('Retrying render after creating directory...');
-            await renderMedia({
-              composition,
-              serveUrl: bundleResult,
-              codec: 'h264',
-              audioCodec: 'mp3', // MP3 is much faster to encode than AAC
-              outputLocation: outputPath,
-              // CRITICAL: Use chrome-for-testing for GPU acceleration
-              chromeMode: "chrome-for-testing",
-              // Enable hardware acceleration for encoding if available
-              hardwareAcceleration: "if-possible",
-              // Adaptive concurrency based on CPU cores - optimal balance for different machines
-              concurrency: (() => {
-                const cpuCount = require('os').cpus().length;
-                // Use roughly 25-30% of available cores, with reasonable min/max bounds
-                if (cpuCount <= 4) return 2;        // 2 cores on 4-core machines (50%)
-                if (cpuCount <= 8) return 3;        // 3 cores on 6-8 core machines (~37-50%)
-                if (cpuCount <= 16) return 4;       // 4 cores on 12-16 core machines (25-33%)
-                return Math.min(6, Math.floor(cpuCount * 0.25)); // Max 6 cores, 25% of total for high-end machines
-              })(),
-              inputProps: {
-                audioUrl: audioUrl,
-                lyrics,
-                metadata,
-                narrationUrl,
-                isVideoFile
-              },
-              chromiumOptions: {
-                disableWebSecurity: true,
-                ignoreCertificateErrors: true,
-                gl: "angle",
-                // Enable multi-process for better GPU utilization
-                enableMultiProcessOnLinux: true,
-                // Additional performance optimizations
-                headless: true,
-                // Aggressive performance settings
-                userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-              },
-              // More aggressive performance settings
-              verbose: false, // Reduce logging overhead
-              browserExecutable: undefined, // Let Remotion choose the best browser
-              logLevel: 'info', // Reduce logging overhead
-              timeoutInMilliseconds: 120000, // Increase timeout to 2 minutes
-              // Additional performance optimizations
-              puppeteerInstance: undefined, // Let Remotion manage browser instances efficiently
-              cancelSignal,
-              onProgress: ({ renderedFrames, encodedFrames }) => {
-                const progress = renderedFrames / durationInFrames;
-                const percent = Math.floor(progress * 100);
-                if (percent > lastLoggedPercent) {
-                  lastLoggedPercent = percent;
-                  console.log(`Retry Progress: ${percent}% (${renderedFrames}/${durationInFrames})`);
-                }
-
-                // Update progress in activeRenders
-                const activeRender = activeRenders.get(renderId);
-                if (activeRender) {
-                  activeRender.progress = progress;
-
-                  // Determine phase: show 'encoding' only after frames are fully rendered
-                  let phase = 'rendering';
-                  let phaseDescription = 'Rendering video frames';
-
-                  if (renderedFrames >= durationInFrames) {
-                    phase = 'encoding';
-                    phaseDescription = 'Encoding and stitching frames';
-                  }
-
-                  // Use the current response object (which may have been updated on reconnection)
-                  if (!activeRender.response.writableEnded) {
-                    activeRender.response.write(`data: ${JSON.stringify({
-                      progress,
-                      renderedFrames,
-                      encodedFrames,
-                      durationInFrames,
-                      phase,
-                      phaseDescription
-                    })}\n\n`);
-                  }
-                }
-              }
-            });
+            await encodeWithNvenc();
           } else {
             throw renderError; // Re-throw if we couldn't extract a directory
           }
