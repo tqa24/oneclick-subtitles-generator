@@ -395,7 +395,17 @@ const LyricItem = ({
             </div>
           )}
 
-          <div className="lyric-text">
+          <div
+            className="lyric-text"
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              if (allowEditing) {
+                setIsEditing(true);
+                setEditText(lyric.text);
+                setTimeout(() => textInputRef.current?.focus(), 0);
+              }
+            }}
+          >
             {isEditing ? (
               <input
                 ref={textInputRef}

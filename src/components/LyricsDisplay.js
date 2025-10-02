@@ -29,7 +29,7 @@ const downloadFile = (content, filename, type = 'text/plain') => {
   URL.revokeObjectURL(url);
 };
 
-// Virtualized row renderer for lyrics
+// Virtualized row renderer for lyrics with live measurement
 const VirtualizedLyricRow = ({ index, style, data }) => {
   const {
     lyrics,
@@ -45,33 +45,82 @@ const VirtualizedLyricRow = ({ index, style, data }) => {
     onTextEdit,
     onInsert,
     onMerge,
-    timeFormat
+    timeFormat,
+    setRowHeight,
+    getCachedRowHeight
   } = data;
+
+  const rowInnerRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!rowInnerRef.current) return;
+    const el = rowInnerRef.current;
+
+    // Initialize with current height in case observer fires later
+    const initial = Math.ceil(el.getBoundingClientRect().height);
+    const cached = getCachedRowHeight(index) || 0;
+    if (initial > 0 && initial !== cached) {
+      setRowHeight(index, initial);
+    }
+
+    let ro;
+    if ('ResizeObserver' in window) {
+      ro = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const h = Math.ceil(entry.contentRect.height);
+          if (h > 0) {
+            const prev = getCachedRowHeight(index) || 0;
+            if (h !== prev) {
+              setRowHeight(index, h);
+            }
+          }
+        }
+      });
+      ro.observe(el);
+    } else {
+      // Fallback: poll occasionally
+      let last = initial;
+      const id = setInterval(() => {
+        const now = Math.ceil(el.getBoundingClientRect().height);
+        if (now > 0 && now !== last) {
+          last = now;
+          setRowHeight(index, now);
+        }
+      }, 300);
+      return () => clearInterval(id);
+    }
+
+    return () => {
+      if (ro) ro.disconnect();
+    };
+  }, [index, setRowHeight, getCachedRowHeight]);
 
   const lyric = lyrics[index];
   const hasNextLyric = index < lyrics.length - 1;
 
   return (
     <div style={style}>
-      <LyricItem
-        key={index}
-        lyric={lyric}
-        index={index}
-        isCurrentLyric={index === currentIndex}
-        currentTime={currentTime}
-        allowEditing={allowEditing}
-        isDragging={isDragging}
-        onLyricClick={onLyricClick}
-        onMouseDown={onMouseDown}
-        onTouchStart={onTouchStart}
-        getLastDragEnd={getLastDragEnd}
-        onDelete={onDelete}
-        onTextEdit={onTextEdit}
-        onInsert={onInsert}
-        onMerge={onMerge}
-        hasNextLyric={hasNextLyric}
-        timeFormat={timeFormat}
-      />
+      <div ref={rowInnerRef} style={{ boxSizing: 'border-box', width: '100%' }}>
+        <LyricItem
+          key={index}
+          lyric={lyric}
+          index={index}
+          isCurrentLyric={index === currentIndex}
+          currentTime={currentTime}
+          allowEditing={allowEditing}
+          isDragging={isDragging}
+          onLyricClick={onLyricClick}
+          onMouseDown={onMouseDown}
+          onTouchStart={onTouchStart}
+          getLastDragEnd={getLastDragEnd}
+          onDelete={onDelete}
+          onTextEdit={onTextEdit}
+          onInsert={onInsert}
+          onMerge={onMerge}
+          hasNextLyric={hasNextLyric}
+          timeFormat={timeFormat}
+        />
+      </div>
     </div>
   );
 };
@@ -175,29 +224,12 @@ const LyricsDisplay = ({
     return localStorage.getItem('lyrics_auto_scroll') !== 'false';
   });
 
-  // Function to calculate row height based on text content
+  // Function to get row height (live measured; fallback to 50)
   const getRowHeight = index => {
-    // If we already calculated this height, return it
-    if (rowHeights.current[index] !== undefined) {
-      return rowHeights.current[index];
-    }
-
-    const lyric = matchedLyrics[index];
-    if (!lyric) return 50; // Default height
-
-    // Calculate height based on text length
-    const text = lyric.text || '';
-    const lineCount = text.split('\n').length; // Count actual line breaks
-    const estimatedLines = Math.ceil(text.length / 40); // Estimate based on characters per line
-    const lines = Math.max(lineCount, estimatedLines);
-
-    // Base height + additional height per line
-    const height = 50 + (lines > 1 ? (lines - 1) * 20 : 0);
-
-    // Cache the calculated height
-    rowHeights.current[index] = height;
-    return height;
+    const h = rowHeights.current[index];
+    return (h === undefined || h === null || h <= 0) ? 50 : h;
   };
+
 
   // Reset row heights when lyrics change
   useEffect(() => {
@@ -310,6 +342,18 @@ const LyricsDisplay = ({
   const listRef = useRef(null);
   const isScrollingRef = useRef(false);
   const scrollAnimationRef = useRef(null);
+
+  // Live height cache helpers for VariableSizeList
+  const setRowHeight = (idx, size) => {
+    if (rowHeights.current[idx] !== size) {
+      rowHeights.current[idx] = size;
+      if (listRef.current && typeof listRef.current.resetAfterIndex === 'function') {
+        // Recalculate layouts from this index onward and force update render
+        listRef.current.resetAfterIndex(idx, true);
+      }
+    }
+  };
+  const getCachedRowHeight = (idx) => rowHeights.current[idx];
 
   // Smooth scroll function for virtualized list
   const smoothScrollToItem = (targetIndex, align = 'center') => {
@@ -949,7 +993,9 @@ const LyricsDisplay = ({
               onTextEdit: handleTextEdit,
               onInsert: handleInsertLyric,
               onMerge: handleMergeLyrics,
-              timeFormat
+              timeFormat,
+              setRowHeight,
+              getCachedRowHeight
             }}
           >
             {VirtualizedLyricRow}
