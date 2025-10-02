@@ -276,13 +276,20 @@ export const SubtitledVideoContent: React.FC<Props> = ({
                   <div style={{ position: 'absolute', inset: 0, backgroundColor: metadata.cropSettings.canvasBgColor || '#000' }} />
                 )}
                 {metadata.cropSettings.canvasBgMode === 'blur' && (
-                  <OffthreadVideo
-                    src={audioUrl}
-                    volume={0}
-                    transparent={false}
-                    toneMapped={false}
-                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: `blur(${(metadata.cropSettings?.canvasBgBlur ?? 24)}px) brightness(0.7)`, transform: 'scale(1.06)' }}
-                  />
+                  useServerFrames ? (
+                    <Img
+                      src={`${framesPathUrl}/${String(frame + 1).padStart(6, '0')}.jpg`}
+                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: `blur(${(metadata.cropSettings?.canvasBgBlur ?? 24)}px) brightness(0.7)`, transform: 'scale(1.06)' }}
+                    />
+                  ) : (
+                    <OffthreadVideo
+                      src={audioUrl}
+                      volume={0}
+                      transparent={false}
+                      toneMapped={false}
+                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: `blur(${(metadata.cropSettings?.canvasBgBlur ?? 24)}px) brightness(0.7)`, transform: 'scale(1.06)' }}
+                    />
+                  )
                 )}
               </>
             )}
@@ -291,7 +298,25 @@ export const SubtitledVideoContent: React.FC<Props> = ({
             {useServerFrames ? (
               <Img
                 src={`${framesPathUrl}/${String(frame + 1).padStart(6, '0')}.jpg`}
-                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', backgroundColor: '#000' }}
+                style={{
+                  position: 'absolute',
+                  ...(metadata.cropSettings && (metadata.cropSettings.width !== 100 || metadata.cropSettings.height !== 100 || metadata.cropSettings.x !== 0 || metadata.cropSettings.y !== 0)
+                    ? {
+                        width: `${(100 / metadata.cropSettings.width) * 100}%`,
+                        height: `${(100 / metadata.cropSettings.height) * 100}%`,
+                        left: `${-(metadata.cropSettings.x / metadata.cropSettings.width) * 100}%`,
+                        top: `${-(metadata.cropSettings.y / metadata.cropSettings.height) * 100}%`,
+                        objectFit: 'cover',
+                      }
+                    : {
+                        inset: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                      }
+                  ),
+                  backgroundColor: '#000'
+                }}
               />
             ) : (
               <OffthreadVideo

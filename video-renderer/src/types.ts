@@ -22,11 +22,15 @@ export interface VideoMetadata {
 
 // Crop settings interface
 export interface CropSettings {
-  x: number; // X position as percentage (0-100)
-  y: number; // Y position as percentage (0-100)
-  width: number; // Width as percentage (0-100)
-  height: number; // Height as percentage (0-100)
+  x: number; // X position as percentage (can be <0 for out-crop)
+  y: number; // Y position as percentage (can be <0 for out-crop)
+  width: number; // Width as percentage (0-100, can exceed 100 for out-crop)
+  height: number; // Height as percentage (0-100, can exceed 100 for out-crop)
   aspectRatio: number | null; // Aspect ratio value or null for custom
+  // Canvas (padding) controls to match editor visuals
+  canvasBgMode?: 'solid' | 'blur';
+  canvasBgColor?: string; // Used when canvasBgMode === 'solid'
+  canvasBgBlur?: number; // Blur amount when canvasBgMode === 'blur'
 }
 
 // Subtitle customization interface

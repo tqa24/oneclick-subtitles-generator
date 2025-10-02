@@ -364,11 +364,12 @@ app.post('/render', async (req, res) => {
       const extractedAudioFile = path.join(tempDir, 'audio.aac');
       fs.mkdirSync(framesDir);
 
-      // 1. Extract Frames (apply fps + optional crop + optional scale)
+      // 1. Extract Frames (apply fps + optional crop). DO NOT SCALE here; let composition handle fit/padding.
       updateStatus({ phase: 'Extracting video frames', progress: 0 });
       const vfParts: string[] = [`fps=${fps}`];
-      if (crop) vfParts.push(`crop=${crop.w}:${crop.h}:${crop.x}:${crop.y}`);
-      if (desiredW && desiredH) vfParts.push(`scale=${desiredW}:${desiredH}:flags=lanczos`);
+      // Only crop if the crop rect is fully inside the source; if it goes out-of-bounds, skip crop and let composition simulate out-crop with padding
+      const canCropInFfmpeg = crop && crop.x >= 0 && crop.y >= 0 && (crop.x + crop.w) <= info.width && (crop.y + crop.h) <= info.height;
+      if (canCropInFfmpeg && crop) vfParts.push(`crop=${crop.w}:${crop.h}:${crop.x}:${crop.y}`);
       const frameExtractionArgs = ['-i', sourceVideoPath, '-vf', vfParts.join(','), path.join(framesDir, '%06d.jpg')];
       await runFfmpeg(frameExtractionArgs, renderId, 'Frame Extraction', durationInFrames, (p) => {
         updateStatus({ progress: p * 0.4 }); // Extraction is ~40% of the work
