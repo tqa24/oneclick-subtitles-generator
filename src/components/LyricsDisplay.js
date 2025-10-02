@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/LyricsDisplay.css';
 import TimelineVisualization from './lyrics/TimelineVisualization';
@@ -29,7 +29,7 @@ const downloadFile = (content, filename, type = 'text/plain') => {
   URL.revokeObjectURL(url);
 };
 
-// Virtualized row renderer for lyrics with live measurement
+// Virtualized row renderer for lyrics (deterministic height)
 const VirtualizedLyricRow = ({ index, style, data }) => {
   const {
     lyrics,
@@ -45,82 +45,33 @@ const VirtualizedLyricRow = ({ index, style, data }) => {
     onTextEdit,
     onInsert,
     onMerge,
-    timeFormat,
-    setRowHeight,
-    getCachedRowHeight
+    timeFormat
   } = data;
-
-  const rowInnerRef = React.useRef(null);
-
-  React.useEffect(() => {
-    if (!rowInnerRef.current) return;
-    const el = rowInnerRef.current;
-
-    // Initialize with current height in case observer fires later
-    const initial = Math.ceil(el.getBoundingClientRect().height);
-    const cached = getCachedRowHeight(index) || 0;
-    if (initial > 0 && initial !== cached) {
-      setRowHeight(index, initial);
-    }
-
-    let ro;
-    if ('ResizeObserver' in window) {
-      ro = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          const h = Math.ceil(entry.contentRect.height);
-          if (h > 0) {
-            const prev = getCachedRowHeight(index) || 0;
-            if (h !== prev) {
-              setRowHeight(index, h);
-            }
-          }
-        }
-      });
-      ro.observe(el);
-    } else {
-      // Fallback: poll occasionally
-      let last = initial;
-      const id = setInterval(() => {
-        const now = Math.ceil(el.getBoundingClientRect().height);
-        if (now > 0 && now !== last) {
-          last = now;
-          setRowHeight(index, now);
-        }
-      }, 300);
-      return () => clearInterval(id);
-    }
-
-    return () => {
-      if (ro) ro.disconnect();
-    };
-  }, [index, setRowHeight, getCachedRowHeight]);
 
   const lyric = lyrics[index];
   const hasNextLyric = index < lyrics.length - 1;
 
   return (
     <div style={style}>
-      <div ref={rowInnerRef} style={{ boxSizing: 'border-box', width: '100%' }}>
-        <LyricItem
-          key={index}
-          lyric={lyric}
-          index={index}
-          isCurrentLyric={index === currentIndex}
-          currentTime={currentTime}
-          allowEditing={allowEditing}
-          isDragging={isDragging}
-          onLyricClick={onLyricClick}
-          onMouseDown={onMouseDown}
-          onTouchStart={onTouchStart}
-          getLastDragEnd={getLastDragEnd}
-          onDelete={onDelete}
-          onTextEdit={onTextEdit}
-          onInsert={onInsert}
-          onMerge={onMerge}
-          hasNextLyric={hasNextLyric}
-          timeFormat={timeFormat}
-        />
-      </div>
+      <LyricItem
+        key={index}
+        lyric={lyric}
+        index={index}
+        isCurrentLyric={index === currentIndex}
+        currentTime={currentTime}
+        allowEditing={allowEditing}
+        isDragging={isDragging}
+        onLyricClick={onLyricClick}
+        onMouseDown={onMouseDown}
+        onTouchStart={onTouchStart}
+        getLastDragEnd={getLastDragEnd}
+        onDelete={onDelete}
+        onTextEdit={onTextEdit}
+        onInsert={onInsert}
+        onMerge={onMerge}
+        hasNextLyric={hasNextLyric}
+        timeFormat={timeFormat}
+      />
     </div>
   );
 };
@@ -224,10 +175,17 @@ const LyricsDisplay = ({
     return localStorage.getItem('lyrics_auto_scroll') !== 'false';
   });
 
-  // Function to get row height (live measured; fallback to 50)
+  // Function to calculate row height based on explicit line breaks only (stable)
   const getRowHeight = index => {
-    const h = rowHeights.current[index];
-    return (h === undefined || h === null || h <= 0) ? 50 : h;
+    if (rowHeights.current[index] !== undefined) {
+      return rowHeights.current[index];
+    }
+    const lyric = matchedLyrics[index];
+    if (!lyric) return 50; // Default height
+    const lineCount = Math.max(1, (lyric.text || '').split('\n').length);
+    const height = 50 + (lineCount - 1) * 20;
+    rowHeights.current[index] = height;
+    return height;
   };
 
 
@@ -343,113 +301,18 @@ const LyricsDisplay = ({
   const isScrollingRef = useRef(false);
   const scrollAnimationRef = useRef(null);
 
-  // Live height cache helpers for VariableSizeList
-  const setRowHeight = (idx, size) => {
-    if (rowHeights.current[idx] !== size) {
-      rowHeights.current[idx] = size;
-      if (listRef.current && typeof listRef.current.resetAfterIndex === 'function') {
-        // Recalculate layouts from this index onward and force update render
-        listRef.current.resetAfterIndex(idx, true);
-      }
-    }
-  };
-  const getCachedRowHeight = (idx) => rowHeights.current[idx];
-
-  // Smooth scroll function for virtualized list
-  const smoothScrollToItem = (targetIndex, align = 'center') => {
-    if (!listRef.current || isScrollingRef.current || targetIndex < 0) return;
-
-    const list = listRef.current;
-
-    // Get current scroll position
-    const currentScrollTop = list.state.scrollOffset;
-
-    // Calculate target scroll position manually but more accurately
-    let targetScrollTop = 0;
-
-    // Sum up heights of all items before the target
-    for (let i = 0; i < targetIndex; i++) {
-      targetScrollTop += getRowHeight(i);
-    }
-
-    // Adjust for center alignment
-    if (align === 'center') {
-      const containerHeight = 300;
-      const targetItemHeight = getRowHeight(targetIndex);
-      targetScrollTop -= (containerHeight - targetItemHeight) / 2;
-    }
-
-    // Clamp to valid scroll range
-    const maxScrollTop = Math.max(0,
-      lyrics.reduce((sum, _, i) => sum + getRowHeight(i), 0) - 300
-    );
-    targetScrollTop = Math.max(0, Math.min(targetScrollTop, maxScrollTop));
-
-    const distance = targetScrollTop - currentScrollTop;
-
-    // If the distance is very small, just snap to position
-    if (Math.abs(distance) < 5) {
-      list.scrollTo(targetScrollTop);
-      return;
-    }
-
-    // For large jumps (more than 2 container heights), use instant scroll to avoid virtualization issues
-    const containerHeight = 300;
-    const largeJumpThreshold = containerHeight * 2;
-
-    if (Math.abs(distance) > largeJumpThreshold) {
-      // Use react-window's built-in scrollToItem for large jumps to handle virtualization properly
-      list.scrollToItem(targetIndex, align);
-      return;
-    }
-
-    // Cancel any existing animation
-    if (scrollAnimationRef.current) {
-      cancelAnimationFrame(scrollAnimationRef.current);
-    }
-
-    isScrollingRef.current = true;
-    const startTime = performance.now();
-    // Shorter duration for more responsive feel
-    const duration = Math.min(400, Math.max(150, Math.abs(distance) * 0.8));
-
-    const animate = (currentTime) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-
-      // Use easeOutQuart for smoother deceleration
-      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-      const newScrollTop = currentScrollTop + (distance * easeOutQuart);
-
-      list.scrollTo(newScrollTop);
-
-      if (progress < 1) {
-        scrollAnimationRef.current = requestAnimationFrame(animate);
-      } else {
-        isScrollingRef.current = false;
-        scrollAnimationRef.current = null;
-      }
-    };
-
-    scrollAnimationRef.current = requestAnimationFrame(animate);
+  // Use react-window's built-in scrollToItem for stability
+  const centerToItem = (targetIndex, align = 'center') => {
+    if (!listRef.current || targetIndex < 0) return;
+    listRef.current.scrollToItem(targetIndex, align);
   };
 
-  // Auto-scroll to the current lyric with smooth positioning
+  // Auto-scroll to the current lyric using react-window's scrollToItem (stable)
   useEffect(() => {
     if (autoScrollEnabled && currentIndex >= 0 && listRef.current) {
-      // Use smooth scroll instead of abrupt scrollToItem
-      smoothScrollToItem(currentIndex, 'center');
+      listRef.current.scrollToItem(currentIndex, 'center');
     }
   }, [currentIndex, autoScrollEnabled]);
-
-  // Cleanup scroll animation on unmount
-  useEffect(() => {
-    return () => {
-      if (scrollAnimationRef.current) {
-        cancelAnimationFrame(scrollAnimationRef.current);
-      }
-    };
-  }, []);
 
   // Watch for seekTime changes to center the timeline
   useEffect(() => {
@@ -993,9 +856,7 @@ const LyricsDisplay = ({
               onTextEdit: handleTextEdit,
               onInsert: handleInsertLyric,
               onMerge: handleMergeLyrics,
-              timeFormat,
-              setRowHeight,
-              getCachedRowHeight
+              timeFormat
             }}
           >
             {VirtualizedLyricRow}
