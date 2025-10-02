@@ -329,6 +329,9 @@ const TimelineVisualization = ({
   const rangePreviewDeltaRef = useRef(0); // seconds delta during move drag
   const [hiddenActionBarRange, setHiddenActionBarRange] = useState(null); // Store range when action bar is hidden
 
+  const isRangeMoveDraggingRef = useRef(false);
+  const moveDragOffsetPxRef = useRef(0);
+
   // Offline segments lingering after processing (for quick retry from cached cuts)
   const [offlineSegments, setOfflineSegments] = useState([]); // [{ start, end, url, name }]
   const [hoveredOfflineRange, setHoveredOfflineRange] = useState(null);
@@ -1252,6 +1255,8 @@ const TimelineVisualization = ({
 
   // Handle mouse move to detect hovering over the hidden range or selectedSegment
   const handleMouseMoveForRange = useCallback((e) => {
+    // During a move-drag of the action bar, ignore canvas hover logic entirely
+    if (isRangeMoveDraggingRef.current) return;
     // Check both hiddenActionBarRange and selectedSegment
     if (!hiddenActionBarRange && !actionBarRange && !selectedSegment && (!offlineSegments || offlineSegments.length === 0)) return;
 
@@ -1642,16 +1647,72 @@ const TimelineVisualization = ({
         const barWidth = Math.max(24, Math.abs(rightPx - leftPx));
         const timePerPx = (visEnd - visStart) / Math.max(1, width);
 
+        // Unified Pointer Events handler (robust on mobile): keeps capture during drag
+        const handleMovePointerDown = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const startX = e.clientX;
+          const startOffset = moveDragOffsetPx;
+          const startRange = actionBarRange;
+          isRangeMoveDraggingRef.current = true;
+          if (onBeginMoveRange && startRange) onBeginMoveRange(startRange.start, startRange.end);
+
+          // Try to capture the pointer so move/up keep firing even if finger leaves the button
+          try {
+            const pid = (e.pointerId != null) ? e.pointerId : (e.nativeEvent && e.nativeEvent.pointerId);
+            if (e.currentTarget && e.currentTarget.setPointerCapture && pid != null) {
+              e.currentTarget.setPointerCapture(pid);
+            }
+          } catch {}
+
+          const onMove = (pe) => {
+            const px = startOffset + (pe.clientX - startX);
+            setMoveDragOffsetPx(px);
+            moveDragOffsetPxRef.current = px;
+            const deltaSeconds = px * timePerPx;
+            rangePreviewDeltaRef.current = deltaSeconds;
+            onPreviewMoveRange && onPreviewMoveRange(deltaSeconds);
+            pe.preventDefault();
+          };
+
+          const cleanup = () => {
+            window.removeEventListener('pointermove', onMove, true);
+            window.removeEventListener('pointerup', onUp, true);
+            window.removeEventListener('pointercancel', onUp, true);
+          };
+
+          const onUp = () => {
+            cleanup();
+            const deltaSeconds = (moveDragOffsetPxRef.current || 0) * timePerPx;
+            if (onCommitMoveRange) onCommitMoveRange();
+            else if (onMoveRange && Math.abs(deltaSeconds) > 0.001)
+              onMoveRange(actionBarRange.start, actionBarRange.end, deltaSeconds);
+            setMoveDragOffsetPx(0);
+            moveDragOffsetPxRef.current = 0;
+            rangePreviewDeltaRef.current = 0;
+            setActionBarRange(null);
+            setHiddenActionBarRange(null);
+            isRangeMoveDraggingRef.current = false;
+          };
+
+          window.addEventListener('pointermove', onMove, { capture: true, passive: false });
+          window.addEventListener('pointerup', onUp, { capture: true });
+          window.addEventListener('pointercancel', onUp, { capture: true });
+        };
+
+        // Fallback mouse-only (desktop) and touch-only (legacy) handlers retained
         const handleMoveMouseDown = (e) => {
           e.preventDefault();
           e.stopPropagation();
           const startX = e.clientX;
           const startOffset = moveDragOffsetPx;
           const startRange = actionBarRange;
+          isRangeMoveDraggingRef.current = true;
           if (onBeginMoveRange && startRange) onBeginMoveRange(startRange.start, startRange.end);
           const onMove = (me) => {
             const px = startOffset + (me.clientX - startX);
             setMoveDragOffsetPx(px);
+            moveDragOffsetPxRef.current = px;
             const deltaSeconds = px * timePerPx;
             rangePreviewDeltaRef.current = deltaSeconds;
             onPreviewMoveRange && onPreviewMoveRange(deltaSeconds);
@@ -1659,20 +1720,21 @@ const TimelineVisualization = ({
           const onUp = () => {
             document.removeEventListener('mousemove', onMove);
             document.removeEventListener('mouseup', onUp);
-            const deltaSeconds = moveDragOffsetPx * timePerPx;
+            const deltaSeconds = (moveDragOffsetPxRef.current || 0) * timePerPx;
             if (onCommitMoveRange) onCommitMoveRange();
             else if (onMoveRange && Math.abs(deltaSeconds) > 0.001)
               onMoveRange(actionBarRange.start, actionBarRange.end, deltaSeconds);
             setMoveDragOffsetPx(0);
+            moveDragOffsetPxRef.current = 0;
             rangePreviewDeltaRef.current = 0;
             setActionBarRange(null);
             setHiddenActionBarRange(null);
+            isRangeMoveDraggingRef.current = false;
           };
           document.addEventListener('mousemove', onMove);
           document.addEventListener('mouseup', onUp);
         };
 
-        // Touch equivalent for moving range on mobile
         const handleMoveTouchStart = (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -1681,6 +1743,7 @@ const TimelineVisualization = ({
           const startX = touch.clientX;
           const startOffset = moveDragOffsetPx;
           const startRange = actionBarRange;
+          isRangeMoveDraggingRef.current = true;
           if (onBeginMoveRange && startRange) onBeginMoveRange(startRange.start, startRange.end);
 
           const onMove = (te) => {
@@ -1688,6 +1751,7 @@ const TimelineVisualization = ({
             if (!t) return;
             const px = startOffset + (t.clientX - startX);
             setMoveDragOffsetPx(px);
+            moveDragOffsetPxRef.current = px;
             const deltaSeconds = px * timePerPx;
             rangePreviewDeltaRef.current = deltaSeconds;
             onPreviewMoveRange && onPreviewMoveRange(deltaSeconds);
@@ -1698,14 +1762,16 @@ const TimelineVisualization = ({
             document.removeEventListener('touchmove', onMove);
             document.removeEventListener('touchend', onUp);
             document.removeEventListener('touchcancel', onUp);
-            const deltaSeconds = moveDragOffsetPx * timePerPx;
+            const deltaSeconds = (moveDragOffsetPxRef.current || 0) * timePerPx;
             if (onCommitMoveRange) onCommitMoveRange();
             else if (onMoveRange && Math.abs(deltaSeconds) > 0.001)
               onMoveRange(actionBarRange.start, actionBarRange.end, deltaSeconds);
             setMoveDragOffsetPx(0);
+            moveDragOffsetPxRef.current = 0;
             rangePreviewDeltaRef.current = 0;
             setActionBarRange(null);
             setHiddenActionBarRange(null);
+            isRangeMoveDraggingRef.current = false;
           };
 
           document.addEventListener('touchmove', onMove, { passive: false });
@@ -1714,7 +1780,7 @@ const TimelineVisualization = ({
         };
 
         if (!canvas) return null;
-        const computeStyle = (bounds) => ({ top: `${(bounds.top || 0) - 36}px`, left: `${(bounds.left || 0) + barLeft}px` });
+        const computeStyle = (bounds) => ({ top: `${(bounds.top || 0) - 36}px`, left: `${(bounds.left || 0) + Math.max(0, Math.min((canvas?.clientWidth || width) - barWidth, barLeft))}px` });
 
         const overlay = (
           <OverlayFollower canvasRef={timelineRef} computeStyle={computeStyle} deps={[actionBarRange, moveDragOffsetPx, panOffset, zoom, lyrics]}>
@@ -1734,11 +1800,12 @@ const TimelineVisualization = ({
                 borderRadius: 12,
                 zIndex: 999,
                 color: 'var(--md-on-surface)',
-                pointerEvents: 'auto'
+                pointerEvents: 'auto',
+                touchAction: 'none'
               }}
               onMouseLeave={() => {
-                // Don't hide if we're clicking inside the range
-                if (isClickingInsideRef.current) {
+                // Don't hide if we're clicking inside the range or currently dragging the move handle
+                if (isClickingInsideRef.current || isRangeMoveDraggingRef.current) {
                   return;
                 }
 
@@ -1751,6 +1818,20 @@ const TimelineVisualization = ({
                   setHiddenActionBarRange(actionBarRange);
                 } else {
                   // For manually selected ranges
+                  setHiddenActionBarRange(actionBarRange);
+                }
+                setActionBarRange(null);
+              }}
+              onPointerLeave={() => {
+                // Same logic as onMouseLeave, but for pointer devices (covers touch pointers too)
+                if (isClickingInsideRef.current || isRangeMoveDraggingRef.current) {
+                  return;
+                }
+                if (selectedSegment &&
+                    actionBarRange.start === selectedSegment.start &&
+                    actionBarRange.end === selectedSegment.end) {
+                  setHiddenActionBarRange(actionBarRange);
+                } else {
                   setHiddenActionBarRange(actionBarRange);
                 }
                 setActionBarRange(null);
@@ -1786,8 +1867,7 @@ const TimelineVisualization = ({
               <button
                 className="btn-base btn-primary btn-small"
                 title={t('timeline.moveRange', 'Drag to move subtitles in range')}
-                onMouseDown={handleMoveMouseDown}
-                onTouchStart={handleMoveTouchStart}
+                onPointerDown={handleMovePointerDown}
                 style={{ width: 36, height: 36, minWidth: 36, padding: 0, borderRadius: '50%', cursor: 'grab', touchAction: 'none' }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 -960 960 960" aria-hidden style={{ color: 'var(--md-on-primary)' }}>
