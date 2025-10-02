@@ -234,11 +234,129 @@ app.post('/render', async (req, res) => {
 
       updateStatus({ phase: 'Probing video info' });
       const info = await probeVideoInfo(sourceVideoPath);
-      width = info.width;
-      height = info.height;
-      fps = metadata.frameRate || info.fps; // Allow override, but default to source FPS
+
+      // Log incoming metadata for debugging
+      try { console.log(`[${renderId}] Incoming metadata:`, JSON.stringify(metadata)); } catch {}
+
+      // FPS: allow override from frontend metadata
+      const toNumber = (v: any): number | undefined => {
+        if (v === undefined || v === null || v === '') return undefined;
+        const n = Number(v);
+        return Number.isFinite(n) ? n : undefined;
+      };
+      fps = toNumber(metadata.frameRate) ?? info.fps; // Allow override, but default to source FPS
       durationInFrames = Math.ceil(info.duration * fps);
-      console.log(`[${renderId}] Video Info: ${width}x${height} @ ${fps.toFixed(2)}fps, ${durationInFrames} frames`);
+
+      // Frontend may pass cropping and/or target resolution
+      // Supported metadata keys:
+      // - metadata.outputResolution: { width: number, height: number }
+      // - metadata.width / metadata.height (alias of outputResolution) possibly as strings
+      // - metadata.resolution: string like "1080x1920", "1920:1080" or "360p"
+      // - metadata.crop or metadata.cropSettings: pixel or percentage crop
+      const parseResString = (s?: string): {w?: number; h?: number} => {
+        if (!s || typeof s !== 'string') return {};
+        // WxH or W:H
+        let m = s.match(/(\d+)\s*[x:\-]\s*(\d+)/i);
+        if (m) return { w: Number(m[1]), h: Number(m[2]) };
+        // 360p/480p/720p/1080p/1440p/2160p etc. (assume 16:9)
+        m = s.match(/^(\d+)\s*p$/i);
+        if (m) {
+          // Treat "360p" etc. as HEIGHT ONLY. Width will be derived from aspect later.
+          const p = Number(m[1]);
+          return { h: p };
+        }
+        return {};
+      };
+
+      // Crop (accept metadata.crop or metadata.cropSettings). Detect percentage vs pixels.
+      const cropMeta = (metadata?.crop ?? metadata?.cropSettings) && typeof (metadata?.crop ?? metadata?.cropSettings) === 'object'
+        ? (metadata?.crop ?? metadata?.cropSettings)
+        : undefined;
+      const hasPctFields = cropMeta && (cropMeta.xPct !== undefined || cropMeta.yPct !== undefined || cropMeta.wPct !== undefined || cropMeta.hPct !== undefined);
+      const likelyPctValues = cropMeta && ['x','y','width','height'].some((k) => {
+        const n = Number(cropMeta[k]);
+        return Number.isFinite(n) && n >= 0 && n <= 100;
+      });
+      const crop = cropMeta
+        ? (hasPctFields || likelyPctValues
+            ? {
+                x: Math.max(0, Math.floor(((Number(cropMeta.xPct ?? cropMeta.x ?? 0)) / (Number(cropMeta.x) <= 1 ? 1 : 100)) * (Number(cropMeta.x) <= 1 ? info.width : info.width))),
+                y: Math.max(0, Math.floor(((Number(cropMeta.yPct ?? cropMeta.y ?? 0)) / (Number(cropMeta.y) <= 1 ? 1 : 100)) * (Number(cropMeta.y) <= 1 ? info.height : info.height))),
+                w: Math.min(info.width, Math.floor(((Number(cropMeta.wPct ?? cropMeta.width ?? cropMeta.w ?? 100)) / (Number(cropMeta.width) <= 1 ? 1 : 100)) * (Number(cropMeta.width) <= 1 ? info.width : info.width))),
+                h: Math.min(info.height, Math.floor(((Number(cropMeta.hPct ?? cropMeta.height ?? cropMeta.h ?? 100)) / (Number(cropMeta.height) <= 1 ? 1 : 100)) * (Number(cropMeta.height) <= 1 ? info.height : info.height))),
+              }
+            : {
+                x: Math.max(0, Math.floor(toNumber(cropMeta.x) ?? 0)),
+                y: Math.max(0, Math.floor(toNumber(cropMeta.y) ?? 0)),
+                w: Math.min(info.width, Math.floor(toNumber(cropMeta.width) ?? toNumber(cropMeta.w) ?? info.width)),
+                h: Math.min(info.height, Math.floor(toNumber(cropMeta.height) ?? toNumber(cropMeta.h) ?? info.height)),
+              })
+        : null;
+
+      // Determine desired output resolution (accept multiple formats)
+      const resFromObj = (obj: any): {w?: number; h?: number} => ({ w: toNumber(obj?.width) ?? toNumber(obj?.w), h: toNumber(obj?.height) ?? toNumber(obj?.h) });
+      const resFromMetaObj = resFromObj(metadata?.outputResolution ?? {});
+      const resFromRoot = resFromObj(metadata ?? {});
+      const resFromString = parseResString(typeof metadata?.resolution === 'string' ? metadata.resolution : undefined);
+
+      // Common presets (strings)
+      const preset = (metadata?.resolutionPreset ?? metadata?.resolutionKey ?? metadata?.quality ?? '').toString().toLowerCase();
+      const presetMap: Record<string, {w: number; h: number}> = {
+        '720p': { w: 1280, h: 720 },
+        '1080p': { w: 1920, h: 1080 },
+        '1440p': { w: 2560, h: 1440 },
+        '2k': { w: 2048, h: 1080 },
+        '4k': { w: 3840, h: 2160 },
+        '2160p': { w: 3840, h: 2160 },
+        'square1080': { w: 1080, h: 1080 },
+        'story': { w: 1080, h: 1920 },
+        'vertical1080x1920': { w: 1080, h: 1920 },
+        'portrait': { w: 1080, h: 1920 },
+        'landscape': { w: 1920, h: 1080 },
+      };
+      const resFromPreset = presetMap[preset] ?? {};
+
+      // Aspect handling: prefer crop aspect if provided, else explicit aspect, else source aspect
+      const aspectStr = (metadata?.aspect ?? metadata?.aspectRatio ?? '').toString();
+      const aspectMatch = aspectStr.match(/^(\d+)\s*:\s*(\d+)$/);
+      const explicitAspect = aspectMatch ? Number(aspectMatch[1]) / Number(aspectMatch[2]) : undefined;
+      const cropAspect = crop ? (crop.w / crop.h) : undefined;
+      const sourceAspect = info.width / info.height;
+      const effectiveAspect = cropAspect ?? explicitAspect ?? sourceAspect;
+
+      let desiredW = resFromMetaObj.w ?? resFromRoot.w ?? resFromString.w ?? resFromPreset.w;
+      let desiredH = resFromMetaObj.h ?? resFromRoot.h ?? resFromString.h ?? resFromPreset.h;
+
+      // If resolution is a single "p" height like 360p and aspect indicates vertical (<1), treat the number as height and compute width
+      const pMatch = typeof metadata?.resolution === 'string' && metadata.resolution.match(/^(\d+)\s*p$/i);
+      if (pMatch && effectiveAspect) {
+        const targetHeight = Number(pMatch[1]);
+        desiredH = desiredH || targetHeight;
+        desiredW = desiredW || Math.max(1, Math.round(desiredH * effectiveAspect));
+      }
+
+      // If one dimension is missing but we have an aspect, compute the other
+      if (effectiveAspect && (desiredW || desiredH)) {
+        if (desiredW && !desiredH) desiredH = Math.max(1, Math.round(desiredW / effectiveAspect));
+        if (!desiredW && desiredH) desiredW = Math.max(1, Math.round(desiredH * effectiveAspect));
+      }
+
+      // Fallbacks
+      desiredW = Math.floor(desiredW ?? (crop ? crop.w : info.width));
+      desiredH = Math.floor(desiredH ?? (crop ? crop.h : info.height));
+
+      // Set composition dimensions to desired output
+      width = desiredW;
+      height = desiredH;
+
+      console.log(
+        `[${renderId}] Video Info: ${info.width}x${info.height} @ ${fps.toFixed(2)}fps, ${durationInFrames} frames`);
+      if (crop) {
+        console.log(`[${renderId}] Applying crop: x=${crop.x}, y=${crop.y}, w=${crop.w}, h=${crop.h}`);
+      }
+      if (desiredW && desiredH) {
+        console.log(`[${renderId}] Target output resolution: ${desiredW}x${desiredH}`);
+      }
 
       // Create a dedicated temporary directory for this render
       tempDir = fs.mkdtempSync(path.join(os.tmpdir(), `remotion-render-${renderId}-`));
@@ -246,9 +364,12 @@ app.post('/render', async (req, res) => {
       const extractedAudioFile = path.join(tempDir, 'audio.aac');
       fs.mkdirSync(framesDir);
 
-      // 1. Extract Frames
+      // 1. Extract Frames (apply fps + optional crop + optional scale)
       updateStatus({ phase: 'Extracting video frames', progress: 0 });
-      const frameExtractionArgs = ['-i', sourceVideoPath, '-vf', `fps=${fps}`, path.join(framesDir, '%06d.jpg')];
+      const vfParts: string[] = [`fps=${fps}`];
+      if (crop) vfParts.push(`crop=${crop.w}:${crop.h}:${crop.x}:${crop.y}`);
+      if (desiredW && desiredH) vfParts.push(`scale=${desiredW}:${desiredH}:flags=lanczos`);
+      const frameExtractionArgs = ['-i', sourceVideoPath, '-vf', vfParts.join(','), path.join(framesDir, '%06d.jpg')];
       await runFfmpeg(frameExtractionArgs, renderId, 'Frame Extraction', durationInFrames, (p) => {
         updateStatus({ progress: p * 0.4 }); // Extraction is ~40% of the work
       });

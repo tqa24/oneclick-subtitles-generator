@@ -118,6 +118,7 @@ export interface Props {
   backgroundImageUrl?: string; // Optional background image
   metadata: VideoMetadata;
   isVideoFile?: boolean; // Flag to indicate if the main file is a video
+  framesPathUrl?: string; // If provided, render server-extracted frames instead of raw video
 }
 
 // Interface for components that can work with either a File or URL
