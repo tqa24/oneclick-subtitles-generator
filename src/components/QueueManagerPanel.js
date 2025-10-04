@@ -18,6 +18,14 @@ const QueueManagerPanel = ({
     return document.documentElement.getAttribute('data-theme') || 'dark';
   });
 
+  // Track locally canceled items so Cancel always has immediate effect
+  const [locallyCanceled, setLocallyCanceled] = useState({});
+  const isLocallyCanceled = (id) => !!locallyCanceled[id];
+  const handleLocalCancel = (item) => {
+    setLocallyCanceled((prev) => ({ ...prev, [item.id]: true }));
+    if (onCancelItem) onCancelItem(item.id);
+  };
+
   useEffect(() => {
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
@@ -72,6 +80,12 @@ const QueueManagerPanel = ({
             <line x1="9" y1="9" x2="15" y2="15"></line>
           </svg>
         );
+      case 'canceled':
+        return (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="6" y="6" width="12" height="12"></rect>
+          </svg>
+        );
       default:
         return (
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -92,10 +106,15 @@ const QueueManagerPanel = ({
         return 'var(--success-color)';
       case 'failed':
         return 'var(--error-color)';
+      case 'canceled':
+        return 'var(--text-secondary)';
       default:
         return 'var(--text-secondary)';
     }
   };
+  // Compute effective status that respects local cancel regardless of server response
+  const getEffectiveStatusForItem = (item) => (isLocallyCanceled(item.id) ? 'canceled' : item.status);
+
 
   const formatTime = (timestamp) => {
     if (!timestamp) return '';
@@ -252,174 +271,177 @@ const QueueManagerPanel = ({
           </div>
         ) : (
           <div className={`queue-list ${gridLayout ? 'grid-layout' : ''}`}>
-            {queue.map((item, index) => (
-              <div 
-                key={item.id} 
-                className={`queue-item ${item.status} ${item.id === currentQueueItem ? 'current' : ''}`}
-              >
-                <div className="queue-item-header">
-                  <div className="item-info">
-                    <span className="status-icon">{getStatusIcon(item.status)}</span>
-                    <div className="item-details">
-                      <div className="item-title">
-                        {t('videoRendering.subtitledVideo', 'Subtitled Video')} #{getVideoNumber(item)}
+            {queue.map((item) => {
+              const effectiveStatus = isLocallyCanceled(item.id) ? 'canceled' : item.status;
+              return (
+                <div
+                  key={item.id}
+                  className={`queue-item ${effectiveStatus} ${item.id === currentQueueItem ? 'current' : ''}`}
+                >
+                  <div className="queue-item-header">
+                    <div className="item-info">
+                      <span className="status-icon">{getStatusIcon(effectiveStatus)}</span>
+                      <div className="item-details">
+                        <div className="item-title">
+                          {t('videoRendering.subtitledVideo', 'Subtitled Video')} #{getVideoNumber(item)}
+                        </div>
+                        <div className="item-meta">
+                          {item.settings.resolution} • {item.settings.frameRate}fps
+                          {item.timestamp && (
+                            <span className="item-time"> • {formatTime(item.timestamp)}</span>
+                          )}
+                        </div>
                       </div>
-                      <div className="item-meta">
-                        {item.settings.resolution} • {item.settings.frameRate}fps
-                        {item.timestamp && (
-                          <span className="item-time"> • {formatTime(item.timestamp)}</span>
+                    </div>
+                    <div className="item-status">
+                      <span
+                        className="status-badge"
+                        style={{ backgroundColor: getStatusColor(effectiveStatus) }}
+                      >
+                        {t(`videoRendering.${effectiveStatus}`, effectiveStatus)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Revamped WavyProgressIndicator Section */}
+                  {(effectiveStatus === 'processing' || effectiveStatus === 'pending') && (
+                    <div className="wavy-progress-section">
+                      <WavyProgressIndicator
+                        progress={Math.max(0, Math.min(1, (item.progress || 0) / 100))}
+                        animate={effectiveStatus === 'processing'}
+                        showStopIndicator={true}
+                        waveSpeed={1.2}
+                        height={12}
+                        autoAnimateEntrance={true}
+                        color={
+                          // Use special blue color for Chrome download phase
+                          item.phase === 'chrome-download'
+                            ? (theme === 'dark' ? '#2196F3' : '#1976D2')
+                            : (theme === 'dark'
+                                ? (effectiveStatus === 'processing' ? '#4CAF50' : '#FFC107')
+                                : (effectiveStatus === 'processing' ? '#2E7D32' : '#F57C00')
+                              )
+                        }
+                        trackColor={theme === 'dark'
+                          ? 'rgba(255, 255, 255, 0.15)'
+                          : 'rgba(0, 0, 0, 0.15)'
+                        }
+                        stopIndicatorColor={
+                          // Use same special blue color for Chrome download phase
+                          item.phase === 'chrome-download'
+                            ? (theme === 'dark' ? '#2196F3' : '#1976D2')
+                            : (theme === 'dark'
+                                ? (effectiveStatus === 'processing' ? '#4CAF50' : '#FFC107')
+                                : (effectiveStatus === 'processing' ? '#2E7D32' : '#F57C00')
+                              )
+                        }
+                        style={{
+                          width: '100%'
+                        }}
+                      />
+                      <div className="progress-text">
+                        {effectiveStatus === 'processing' ? (
+                          <>
+                            {/* Fixed percentage container */}
+                            <div className="progress-percentage-container">
+                              <div className="progress-percentage">
+                                {Math.round(item.progress || 0)}%
+                              </div>
+                            </div>
+
+                            {/* Separate container for frame details */}
+                            <div className="progress-frames-container">
+                              {item.renderedFrames && item.durationInFrames ? (
+                                <div className="progress-frames">
+                                  {`${item.renderedFrames}/${item.durationInFrames} ${t('videoRendering.frames', 'frames')}`}
+                                </div>
+                              ) : item.phaseDescription ? (
+                                <div className="progress-frames">
+                                  {item.phaseDescription}
+                                </div>
+                              ) : (
+                                <div className="progress-frames">
+                                  {t('videoRendering.renderingFrames', 'Processing video frames...')}
+                                </div>
+                              )}
+                              {item.phase === 'encoding' && (
+                                <div className="progress-phase encoding">
+                                  {t('videoRendering.encodingFrames', 'Encoding and stitching frames...')}
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        ) : (
+                          t('videoRendering.waiting', 'Waiting...')
                         )}
                       </div>
                     </div>
-                  </div>
-                  <div className="item-status">
-                    <span 
-                      className="status-badge"
-                      style={{ backgroundColor: getStatusColor(item.status) }}
-                    >
-                      {t(`videoRendering.${item.status}`, item.status)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Revamped WavyProgressIndicator Section */}
-                {(item.status === 'processing' || item.status === 'pending') && (
-                  <div className="wavy-progress-section">
-                    <WavyProgressIndicator
-                      progress={Math.max(0, Math.min(1, (item.progress || 0) / 100))}
-                      animate={item.status === 'processing'}
-                      showStopIndicator={true}
-                      waveSpeed={1.2}
-                      height={12}
-                      autoAnimateEntrance={true}
-                      color={
-                        // Use special blue color for Chrome download phase
-                        item.phase === 'chrome-download' 
-                          ? (theme === 'dark' ? '#2196F3' : '#1976D2')
-                          : (theme === 'dark'
-                              ? (item.status === 'processing' ? '#4CAF50' : '#FFC107')
-                              : (item.status === 'processing' ? '#2E7D32' : '#F57C00')
-                            )
-                      }
-                      trackColor={theme === 'dark'
-                        ? 'rgba(255, 255, 255, 0.15)'
-                        : 'rgba(0, 0, 0, 0.15)'
-                      }
-                      stopIndicatorColor={
-                        // Use same special blue color for Chrome download phase
-                        item.phase === 'chrome-download' 
-                          ? (theme === 'dark' ? '#2196F3' : '#1976D2')
-                          : (theme === 'dark'
-                              ? (item.status === 'processing' ? '#4CAF50' : '#FFC107')
-                              : (item.status === 'processing' ? '#2E7D32' : '#F57C00')
-                            )
-                      }
-                      style={{
-                        width: '100%'
-                      }}
-                    />
-                    <div className="progress-text">
-                      {item.status === 'processing' ? (
-                        <>
-                          {/* Fixed percentage container */}
-                          <div className="progress-percentage-container">
-                            <div className="progress-percentage">
-                              {Math.round(item.progress || 0)}%
-                            </div>
-                          </div>
-
-                          {/* Separate container for frame details */}
-                          <div className="progress-frames-container">
-                            {item.renderedFrames && item.durationInFrames ? (
-                              <div className="progress-frames">
-                                {`${item.renderedFrames}/${item.durationInFrames} ${t('videoRendering.frames', 'frames')}`}
-                              </div>
-                            ) : item.phaseDescription ? (
-                              <div className="progress-frames">
-                                {item.phaseDescription}
-                              </div>
-                            ) : (
-                              <div className="progress-frames">
-                                {t('videoRendering.renderingFrames', 'Processing video frames...')}
-                              </div>
-                            )}
-                            {item.phase === 'encoding' && (
-                              <div className="progress-phase encoding">
-                                {t('videoRendering.encodingFrames', 'Encoding and stitching frames...')}
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      ) : (
-                        t('videoRendering.waiting', 'Waiting...')
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Error Message */}
-                {item.status === 'failed' && item.error && (
-                  <div className="error-section">
-                    <div className="error-message">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="15" y1="9" x2="9" y2="15"></line>
-                        <line x1="9" y1="9" x2="15" y2="15"></line>
-                      </svg>
-                      {item.error}
-                    </div>
-                  </div>
-                )}
-
-                {/* Completed Video Info */}
-                {item.status === 'completed' && item.outputPath && (
-                  <div className="completed-section">
-                    <div className="output-info">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                      </svg>
-                      <span>{t('videoRendering.readyForDownload', 'Ready for download')}</span>
-                    </div>
-                    <button
-                      onClick={() => handleDownloadVideo(item.outputPath, item)}
-                      className="btn-base btn-success btn-compact download-btn-success"
-                    >
-                      {t('videoRendering.download', 'Download')}
-                    </button>
-                  </div>
-                )}
-
-                {/* Item Actions */}
-                <div className="item-actions">
-                  {item.status === 'processing' && onCancelItem && (
-                    <button
-                      className="cancel-btn"
-                      onClick={() => onCancelItem(item.id)}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="6" y="6" width="12" height="12"></rect>
-                      </svg>
-                      {t('videoRendering.cancel', 'Cancel')}
-                    </button>
                   )}
 
-                  {item.status !== 'processing' && (
-                    <button
-                      className="remove-btn"
-                      onClick={() => onRemoveItem(item.id)}
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                      </svg>
-                      {t('videoRendering.remove', 'Remove')}
-                    </button>
+                  {/* Error Message */}
+                  {item.status === 'failed' && item.error && (
+                    <div className="error-section">
+                      <div className="error-message">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="15" y1="9" x2="9" y2="15"></line>
+                          <line x1="9" y1="9" x2="15" y2="15"></line>
+                        </svg>
+                        {item.error}
+                      </div>
+                    </div>
                   )}
+
+                  {/* Completed Video Info */}
+                  {item.status === 'completed' && item.outputPath && (
+                    <div className="completed-section">
+                      <div className="output-info">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                          <polyline points="7 10 12 15 17 10"></polyline>
+                          <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span>{t('videoRendering.readyForDownload', 'Ready for download')}</span>
+                      </div>
+                      <button
+                        onClick={() => handleDownloadVideo(item.outputPath, item)}
+                        className="btn-base btn-success btn-compact download-btn-success"
+                      >
+                        {t('videoRendering.download', 'Download')}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Item Actions */}
+                  <div className="item-actions">
+                    {effectiveStatus === 'processing' && onCancelItem && (
+                      <button
+                        className="cancel-btn"
+                        onClick={() => handleLocalCancel(item)}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="6" y="6" width="12" height="12"></rect>
+                        </svg>
+                        {t('videoRendering.cancel', 'Cancel')}
+                      </button>
+                    )}
+
+                    {effectiveStatus !== 'processing' && (
+                      <button
+                        className="remove-btn"
+                        onClick={() => onRemoveItem(item.id)}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="3 6 5 6 21 6"></polyline>
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                        {t('videoRendering.remove', 'Remove')}
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
