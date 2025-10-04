@@ -94,38 +94,35 @@ def generate_narration():
 
             try:
                 for i, subtitle in enumerate(subtitles):
-                    subtitle_id = subtitle.get('id', f"index_{i}") # Use index if ID missing
+                    # Keep the original stable ID for UI/logic, but use a per-request sequential index for output directories
+                    original_id = subtitle.get('id', f"index_{i}")  # may be non-sequential across sessions
+                    display_idx = i + 1  # 1-based, contiguous for this generation run
                     text = subtitle.get('text', '').strip()
                     processed_count += 1
 
                     # --- Send Progress Update ---
-                    # Send a more detailed progress update with the subtitle text
                     subtitle_text = text[:50] + "..." if len(text) > 50 else text
                     progress_data = {
                         'type': 'progress',
-                        'message_key': 'processingSubtitle',  # Let frontend handle translation
+                        'message_key': 'processingSubtitle',
                         'current': processed_count,
                         'total': total_subtitles,
-                        'subtitle_id': subtitle_id,
+                        'subtitle_id': original_id,  # keep reporting original id to the client
                         'subtitle_text': subtitle_text,
                         'processing_started': True
                     }
                     yield f"data: {json.dumps(progress_data)}\n\n"
 
                     if not text:
-
-                        result = {'subtitle_id': subtitle_id, 'text': '', 'success': True, 'skipped': True}
+                        result = {'subtitle_id': original_id, 'text': '', 'success': True, 'skipped': True}
                         results.append(result)
-                        # Send skip result immediately
                         skip_data = {'type': 'result', 'result': result, 'progress': processed_count, 'total': total_subtitles}
                         yield f"data: {json.dumps(skip_data)}\n\n"
                         continue
 
-                    # Language mismatch check removed per user request
-
                     # --- Prepare for Generation ---
-                    # Ensure the subtitle directory exists
-                    subtitle_dir = ensure_subtitle_directory(subtitle_id)
+                    # Ensure the per-run sequential subtitle directory exists (subtitle_1..subtitle_N)
+                    subtitle_dir = ensure_subtitle_directory(display_idx)
 
                     # Get the next file number for this subtitle
                     file_number = get_next_file_number(subtitle_dir)
@@ -133,8 +130,8 @@ def generate_narration():
                     # Generate a filename with sequential numbering
                     filename = f"{file_number}.wav"
 
-                    # Full path includes the subtitle directory - use forward slashes for URLs
-                    full_filename = f"subtitle_{subtitle_id}/{filename}"
+                    # Full path includes the display index directory - use forward slashes for URLs
+                    full_filename = f"subtitle_{display_idx}/{filename}"
                     output_path = os.path.join(subtitle_dir, filename)
 
                     logger.debug(f"Generating narration audio for subtitle {subtitle_id}, output path: {output_path}")

@@ -52,7 +52,8 @@ const GeminiResultRow = ({ index, style, data }) => {
         ${retryingSubtitleId === subtitle_id ? 'retrying' : ''}`}
     >
       <div className="result-text">
-        <span className="result-id">{subtitle_id}.</span>
+        {/* Display 1-based row number for user-friendly sequential numbering */}
+        <span className="result-id">{index + 1}.</span>
         {text}
       </div>
 
