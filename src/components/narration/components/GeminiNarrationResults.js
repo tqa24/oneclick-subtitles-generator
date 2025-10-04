@@ -406,24 +406,22 @@ const GeminiNarrationResults = ({
     }
   };
 
-  // Function to calculate row height based on text content
-  const getRowHeight = index => {
-    // If we already calculated this height, return it
+  // Function to calculate row height based on explicit line breaks only (stable like LyricsDisplay)
+  const getRowHeight = (index) => {
+    // Return cached height if available
     if (rowHeights.current[index] !== undefined) {
       return rowHeights.current[index];
     }
 
     const item = generationResults[index];
-    if (!item) return 60; // Default height
+    if (!item) return 60; // Default height for a single-line item with controls
 
-    // Calculate height based on text length
+    // Only count explicit line breaks to avoid jitter from soft-wrap estimation
     const text = item.text || '';
-    const lineCount = text.split('\n').length; // Count actual line breaks
-    const estimatedLines = Math.ceil(text.length / 40); // Estimate based on characters per line
-    const lines = Math.max(lineCount, estimatedLines);
+    const lineCount = Math.max(1, text.split('\n').length);
 
-    // Base height + additional height per line + space for controls
-    const height = 60 + (lines > 1 ? (lines - 1) * 20 : 0);
+    // Base height + additional height per extra line
+    const height = 60 + (lineCount - 1) * 20;
 
     // Cache the calculated height
     rowHeights.current[index] = height;
