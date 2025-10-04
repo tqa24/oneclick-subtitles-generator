@@ -134,7 +134,7 @@ def generate_narration():
                     full_filename = f"subtitle_{display_idx}/{filename}"
                     output_path = os.path.join(subtitle_dir, filename)
 
-                    logger.debug(f"Generating narration audio for subtitle {subtitle_id}, output path: {output_path}")
+                    logger.debug(f"Generating narration audio for subtitle {original_id}, output path: {output_path}")
 
                     # Clean text: Remove control characters, ensure UTF-8
                     cleaned_text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', text)
@@ -157,10 +157,10 @@ def generate_narration():
                     # --- Send Generating Update ---
                     generating_data = {
                         'type': 'progress',
-                        'message': f'Generating audio for subtitle {processed_count}/{total_subtitles} (ID: {subtitle_id})',
+                        'message': f'Generating audio for subtitle {processed_count}/{total_subtitles} (ID: {original_id})',
                         'current': processed_count,
                         'total': total_subtitles,
-                        'subtitle_id': subtitle_id,
+                        'subtitle_id': original_id,
                         'generating': True
                     }
                     yield f"data: {json.dumps(generating_data)}\n\n"
@@ -176,7 +176,7 @@ def generate_narration():
 
 
                         result = {
-                            'subtitle_id': subtitle_id,
+                            'subtitle_id': original_id,
                             'text': cleaned_text, # Return the cleaned text used for generation
                             'audio_path': output_path,
                             'filename': full_filename, # Return the path relative to OUTPUT_AUDIO_DIR
@@ -190,10 +190,10 @@ def generate_narration():
 
                     except Exception as infer_error:
                         # Log the specific error and the text that caused it
-                        logger.error(f"Error generating narration for subtitle ID {subtitle_id} with text '{cleaned_text[:100]}...': {infer_error}", exc_info=True) # Log stack trace
+                        logger.error(f"Error generating narration for subtitle ID {original_id} with text '{cleaned_text[:100]}...': {infer_error}", exc_info=True) # Log stack trace
                         error_message = f"{type(infer_error).__name__}: {str(infer_error)}"
                         result = {
-                            'subtitle_id': subtitle_id,
+                            'subtitle_id': original_id,
                             'text': cleaned_text,
                             'error': error_message,
                             'success': False
@@ -217,9 +217,9 @@ def generate_narration():
                              gc.collect() # Force Python garbage collection
                              if device.startswith("cuda") and torch.cuda.is_available():
                                  torch.cuda.empty_cache()
-                                 # logger.debug(f"CUDA cache cleared after subtitle ID {subtitle_id}")
+                                 # logger.debug(f"CUDA cache cleared after subtitle ID {original_id}")
                          except Exception as mem_error:
-                              logger.warning(f"Error during memory cleanup after subtitle ID {subtitle_id}: {mem_error}")
+                              logger.warning(f"Error during memory cleanup after subtitle ID {original_id}: {mem_error}")
 
             except Exception as stream_err:
                  # Catch errors within the generator loop itself

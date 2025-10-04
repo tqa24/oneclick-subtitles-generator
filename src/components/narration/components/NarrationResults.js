@@ -32,7 +32,7 @@ const ResultRow = ({ index, style, data }) => {
     <div
       style={style}
       className={`result-item
-        ${result.success ? '' : 'failed'}
+        ${result.success ? '' : result.pending ? 'pending' : 'failed'}
         ${currentAudio && currentAudio.id === subtitle_id ? 'playing' : ''}
         ${retryingSubtitleId === subtitle_id ? 'retrying' : ''}`}
     >
@@ -43,7 +43,40 @@ const ResultRow = ({ index, style, data }) => {
       </div>
 
       <div className="result-controls">
-        {result.success ? (
+        {result.pending ? (
+          <>
+            <span className="status-message pending">
+              {t('narration.pending', 'Pending generation...')}
+            </span>
+            {onRetry && (
+              <button
+                className={`pill-button secondary generate-button ${retryingSubtitleId === subtitle_id ? 'retrying' : ''}`}
+                onClick={() => onRetry(subtitle_id)}
+                title={t('narration.generate', 'Generate this narration')}
+                disabled={retryingSubtitleId === subtitle_id}
+              >
+                {retryingSubtitleId === subtitle_id ? (
+                  <>
+                    <LoadingIndicator
+                      theme="dark"
+                      showContainer={false}
+                      size={14}
+                      className="generate-loading-indicator"
+                    />
+                    {t('narration.generating', 'Generating...')}
+                  </>
+                ) : (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="5 3 19 12 5 21 5 3" fill="currentColor" />
+                    </svg>
+                    {t('narration.generate', 'Generate')}
+                  </>
+                )}
+              </button>
+            )}
+          </>
+        ) : result.success ? (
           <>
             <button
               className="pill-button primary"
@@ -195,12 +228,50 @@ const NarrationResults = ({
   getAudioUrl,
   onRetry,
   retryingSubtitleId,
-  onRetryFailed
+  onRetryFailed,
+  subtitleSource,
+  isGenerating,
+  plannedSubtitles
 }) => {
   const { t } = useTranslation();
+
   const listRef = useRef(null);
   const rowHeights = useRef({});
   const [loadedFromCache, setLoadedFromCache] = useState(false);
+
+  // Derive a displayed list that immediately shows the full "true" list during generation (like Gemini)
+  const trueSubtitles = (() => {
+    // If caller provided an explicit plan, always prefer it
+    if (Array.isArray(plannedSubtitles) && plannedSubtitles.length > 0) {
+      return plannedSubtitles;
+    }
+    // Prefer grouped subtitles when enabled (from global state)
+    if (typeof window !== 'undefined' && window.useGroupedSubtitles && Array.isArray(window.groupedSubtitles) && window.groupedSubtitles.length > 0) {
+      return window.groupedSubtitles;
+    }
+    // Otherwise infer from selected source using globals populated elsewhere
+    if (subtitleSource === 'translated' && typeof window !== 'undefined' && Array.isArray(window.translatedSubtitles) && window.translatedSubtitles.length > 0) {
+      return window.translatedSubtitles;
+    }
+    if (typeof window !== 'undefined') {
+      return window.originalSubtitles || window.subtitlesData || [];
+    }
+    return [];
+  })();
+
+  const displayedResults = (generationResults && generationResults.length > 0)
+    ? generationResults
+    : (isGenerating && trueSubtitles.length > 0
+        ? trueSubtitles.map((s, i) => ({
+            subtitle_id: s.id ?? s.subtitle_id ?? (i + 1),
+            text: s.text || '',
+            success: false,
+            pending: true,
+            start: s.start,
+            end: s.end,
+            original_ids: s.original_ids || (s.id ? [s.id] : [])
+          }))
+        : []);
 
   // Speed control state
   const [speedValue, setSpeedValue] = useState(1.0);
@@ -357,7 +428,7 @@ const NarrationResults = ({
     if (rowHeights.current[index]) return rowHeights.current[index];
 
     // Calculate height based on content
-    const result = generationResults[index];
+    const result = displayedResults[index];
     if (!result) return 60; // Default height
 
     // Calculate height based on text length
