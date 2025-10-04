@@ -318,5 +318,18 @@
     "sw": "Tiếng Swahili",
     "tr": "Tiếng Thổ Nhĩ Kỳ",
     "zh": "Tiếng Trung"
-  }
+  },
+
+  "generationCancelled": "Quá trình tạo đã bị hủy",
+  "generationInterrupted": "Quá trình tạo đã bị gián đoạn",
+  "noResultReturned": "Không có kết quả trả về",
+  "failedToGroupSubtitles": "Không thể nhóm phụ đề",
+  "preparingGeminiGeneration": "Đang chuẩn bị tạo lời thoại với Gemini...",
+  "geminiGenerationCancelled": "Quá trình tạo lời thoại Gemini đã bị hủy",
+  "geminiGenerationCancelling": "Đang hủy quá trình tạo lời thoại Gemini...",
+  "geminiGenerationComplete": "Quá trình tạo lời thoại Gemini đã hoàn thành",
+  "geminiGenerationError": "Lỗi khi tạo lời thoại với Gemini",
+  "retryingGeminiGeneration": "Đang thử lại tạo lời thoại cho phụ đề {{id}}...",
+  "subtitleGroupingError": "Lỗi nhóm phụ đề: {{error}}",
+  "serverError": "Lỗi máy chủ: {{status}} {{statusText}}"
 }

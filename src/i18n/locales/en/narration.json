@@ -296,5 +296,18 @@
     "sw": "Swahili",
     "tr": "Turkish",
     "zh": "Chinese"
-  }
+  },
+
+  "generationCancelled": "Generation was cancelled",
+  "generationInterrupted": "Generation was interrupted",
+  "noResultReturned": "No result returned",
+  "failedToGroupSubtitles": "Failed to group subtitles",
+  "preparingGeminiGeneration": "Preparing to generate narration with Gemini...",
+  "geminiGenerationCancelled": "Gemini narration generation cancelled",
+  "geminiGenerationCancelling": "Cancelling Gemini narration generation...",
+  "geminiGenerationComplete": "Gemini narration generation complete",
+  "geminiGenerationError": "Error generating narration with Gemini",
+  "retryingGeminiGeneration": "Retrying narration generation for subtitle {{id}}...",
+  "subtitleGroupingError": "Error grouping subtitles: {{error}}",
+  "serverError": "Server error: {{status}} {{statusText}}"
 }

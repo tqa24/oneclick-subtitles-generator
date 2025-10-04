@@ -308,5 +308,18 @@
     "sw": "스와힐리어",
     "tr": "터키어",
     "zh": "중국어"
-  }
+  },
+
+  "generationCancelled": "생성이 취소되었습니다",
+  "generationInterrupted": "생성이 중단되었습니다",
+  "noResultReturned": "결과가 반환되지 않았습니다",
+  "failedToGroupSubtitles": "자막 그룹화에 실패했습니다",
+  "preparingGeminiGeneration": "Gemini로 내레이션을 준비 중입니다...",
+  "geminiGenerationCancelled": "Gemini 내레이션 생성이 취소되었습니다",
+  "geminiGenerationCancelling": "Gemini 내레이션 생성을 취소하는 중...",
+  "geminiGenerationComplete": "Gemini 내레이션 생성이 완료되었습니다",
+  "geminiGenerationError": "Gemini로 내레이션 생성 중 오류 발생",
+  "retryingGeminiGeneration": "자막 {{id}}에 대한 내레이션 생성을 재시도하는 중...",
+  "subtitleGroupingError": "자막 그룹화 오류: {{error}}",
+  "serverError": "서버 오류: {{status}} {{statusText}}"
 }
