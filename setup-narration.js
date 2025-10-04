@@ -849,28 +849,28 @@ const CHATTERBOX_DIR = 'chatterbox-temp'; // Temporary directory for cloning
 try {
     // Clone the official chatterbox repository
     logger.progress('Cloning official chatterbox repository');
-    
+
     // Remove existing chatterbox directory if it exists
     if (fs.existsSync(CHATTERBOX_DIR)) {
         logger.info('Removing existing chatterbox directory...');
         fs.rmSync(CHATTERBOX_DIR, { recursive: true, force: true });
     }
-    
+
     // Clone the repository
     const cloneCmd = `git clone https://github.com/resemble-ai/chatterbox.git ${CHATTERBOX_DIR}`;
     logger.command(cloneCmd);
     execSync(cloneCmd, { stdio: 'inherit' });
     logger.success('Chatterbox repository cloned');
-    
+
     // Apply PyTorch compatibility fix by modifying chatterbox dependencies
     logger.progress('Applying PyTorch compatibility fix for chatterbox');
     const pyprojectPath = path.join(CHATTERBOX_DIR, 'pyproject.toml');
-    
+
     if (fs.existsSync(pyprojectPath)) {
         logger.info('Updating chatterbox dependencies for PyTorch 2.4.1 compatibility...');
-        
+
         let pyprojectContent = fs.readFileSync(pyprojectPath, 'utf8');
-        
+
         // Replace incompatible PyTorch versions with compatible ones
         // Handle both single and double quotes, and various version formats
         pyprojectContent = pyprojectContent
@@ -887,7 +887,20 @@ try {
             .replace('"torchaudio==2.5.0"', '"torchaudio>=2.4.1,<2.5.0"')
             .replace('"transformers==4.46.3"', '"transformers>=4.40.0,<4.47.0"')
             .replace('"diffusers==0.29.0"', '"diffusers>=0.25.0,<0.30.0"');
-        
+
+
+        // Remove russian-text-stresser due to spacy==3.6.* hard pin causing conflict with gradio/typer (pydantic v2)
+        try {
+            const beforeLenRTS = pyprojectContent.length;
+            pyprojectContent = pyprojectContent.replace(/^[\t ]*["']russian-text-stresser\b[^\n]*$/gmi, '');
+            if (pyprojectContent.length !== beforeLenRTS) {
+                logger.info('Removed russian-text-stresser to avoid spacy/typer/pydantic conflict');
+                logger.info('Note: Russian stress features will be disabled.');
+            }
+        } catch (e) {
+            logger.warning('Could not adjust russian-text-stresser dependency automatically');
+        }
+
         // Remove or comment out pkuseg on Windows (requires MSVC compiler)
         if (process.platform === 'win32') {
             logger.info('Removing pkuseg dependency on Windows (requires MSVC compiler)...');
@@ -897,18 +910,31 @@ try {
                 ''  // Remove the line entirely
             );
         }
-        
+
         fs.writeFileSync(pyprojectPath, pyprojectContent, 'utf8');
         logger.success('Chatterbox dependencies updated for compatibility');
     } else {
         logger.warning('pyproject.toml not found in chatterbox directory');
     }
-    
+
     // First ensure numpy is installed (required for pkuseg build dependency)
     logger.progress('Installing numpy (required for chatterbox dependencies)');
     const numpyCmd = `uv pip install --python ${VENV_DIR} numpy`;
     execSync(numpyCmd, { stdio: 'inherit' });
-    
+
+
+    // Ensure Poetry build backend is available for dependencies using poetry.core (e.g., russian-text-stresser)
+    logger.progress('Ensuring Poetry build backend (poetry-core) is available');
+    try {
+        const poetryCoreCmd = `uv pip install --python ${VENV_DIR} poetry-core`;
+        logger.command(poetryCoreCmd);
+        execSync(poetryCoreCmd, { stdio: 'inherit' });
+        logger.success('poetry-core installed into the shared virtual environment');
+    } catch (poetryCoreError) {
+        logger.warning(`Failed to install poetry-core automatically: ${poetryCoreError.message}`);
+        logger.info('Dependencies that use the poetry.core build backend may fail to build without this.');
+    }
+
     // Install chatterbox from the local modified directory
     logger.progress('Installing chatterbox from local modified directory');
     // Don't use -e flag, we want it copied to site-packages
@@ -917,9 +943,32 @@ try {
     logger.info(`Installing chatterbox (will be installed to site-packages)`);
 
     const env = { ...process.env, UV_HTTP_TIMEOUT: '600' }; // 10 minutes for installation
-    execSync(installChatterboxCmd, { stdio: 'inherit', env });
-    logger.success('Chatterbox installation completed');
-    
+    try {
+        execSync(installChatterboxCmd, { stdio: 'inherit', env });
+        logger.success('Chatterbox installation completed');
+    } catch (installErr) {
+        const msg = String(installErr?.message || installErr);
+        logger.warning(`Chatterbox install failed: ${msg}`);
+        // If failure is due to Poetry backend missing, install both poetry-core and poetry, then retry once
+        const mayBePoetryBackend = /No module named 'poetry'|poetry\.core|poetry\.masonry|prepare_metadata_for_build_wheel/i.test(msg);
+        if (mayBePoetryBackend) {
+            try {
+                const poetryInstallCmd = `uv pip install --python ${VENV_DIR} poetry`;
+                logger.progress('Installing Poetry (full) for legacy Poetry build backends');
+                logger.command(poetryInstallCmd);
+                execSync(poetryInstallCmd, { stdio: 'inherit' });
+                // Retry install
+                logger.progress('Retrying chatterbox installation after installing Poetry');
+                execSync(installChatterboxCmd, { stdio: 'inherit', env });
+                logger.success('Chatterbox installation completed after installing Poetry');
+            } catch (retryErr) {
+                throw retryErr; // Re-throw to be handled by outer catch
+            }
+        } else {
+            throw installErr;
+        }
+    }
+
     // Clean up the temporary directory after installation
     logger.progress('Cleaning up temporary directory');
     try {
@@ -928,7 +977,7 @@ try {
     } catch (err) {
         logger.warning('Could not remove temporary directory');
     }
-    
+
     // Verify PyTorch versions are correct
     logger.progress('Verifying PyTorch compatibility after chatterbox installation');
     try {
