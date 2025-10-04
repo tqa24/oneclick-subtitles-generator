@@ -618,7 +618,8 @@ const NarrationResults = ({
             width="100%"
             itemCount={generationResults ? generationResults.length : 0}
             itemSize={getRowHeight} // Dynamic row heights based on content
-            overscanCount={5} // Number of items to render outside of the visible area
+            overscanCount={18} // Increase overscan to reduce blanking during fast scrolls
+            itemKey={(index, data) => (data.generationResults[index] && data.generationResults[index].subtitle_id) ?? index}
             itemData={{
               generationResults: generationResults || [],
               onRetry,
