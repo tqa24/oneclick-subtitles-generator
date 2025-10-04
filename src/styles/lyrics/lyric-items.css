@@ -241,6 +241,16 @@
   transition: transform var(--md-duration-medium2) var(--md-easing-emphasized);
 }
 
+/* Ensure icons use button text color for proper contrast in light/dark modes */
+.edit-lyric-btn svg,
+.delete-lyric-btn svg,
+.insert-lyric-button svg,
+.merge-lyrics-button svg,
+.arrow-button svg {
+  fill: currentColor;
+}
+
+
 .edit-lyric-btn:hover svg {
   transform: rotate(15deg);
 }
