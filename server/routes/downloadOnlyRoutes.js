@@ -255,14 +255,25 @@ router.get('/download-only-file/:videoId', (req, res) => {
   const { videoId } = req.params;
 
   try {
-    // Determine file extension based on videoId
-    const isAudio = videoId.includes('download_audio_');
-    const extension = isAudio ? 'mp3' : 'mp4';
-    const filename = `${videoId}.${extension}`;
-    const filePath = path.join(VIDEOS_DIR, filename);
+    // Determine file by existence: prefer mp3, then mp4
+    const mp3Path = path.join(VIDEOS_DIR, `${videoId}.mp3`);
+    const mp4Path = path.join(VIDEOS_DIR, `${videoId}.mp4`);
 
-    // Check if file exists
-    if (!fs.existsSync(filePath)) {
+    let filePath = null;
+    let filename = null;
+    let mimeType = null;
+
+    if (fs.existsSync(mp3Path)) {
+      filePath = mp3Path;
+      filename = `${videoId}.mp3`;
+      mimeType = 'audio/mpeg';
+    } else if (fs.existsSync(mp4Path)) {
+      filePath = mp4Path;
+      filename = `${videoId}.mp4`;
+      mimeType = 'video/mp4';
+    }
+
+    if (!filePath) {
       return res.status(404).json({
         success: false,
         error: 'File not found'
@@ -271,8 +282,6 @@ router.get('/download-only-file/:videoId', (req, res) => {
 
     // Set headers for file download
     const stats = fs.statSync(filePath);
-    const mimeType = isAudio ? 'audio/mpeg' : 'video/mp4';
-
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Length', stats.size);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
