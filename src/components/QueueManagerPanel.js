@@ -663,7 +663,7 @@ const QueueManagerPanel = ({
                     // VIDEO BASICS (order: res, fps, duration, quality)
                     if (info?.width && info?.height) {
                       videoBasics.push(
-                        <span key="res" className="preview-badge video" title="Resolution">
+                        <span key="res" className="preview-badge video" title={t('videoRendering.resolutionLabel','Resolution')}>
                           {info.width}×{info.height}
                           {getAspectRatio(info.width, info.height) ? ` (${getAspectRatio(info.width, info.height)})` : ''}
                         </span>
@@ -671,31 +671,31 @@ const QueueManagerPanel = ({
                     }
                     if (info?.fps) {
                       videoBasics.push(
-                        <span key="fps" className="preview-badge video" title="Frame rate">{info.fps} fps</span>
+                        <span key="fps" className="preview-badge video" title={t('videoRendering.frameRateLabel','Frame rate')}>{info.fps} fps</span>
                       );
                     }
                     if (typeof previewDuration === 'number' && !isNaN(previewDuration)) {
                       videoBasics.push(
-                        <span key="dur" className="preview-badge video" title="Duration">{formatDuration(previewDuration, 'hms')}</span>
+                        <span key="dur" className="preview-badge video" title={t('videoRendering.durationLabel','Duration')}>{formatDuration(previewDuration, 'hms')}</span>
                       );
                     }
                     if (info?.quality || (info?.height && !info?.quality)) {
                       videoBasics.push(
-                        <span key="quality" className="preview-badge video" title="Quality">{info.quality || heightToQuality(info.height)}</span>
+                        <span key="quality" className="preview-badge video" title={t('videoRendering.qualityLabel','Quality')}>{info.quality || heightToQuality(info.height)}</span>
                       );
                     }
 
                     // FILE (then)
                     if (previewExtra?.size) {
                       fileBadges.push(
-                        <span key="size" className="preview-badge file" title="File size">{formatBytes(previewExtra.size)}</span>
+                        <span key="size" className="preview-badge file" title={t('videoRendering.fileSizeLabel','File size')}>{formatBytes(previewExtra.size)}</span>
                       );
                     }
                     if (previewExtra?.createdAt) {
                       const d = new Date(previewExtra.createdAt);
                       if (!isNaN(d.getTime())) {
                         fileBadges.push(
-                          <span key="created" className="preview-badge file" title="Created at">{d.toLocaleString()}</span>
+                          <span key="created" className="preview-badge file" title={t('videoRendering.createdAtLabel','Created at')}>{d.toLocaleString()}</span>
                         );
                       }
                     }
@@ -703,40 +703,40 @@ const QueueManagerPanel = ({
                     // VIDEO CODECS
                     if (info?.codec) {
                       videoCodecs.push(
-                        <span key="vcodec" className="preview-badge video" title="Video codec">{info.codec}</span>
+                        <span key="vcodec" className="preview-badge video" title={t('videoRendering.videoCodecLabel','Video codec')}>{info.codec}</span>
                       );
                     }
                     if (info?.bit_rate) {
                       videoCodecs.push(
-                        <span key="vbitrate" className="preview-badge video" title="Video bitrate">{Math.round(info.bit_rate / 1000)} kbps</span>
+                        <span key="vbitrate" className="preview-badge video" title={t('videoRendering.videoBitrateLabel','Video bitrate')}>{Math.round(info.bit_rate / 1000)} kbps</span>
                       );
                     } else if (previewExtra?.size && typeof previewDuration === 'number' && previewDuration > 0) {
                       const kbps = Math.round((previewExtra.size * 8) / previewDuration / 1000);
                       videoCodecs.push(
-                        <span key="est-bitrate" className="preview-badge video" title="Estimated bitrate (from size/duration)">{kbps} kbps</span>
+                        <span key="est-bitrate" className="preview-badge video" title={t('videoRendering.estimatedBitrateLabel','Estimated bitrate')}>{kbps} kbps</span>
                       );
                     }
 
                     // AUDIO
                     if (info?.audio_codec) {
                       audioBadges.push(
-                        <span key="acodec" className="preview-badge audio" title="Audio codec">{info.audio_codec}</span>
+                        <span key="acodec" className="preview-badge audio" title={t('videoRendering.audioCodecLabel','Audio codec')}>{info.audio_codec}</span>
                       );
                     }
                     if (Number.isFinite(info?.audio_channels)) {
                       audioBadges.push(
-                        <span key="achannels" className="preview-badge audio" title="Audio channels">{info.audio_channels} ch{info.audio_channel_layout ? ` (${info.audio_channel_layout})` : ''}</span>
+                        <span key="achannels" className="preview-badge audio" title={t('videoRendering.audioChannelsLabel','Audio channels')}>{info.audio_channels} ch{info.audio_channel_layout ? ` (${info.audio_channel_layout})` : ''}</span>
                       );
                     }
                     if (Number.isFinite(info?.audio_sample_rate)) {
                       const khz = Math.round((info.audio_sample_rate / 1000) * 10) / 10;
                       audioBadges.push(
-                        <span key="asamplerate" className="preview-badge audio" title="Audio sample rate">{khz} kHz</span>
+                        <span key="asamplerate" className="preview-badge audio" title={t('videoRendering.audioSampleRateLabel','Audio sample rate')}>{khz} kHz</span>
                       );
                     }
                     if (Number.isFinite(info?.audio_bit_rate)) {
                       audioBadges.push(
-                        <span key="abitrate" className="preview-badge audio" title="Audio bitrate">{Math.round(info.audio_bit_rate / 1000)} kbps</span>
+                        <span key="abitrate" className="preview-badge audio" title={t('videoRendering.audioBitrateLabel','Audio bitrate')}>{Math.round(info.audio_bit_rate / 1000)} kbps</span>
                       );
                     }
 
@@ -745,7 +745,7 @@ const QueueManagerPanel = ({
                       const extMatch = previewUrl.toLowerCase().match(/\.([a-z0-9]+)(?:\?|$)/);
                       if (extMatch && extMatch[1]) {
                         fileBadges.push(
-                          <span key="container" className="preview-badge file" title="Container">{extMatch[1].toUpperCase()}</span>
+                          <span key="container" className="preview-badge file" title={t('videoRendering.containerLabel','Container')}>{extMatch[1].toUpperCase()}</span>
                         );
                       }
                     }

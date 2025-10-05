@@ -179,5 +179,20 @@
   "solidCanvas": "Solid",
   "completedIn": "Completed in {{time}}",
   "downloadVideo": "Download video",
-  "preview": "Preview"
+  "preview": "Preview",
+
+  "resolutionLabel": "Resolution",
+  "frameRateLabel": "Frame rate",
+  "durationLabel": "Duration",
+  "qualityLabel": "Quality",
+  "fileSizeLabel": "File size",
+  "createdAtLabel": "Created at",
+  "videoCodecLabel": "Video codec",
+  "videoBitrateLabel": "Video bitrate",
+  "estimatedBitrateLabel": "Estimated bitrate",
+  "audioCodecLabel": "Audio codec",
+  "audioChannelsLabel": "Audio channels",
+  "audioSampleRateLabel": "Audio sample rate",
+  "audioBitrateLabel": "Audio bitrate",
+  "containerLabel": "Container"
 }

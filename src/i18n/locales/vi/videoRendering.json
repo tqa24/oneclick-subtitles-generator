@@ -257,5 +257,20 @@
   "solidCanvas": "Đơn sắc",
   "completedIn": "Hoàn thành trong {{time}}",
   "downloadVideo": "Tải video",
-  "preview": "Xem trước"
+  "preview": "Xem trước",
+
+  "resolutionLabel": "Độ phân giải",
+  "frameRateLabel": "Tốc độ khung hình",
+  "durationLabel": "Thời lượng",
+  "qualityLabel": "Chất lượng",
+  "fileSizeLabel": "Kích thước tệp",
+  "createdAtLabel": "Ngày tạo",
+  "videoCodecLabel": "Codec video",
+  "videoBitrateLabel": "Bitrate video",
+  "estimatedBitrateLabel": "Bitrate ước tính",
+  "audioCodecLabel": "Codec âm thanh",
+  "audioChannelsLabel": "Kênh âm thanh",
+  "audioSampleRateLabel": "Tần số mẫu âm thanh",
+  "audioBitrateLabel": "Bitrate âm thanh",
+  "containerLabel": "Định dạng"
 }
