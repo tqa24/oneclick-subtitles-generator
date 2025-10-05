@@ -45,9 +45,10 @@
   font-size: 0.95rem;
 }
 
-/* Panel Content */
-.panel-content {
+/* Panel Content (scoped to queue manager) */
+.queue-manager-panel .panel-content {
   padding: 0.5rem;
+  max-height: 500px;
 }
 
 /* Header Button */
@@ -658,7 +659,7 @@
     padding: 0.875rem 1rem;
   }
 
-  .panel-content {
+  .queue-manager-panel .panel-content {
     padding: 0.875rem;
   }
 

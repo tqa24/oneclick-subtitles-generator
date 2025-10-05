@@ -16,7 +16,6 @@
   overflow-x: hidden;
   background: var(--md-surface-1);
   box-sizing: border-box;
-  max-height: 500px;
 }
 
 /* Custom scrollbar */
