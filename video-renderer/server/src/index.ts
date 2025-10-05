@@ -389,11 +389,11 @@ app.post('/render', async (req, res) => {
       if (canCropInFfmpeg && crop) vfParts.push(`crop=${crop.w}:${crop.h}:${crop.x}:${crop.y}`);
       const frameExtractionArgs = ['-i', sourceVideoPath, '-vf', vfParts.join(','), '-compression_level', '1', path.join(framesDir, '%06d.png')];
       await runFfmpeg(frameExtractionArgs, renderId, 'Frame Extraction', durationInFrames, (p) => {
-        updateStatus({ progress: p * 0.4 }); // Extraction is ~40% of the work
+        updateStatus({ progress: p * 0.08 }); // Map frame extraction to 0%–8%
       });
 
       // 2. Extract Audio
-      updateStatus({ phase: 'Extracting audio track', progress: 0.4 });
+      updateStatus({ phase: 'Extracting audio track', progress: 0.08 });
       const audioExtractionArgs = ['-i', sourceVideoPath, '-vn', '-c:a', 'aac', '-b:a', '256k', extractedAudioFile];
       await runFfmpeg(audioExtractionArgs, renderId, 'Audio Extraction', durationInFrames, () => {}); // No frame progress for audio
       finalAudioPath = extractedAudioFile;
@@ -401,7 +401,7 @@ app.post('/render', async (req, res) => {
       // Update props for Remotion to use the extracted frames
       compositionProps.framesPathUrl = `http://localhost:${port}/temp/${path.basename(tempDir)}/frames`;
       app.use(`/temp/${path.basename(tempDir)}`, express.static(tempDir)); // Serve the temp dir
-      updateStatus({ progress: 0.5, status: 'rendering', phase: 'Preparing Remotion render' });
+      updateStatus({ progress: 0.1, status: 'rendering', phase: 'Preparing Remotion render' });
 
     } else {
       // --- STANDARD AUDIO-ONLY PIPELINE ---
@@ -430,8 +430,8 @@ app.post('/render', async (req, res) => {
       crf: 18,
       audioBitrate: '256k',
       onProgress: ({ progress }) => {
-        // This progress is for the Remotion part, which is the latter 50% of the total job
-        updateStatus({ progress: 0.5 + progress * 0.5 });
+        // This progress is for the Remotion part, which is now the latter 90% of the total job
+        updateStatus({ progress: 0.1 + progress * 0.9 });
       },
       cancelSignal,
     });

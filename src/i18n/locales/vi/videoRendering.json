@@ -52,7 +52,7 @@
   "noSubtitles": "Không có phụ đề khả dụng",
   "result": "Video Đã render",
   "videoNotSupported": "Trình duyệt của bạn không hỗ trợ thẻ video.",
-  "download": "Tải xuống Video",
+  "download": "Tải Video",
   "subtitleCustomization": "Tùy chỉnh Phụ đề",
   "videoPreview": "Xem trước Video",
   "renderQueue": "Hàng đợi Render",
@@ -252,8 +252,9 @@
   "blurredVideo": "Video làm mờ",
   "canvasColor": "Màu nền",
   "blurIntensity": "Làm mờ",
-  "applyCrop": "Áp dụng"
-,
+  "applyCrop": "Áp dụng",
   "free": "Tự do",
-  "solidCanvas": "Đơn sắc"
+  "solidCanvas": "Đơn sắc",
+  "completedIn": "Hoàn thành trong {{time}}",
+  "downloadVideo": "Tải video"
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import WavyProgressIndicator from './common/WavyProgressIndicator';
+import { formatTime as formatDuration } from '../utils/timeFormatter';
 import '../styles/QueueManagerPanel.css';
 
 const QueueManagerPanel = ({
@@ -396,17 +397,23 @@ const QueueManagerPanel = ({
                   {item.status === 'completed' && item.outputPath && (
                     <div className="completed-section">
                       <div className="output-info">
+                        {/* Success check icon instead of download icon */}
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                          <polyline points="7 10 12 15 17 10"></polyline>
-                          <line x1="12" y1="15" x2="12" y2="3"></line>
+                          <polyline points="20 6 9 17 4 12"></polyline>
                         </svg>
                         <span>{t('videoRendering.readyForDownload', 'Ready for download')}</span>
                       </div>
                       <button
                         onClick={() => handleDownloadVideo(item.outputPath, item)}
-                        className="btn-base btn-success btn-compact download-btn-success"
+                        className="download-btn-success"
+                        title={t('videoRendering.downloadVideo', 'Download video')}
                       >
+                        {/* Download icon inside the button */}
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                          <polyline points="7 10 12 15 17 10"></polyline>
+                          <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
                         {t('videoRendering.download', 'Download')}
                       </button>
                     </div>
@@ -414,30 +421,45 @@ const QueueManagerPanel = ({
 
                   {/* Item Actions */}
                   <div className="item-actions">
-                    {effectiveStatus === 'processing' && onCancelItem && (
-                      <button
-                        className="cancel-btn"
-                        onClick={() => handleLocalCancel(item)}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="6" y="6" width="12" height="12"></rect>
+                    {/* Left side: render time when completed */}
+                    {item.status === 'completed' && item.startedAt && item.completedAt && (
+                      <div className="render-time">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <path d="M12 6v6l4 2"></path>
                         </svg>
-                        {t('videoRendering.cancel', 'Cancel')}
-                      </button>
+                        <span>
+                          {t('videoRendering.completedIn', 'Completed in {{time}}', { time: formatDuration((item.completedAt - item.startedAt) / 1000, 'hms') })}
+                        </span>
+                      </div>
                     )}
 
-                    {effectiveStatus !== 'processing' && (
-                      <button
-                        className="remove-btn"
-                        onClick={() => onRemoveItem(item.id)}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="3 6 5 6 21 6"></polyline>
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                        </svg>
-                        {t('videoRendering.remove', 'Remove')}
-                      </button>
-                    )}
+                    <div className="item-actions-right">
+                      {effectiveStatus === 'processing' && onCancelItem && (
+                        <button
+                          className="cancel-btn"
+                          onClick={() => handleLocalCancel(item)}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="6" y="6" width="12" height="12"></rect>
+                          </svg>
+                          {t('videoRendering.cancel', 'Cancel')}
+                        </button>
+                      )}
+
+                      {effectiveStatus !== 'processing' && (
+                        <button
+                          className="remove-btn"
+                          onClick={() => onRemoveItem(item.id)}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                          </svg>
+                          {t('videoRendering.remove', 'Remove')}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );

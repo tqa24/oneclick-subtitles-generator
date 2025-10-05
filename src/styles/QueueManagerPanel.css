@@ -366,12 +366,58 @@
 }
 
 /* Download button styles moved to centralized button system in components/buttons.css */
+/* Download success button - prominent */
+.download-btn-success {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  background: var(--md-success);
+  color: var(--md-on-success);
+  border: none;
+  border-radius: 32px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.download-btn-success:hover {
+  background: var(--md-success-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.download-btn-success:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
 
 /* Item Actions */
 .item-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between; /* render time on the left, actions on the right */
+  align-items: center;
   gap: 0.5rem;
+}
+
+.item-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.render-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.render-time svg {
+  color: var(--md-secondary);
 }
 
 .remove-btn,

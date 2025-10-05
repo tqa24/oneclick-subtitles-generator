@@ -52,7 +52,7 @@
   "noSubtitles": "사용 가능한 자막이 없습니다",
   "result": "렌더링된 비디오",
   "videoNotSupported": "브라우저가 비디오 태그를 지원하지 않습니다.",
-  "download": "비디오 다운로드",
+  "download": "다운로드",
   "subtitleCustomization": "자막 커스터마이징",
   "videoPreview": "비디오 미리보기",
   "renderQueue": "렌더링 대기열",
@@ -254,5 +254,7 @@
   "blurIntensity": "블러",
   "applyCrop": "적용",
   "free": "자유",
-  "solidCanvas": "단색"
+  "solidCanvas": "단색",
+  "completedIn": "완료 시간 {{time}}",
+  "downloadVideo": "다운로드"
 }

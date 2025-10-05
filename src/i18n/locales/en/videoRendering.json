@@ -52,7 +52,7 @@
   "noSubtitles": "No subtitles available",
   "result": "Rendered Video",
   "videoNotSupported": "Your browser does not support the video tag.",
-  "download": "Download Video",
+  "download": "Download",
   "subtitleCustomization": "Subtitle Customization",
   "videoPreview": "Video Preview",
   "renderQueue": "Render Queue",
@@ -176,5 +176,7 @@
   "blurIntensity": "Blur",
   "applyCrop": "Apply",
   "free": "Free",
-  "solidCanvas": "Solid"
+  "solidCanvas": "Solid",
+  "completedIn": "Completed in {{time}}",
+  "downloadVideo": "Download"
 }
