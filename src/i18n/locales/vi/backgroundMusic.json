@@ -1,0 +1,14 @@
+{
+  "title": "Trình tạo nhạc nền",
+  "statusNoApiKey": "Chưa thiết lập khóa API Gemini. Vui lòng thiết lập tại Cài đặt > API Keys.",
+  "statusStarting": "Đang bắt đầu ghi...",
+  "statusStopping": "Đang dừng ghi...",
+  "statusRecording": "Đang ghi...",
+  "statusRecordingStopped": "Đã dừng ghi.",
+  "statusRecordingError": "Lỗi ghi âm: {{error}}",
+  "helperMessage": "Cấu hình prompt trong ứng dụng nhúng để tạo nhạc nền theo thời gian thực.",
+  "startRecording": "Bắt đầu ghi",
+  "stopRecording": "Dừng ghi",
+  "downloadRecording": "Tải xuống bản ghi"
+}
+
