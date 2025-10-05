@@ -233,14 +233,17 @@ const DownloadOnlyModal = ({
             setIsDownloading(false);
 
             if (data.status === 'completed') {
-              // Trigger download using the download endpoint
-              const downloadUrl = `http://localhost:3031/api/download-only-file/${videoId}`;
-              const a = document.createElement('a');
-              a.href = downloadUrl;
-              a.download = `download.${selectedType === 'video' ? 'mp4' : 'mp3'}`;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
+              // Add a short delay to prevent race conditions where the file isn't fully written yet
+              setTimeout(() => {
+                const downloadUrl = `http://localhost:3031/api/download-only-file/${videoId}`;
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                // The server will determine the correct extension, so we can provide a generic name
+                a.download = `download_${videoId}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+              }, 500); // 500ms delay
             }
 
             // Close modal on any terminal state

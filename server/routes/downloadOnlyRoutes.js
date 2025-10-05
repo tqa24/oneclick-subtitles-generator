@@ -255,22 +255,27 @@ router.get('/download-only-file/:videoId', (req, res) => {
   const { videoId } = req.params;
 
   try {
-    // Determine file by existence: prefer mp3, then mp4
-    const mp3Path = path.join(VIDEOS_DIR, `${videoId}.mp3`);
-    const mp4Path = path.join(VIDEOS_DIR, `${videoId}.mp4`);
+    // Determine file by existence; support multiple audio/video extensions produced by yt-dlp
+    const candidates = [
+      { ext: 'mp3', mime: 'audio/mpeg' },
+      { ext: 'm4a', mime: 'audio/mp4' },
+      { ext: 'webm', mime: 'audio/webm' },
+      { ext: 'opus', mime: 'audio/ogg' },
+      { ext: 'mp4', mime: 'video/mp4' }
+    ];
 
     let filePath = null;
     let filename = null;
     let mimeType = null;
 
-    if (fs.existsSync(mp3Path)) {
-      filePath = mp3Path;
-      filename = `${videoId}.mp3`;
-      mimeType = 'audio/mpeg';
-    } else if (fs.existsSync(mp4Path)) {
-      filePath = mp4Path;
-      filename = `${videoId}.mp4`;
-      mimeType = 'video/mp4';
+    for (const c of candidates) {
+      const p = path.join(VIDEOS_DIR, `${videoId}.${c.ext}`);
+      if (fs.existsSync(p)) {
+        filePath = p;
+        filename = `${videoId}.${c.ext}`;
+        mimeType = c.mime;
+        break;
+      }
     }
 
     if (!filePath) {
