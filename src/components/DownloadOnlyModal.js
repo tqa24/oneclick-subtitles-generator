@@ -38,8 +38,38 @@ const DownloadOnlyModal = ({
   // Ref for WavyProgressIndicator animations
   const wavyProgressRef = useRef(null);
 
-  // Detect current theme (light/dark)
-  const isDarkTheme = (typeof document !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark');
+  // Robust theme detection: check data-theme and 'dark' class on html/body
+  const detectDarkTheme = () => {
+    if (typeof document === 'undefined') return false;
+    const root = document.documentElement;
+    const body = document.body;
+    const attr = (root.getAttribute('data-theme') || body?.getAttribute('data-theme') || '').toLowerCase();
+    if (attr === 'dark') return true;
+    if (root.classList.contains('dark') || body?.classList.contains('dark')) return true;
+    return false;
+  };
+  const isDarkTheme = detectDarkTheme();
+
+  // Get CSS variable from :root
+  const getCssVar = (name, fallback) => {
+    if (typeof window === 'undefined') return fallback;
+    const styles = getComputedStyle(document.documentElement);
+    const val = styles.getPropertyValue(name).trim();
+    return val || fallback;
+  };
+  const hexToRgba = (hex, alpha = 1) => {
+    if (!hex) return `rgba(255,255,255,${alpha})`;
+    let h = hex.replace('#', '');
+    if (h.length === 3) h = h.split('').map(c => c + c).join('');
+    const r = parseInt(h.substring(0, 2), 16);
+    const g = parseInt(h.substring(2, 4), 16);
+    const b = parseInt(h.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
+  // Colors for spinner and wavy progress (invert variants per theme)
+  const waveColor = isDarkTheme ? '#FFFFFF' : getCssVar('--md-primary', '#5D5FEF');
+  const waveTrackColor = isDarkTheme ? 'rgba(255,255,255,0.35)' : hexToRgba(waveColor, 0.35);
 
   // Handle entrance/disappear animations for WavyProgressIndicator
   useEffect(() => {
@@ -429,7 +459,7 @@ const DownloadOnlyModal = ({
                   showContainer={false}
                   size={16}
                   className="buttons-processing-loading"
-                  color={isDarkTheme ? '#324574' : '#FFFFFF'}
+                  color={waveColor}
                 />
                 <div className="processing-wavy" style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
                   <WavyProgressIndicator
@@ -440,8 +470,9 @@ const DownloadOnlyModal = ({
                     waveSpeed={1.2}
                     width={140}
                     autoAnimateEntrance={false}
-                    color={isDarkTheme ? '#FFFFFF' : '#FFFFFF'}
-                    trackColor={isDarkTheme ? '#404659' : 'rgba(255,255,255,0.35)'}
+                    color={waveColor}
+                    trackColor={waveTrackColor}
+                    stopIndicatorColor={waveColor}
                   />
                   <span className="processing-text" style={{ flexShrink: 0, whiteSpace: 'nowrap', marginLeft: '8px' }}>
                     {t('download.downloadOnly.downloading', 'Downloading...')}
