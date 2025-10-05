@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 import { css, html, LitElement } from 'lit';
-import { customElement, property, query } from 'lit/decorators.js';
+import { customElement, property, query, state } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 
 import './WeightKnob';
@@ -48,13 +48,44 @@ export class PromptController extends LitElement {
         visibility: visible;
       }
     }
+
+    /* New wrapper for text display and editing */
+    .text-wrapper {
+      position: relative;
+      width: 17vmin;
+      height: 6vmin;
+      margin-top: -5vmin; /* Pull arch closer to the knob */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* SVG for displaying curved text */
+    #text-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    #text-svg text {
+      font-weight: 500;
+      font-size: 2.2vmin; /* Increased font size */
+      fill: #fff;
+      text-anchor: middle;
+      -webkit-font-smoothing: antialiased;
+      text-shadow: 0 0 0.8vmin #000, 0 0 0.2vmin #000;
+    }
+    
+    /* The editable span, now positioned for in-place editing */
     #text {
       font-weight: 500;
-      font-size: 1.8vmin;
+      font-size: 2.2vmin; /* Match SVG font size */
+      text-shadow: 0 0 0.8vmin #000, 0 0 0.2vmin #000;
       max-width: 17vmin;
       min-width: 2vmin;
       padding: 0.1em 0.3em;
-      margin-top: 0.5vmin;
       flex-shrink: 0;
       border-radius: 0.25vmin;
       text-align: center;
@@ -65,22 +96,42 @@ export class PromptController extends LitElement {
       -webkit-font-smoothing: antialiased;
       background: #000;
       color: #fff;
+      position: absolute; /* Position over the SVG space */
+      visibility: hidden; /* Hidden by default */
+      z-index: 2; /* Ensure it's on top when visible */
+      
       &:not(:focus) {
         text-overflow: ellipsis;
       }
     }
+    
+    /* Logic to show/hide elements based on editing state */
+    .is-editing #text-svg {
+      visibility: hidden;
+    }
+    .is-editing #text {
+      visibility: visible;
+    }
+
+    /* Filtered state now applies to the wrapper */
     :host([filtered]) {
       weight-knob { 
         opacity: 0.5;
       }
-      #text {
+      .text-wrapper {
         background: #da2000;
+        border-radius: 0.25vmin;
         z-index: 1;
       }
-    }
-    @media only screen and (max-width: 600px) {
+      /* Make input background transparent to see wrapper color */
       #text {
-        font-size: 2.3vmin;
+        background: transparent;
+      }
+    }
+
+    @media only screen and (max-width: 600px) {
+      #text, #text-svg text {
+        font-size: 2.8vmin; /* Increased responsive font size */
       }
       weight-knob {
         width: 60%;
@@ -101,12 +152,14 @@ export class PromptController extends LitElement {
   @property({ type: Boolean }) showCC = false;
 
   @query('weight-knob') private weightInput!: WeightKnob;
-  @query('#text') private textInput!: HTMLInputElement;
+  @query('#text') private textInput!: HTMLSpanElement;
 
   @property({ type: Object })
   midiDispatcher: MidiDispatcher | null = null;
 
   @property({ type: Number }) audioLevel = 0;
+  
+  @state() private isEditing = false;
 
   private lastValidText!: string;
 
@@ -128,16 +181,12 @@ export class PromptController extends LitElement {
   }
 
   override firstUpdated() {
-    // contenteditable is applied to textInput so we can "shrink-wrap" to text width
-    // It's set here and not render() because Lit doesn't believe it's a valid attribute.
     this.textInput.setAttribute('contenteditable', 'plaintext-only');
-
-    // contenteditable will do weird things if this is part of the template.
     this.textInput.textContent = this.text;
     this.lastValidText = this.text;
   }
 
-  update(changedProperties: Map<string, unknown>) {
+  override update(changedProperties: Map<string, unknown>) {
     if (changedProperties.has('showCC') && !this.showCC) {
       this.learnMode = false;
     }
@@ -178,7 +227,8 @@ export class PromptController extends LitElement {
     this.textInput.textContent = this.lastValidText;
   }
 
-  private async updateText() {
+  private async stopEditing() {
+    this.isEditing = false;
     const newText = this.textInput.textContent?.trim();
     if (!newText) {
       this.resetText();
@@ -187,18 +237,26 @@ export class PromptController extends LitElement {
       this.lastValidText = newText;
     }
     this.dispatchPromptChange();
-    // Show the prompt from the beginning if it's cropped
     this.textInput.scrollLeft = 0;
   }
 
   private onFocus() {
-    // .select() for contenteditable doesn't work.
     const selection = window.getSelection();
     if (!selection) return;
     const range = document.createRange();
     range.selectNodeContents(this.textInput);
     selection.removeAllRanges();
     selection.addRange(range);
+  }
+
+  private startEditing() {
+    if (this.isEditing) return;
+    this.isEditing = true;
+    // Wait for the DOM to update, then focus the input and select text
+    this.updateComplete.then(() => {
+        this.textInput.focus();
+        this.onFocus();
+    });
   }
 
   private updateWeight() {
@@ -211,24 +269,47 @@ export class PromptController extends LitElement {
   }
 
   override render() {
-    const classes = classMap({
+    const promptClasses = classMap({
       'prompt': true,
       'learn-mode': this.learnMode,
       'show-cc': this.showCC,
     });
-    return html`<div class=${classes}>
+    
+    const textWrapperClasses = classMap({
+        'text-wrapper': true,
+        'is-editing': this.isEditing,
+    });
+
+    return html`<div class=${promptClasses}>
       <weight-knob
         id="weight"
         value=${this.weight}
         color=${this.filtered ? '#888' : this.color}
         audioLevel=${this.filtered ? 0 : this.audioLevel}
         @input=${this.updateWeight}></weight-knob>
-      <span
-        id="text"
-        spellcheck="false"
-        @focus=${this.onFocus}
-        @keydown=${this.onKeyDown}
-        @blur=${this.updateText}></span>
+      
+      <div class=${textWrapperClasses} @click=${this.startEditing}>
+        <svg id="text-svg" viewBox="0 0 100 25">
+          <path
+            id="text-arc-path"
+            d="M 5,20 A 50,40 0 0,0 95,20"
+            fill="none"
+            stroke="none"
+          ></path>
+          <text>
+            <textPath href="#text-arc-path" startOffset="50%">
+              ${this.text}
+            </textPath>
+          </text>
+        </svg>
+        <span
+          id="text"
+          spellcheck="false"
+          @focus=${this.onFocus}
+          @keydown=${this.onKeyDown}
+          @blur=${this.stopEditing}></span>
+      </div>
+
       <div id="midi" @click=${this.toggleLearnMode}>
         ${this.learnMode ? 'Learn' : `CC:${this.cc}`}
       </div>
@@ -240,4 +321,4 @@ declare global {
   interface HTMLElementTagNameMap {
     'prompt-controller': PromptController;
   }
-} 
+}
