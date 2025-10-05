@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatTime } from '../../utils/timeFormatter';
+import CustomScrollbarTextarea from '../common/CustomScrollbarTextarea.jsx';
 
 // Continuous progress indicator component
 const ContinuousProgressIndicator = ({ lyric, isCurrentLyric, currentTime }) => {
@@ -202,6 +203,8 @@ const LyricItem = ({
 
   const handleEditClick = (e) => {
     e.stopPropagation();
+    // Ensure this lyric becomes the focused/current one before editing
+    onLyricClick(lyric.start);
     setIsEditing(true);
     setEditText(lyric.text);
     setTimeout(() => textInputRef.current?.focus(), 0);
@@ -263,7 +266,7 @@ const LyricItem = ({
     <div className={`lyric-item-container ${(showInsertArrows || showMergeArrows || isArrowHover) ? 'arrow-hover' : ''}`}>
       <div
         data-lyric-index={index}
-        className={`lyric-item ${isCurrentLyric ? 'current' : ''} ${(showInsertArrows || showMergeArrows || isArrowHover) ? 'arrow-hover' : ''}`}
+        className={`lyric-item ${isCurrentLyric ? 'current' : ''} ${(showInsertArrows || showMergeArrows || isArrowHover) ? 'arrow-hover' : ''} ${isEditing ? 'editing-active' : ''}`}
         onClick={() => {
           if (Date.now() - getLastDragEnd() < 100) {
             return;
@@ -396,10 +399,11 @@ const LyricItem = ({
           )}
 
           <div
-            className="lyric-text"
+            className={`lyric-text ${isEditing ? 'editing' : ''}`}
             onDoubleClick={(e) => {
               e.stopPropagation();
               if (allowEditing) {
+                onLyricClick(lyric.start);
                 setIsEditing(true);
                 setEditText(lyric.text);
                 setTimeout(() => textInputRef.current?.focus(), 0);
@@ -407,15 +411,17 @@ const LyricItem = ({
             }}
           >
             {isEditing ? (
-              <input
+              <CustomScrollbarTextarea
                 ref={textInputRef}
-                type="text"
+                className="lyric-text-input"
+                containerClassName="lyric-text-input-container compact minimal"
                 value={editText}
                 onChange={(e) => setEditText(e.target.value)}
                 onBlur={handleTextSubmit}
                 onKeyDown={handleKeyPress}
-                className="lyric-text-input"
-                onClick={e => e.stopPropagation()}
+                rows={3}
+                onClick={(e) => e.stopPropagation()}
+                placeholder={t('lyrics.editPlaceholder', 'Edit lyric text')}
               />
             ) : (
               <span onClick={(e) => {
