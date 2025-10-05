@@ -358,3 +358,32 @@
 .lyric-item.current .progress-indicator {
   opacity: 1;
 }
+
+/* Add this to your styles/LyricsDisplay.css or related stylesheet */
+
+.lyric-item-container .lyric-text {
+  /* This is the key part for the new behavior */
+  max-height: 3.2em; /* (line-height * 2 lines). Adjust if your line-height is different. */
+  overflow-y: auto;   /* Show vertical scrollbar only when needed */
+  
+  /* You might need to ensure these properties are set for consistency */
+  line-height: 1.6em; /* Crucial for calculating max-height correctly */
+  padding-right: 4px; /* Add some padding so the scrollbar doesn't overlap text */
+  white-space: pre-wrap; /* Respects newlines and wraps text */
+  word-break: break-word; /* Prevents long words from overflowing */
+}
+
+/* Optional: Style the scrollbar for a better look */
+.lyric-item-container .lyric-text::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lyric-item-container .lyric-text::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.lyric-item-container .lyric-text::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  border: 1px solid transparent;
+}

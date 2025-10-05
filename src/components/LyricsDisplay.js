@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/LyricsDisplay.css';
 import TimelineVisualization from './lyrics/TimelineVisualization';
@@ -29,7 +29,7 @@ const downloadFile = (content, filename, type = 'text/plain') => {
   URL.revokeObjectURL(url);
 };
 
-// Virtualized row renderer for lyrics (deterministic height)
+// Virtualized row renderer for lyrics (simplified for deterministic height)
 const VirtualizedLyricRow = ({ index, style, data }) => {
   const {
     lyrics,
@@ -51,10 +51,12 @@ const VirtualizedLyricRow = ({ index, style, data }) => {
   const lyric = lyrics[index];
   const hasNextLyric = index < lyrics.length - 1;
 
+  // The complex height measurement logic has been removed.
+  // The layout is now controlled by getRowHeight and CSS.
   return (
     <div style={style}>
       <LyricItem
-        key={index}
+        key={index} // key is appropriate here within the mapping context of the parent
         lyric={lyric}
         index={index}
         isCurrentLyric={index === currentIndex}
@@ -99,6 +101,7 @@ const LyricsDisplay = ({
   const [panOffset, setPanOffset] = useState(0);
   const [centerTimelineAt, setCenterTimelineAt] = useState(null);
   const rowHeights = useRef({});
+  const listRef = useRef(null);
 
   const [txtContent, setTxtContent] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -175,15 +178,25 @@ const LyricsDisplay = ({
     return localStorage.getItem('lyrics_auto_scroll') !== 'false';
   });
 
-  // Function to calculate row height based on explicit line breaks only (stable)
+  // NEW: Simplified and deterministic row height calculation.
+  // We calculate height based on the number of newline characters (\n),
+  // but we cap it at a maximum of 2 lines. CSS will handle the rest.
   const getRowHeight = index => {
     if (rowHeights.current[index] !== undefined) {
       return rowHeights.current[index];
     }
     const lyric = matchedLyrics[index];
     if (!lyric) return 50; // Default height
-    const lineCount = Math.max(1, (lyric.text || '').split('\n').length);
-    const height = 50 + (lineCount - 1) * 20;
+
+    // Count explicit lines from '\n'
+    const lineCount = (lyric.text || '').split('\n').length;
+    // Cap the line count at 2 for height calculation purposes
+    const cappedLineCount = Math.min(lineCount, 2);
+
+    const baseHeight = 50; // Base height for a single-line item
+    const extraLineHeight = 20; // Additional height for the second line
+    const height = baseHeight + (cappedLineCount - 1) * extraLineHeight;
+
     rowHeights.current[index] = height;
     return height;
   };
@@ -196,9 +209,6 @@ const LyricsDisplay = ({
       listRef.current.resetAfterIndex(0);
     }
   }, [matchedLyrics]);
-
-  // No longer need to enforce minimum zoom when duration changes
-  // Users can freely zoom to any level
 
   // Listen for changes to the waveform settings in localStorage
   useEffect(() => {
@@ -250,8 +260,6 @@ const LyricsDisplay = ({
     };
   }, []);
 
-  // Gemini effects for the Download Center button have been removed to reduce lag
-
   const {
     lyrics,
     isSticky,
@@ -289,23 +297,9 @@ const LyricsDisplay = ({
   // Find current lyric index based on time
   const currentIndex = lyrics.findIndex((lyric, index) => {
     const nextLyric = lyrics[index + 1];
-    // If there's a next lyric, use the middle point between current lyric's end and next lyric's start
-    // Subtract 1ms from the midpoint to prevent flickering when subtitleA.end == subtitleB.start
-    // Otherwise, use the current lyric's end time
     return currentTime >= lyric.start &&
       (nextLyric ? currentTime < (lyric.end + (nextLyric.start - lyric.end) / 2) - 0.001 : currentTime <= lyric.end);
   });
-
-  // Reference to the virtualized list
-  const listRef = useRef(null);
-  const isScrollingRef = useRef(false);
-  const scrollAnimationRef = useRef(null);
-
-  // Use react-window's built-in scrollToItem for stability
-  const centerToItem = (targetIndex, align = 'center') => {
-    if (!listRef.current || targetIndex < 0) return;
-    listRef.current.scrollToItem(targetIndex, align);
-  };
 
   // Auto-scroll to the current lyric using react-window's scrollToItem (stable)
   useEffect(() => {
@@ -323,8 +317,6 @@ const LyricsDisplay = ({
       requestAnimationFrame(() => setCenterTimelineAt(null));
     }
   }, [seekTime]);
-
-
 
   // Generate comprehensive filename based on priority system
   const generateFilename = (source, namingInfo = {}) => {
