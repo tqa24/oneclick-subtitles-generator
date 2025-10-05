@@ -256,5 +256,6 @@
   "free": "Tự do",
   "solidCanvas": "Đơn sắc",
   "completedIn": "Hoàn thành trong {{time}}",
-  "downloadVideo": "Tải video"
+  "downloadVideo": "Tải video",
+  "preview": "Xem trước"
 }

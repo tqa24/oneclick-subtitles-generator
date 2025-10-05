@@ -256,5 +256,6 @@
   "free": "자유",
   "solidCanvas": "단색",
   "completedIn": "완료 시간 {{time}}",
-  "downloadVideo": "다운로드"
+  "downloadVideo": "비디오 다운로드",
+  "preview": "미리보기"
 }

@@ -178,5 +178,6 @@
   "free": "Free",
   "solidCanvas": "Solid",
   "completedIn": "Completed in {{time}}",
-  "downloadVideo": "Download"
+  "downloadVideo": "Download video",
+  "preview": "Preview"
 }

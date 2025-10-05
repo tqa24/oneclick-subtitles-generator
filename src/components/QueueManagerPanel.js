@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import WavyProgressIndicator from './common/WavyProgressIndicator';
+
 import { formatTime as formatDuration } from '../utils/timeFormatter';
 import '../styles/QueueManagerPanel.css';
 
@@ -13,6 +14,10 @@ const QueueManagerPanel = ({
   gridLayout = false
 }) => {
   const { t } = useTranslation();
+
+  // Preview modal state
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
 
   // Theme detection for WavyProgressIndicator colors
   const [theme, setTheme] = useState(() => {
@@ -224,6 +229,7 @@ const QueueManagerPanel = ({
   };
 
   return (
+    <>
     <div className={`queue-manager-panel ${gridLayout ? 'grid-layout' : ''}`}>
       <div className="panel-header">
         <div className="header-left">
@@ -396,19 +402,31 @@ const QueueManagerPanel = ({
                   {/* Completed Video Info */}
                   {item.status === 'completed' && item.outputPath && (
                     <div className="completed-section">
-                      <div className="output-info">
-                        {/* Success check icon instead of download icon */}
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                        <span>{t('videoRendering.readyForDownload', 'Ready for download')}</span>
-                      </div>
+                      <button
+                        type="button"
+                        className="preview-btn"
+                        onClick={() => { setPreviewUrl(item.outputPath); setPreviewOpen(true); }}
+                        title={t('videoRendering.preview', 'Preview')}
+                      >
+                        <div className="preview-thumb-wrap">
+                          <video
+                            className="preview-thumb"
+                            src={item.outputPath + '#t=0.1'}
+                            muted
+                            playsInline
+                            preload="metadata"
+                          />
+                        </div>
+                        <span className="preview-text">
+                          {t('videoRendering.preview', 'Preview')}
+                        </span>
+                      </button>
+
                       <button
                         onClick={() => handleDownloadVideo(item.outputPath, item)}
                         className="download-btn-success"
                         title={t('videoRendering.downloadVideo', 'Download video')}
                       >
-                        {/* Download icon inside the button */}
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '6px' }}>
                           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                           <polyline points="7 10 12 15 17 10"></polyline>
@@ -468,6 +486,32 @@ const QueueManagerPanel = ({
         )}
       </div>
     </div>
+      {previewOpen && (
+        <div className="preview-modal-overlay" onClick={() => setPreviewOpen(false)}>
+          <div className="preview-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="preview-modal-header">
+              <div className="preview-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                  <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                </svg>
+                <span>{t('videoRendering.preview', 'Preview')}</span>
+              </div>
+              <button className="preview-close-btn" onClick={() => setPreviewOpen(false)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div className="preview-modal-content">
+              <video src={previewUrl} controls style={{ width: '100%', height: 'auto', borderRadius: 12, maxHeight: '75vh' }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+    </>
   );
 };
 

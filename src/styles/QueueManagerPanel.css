@@ -394,6 +394,101 @@
 }
 
 
+/* Preview button in completed section */
+.preview-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.7rem;
+  background: var(--md-surface-3);
+  color: var(--text-primary);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preview-btn:hover {
+  background: var(--md-surface-4);
+  transform: translateY(-1px);
+}
+
+.preview-thumb-wrap {
+  width: 40px;
+  height: 24px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--md-outline-variant);
+}
+
+.preview-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+/* Preview Modal */
+.preview-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.preview-modal {
+  width: min(900px, 92vw);
+  max-height: 90vh; /* Keep within viewport so header stays visible */
+  background: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  display: flex; /* Make header fixed and content scrollable */
+  flex-direction: column;
+  overflow: hidden; /* Clip inner scroll area */
+}
+
+.preview-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--md-outline-variant);
+}
+
+.preview-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.preview-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+.preview-close-btn:hover {
+  background: var(--md-surface-3);
+  color: var(--text-primary);
+}
+
+.preview-modal-content {
+  padding: 1rem;
+  overflow-y: auto; /* Scroll content vertically like panel-content */
+  overflow-x: hidden; /* Hide horizontal scroll */
+  flex: 1 1 auto; /* Fill remaining space beneath header */
+}
+
 /* Item Actions */
 .item-actions {
   display: flex;
