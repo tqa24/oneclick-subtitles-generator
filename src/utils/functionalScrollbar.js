@@ -11,7 +11,9 @@ class FunctionalScrollbar {
     this.isDragging = false;
     this.dragStartY = 0;
     this.dragStartScrollTop = 0;
-    
+    this.isLyricContent = container.classList.contains('lyric-content');
+    this.fixedRightPosition = null; // Cache the right position for lyric content
+
     this.init();
   }
   
@@ -66,15 +68,15 @@ class FunctionalScrollbar {
   handleMouseDown(e) {
     e.preventDefault();
     e.stopPropagation();
-    
+
     this.isDragging = true;
     this.dragStartY = e.clientY;
     this.dragStartScrollTop = this.textarea.scrollTop;
-    
+
     // Add global mouse event listeners
     document.addEventListener('mousemove', this.handleMouseMove);
     document.addEventListener('mouseup', this.handleMouseUp);
-    
+
     // Add dragging class for visual feedback
     this.thumb.classList.add('dragging');
     document.body.style.userSelect = 'none';
@@ -86,19 +88,27 @@ class FunctionalScrollbar {
     e.preventDefault();
 
     const deltaY = e.clientY - this.dragStartY;
-    const containerHeight = this.container.clientHeight - 16;
     const { scrollHeight, clientHeight } = this.textarea;
     const maxScrollTop = scrollHeight - clientHeight;
 
+    // Use appropriate height for drag calculations
+    let dragHeight;
+    if (this.isLyricContent) {
+      dragHeight = clientHeight; // Use textarea height for lyric content
+    } else {
+      dragHeight = this.container.clientHeight - 16; // Use container height for others
+    }
+
     // Calculate scroll position based on thumb movement
-    const scrollRatio = deltaY / containerHeight;
+    const scrollRatio = dragHeight > 0 ? deltaY / dragHeight : 0;
     const newScrollTop = this.dragStartScrollTop + (scrollRatio * maxScrollTop);
 
     // Clamp scroll position
     const clampedScrollTop = Math.max(0, Math.min(newScrollTop, maxScrollTop));
     this.textarea.scrollTop = clampedScrollTop;
 
-    // Update thumb position immediately for real-time feedback
+    // ALWAYS delegate the visual update to the main function for consistency.
+    // This resolves the "flying" issue by using a single source of truth for positioning.
     this.updateThumbPosition(clampedScrollTop);
   }
 
@@ -123,24 +133,40 @@ class FunctionalScrollbar {
       return;
     }
 
-    // Calculate thumb position
-    const containerHeight = this.container.clientHeight - 16; // Account for padding
-    const thumbHeight = Math.max((clientHeight / scrollHeight) * containerHeight, 20);
-    const maxScrollTop = scrollHeight - clientHeight;
-    const scrollPercentage = maxScrollTop > 0 ? currentScrollTop / maxScrollTop : 0;
-    const maxThumbTop = containerHeight - thumbHeight;
-    const thumbTop = scrollPercentage * maxThumbTop + 8; // Add top padding
+    // For lyric items, position scrollbar relative to the lyric-text element
+    if (this.isLyricContent) {
+      // --- THIS IS THE FIX ---
+      // We no longer calculate `right`. CSS will handle it.
+      // We ONLY calculate `top` and `height`.
 
-    // Update thumb styles
-    this.thumb.style.height = `${thumbHeight}px`;
-    this.thumb.style.top = `${thumbTop}px`;
+      const containerRect = this.container.getBoundingClientRect();
+      const textareaRect = this.textarea.getBoundingClientRect();
+      const textareaTop = textareaRect.top - containerRect.top;
+      const thumbHeight = Math.max((clientHeight / scrollHeight) * clientHeight, 20);
+      const maxScrollTop = scrollHeight - clientHeight;
+      const scrollPercentage = maxScrollTop > 0 ? currentScrollTop / maxScrollTop : 0;
+      const maxThumbTop = clientHeight - thumbHeight;
+      const thumbTop = textareaTop + (scrollPercentage * maxThumbTop);
+
+      this.thumb.style.height = `${thumbHeight}px`;
+      this.thumb.style.top = `${thumbTop}px`;
+
+    } else {
+      // Default positioning for other elements (this logic was already fine)
+      const containerHeight = this.container.clientHeight - 16; // Account for padding
+      const thumbHeight = Math.max((clientHeight / scrollHeight) * containerHeight, 20);
+      const maxScrollTop = scrollHeight - clientHeight;
+      const scrollPercentage = maxScrollTop > 0 ? currentScrollTop / maxScrollTop : 0;
+      const maxThumbTop = containerHeight - thumbHeight;
+      const thumbTop = scrollPercentage * maxThumbTop + 8; // Add top padding
+
+      this.thumb.style.height = `${thumbHeight}px`;
+      this.thumb.style.top = `${thumbTop}px`;
+    }
+
     this.thumb.style.pointerEvents = 'auto';
-
-    // Show scrollbar when container or parent lyric-item is hovered/focused
-    const parentItem = this.container.closest ? this.container.closest('.lyric-item') : null;
-    const parentHovered = parentItem && parentItem.matches ? parentItem.matches(':hover') : false;
-    const isVisible = this.container.matches(':hover, :focus-within') || parentHovered || this.isDragging;
-    this.thumb.style.opacity = isVisible ? '1' : '0';
+    // Always show scrollbar when content is scrollable (no hover requirement)
+    this.thumb.style.opacity = '1';
   }
   
   handleMouseUp() {
@@ -217,9 +243,9 @@ class FunctionalScrollbar {
  * Initialize functional scrollbars for all custom scrollbar containers
  */
 export function initializeFunctionalScrollbars() {
-  // 1) Lyric items: anchor on row, scroll element is .lyric-text
-  const lyricItems = document.querySelectorAll('.lyric-item:not([data-fs-initialized])');
-  lyricItems.forEach((thumbContainer) => {
+  // 1) Lyric items: anchor on lyric-content, scroll element is .lyric-text
+  const lyricContents = document.querySelectorAll('.lyric-content:not([data-fs-initialized])');
+  lyricContents.forEach((thumbContainer) => {
     const scrollEl = thumbContainer.querySelector('.lyric-text');
     if (!scrollEl) return;
     thumbContainer.setAttribute('data-fs-initialized', 'true');
@@ -270,11 +296,11 @@ if (typeof document !== 'undefined') {
           if (node.nodeType === Node.ELEMENT_NODE) {
             if (node.classList?.contains('reference-text-container') ||
                 node.classList?.contains('custom-scrollbar-textarea-container') ||
-                node.classList?.contains('lyric-text') ||
-                node.matches?.('.lyric-item-container .lyric-text') ||
+                node.classList?.contains('lyric-content') ||
+                node.matches?.('.lyric-content .lyric-text') ||
                 node.querySelector?.('.reference-text-container') ||
                 node.querySelector?.('.custom-scrollbar-textarea-container') ||
-                node.querySelector?.('.lyric-item-container .lyric-text')) {
+                node.querySelector?.('.lyric-content .lyric-text')) {
               shouldReinit = true;
             }
           }

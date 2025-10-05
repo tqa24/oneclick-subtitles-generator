@@ -403,58 +403,27 @@
   background: transparent;
 }
 
-/* Custom scrollbar track for lyric items (pill) anchored to the row, not the scrolling text */
-.lyric-item::before {
-  content: '';
-  position: absolute;
-  top: 8px;
-  right: 5px;
-  bottom: 8px;
-  width: 4px;
-  background: rgba(var(--md-outline-variant-rgb, 121, 116, 126), 0.15);
-  border-radius: 50px; /* Pill shape */
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-  z-index: 9;
-}
+/* Remove the bad scrollbar track - we'll use the functional scrollbar instead */
 
-/* Show scrollbar track when item has scrollable content and is hovered/focused */
-.lyric-item.has-scrollable-content:hover::before,
-.lyric-item.has-scrollable-content:focus-within::before {
-  opacity: 1;
-}
-
-/* Dark mode track */
-[data-theme="dark"] .lyric-item::before {
-  background: rgba(var(--md-outline-variant-rgb, 200, 196, 206), 0.15);
-}
-
-/* Custom scrollbar thumb element (anchored to .lyric-item) */
+/* Custom scrollbar thumb element (positioned on right side of lyric-content) */
 .custom-scrollbar-thumb {
   position: absolute;
-  right: 4px;
+  right: 4px; /* Position on right side of lyric-content */
   width: 4px;
   min-height: 20px;
   background: rgba(var(--md-primary-rgb, 103, 80, 164), 0.6);
   border-radius: 50px;
-  opacity: 0;
+  opacity: 1; /* Always visible, no hover requirement */
   transition: all 0.2s ease;
-  pointer-events: none; /* enabled by JS when visible */
+  pointer-events: auto; /* Always enabled */
   z-index: 10;
-}
-
-/* Hover/focus states handled by JS and container hover */
-.lyric-item:hover .custom-scrollbar-thumb,
-.lyric-item:focus-within .custom-scrollbar-thumb {
-  opacity: 1;
 }
 
 /* Dragging state */
 .custom-scrollbar-thumb.dragging {
   background: var(--md-primary);
   width: 6px;
-  right: 3px;
+  right: 3px; /* Adjust for wider thumb when dragging */
   opacity: 1;
 }
 
