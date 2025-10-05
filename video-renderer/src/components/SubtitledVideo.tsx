@@ -278,7 +278,7 @@ export const SubtitledVideoContent: React.FC<Props> = ({
                 {metadata.cropSettings.canvasBgMode === 'blur' && (
                   useServerFrames ? (
                     <Img
-                      src={`${framesPathUrl}/${String(frame + 1).padStart(6, '0')}.jpg`}
+                      src={`${framesPathUrl}/${String(frame + 1).padStart(6, '0')}.png`}
                       style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: `blur(${(metadata.cropSettings?.canvasBgBlur ?? 24)}px) brightness(0.7)`, transform: 'scale(1.06)' }}
                     />
                   ) : (
@@ -297,7 +297,7 @@ export const SubtitledVideoContent: React.FC<Props> = ({
             {/* If server provided pre-cropped frames, render them; else render raw video with CSS-crop */}
             {useServerFrames ? (
               <Img
-                src={`${framesPathUrl}/${String(frame + 1).padStart(6, '0')}.jpg`}
+                src={`${framesPathUrl}/${String(frame + 1).padStart(6, '0')}.png`}
                 style={{
                   position: 'absolute',
                   ...(metadata.cropSettings && (metadata.cropSettings.width !== 100 || metadata.cropSettings.height !== 100 || metadata.cropSettings.x !== 0 || metadata.cropSettings.y !== 0)
