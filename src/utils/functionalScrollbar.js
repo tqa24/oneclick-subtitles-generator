@@ -3,6 +3,26 @@
  * Creates a real scrollbar that shows position and allows dragging
  */
 
+// Inject CSS once to hide native scrollbars where we use functional scrollbars (narration section)
+function ensureHideNativeScrollbarCSS() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById('hide-native-scrollbar-style')) return;
+  const style = document.createElement('style');
+  style.id = 'hide-native-scrollbar-style';
+  style.textContent = `
+    .hide-native-scrollbar {
+      -ms-overflow-style: none; /* IE and Edge */
+      scrollbar-width: none; /* Firefox */
+    }
+    .hide-native-scrollbar::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+      display: none; /* Safari and Chrome */
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 class FunctionalScrollbar {
   constructor(container, textarea) {
     this.container = container;
@@ -16,7 +36,7 @@ class FunctionalScrollbar {
 
     this.init();
   }
-  
+
   init() {
     // Ensure the container is positioned for absolute thumb placement
     try {
@@ -54,17 +74,17 @@ class FunctionalScrollbar {
       this.resizeObserver.observe(this.textarea);
     }
   }
-  
+
   updateScrollbar() {
     this.updateThumbPosition();
   }
-  
+
   handleScroll() {
     if (!this.isDragging) {
       this.updateThumbPosition();
     }
   }
-  
+
   handleMouseDown(e) {
     e.preventDefault();
     e.stopPropagation();
@@ -81,7 +101,7 @@ class FunctionalScrollbar {
     this.thumb.classList.add('dragging');
     document.body.style.userSelect = 'none';
   }
-  
+
   handleMouseMove(e) {
     if (!this.isDragging) return;
 
@@ -168,23 +188,23 @@ class FunctionalScrollbar {
     // Always show scrollbar when content is scrollable (no hover requirement)
     this.thumb.style.opacity = '1';
   }
-  
+
   handleMouseUp() {
     if (!this.isDragging) return;
-    
+
     this.isDragging = false;
-    
+
     // Remove global mouse event listeners
     document.removeEventListener('mousemove', this.handleMouseMove);
     document.removeEventListener('mouseup', this.handleMouseUp);
-    
+
     // Remove dragging class
     this.thumb.classList.remove('dragging');
     document.body.style.userSelect = '';
-    
+
     this.updateThumbPosition();
   }
-  
+
   handleThumbClick(e) {
     // Only handle clicks on the track area (right side), ignore normal clicks on content
     if (e.target === this.thumb) return;
@@ -210,7 +230,7 @@ class FunctionalScrollbar {
     // Jump instantly to target position (no smooth behavior)
     this.textarea.scrollTop = targetScrollTop;
   }
-  
+
   destroy() {
     // Remove event listeners
     this.textarea.removeEventListener('scroll', this.handleScroll);
@@ -262,6 +282,20 @@ export function initializeFunctionalScrollbars() {
     thumbContainer.setAttribute('data-fs-initialized', 'true');
     thumbContainer._functionalScrollbar = new FunctionalScrollbar(thumbContainer, scrollEl);
   });
+
+  // 3) Narration result items: anchor on .result-item, scroll element is .result-text
+  const narrationItems = document.querySelectorAll('.result-item:not([data-fs-initialized])');
+  narrationItems.forEach((thumbContainer) => {
+    const scrollEl = thumbContainer.querySelector('.result-text');
+    if (!scrollEl) return;
+
+    // Ensure the CSS to hide native scrollbars exists and apply to narration scroll element
+    ensureHideNativeScrollbarCSS();
+    scrollEl.classList.add('hide-native-scrollbar');
+
+    thumbContainer.setAttribute('data-fs-initialized', 'true');
+    thumbContainer._functionalScrollbar = new FunctionalScrollbar(thumbContainer, scrollEl);
+  });
 }
 
 /**
@@ -285,11 +319,11 @@ if (typeof document !== 'undefined') {
   } else {
     initializeFunctionalScrollbars();
   }
-  
+
   // Re-initialize when new content is added
   const observer = new MutationObserver((mutations) => {
     let shouldReinit = false;
-    
+
     mutations.forEach((mutation) => {
       if (mutation.type === 'childList') {
         mutation.addedNodes.forEach((node) => {
@@ -297,22 +331,21 @@ if (typeof document !== 'undefined') {
             if (node.classList?.contains('reference-text-container') ||
                 node.classList?.contains('custom-scrollbar-textarea-container') ||
                 node.classList?.contains('lyric-content') ||
-                node.matches?.('.lyric-content .lyric-text') ||
-                node.querySelector?.('.reference-text-container') ||
-                node.querySelector?.('.custom-scrollbar-textarea-container') ||
-                node.querySelector?.('.lyric-content .lyric-text')) {
+                node.classList?.contains('result-item') ||
+                node.matches?.('.lyric-content .lyric-text, .result-item .result-text') ||
+                node.querySelector?.('.reference-text-container, .custom-scrollbar-textarea-container, .lyric-content .lyric-text, .result-item .result-text')) {
               shouldReinit = true;
             }
           }
         });
       }
     });
-    
+
     if (shouldReinit) {
       setTimeout(initializeFunctionalScrollbars, 100);
     }
   });
-  
+
   observer.observe(document.body, {
     childList: true,
     subtree: true

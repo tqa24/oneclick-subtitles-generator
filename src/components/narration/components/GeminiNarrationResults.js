@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import SliderWithValue from '../../common/SliderWithValue';
 import LoadingIndicator from '../../common/LoadingIndicator';
 import '../../../styles/narration/speedControlSlider.css';
+import '../../../utils/functionalScrollbar';
 import { VariableSizeList as List } from 'react-window';
 
 // Import utility functions and config
@@ -51,7 +52,7 @@ const GeminiResultRow = ({ index, style, data }) => {
         ${currentlyPlaying === subtitle_id ? 'playing' : ''}
         ${retryingSubtitleId === subtitle_id ? 'retrying' : ''}`}
     >
-      <div className="result-text">
+      <div className="result-text hide-native-scrollbar">
         {/* Display 1-based row number for user-friendly sequential numbering */}
         <span className="result-id">{index + 1}.</span>
         {text}

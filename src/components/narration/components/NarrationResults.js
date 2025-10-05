@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import SliderWithValue from '../../common/SliderWithValue';
 import LoadingIndicator from '../../common/LoadingIndicator';
+import '../../../utils/functionalScrollbar';
 import { VariableSizeList as List } from 'react-window';
 import { SERVER_URL } from '../../../config';
 import { enhanceF5TTSNarrations } from '../../../utils/narrationEnhancer';
@@ -36,7 +37,7 @@ const ResultRow = ({ index, style, data }) => {
         ${currentAudio && currentAudio.id === subtitle_id ? 'playing' : ''}
         ${retryingSubtitleId === subtitle_id ? 'retrying' : ''}`}
     >
-      <div className="result-text">
+      <div className="result-text hide-native-scrollbar">
         {/* Display 1-based row number for user-friendly sequential numbering */}
         <span className="result-id">{index + 1}.</span>
         {result.text}
