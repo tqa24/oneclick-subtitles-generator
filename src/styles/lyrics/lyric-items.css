@@ -119,6 +119,7 @@
   width: 100%; /* Use full width available */
   cursor: pointer;
   user-select: none;
+  position: relative; /* Needed for custom scrollbar track (::before) */
   transition: color var(--md-duration-medium2) var(--md-easing-standard),
               transform var(--md-duration-medium3) var(--md-easing-emphasized),
               font-weight var(--md-duration-medium2) var(--md-easing-standard);
@@ -389,17 +390,78 @@
 }
 
 
-/* Optional: Style the scrollbar for a better look */
-.lyric-item-container .lyric-text::-webkit-scrollbar {
-  width: 6px;
+/* Hide native scrollbar for lyric text (we will use functional custom scrollbar) */
+.lyric-item-container .lyric-text {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
-.lyric-item-container .lyric-text::-webkit-scrollbar-track {
+.lyric-item-container .lyric-text::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
   background: transparent;
 }
 
-.lyric-item-container .lyric-text::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.3);
-  border-radius: 10px;
-  border: 1px solid transparent;
+/* Custom scrollbar track for lyric items (pill) anchored to the row, not the scrolling text */
+.lyric-item::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  right: 5px;
+  bottom: 8px;
+  width: 4px;
+  background: rgba(var(--md-outline-variant-rgb, 121, 116, 126), 0.15);
+  border-radius: 50px; /* Pill shape */
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 9;
+}
+
+/* Show scrollbar track when item has scrollable content and is hovered/focused */
+.lyric-item.has-scrollable-content:hover::before,
+.lyric-item.has-scrollable-content:focus-within::before {
+  opacity: 1;
+}
+
+/* Dark mode track */
+[data-theme="dark"] .lyric-item::before {
+  background: rgba(var(--md-outline-variant-rgb, 200, 196, 206), 0.15);
+}
+
+/* Custom scrollbar thumb element (anchored to .lyric-item) */
+.custom-scrollbar-thumb {
+  position: absolute;
+  right: 4px;
+  width: 4px;
+  min-height: 20px;
+  background: rgba(var(--md-primary-rgb, 103, 80, 164), 0.6);
+  border-radius: 50px;
+  opacity: 0;
+  transition: all 0.2s ease;
+  pointer-events: none; /* enabled by JS when visible */
+  z-index: 10;
+}
+
+/* Hover/focus states handled by JS and container hover */
+.lyric-item:hover .custom-scrollbar-thumb,
+.lyric-item:focus-within .custom-scrollbar-thumb {
+  opacity: 1;
+}
+
+/* Dragging state */
+.custom-scrollbar-thumb.dragging {
+  background: var(--md-primary);
+  width: 6px;
+  right: 3px;
+  opacity: 1;
+}
+
+/* Dark mode */
+[data-theme="dark"] .custom-scrollbar-thumb {
+  background: rgba(var(--md-primary-rgb, 208, 188, 255), 0.6);
+}
+[data-theme="dark"] .custom-scrollbar-thumb.dragging {
+  background: var(--md-primary);
 }

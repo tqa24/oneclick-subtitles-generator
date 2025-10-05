@@ -16,26 +16,34 @@ class FunctionalScrollbar {
   }
   
   init() {
+    // Ensure the container is positioned for absolute thumb placement
+    try {
+      const style = window.getComputedStyle(this.container);
+      if (style.position === 'static') {
+        this.container.style.position = 'relative';
+      }
+    } catch {}
+
     // Create thumb element
     this.thumb = document.createElement('div');
     this.thumb.className = 'custom-scrollbar-thumb';
     this.container.appendChild(this.thumb);
-    
+
     // Bind event handlers
     this.handleScroll = this.handleScroll.bind(this);
     this.handleMouseDown = this.handleMouseDown.bind(this);
     this.handleMouseMove = this.handleMouseMove.bind(this);
     this.handleMouseUp = this.handleMouseUp.bind(this);
     this.handleThumbClick = this.handleThumbClick.bind(this);
-    
+
     // Add event listeners
     this.textarea.addEventListener('scroll', this.handleScroll);
     this.thumb.addEventListener('mousedown', this.handleMouseDown);
     this.container.addEventListener('click', this.handleThumbClick);
-    
+
     // Initial update
     this.updateThumbPosition();
-    
+
     // Update on content changes
     if (window.ResizeObserver) {
       this.resizeObserver = new ResizeObserver(() => {
@@ -128,8 +136,10 @@ class FunctionalScrollbar {
     this.thumb.style.top = `${thumbTop}px`;
     this.thumb.style.pointerEvents = 'auto';
 
-    // Show scrollbar when container is hovered or focused
-    const isVisible = this.container.matches(':hover, :focus-within') || this.isDragging;
+    // Show scrollbar when container or parent lyric-item is hovered/focused
+    const parentItem = this.container.closest ? this.container.closest('.lyric-item') : null;
+    const parentHovered = parentItem && parentItem.matches ? parentItem.matches(':hover') : false;
+    const isVisible = this.container.matches(':hover, :focus-within') || parentHovered || this.isDragging;
     this.thumb.style.opacity = isVisible ? '1' : '0';
   }
   
@@ -150,19 +160,27 @@ class FunctionalScrollbar {
   }
   
   handleThumbClick(e) {
-    // Only handle clicks on the track, not the thumb
+    // Only handle clicks on the track area (right side), ignore normal clicks on content
     if (e.target === this.thumb) return;
-    
+
     const rect = this.container.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top - 8; // Account for padding
+
+    // Define a 12px wide track area from the right edge
+    const trackZoneStart = rect.width - 12;
+    if (clickX < trackZoneStart) {
+      return; // Don't interfere with regular content clicks
+    }
+
     const containerHeight = this.container.clientHeight - 16;
     const { scrollHeight, clientHeight } = this.textarea;
     const maxScrollTop = scrollHeight - clientHeight;
-    
+
     // Calculate target scroll position
     const scrollPercentage = Math.max(0, Math.min(1, clickY / containerHeight));
     const targetScrollTop = scrollPercentage * maxScrollTop;
-    
+
     // Jump instantly to target position (no smooth behavior)
     this.textarea.scrollTop = targetScrollTop;
   }
@@ -199,33 +217,38 @@ class FunctionalScrollbar {
  * Initialize functional scrollbars for all custom scrollbar containers
  */
 export function initializeFunctionalScrollbars() {
-  // Support both old reference-text-container and new custom-scrollbar-textarea-container
-  const containers = document.querySelectorAll('.reference-text-container, .custom-scrollbar-textarea-container');
+  // 1) Lyric items: anchor on row, scroll element is .lyric-text
+  const lyricItems = document.querySelectorAll('.lyric-item:not([data-fs-initialized])');
+  lyricItems.forEach((thumbContainer) => {
+    const scrollEl = thumbContainer.querySelector('.lyric-text');
+    if (!scrollEl) return;
+    thumbContainer.setAttribute('data-fs-initialized', 'true');
+    thumbContainer._functionalScrollbar = new FunctionalScrollbar(thumbContainer, scrollEl);
+  });
 
-  containers.forEach(container => {
-    // Skip if already initialized
-    if (container._functionalScrollbar) return;
-
-    // Support both old and new textarea class names
-    const textarea = container.querySelector('.reference-text, .custom-scrollbar-textarea');
-    if (!textarea) return;
-
-    // Create and store scrollbar instance
-    container._functionalScrollbar = new FunctionalScrollbar(container, textarea);
+  // 2) Generic containers
+  const genericContainers = document.querySelectorAll(
+    '.reference-text-container:not([data-fs-initialized]), .custom-scrollbar-textarea-container:not([data-fs-initialized])'
+  );
+  genericContainers.forEach((thumbContainer) => {
+    const scrollEl = thumbContainer.querySelector('.reference-text, .custom-scrollbar-textarea');
+    if (!scrollEl) return;
+    thumbContainer.setAttribute('data-fs-initialized', 'true');
+    thumbContainer._functionalScrollbar = new FunctionalScrollbar(thumbContainer, scrollEl);
   });
 }
 
 /**
- * Clean up all functional scrollbars
+ * Clean up all functional scrollbars (based on data attribute)
  */
 export function cleanupFunctionalScrollbars() {
-  const containers = document.querySelectorAll('.reference-text-container, .custom-scrollbar-textarea-container');
-
-  containers.forEach(container => {
+  const initializedContainers = document.querySelectorAll('[data-fs-initialized]');
+  initializedContainers.forEach((container) => {
     if (container._functionalScrollbar) {
       container._functionalScrollbar.destroy();
       delete container._functionalScrollbar;
     }
+    container.removeAttribute('data-fs-initialized');
   });
 }
 
@@ -247,8 +270,11 @@ if (typeof document !== 'undefined') {
           if (node.nodeType === Node.ELEMENT_NODE) {
             if (node.classList?.contains('reference-text-container') ||
                 node.classList?.contains('custom-scrollbar-textarea-container') ||
+                node.classList?.contains('lyric-text') ||
+                node.matches?.('.lyric-item-container .lyric-text') ||
                 node.querySelector?.('.reference-text-container') ||
-                node.querySelector?.('.custom-scrollbar-textarea-container')) {
+                node.querySelector?.('.custom-scrollbar-textarea-container') ||
+                node.querySelector?.('.lyric-item-container .lyric-text')) {
               shouldReinit = true;
             }
           }

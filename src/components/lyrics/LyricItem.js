@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatTime } from '../../utils/timeFormatter';
+import '../../utils/functionalScrollbar';
+
 import CustomScrollbarTextarea from '../common/CustomScrollbarTextarea.jsx';
 
 // Continuous progress indicator component
@@ -208,6 +210,8 @@ const LyricItem = ({
     setIsEditing(true);
     setEditText(lyric.text);
     setTimeout(() => textInputRef.current?.focus(), 0);
+
+
   };
 
   const handleTextSubmit = () => {
