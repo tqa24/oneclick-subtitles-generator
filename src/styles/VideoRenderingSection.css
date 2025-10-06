@@ -146,7 +146,6 @@
 /* Content - matching background-generator-content */
 .video-rendering-content,
 .music-generator-content {
-  padding: 24px;
   display: grid;
   grid-template-columns: 1fr;
   gap: 20px;

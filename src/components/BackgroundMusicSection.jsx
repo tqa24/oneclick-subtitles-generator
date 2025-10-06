@@ -4,14 +4,19 @@ import '../styles/BackgroundMusicSection.css';
 
 import { useTranslation } from 'react-i18next';
 import { getCurrentKey } from '../services/gemini/keyManager';
+import LoadingIndicator from './common/LoadingIndicator';
+import { formatTime } from '../utils/timeFormatter';
 
 // Collapsible section embedding the promptdj-midi app with start/stop recording controls
 const BackgroundMusicSection = () => {
   const { t, i18n } = useTranslation();
   const iframeRef = useRef(null);
+
   const [isRecording, setIsRecording] = useState(false);
+  const [isStartingRecording, setIsStartingRecording] = useState(false);
   const [recordingUrl, setRecordingUrl] = useState('');
-  const [status, setStatus] = useState('');
+  const [recordingStartTime, setRecordingStartTime] = useState(null);
+  const [elapsed, setElapsed] = useState(0);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem('bg_music_collapsed');
     return saved === 'true';
@@ -22,26 +27,59 @@ const BackgroundMusicSection = () => {
   const postApiKeyToIframe = useCallback(() => {
     const apiKey = getCurrentKey?.() || localStorage.getItem('gemini_api_key') || '';
     if (!apiKey) {
-      setStatus(t('backgroundMusic.statusNoApiKey', 'Gemini API key not set. Please set it in Settings > API Keys.'));
       return;
     }
     if (!iframeRef.current?.contentWindow) return;
     const lang = (typeof i18n?.language === 'string' && i18n.language) ? i18n.language : (localStorage.getItem('preferred_language') || 'en');
     iframeRef.current.contentWindow.postMessage({ type: 'pm-dj-set-api-key', apiKey, lang }, '*');
-  }, [t, i18n]);
+  }, [i18n]);
 
   const startRecording = useCallback(() => {
     if (!iframeRef.current?.contentWindow) return;
-    setStatus(t('backgroundMusic.statusStarting', 'Starting recording...'));
+    setIsStartingRecording(true);
+    if (recordingUrl) {
+      try { URL.revokeObjectURL(recordingUrl); } catch {}
+    }
     setRecordingUrl('');
+    setRecordingStartTime(Date.now());
     iframeRef.current.contentWindow.postMessage({ type: 'pm-dj-start-recording' }, '*');
-  }, [t]);
+  }, [recordingUrl]);
 
   const stopRecording = useCallback(() => {
     if (!iframeRef.current?.contentWindow) return;
-    setStatus(t('backgroundMusic.statusStopping', 'Stopping recording...'));
     iframeRef.current.contentWindow.postMessage({ type: 'pm-dj-stop-recording' }, '*');
-  }, [t]);
+  }, []);
+
+  const clearReferenceAudio = useCallback(() => {
+    if (recordingUrl) {
+      try { URL.revokeObjectURL(recordingUrl); } catch {}
+    }
+    setRecordingUrl('');
+  }, [recordingUrl]);
+
+  // Timer like narration
+  useEffect(() => {
+    if (isRecording && recordingStartTime) {
+      setElapsed((Date.now() - recordingStartTime) / 1000);
+      const id = setInterval(() => {
+        setElapsed((Date.now() - recordingStartTime) / 1000);
+      }, 100);
+      return () => clearInterval(id);
+    } else {
+      setElapsed(0);
+    }
+  }, [isRecording, recordingStartTime]);
+
+	  // Cleanup object URL when it changes or on unmount
+	  useEffect(() => {
+	    return () => {
+	      if (recordingUrl) {
+	        try { URL.revokeObjectURL(recordingUrl); } catch {}
+	      }
+	    };
+	  }, [recordingUrl]);
+
+
   // Propagate language changes to iframe
   useEffect(() => {
     if (!iframeRef.current?.contentWindow) return;
@@ -61,12 +99,13 @@ const BackgroundMusicSection = () => {
       if (!data || typeof data !== 'object') return;
 
       if (data.type === 'pm-dj-recording-started') {
+        setIsStartingRecording(false);
         setIsRecording(true);
-        setStatus(t('backgroundMusic.statusRecording', 'Recording...'));
+        setRecordingStartTime((prev) => prev ?? Date.now());
       }
       if (data.type === 'pm-dj-recording-stopped') {
+        setIsStartingRecording(false);
         setIsRecording(false);
-        setStatus(t('backgroundMusic.statusRecordingStopped', 'Recording stopped.'));
         // Create object URL from received blob
         if (data.blob) {
           const url = URL.createObjectURL(data.blob);
@@ -74,10 +113,11 @@ const BackgroundMusicSection = () => {
         }
       }
       if (data.type === 'pm-dj-recording-error') {
+        setIsStartingRecording(false);
         setIsRecording(false);
-        setStatus(t('backgroundMusic.statusRecordingError', 'Recording error: {{error}}', { error: data.error || 'Unknown error' }));
       }
     }
+
 
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
@@ -103,8 +143,90 @@ const BackgroundMusicSection = () => {
     >
       {/* Header */}
       <div className="music-generator-header">
-        <div className="header-left">
-          <h2>{t('backgroundMusic.title', 'Background Music Generator')}</h2>
+        <div className="header-left" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 48, flexWrap: 'wrap' }}>
+          <h2 style={{ margin: 0 }}>{t('backgroundMusic.title', 'Background Music Generator')}</h2>
+
+          {/* Record/Stop button with timer and download inline with title; hidden when collapsed */}
+          {!isCollapsed && (
+            <div className="header-controls" style={{ display: 'flex', alignItems: 'center', gap: 16, minHeight: 40 }}>
+              {!isRecording && !isStartingRecording ? (
+                <button
+                  className="pill-button primary"
+                  onClick={startRecording}
+                  title={t('narration.record', 'Record')}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="6" fill="currentColor" />
+                  </svg>
+                  {t('narration.record', 'Record')}
+                </button>
+              ) : !isRecording && isStartingRecording ? (
+                <button
+                  className="pill-button primary"
+                  disabled
+                  title={t('narration.startingRecording', 'Starting microphone...')}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                >
+                  <LoadingIndicator theme="light" showContainer={false} size={18} />
+                </button>
+              ) : (
+                <button
+                  className="pill-button error"
+                  onClick={stopRecording}
+                  title={t('narration.stopRecording', 'Stop')}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="6" y="6" width="12" height="12" fill="currentColor" />
+                  </svg>
+                  {t('narration.stopRecording', 'Stop')} {formatTime(elapsed, 'hms_ms')}
+                </button>
+              )}
+
+              {/* Download button appears when a recording is available */}
+              {recordingUrl && (
+                <a
+                  className="pill-button secondary"
+                  href={recordingUrl}
+                  download={`background-music-${Date.now()}.webm`}
+                  title={t('backgroundMusic.downloadRecording', 'Download recording')}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 13 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="13" />
+                  </svg>
+                  {t('narration.download', 'Download')}
+                </a>
+              )}
+
+              {/* Inline audio preview when available (match narration styles) */}
+              {recordingUrl && (
+                <div className="audio-preview" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                  <div className="audio-player-container controls">
+                    <audio
+                      controls
+                      src={recordingUrl}
+                      className="audio-player"
+                      tabIndex="-1"
+                    >
+                      {t('narration.audioNotSupported', 'Your browser does not support the audio element.')}
+                    </audio>
+                  </div>
+                  <button
+                    className="pill-button error clear-button"
+                    onClick={clearReferenceAudio}
+                    title={t('narration.clearReference', 'Clear reference audio')}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <button
           className="collapse-button"
@@ -129,23 +251,6 @@ const BackgroundMusicSection = () => {
         </div>
       ) : (
         <div className="music-generator-content">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <button onClick={startRecording} disabled={isRecording} style={{ padding: '6px 10px' }}>{t('backgroundMusic.startRecording', 'Start Recording')}</button>
-            <button onClick={stopRecording} disabled={!isRecording} style={{ padding: '6px 10px' }}>{t('backgroundMusic.stopRecording', 'Stop Recording')}</button>
-            <span style={{ marginLeft: 8, opacity: 0.9 }}>{status}</span>
-          </div>
-
-          {recordingUrl && (
-            <div style={{ marginBottom: 10 }}>
-              <audio src={recordingUrl} controls style={{ width: '100%' }} />
-              <div style={{ marginTop: 6 }}>
-                <a href={recordingUrl} download={`background-music-${Date.now()}.webm`}>
-                  Download Recording
-                </a>
-              </div>
-            </div>
-          )}
-
           <div style={{ position: 'relative', width: '100%', height: 600, background: '#111', borderRadius: 6, overflow: 'hidden' }}>
             <iframe
               ref={iframeRef}
@@ -163,4 +268,3 @@ const BackgroundMusicSection = () => {
 };
 
 export default BackgroundMusicSection;
-
