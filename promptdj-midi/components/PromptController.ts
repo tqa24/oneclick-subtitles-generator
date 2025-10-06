@@ -93,7 +93,7 @@ export class PromptController extends LitElement {
       display: flex;
       align-items: center;
       justify-content: center;
-      pointer-events: none;
+      pointer-events: auto;
       order: 3;
     }
 
