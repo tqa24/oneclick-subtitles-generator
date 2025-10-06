@@ -4,6 +4,8 @@ import '../styles/BackgroundMusicSection.css';
 
 import { useTranslation } from 'react-i18next';
 import { getCurrentKey } from '../services/gemini/keyManager';
+import CustomDropdown from './common/CustomDropdown';
+import MaterialSwitch from './common/MaterialSwitch';
 import LoadingIndicator from './common/LoadingIndicator';
 import { formatTime } from '../utils/timeFormatter';
 
@@ -21,6 +23,11 @@ const BackgroundMusicSection = () => {
     const saved = localStorage.getItem('bg_music_collapsed');
     return saved === 'true';
   });
+
+  // MIDI UI state now lives in the main app header
+  const [midiShow, setMidiShow] = useState(false);
+  const [midiInputs, setMidiInputs] = useState([]); // [{id, name}]
+  const [activeMidiId, setActiveMidiId] = useState('');
 
   const midiAppUrl = useMemo(() => 'http://127.0.0.1:3037/', []);
 
@@ -116,6 +123,14 @@ const BackgroundMusicSection = () => {
         setIsStartingRecording(false);
         setIsRecording(false);
       }
+
+      // MIDI bridge: receive device list/state
+      if (data.type === 'midi:inputs') {
+        const arr = Array.isArray(data.inputs) ? data.inputs : [];
+        setMidiInputs(arr);
+        if (typeof data.activeId === 'string') setActiveMidiId(data.activeId);
+        if (typeof data.show === 'boolean') setMidiShow(data.show);
+      }
     }
 
 
@@ -126,6 +141,8 @@ const BackgroundMusicSection = () => {
   // Send API key on iframe load and when storage changes
   const onIframeLoad = useCallback(() => {
     postApiKeyToIframe();
+    // Request current MIDI inputs/state
+    try { iframeRef.current?.contentWindow?.postMessage({ type: 'midi:getInputs' }, '*'); } catch {}
   }, [postApiKeyToIframe]);
 
   useEffect(() => {
@@ -145,6 +162,39 @@ const BackgroundMusicSection = () => {
       <div className="music-generator-header">
         <div className="header-left" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 48, flexWrap: 'wrap' }}>
           <h2 style={{ margin: 0 }}>{t('backgroundMusic.title', 'Background Music Generator')}</h2>
+
+          {/* MIDI controls in header - hidden when collapsed */}
+          {!isCollapsed && (
+            <div className="midi-controls" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <MaterialSwitch
+                  checked={midiShow}
+                  onChange={(e) => {
+                    const show = !!e?.target?.checked;
+                    setMidiShow(show);
+                    try { iframeRef.current?.contentWindow?.postMessage({ type: 'midi:setShow', show }, '*'); } catch {}
+                    if (show) {
+                      try { iframeRef.current?.contentWindow?.postMessage({ type: 'midi:getInputs' }, '*'); } catch {}
+                    }
+                  }}
+                  ariaLabel={t('backgroundMusic.midi', 'MIDI')}
+                  icons={true}
+                />
+                <span style={{ fontWeight: 600 }}>MIDI</span>
+              </div>
+
+              <CustomDropdown
+                value={activeMidiId || ''}
+                onChange={(nextId) => {
+                  setActiveMidiId(nextId);
+                  try { iframeRef.current?.contentWindow?.postMessage({ type: 'midi:setActiveInput', id: nextId }, '*'); } catch {}
+                }}
+                options={(midiInputs || []).map(({ id, name }) => ({ value: id, label: name || id }))}
+                placeholder={t('backgroundMusic.noDevices', 'Không tìm thấy thiết bị')}
+                disabled={!midiShow}
+              />
+            </div>
+          )}
 
           {/* Record/Stop button with timer and download inline with title; hidden when collapsed */}
           {!isCollapsed && (

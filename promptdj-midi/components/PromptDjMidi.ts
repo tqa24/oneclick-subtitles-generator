@@ -10,6 +10,8 @@ import { throttle } from '../utils/throttle';
 
 import './PromptController';
 import './PlayPauseMorphWrapper';
+import './MaterialSwitchWrapper';
+import './CustomDropdownWrapper';
 import type { PlaybackState, Prompt } from '../types';
 import { MidiDispatcher } from '../utils/MidiDispatcher';
 
@@ -40,7 +42,6 @@ export class PromptDjMidi extends LitElement {
       align-items: center;
       justify-content: center;
       gap: 12vmin;
-      margin-top: 8vmin;
     }
     #grid {
       width: 80vmin;
@@ -198,17 +199,34 @@ export class PromptDjMidi extends LitElement {
       const inputIds = await this.midiDispatcher.getMidiAccess();
       this.midiInputIds = inputIds;
       this.activeMidiInputId = this.midiDispatcher.activeMidiInputId;
+      // Notify listeners (iframe bridge) that inputs are available/updated
+      this.dispatchEvent(new CustomEvent('midi-inputs-changed', { detail: { inputs: this.midiInputIds, activeId: this.activeMidiInputId }}));
     } catch (e) {
       this.showMidi = false;
       this.dispatchEvent(new CustomEvent('error', {detail: (e as any).message}));
     }
   }
 
-  private handleMidiInputChange(event: Event) {
-    const selectElement = event.target as HTMLSelectElement;
-    const newMidiId = selectElement.value;
-    this.activeMidiInputId = newMidiId;
-    this.midiDispatcher.activeMidiInputId = newMidiId;
+  // Public API used by parent (main app) via postMessage bridge
+  public getShowMidi(): boolean { return this.showMidi; }
+  public async refreshMidiInputs(): Promise<void> {
+    try {
+      const inputIds = await this.midiDispatcher.getMidiAccess();
+      this.midiInputIds = inputIds;
+      this.activeMidiInputId = this.midiDispatcher.activeMidiInputId;
+      this.dispatchEvent(new CustomEvent('midi-inputs-changed', { detail: { inputs: this.midiInputIds, activeId: this.activeMidiInputId }}));
+    } catch (e) {
+      this.dispatchEvent(new CustomEvent('error', {detail: (e as any).message}));
+    }
+  }
+  public getMidiInputs(): string[] { return this.midiInputIds; }
+  public getActiveMidiInputId(): string | null { return this.activeMidiInputId; }
+  public setActiveMidiInputId(id: string) {
+    if (!id) return;
+    this.activeMidiInputId = id;
+    this.midiDispatcher.activeMidiInputId = id;
+    this.dispatchEvent(new CustomEvent('midi-inputs-changed', { detail: { inputs: this.midiInputIds, activeId: this.activeMidiInputId }}));
+    this.requestUpdate();
   }
 
   private playPause(e: Event) {
@@ -265,29 +283,23 @@ export class PromptDjMidi extends LitElement {
   protected updated(changedProps: Map<string, any>) {
     if (changedProps.has('playbackState')) {
       const state = this.playbackState;
-      // Apply rules based on last user action to avoid flicker and ensure immediate UX
       if (this.lastUserAction === 'play') {
         if (state === 'playing') {
-          // Real play started: clear spinner and reset
           this.optimisticLoading = false;
           this.optimisticPlaying = null;
           this.lastUserAction = null;
         } else if (state === 'loading') {
-          // Keep spinner on
           this.optimisticLoading = true;
         } else if (state === 'paused' || state === 'stopped') {
-          // Transient stopped/paused after play click: keep spinner until real loading/playing
           this.optimisticLoading = true;
         }
       } else if (this.lastUserAction === 'pause') {
-        // Force pause morph, never show spinner
         this.optimisticLoading = false;
         this.optimisticPlaying = false;
         if (state === 'paused' || state === 'stopped') {
           this.lastUserAction = null;
         }
       } else {
-        // No recent action: follow real state
         this.optimisticLoading = (state === 'loading');
         this.optimisticPlaying = null;
       }
@@ -303,27 +315,9 @@ export class PromptDjMidi extends LitElement {
       : (this.playbackState === 'playing');
     const loadingProp = this.optimisticLoading || this.playbackState === 'loading';
 
+    const deviceOptions = this.midiInputIds.map(id => ({ value: id, label: this.midiDispatcher.getDeviceName(id) }));
+
     return html`<div id="background" style=${bg}></div>
-      <div id="buttons">
-        <button
-          @click=${this.toggleShowMidi}
-          class=${this.showMidi ? 'active' : ''}
-          >${this.tr('midi')}</button
-        >
-        <select
-          @change=${this.handleMidiInputChange}
-          .value=${this.activeMidiInputId || ''}
-          style=${this.showMidi ? '' : 'visibility: hidden'}>
-          ${this.midiInputIds.length > 0
-        ? this.midiInputIds.map(
-          (id) =>
-            html`<option value=${id}>
-                    ${this.midiDispatcher.getDeviceName(id)}
-                  </option>`,
-        )
-        : html`<option value="">${this.tr('noDevices')}</option>`}
-        </select>
-      </div>
       <div id="content">
         <div id="grid">${this.renderPrompts()}</div>
         <div id="sideControls">

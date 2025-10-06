@@ -159,6 +159,14 @@ function main() {
     return 'en';
   }
 
+  // Forward MIDI input updates to parent
+  pdjMidi.addEventListener('midi-inputs-changed', (e: Event) => {
+    const { inputs, activeId } = (e as CustomEvent).detail || {};
+    // Map to include device names from dispatcher
+    const named = (inputs || []).map((id: string) => ({ id, name: pdjMidi ? (pdjMidi as any).midiDispatcher?.getDeviceName?.(id) : id }));
+    window.parent?.postMessage({ type: 'midi:inputs', inputs: named, activeId, show: (pdjMidi as any).showMidi }, '*');
+  });
+
   window.addEventListener('message', (event: MessageEvent) => {
     const data = event.data as any;
     if (!data || typeof data !== 'object') return;
@@ -172,6 +180,22 @@ function main() {
     }
     if (data.type === 'pm-dj-set-lang' && pdjMidi) {
       pdjMidi.lang = normalizeLang(data.lang);
+    }
+
+    // Bridge: control MIDI from parent
+    if (data.type === 'midi:getInputs') {
+      (pdjMidi as any).refreshMidiInputs?.();
+      // Also respond immediately with current snapshot
+      const ids = (pdjMidi as any).getMidiInputs?.() || [];
+      const activeId = (pdjMidi as any).getActiveMidiInputId?.() || null;
+      const named = ids.map((id: string) => ({ id, name: (pdjMidi as any).midiDispatcher?.getDeviceName?.(id) || id }));
+      window.parent?.postMessage({ type: 'midi:inputs', inputs: named, activeId, show: (pdjMidi as any).getShowMidi?.() }, '*');
+    }
+    if (data.type === 'midi:setShow') {
+      (pdjMidi as any).setShowMidi?.(!!data.show);
+    }
+    if (data.type === 'midi:setActiveInput' && typeof data.id === 'string') {
+      (pdjMidi as any).setActiveMidiInputId?.(data.id);
     }
   });
 
