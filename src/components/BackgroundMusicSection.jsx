@@ -1,4 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import '../styles/CollapsibleSection.css';
+import '../styles/BackgroundMusicSection.css';
+
 import { useTranslation } from 'react-i18next';
 import { getCurrentKey } from '../services/gemini/keyManager';
 
@@ -96,13 +99,12 @@ const BackgroundMusicSection = () => {
 
   return (
     <div
-      className={`video-rendering-section ${isCollapsed ? 'collapsed' : 'expanded'}`}
+      className={`music-generator-section ${isCollapsed ? 'collapsed' : 'expanded'}`}
     >
-      {/* Header - reuse existing styles */}
-      <div className="video-rendering-header">
+      {/* Header */}
+      <div className="music-generator-header">
         <div className="header-left">
           <h2>{t('backgroundMusic.title', 'Background Music Generator')}</h2>
-
         </div>
         <button
           className="collapse-button"
@@ -120,13 +122,13 @@ const BackgroundMusicSection = () => {
 
       {/* Collapsed content */}
       {isCollapsed ? (
-        <div className="video-rendering-collapsed-content">
+        <div className="music-generator-collapsed-content">
           <p className="helper-message">
             {t('backgroundMusic.helperMessage', 'Configure prompts inside the embedded app to generate live background music.')}
           </p>
         </div>
       ) : (
-        <div className="video-rendering-content">
+        <div className="music-generator-content">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
             <button onClick={startRecording} disabled={isRecording} style={{ padding: '6px 10px' }}>{t('backgroundMusic.startRecording', 'Start Recording')}</button>
             <button onClick={stopRecording} disabled={!isRecording} style={{ padding: '6px 10px' }}>{t('backgroundMusic.stopRecording', 'Stop Recording')}</button>

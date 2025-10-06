@@ -1,0 +1,30 @@
+/* Resizable divider between panels */
+.panel-resizer {
+  width: 32px;
+  background: transparent;
+  cursor: col-resize;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease;
+}
+
+.panel-resizer:hover {
+  background: rgba(var(--md-primary-rgb), 0.08);
+}
+
+.panel-resizer::before {
+  content: '';
+  width: 5px;
+  height: 80px;
+  background: var(--md-outline-variant);
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.panel-resizer:hover::before {
+  background: var(--md-primary);
+  width: 10px;
+}
+

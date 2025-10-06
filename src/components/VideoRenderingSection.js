@@ -7,6 +7,16 @@ import QueueManagerPanel from './QueueManagerPanel';
 import LoadingIndicator from './common/LoadingIndicator';
 import CustomDropdown from './common/CustomDropdown';
 import '../styles/VideoRenderingSection.css';
+import '../styles/CollapsibleSection.css';
+import '../styles/components/upload-drop-zone.css';
+import '../styles/components/panel-resizer.css';
+import '../styles/components/buttons.css';
+import '../styles/VideoRenderingControls.css';
+import '../styles/components/form-controls.css';
+
+
+
+
 import HelpIcon from './common/HelpIcon';
 
 
@@ -913,7 +923,7 @@ const VideoRenderingSection = ({
 
     const files = Array.from(e.dataTransfer.files);
     if (files.length > 0) {
-      const videoFile = files.find(file => file.type.startsWith('video/') || file.type.startsWith('audio/'));
+      const videoFile = files.find(file => file.type.startsWith('video/'));
       if (videoFile) {
         setSelectedVideoFile(videoFile);
       }
@@ -1626,7 +1636,7 @@ const VideoRenderingSection = ({
               <input
                 id="video-upload-input"
                 type="file"
-                accept="video/*,audio/*"
+                accept="video/*"
                 onChange={handleVideoUpload}
                 style={{ display: 'none' }}
               />

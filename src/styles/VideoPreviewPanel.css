@@ -367,6 +367,7 @@
   border: 2px dashed var(--border-color);
   border-radius: 48px;
   margin: 56px;
+  height: -webkit-fill-available;
 }
 
 .video-preview-panel .placeholder-icon {

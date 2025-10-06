@@ -1,0 +1,27 @@
+/* Background Music Section specific header styles */
+
+.music-generator-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  background-color: var(--md-surface-2);
+  color: var(--md-on-surface);
+  box-shadow: var(--md-elevation-level1);
+  position: relative;
+  z-index: 1;
+  border-radius: 24px;
+}
+
+.music-generator-header .header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.music-generator-header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--text-color);
+}
+
