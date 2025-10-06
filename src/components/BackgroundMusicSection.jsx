@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import '../styles/CollapsibleSection.css';
 import '../styles/BackgroundMusicSection.css';
 
@@ -6,8 +6,9 @@ import { useTranslation } from 'react-i18next';
 import { getCurrentKey } from '../services/gemini/keyManager';
 import CustomDropdown from './common/CustomDropdown';
 import MaterialSwitch from './common/MaterialSwitch';
-import LoadingIndicator from './common/LoadingIndicator';
+import HelpIcon from './common/HelpIcon.jsx';
 import { formatTime } from '../utils/timeFormatter';
+import { trimSilenceFromBlob } from '../utils/audioTrim';
 
 // Collapsible section embedding the promptdj-midi app with start/stop recording controls
 const BackgroundMusicSection = () => {
@@ -15,7 +16,6 @@ const BackgroundMusicSection = () => {
   const iframeRef = useRef(null);
 
   const [isRecording, setIsRecording] = useState(false);
-  const [isStartingRecording, setIsStartingRecording] = useState(false);
   const [recordingUrl, setRecordingUrl] = useState('');
   const [recordingStartTime, setRecordingStartTime] = useState(null);
   const [elapsed, setElapsed] = useState(0);
@@ -43,7 +43,6 @@ const BackgroundMusicSection = () => {
 
   const startRecording = useCallback(() => {
     if (!iframeRef.current?.contentWindow) return;
-    setIsStartingRecording(true);
     if (recordingUrl) {
       try { URL.revokeObjectURL(recordingUrl); } catch {}
     }
@@ -106,21 +105,41 @@ const BackgroundMusicSection = () => {
       if (!data || typeof data !== 'object') return;
 
       if (data.type === 'pm-dj-recording-started') {
-        setIsStartingRecording(false);
         setIsRecording(true);
         setRecordingStartTime((prev) => prev ?? Date.now());
       }
       if (data.type === 'pm-dj-recording-stopped') {
-        setIsStartingRecording(false);
         setIsRecording(false);
-        // Create object URL from received blob
-        if (data.blob) {
-          const url = URL.createObjectURL(data.blob);
-          setRecordingUrl(url);
-        }
+        // Process: trim silence seamlessly and generate new URL
+        (async () => {
+          try {
+            if (data.blob) {
+              const trimmed = await trimSilenceFromBlob(data.blob, {
+                silenceThreshold: 0.004, // ~ -48 dBFS
+                minSilenceMs: 180,
+                analysisWindowMs: 20,
+              });
+              // Revoke previous URL
+              if (recordingUrl) {
+                try { URL.revokeObjectURL(recordingUrl); } catch {}
+              }
+              const finalBlob = trimmed || data.blob;
+              const url = URL.createObjectURL(finalBlob);
+              setRecordingUrl(url);
+            }
+          } catch (err) {
+            // Fallback to raw blob
+            try {
+              if (recordingUrl) { URL.revokeObjectURL(recordingUrl); }
+              if (data.blob) {
+                const url = URL.createObjectURL(data.blob);
+                setRecordingUrl(url);
+              }
+            } catch {}
+          }
+        })();
       }
       if (data.type === 'pm-dj-recording-error') {
-        setIsStartingRecording(false);
         setIsRecording(false);
       }
 
@@ -141,9 +160,52 @@ const BackgroundMusicSection = () => {
   // Send API key on iframe load and when storage changes
   const onIframeLoad = useCallback(() => {
     postApiKeyToIframe();
+    // Sync theme initially
+    try {
+      const theme = document.documentElement.getAttribute('data-theme')
+        || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      iframeRef.current?.contentWindow?.postMessage({ type: 'pm-dj-set-theme', theme }, '*');
+    } catch {}
     // Request current MIDI inputs/state
     try { iframeRef.current?.contentWindow?.postMessage({ type: 'midi:getInputs' }, '*'); } catch {}
   }, [postApiKeyToIframe]);
+
+  // Watch main app theme changes and forward to iframe
+  useEffect(() => {
+    const el = document.documentElement;
+
+    const sendTheme = () => {
+      try {
+        const theme = el.getAttribute('data-theme')
+          || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        iframeRef.current?.contentWindow?.postMessage({ type: 'pm-dj-set-theme', theme }, '*');
+      } catch {}
+    };
+
+    // Initial
+    sendTheme();
+
+    // Observe attribute changes
+    const observer = new MutationObserver((mutList) => {
+      for (const m of mutList) {
+        if (m.type === 'attributes' && m.attributeName === 'data-theme') {
+          sendTheme();
+          break;
+        }
+      }
+    });
+    observer.observe(el, { attributes: true, attributeFilter: ['data-theme'] });
+
+    // Also respond to prefers-color-scheme changes if app relies on system theme
+    const mql = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+    const onMql = () => sendTheme();
+    try { mql?.addEventListener('change', onMql); } catch { try { mql?.addListener(onMql); } catch {} }
+
+    return () => {
+      try { observer.disconnect(); } catch {}
+      try { mql?.removeEventListener('change', onMql); } catch { try { mql?.removeListener(onMql); } catch {} }
+    };
+  }, []);
 
   useEffect(() => {
     const onStorage = (e) => {
@@ -199,7 +261,7 @@ const BackgroundMusicSection = () => {
           {/* Record/Stop button with timer and download inline with title; hidden when collapsed */}
           {!isCollapsed && (
             <div className="header-controls" style={{ display: 'flex', alignItems: 'center', gap: 16, minHeight: 40 }}>
-              {!isRecording && !isStartingRecording ? (
+              {!isRecording ? (
                 <button
                   className="pill-button primary"
                   onClick={startRecording}
@@ -209,15 +271,6 @@ const BackgroundMusicSection = () => {
                     <circle cx="12" cy="12" r="6" fill="currentColor" />
                   </svg>
                   {t('narration.record', 'Record')}
-                </button>
-              ) : !isRecording && isStartingRecording ? (
-                <button
-                  className="pill-button primary"
-                  disabled
-                  title={t('narration.startingRecording', 'Starting microphone...')}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
-                >
-                  <LoadingIndicator theme="light" showContainer={false} size={18} />
                 </button>
               ) : (
                 <button
@@ -276,6 +329,14 @@ const BackgroundMusicSection = () => {
                 </div>
               )}
             </div>
+          )}
+
+          {/* Help icon to the right of header-controls when expanded */}
+          {!isCollapsed && (
+            <HelpIcon
+              title={t('backgroundMusic.helperMessage', 'Create DJ‑style live music and record it.')}
+              style={{ cursor: 'help', color: 'var(--md-on-surface-variant)', opacity: 0.9 }}
+            />
           )}
         </div>
         <button

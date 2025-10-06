@@ -32,7 +32,7 @@ export class PromptDjMidi extends LitElement {
       height: 100%;
       width: 100%;
       z-index: -1;
-      background: #111;
+      background: var(--md-surface);
     }
     /* Main layout: grid on the left, controls on the right */
     #content {

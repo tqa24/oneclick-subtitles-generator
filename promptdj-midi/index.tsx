@@ -31,6 +31,9 @@ function main() {
   console.log('[PDJ] main() start');
   const initialPrompts = buildInitialPrompts();
 
+  // Default to light theme unless parent tells us otherwise
+  try { document.documentElement.setAttribute('data-theme', 'light'); } catch {}
+
   const pdjMidi = new PromptDjMidi(initialPrompts);
   document.body.appendChild(pdjMidi);
   console.log('[PDJ] <prompt-dj-midi> attached');
@@ -180,6 +183,9 @@ function main() {
     }
     if (data.type === 'pm-dj-set-lang' && pdjMidi) {
       pdjMidi.lang = normalizeLang(data.lang);
+    }
+    if (data.type === 'pm-dj-set-theme' && typeof data.theme === 'string') {
+      try { document.documentElement.setAttribute('data-theme', data.theme === 'dark' ? 'dark' : 'light'); } catch {}
     }
 
     // Bridge: control MIDI from parent
