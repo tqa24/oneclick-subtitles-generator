@@ -92,10 +92,10 @@ export class PromptDjMidi extends LitElement {
     }
     .pc-clear {
       position: absolute;
-      top: -0.8vmin;
-      right: -0.8vmin;
-      width: 3.2vmin;
-      height: 3.2vmin;
+      top: -1.2vmin;
+      right: -1.2vmin;
+      width: 4.2vmin;
+      height: 4.2vmin;
       border-radius: 9999px;
       border: 1px solid var(--md-outline-variant);
       background: var(--md-surface);
@@ -103,6 +103,9 @@ export class PromptDjMidi extends LitElement {
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      padding: 0;
+      line-height: 0;
+      box-sizing: border-box;
       cursor: pointer;
       box-shadow: var(--md-elevation-level1);
       opacity: 0;
@@ -112,6 +115,7 @@ export class PromptDjMidi extends LitElement {
                   transform var(--md-duration-short3) var(--md-easing-standard);
       transform: scale(0.9);
     }
+    .pc-clear svg { width: 100%; height: 100%; display: block; }
     .pc-wrap:hover .pc-clear { opacity: 1; transform: scale(1); }
 
     #sideControls {
@@ -155,6 +159,7 @@ export class PromptDjMidi extends LitElement {
 
   private basePrompts: Map<string, Prompt>;
   private baseOrder: string[] = [];
+  private readonly STORAGE_KEY = 'pdj_midi_state_v1';
 
   constructor(
     initialPrompts: Map<string, Prompt>,
@@ -168,6 +173,50 @@ export class PromptDjMidi extends LitElement {
     }
     this.prompts = new Map(this.basePrompts);
     this.midiDispatcher = new MidiDispatcher();
+
+    // Load saved state if present
+    try {
+      const raw = localStorage.getItem(this.STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const savedPrompts: any[] = Array.isArray(parsed?.prompts) ? parsed.prompts : [];
+        const map = new Map<string, Prompt>();
+        savedPrompts.forEach((p) => {
+          if (p && typeof p.promptId === 'string') {
+            const base = this.basePrompts.get(p.promptId);
+            const color = p.color || base?.color || '#9900ff';
+            const cc = typeof p.cc === 'number' ? p.cc : (base?.cc ?? 0);
+            const text = typeof p.text === 'string' ? p.text : (base?.text ?? '');
+            const weight = typeof p.weight === 'number' ? p.weight : (base?.weight ?? 0);
+            map.set(p.promptId, { promptId: p.promptId, color, cc, text, weight });
+          }
+        });
+        if (map.size > 0) this.prompts = map;
+        if (Array.isArray(parsed?.addSlotsActive) && parsed.addSlotsActive.length === 4) {
+          this.addSlotsActive = parsed.addSlotsActive.map((b: any) => !!b);
+        }
+        const rs = parsed?.removedSlots;
+        if (Array.isArray(rs)) this.removedSlots = new Set<string>(rs.filter((x: any) => typeof x === 'string'));
+      }
+    } catch {}
+  }
+
+  private saveState() {
+    try {
+      const arr = [...this.prompts.values()].map(p => ({
+        promptId: p.promptId,
+        text: p.text,
+        weight: p.weight,
+        cc: p.cc,
+        color: p.color,
+      }));
+      const payload = {
+        prompts: arr,
+        addSlotsActive: this.addSlotsActive,
+        removedSlots: [...this.removedSlots],
+      };
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(payload));
+    } catch {}
   }
 
   private handlePromptChanged(e: CustomEvent<Prompt>) {
@@ -188,6 +237,7 @@ export class PromptDjMidi extends LitElement {
 
     this.prompts = newPrompts;
     this.requestUpdate();
+    this.saveState();
 
     this.dispatchEvent(
       new CustomEvent('prompts-changed', { detail: this.prompts }),
@@ -336,6 +386,7 @@ export class PromptDjMidi extends LitElement {
     slots[idx] = true;
     this.addSlotsActive = slots;
     this.requestUpdate();
+    this.saveState();
   }
 
   private addBaseSlot(idx: number) {
@@ -449,7 +500,7 @@ export class PromptDjMidi extends LitElement {
     return html`<div class="pc-wrap">
       <button class="pc-clear" title="Clear" @click=${() => this.clearPrompt(promptId)}>
         <!-- X icon -->
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="m480-384-67 66q-20 20-47.5 20.5T318-318q-20-20-20-48t20-47l66-67-67-67q-20-20-20-47.5t21-47.5q20-20 47.5-20t47.5 20l67 66 67-66q20-20 47.5-20t47.5 20q20 19 20 47t-20 48l-66 67 66 67q20 20 20 47.5T642-318q-19 19-47 19t-48-19l-67-66Z"/></svg>
       </button>
       <prompt-controller
         promptId=${p.promptId}

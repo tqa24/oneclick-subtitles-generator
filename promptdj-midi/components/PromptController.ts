@@ -89,7 +89,7 @@ export class PromptController extends LitElement {
       position: relative;
       width: 17vmin;
       height: 6vmin;
-      margin-top: -6vmin;
+      margin-top: -7.5vmin;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -108,7 +108,7 @@ export class PromptController extends LitElement {
     /* Default = dark-friendly (white text with black glow) */
     #text-svg text {
       font-weight: 500;
-      font-size: 2vmin;
+      font-size: 2.3vmin;
       fill: #fff;
       text-anchor: middle;
       -webkit-font-smoothing: antialiased;
@@ -177,12 +177,13 @@ export class PromptController extends LitElement {
       }
     }
 
-    .is-editing #text-svg,
+    /* Keep arc text visible during editing so it looks curved */
     .is-editing .edit-icon {
       visibility: hidden;
     }
     .is-editing #text {
       visibility: visible;
+      opacity: 0; /* capture input but keep visual on arc */
     }
 
     :host([filtered]) {
@@ -202,7 +203,7 @@ export class PromptController extends LitElement {
     @media only screen and (max-width: 600px) {
       #text,
       #text-svg text {
-        font-size: 2.8vmin;
+        font-size: 3.8vmin;
       }
       weight-knob {
         width: 60%;
@@ -305,6 +306,14 @@ export class PromptController extends LitElement {
     }
   }
 
+  private onInlineInput() {
+    // Live-update arc text while typing (span is invisible, arc shows)
+    const newText = this.textInput.textContent ?? '';
+    this.text = newText;
+    // Do not commit lastValidText until stopEditing; but propagate for live behavior
+    this.dispatchPromptChange();
+  }
+
   private resetText() {
     this.text = this.lastValidText;
     this.textInput.textContent = this.lastValidText;
@@ -377,10 +386,10 @@ export class PromptController extends LitElement {
       ></weight-knob>
 
       <div class=${textWrapperClasses}>
-        <svg id="text-svg" viewBox="0 0 100 25">
+        <svg id="text-svg" viewBox="-10 0 120 25">
           <path
             id="text-arc-path"
-            d="M 5,20 A 50,40 0 0,0 95,20"
+            d="M -10,20 A 60,45 0 0,0 110,20"
             fill="none"
             stroke="none"
           ></path>
@@ -396,6 +405,7 @@ export class PromptController extends LitElement {
         <span
           id="text"
           spellcheck="false"
+          @input=${this.onInlineInput}
           @focus=${this.onFocus}
           @keydown=${this.onKeyDown}
           @blur=${this.stopEditing}
