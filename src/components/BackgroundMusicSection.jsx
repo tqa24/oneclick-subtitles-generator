@@ -222,7 +222,7 @@ const BackgroundMusicSection = () => {
     >
       {/* Header */}
       <div className="music-generator-header">
-        <div className="header-left" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 48, flexWrap: 'wrap' }}>
+        <div className="header-left" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 36, flexWrap: 'wrap' }}>
           {isCollapsed && (<h2 style={{ margin: 0 }}>{t('backgroundMusic.title', 'Background Music Generator')}</h2>)}
 
           {/* MIDI controls in header - hidden when collapsed */}
@@ -242,7 +242,10 @@ const BackgroundMusicSection = () => {
                   ariaLabel={t('backgroundMusic.midi', 'MIDI')}
                   icons={true}
                 />
-                <span style={{ fontWeight: 600 }}>MIDI</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" height="18" viewBox="0 -960 960 960" width="18" fill="currentColor"><path d="M212-76q-57.12 0-96.56-39.44Q76-154.88 76-212v-536q0-57.13 39.44-96.56Q154.88-884 212-884h536q57.13 0 96.56 39.44Q884-805.13 884-748v536q0 57.12-39.44 96.56Q805.13-76 748-76H212Zm0-136h95v-155h2q-22.65 0-37.33-14.67Q257-396.35 257-419v-329h-45v536Zm441 0h95v-536h-45v329q0 22.65-14.67 37.33Q673.65-367 651-367h2v155Zm-245 0h144v-155h2q-22.65 0-37.33-14.67Q502-396.35 502-419v-329h-44v330q0 22.23-14.66 36.61Q428.67-367 407-367h1v155Z"/></svg>
+                  MIDI
+                </span>
               </div>
 
               <CustomDropdown
@@ -357,7 +360,7 @@ const BackgroundMusicSection = () => {
       {isCollapsed ? (
         <div className="music-generator-collapsed-content">
           <p className="helper-message">
-            {t('backgroundMusic.helperMessage', 'Configure prompts inside the embedded app to generate live background music.')}
+            {t('backgroundMusic.sectionMessage', 'Configure prompts inside the embedded app to generate live background music.')}
           </p>
         </div>
       ) : (

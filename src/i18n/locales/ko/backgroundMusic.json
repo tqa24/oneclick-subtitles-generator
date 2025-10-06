@@ -5,6 +5,7 @@
   "statusRecording": "녹음 중...",
   "statusRecordingStopped": "녹음이 중지되었습니다.",
   "statusRecordingError": "녹음 오류: {{error}}",
+  "sectionMessage": "DJ처럼 실전 음악을 만들고 그 트랙을 녹음하세요.",
   "helperMessage": "네트워크 끊김이나 Lyria 오류가 걱정되더라도 괜찮아요 — 녹음된 오디오에서 무음 구간은 자동으로 제거됩니다.",
   "startRecording": "녹음 시작",
   "stopRecording": "녹음 중지",
