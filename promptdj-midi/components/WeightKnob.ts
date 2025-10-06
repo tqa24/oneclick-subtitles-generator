@@ -44,6 +44,12 @@ export class WeightKnob extends LitElement {
       transform: scale(2);
       will-change: transform;
     }
+    /* Improve halo contrast in light theme */
+    :host-context([data-theme="light"]) #halo {
+      mix-blend-mode: multiply;
+      opacity: 0.55;
+      filter: saturate(1.15) contrast(1.05);
+    }
   `;
 
   @property({ type: Number }) value = 0;
@@ -122,6 +128,8 @@ export class WeightKnob extends LitElement {
     scale += MIN_HALO_SCALE;
     scale += this.audioLevel * HALO_LEVEL_MODIFIER;
 
+    const isLight = (() => { try { return (document.documentElement.getAttribute('data-theme') || '').toLowerCase() !== 'dark'; } catch { return true; } })();
+
     const haloStyle = styleMap({
       display: this.value > 0 ? 'block' : 'none',
       background: this.color,
@@ -149,7 +157,7 @@ export class WeightKnob extends LitElement {
         <path
           d=${this.describeArc(40, 40, minRot, rot, 34.5)}
           fill="none"
-          stroke="#fff"
+          stroke=${isLight ? this.color : '#fff'}
           stroke-width="3"
           stroke-linecap="round" />
       </svg>
