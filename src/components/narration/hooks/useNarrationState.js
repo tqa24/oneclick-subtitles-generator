@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 /**
  * Custom hook for managing narration state
@@ -242,13 +242,13 @@ const useNarrationState = (initialReferenceAudio) => {
     localStorage.setItem('gtts_slow', gttsSlow.toString());
   }, [gttsSlow]);
 
-  // Update local state when initialReferenceAudio changes
-  const updateReferenceAudio = (newReferenceAudio) => {
+  // Update local state when initialReferenceAudio changes - memoized to avoid identity changes across renders
+  const updateReferenceAudio = useCallback((newReferenceAudio) => {
     if (newReferenceAudio) {
       setReferenceAudio(newReferenceAudio);
       setReferenceText(newReferenceAudio.text || '');
     }
-  };
+  }, []);
 
   return {
     // Narration Method state
