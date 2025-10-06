@@ -26,7 +26,10 @@ export class PromptController extends LitElement {
     weight-knob {
       width: 70%;
       flex-shrink: 0;
+      /* place after the MIDI label */
+      order: 2;
     }
+    /* Move MIDI label above the knob */
     #midi {
       font-family: monospace;
       text-align: center;
@@ -39,7 +42,10 @@ export class PromptController extends LitElement {
       cursor: pointer;
       visibility: hidden;
       user-select: none;
-      margin-top: 0.75vmin;
+      /* place before the knob in the column */
+      order: 1;
+      /* add some spacing below the MIDI label */
+      margin: 0 0 -2vmin 0;
       .learn-mode & {
         color: orange;
         border-color: orange;
@@ -54,10 +60,12 @@ export class PromptController extends LitElement {
       position: relative;
       width: 17vmin;
       height: 6vmin;
-      margin-top: -5vmin; /* Pull arch closer to the knob */
+      margin-top: -7vmin; /* Pull arch closer to the knob */
       display: flex;
       align-items: center;
       justify-content: center;
+      /* ensure it renders after the knob */
+      order: 3;
     }
 
     /* SVG for displaying curved text */
@@ -68,7 +76,7 @@ export class PromptController extends LitElement {
       cursor: pointer;
       user-select: none;
     }
-    
+
     #text-svg text {
       font-weight: 500;
       font-size: 2.2vmin; /* Increased font size */
@@ -77,7 +85,7 @@ export class PromptController extends LitElement {
       -webkit-font-smoothing: antialiased;
       text-shadow: 0 0 0.8vmin #000, 0 0 0.2vmin #000;
     }
-    
+
     /* The editable span, now positioned for in-place editing */
     #text {
       font-weight: 500;
@@ -99,12 +107,12 @@ export class PromptController extends LitElement {
       position: absolute; /* Position over the SVG space */
       visibility: hidden; /* Hidden by default */
       z-index: 2; /* Ensure it's on top when visible */
-      
+
       &:not(:focus) {
         text-overflow: ellipsis;
       }
     }
-    
+
     /* Logic to show/hide elements based on editing state */
     .is-editing #text-svg {
       visibility: hidden;
@@ -115,7 +123,7 @@ export class PromptController extends LitElement {
 
     /* Filtered state now applies to the wrapper */
     :host([filtered]) {
-      weight-knob { 
+      weight-knob {
         opacity: 0.5;
       }
       .text-wrapper {
