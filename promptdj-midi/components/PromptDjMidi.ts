@@ -387,6 +387,7 @@ export class PromptDjMidi extends LitElement {
     this.addSlotsActive = slots;
     this.requestUpdate();
     this.saveState();
+    this.dispatchEvent(new CustomEvent('prompts-changed', { detail: this.prompts }));
   }
 
   private addBaseSlot(idx: number) {
@@ -401,6 +402,8 @@ export class PromptDjMidi extends LitElement {
     rem.delete(id);
     this.removedSlots = rem;
     this.requestUpdate();
+    this.saveState();
+    this.dispatchEvent(new CustomEvent('prompts-changed', { detail: this.prompts }));
   }
 
   private clearPrompt(promptId: string) {
@@ -415,6 +418,8 @@ export class PromptDjMidi extends LitElement {
       if (!Number.isNaN(idx)) slots[idx] = false;
       this.addSlotsActive = slots;
       this.requestUpdate();
+      this.saveState();
+      this.dispatchEvent(new CustomEvent('prompts-changed', { detail: this.prompts }));
       return;
     }
     // Remove built-in prompt and mark slot as removed to render add button in-grid
@@ -425,6 +430,8 @@ export class PromptDjMidi extends LitElement {
     rem.add(promptId);
     this.removedSlots = rem;
     this.requestUpdate();
+    this.saveState();
+    this.dispatchEvent(new CustomEvent('prompts-changed', { detail: this.prompts }));
   }
 
   private resetAll() {
