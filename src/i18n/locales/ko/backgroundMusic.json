@@ -5,7 +5,7 @@
   "statusRecording": "녹음 중...",
   "statusRecordingStopped": "녹음이 중지되었습니다.",
   "statusRecordingError": "녹음 오류: {{error}}",
-  "helperMessage": "내장된 앱에서 프롬프트를 구성하여 라이브 배경 음악을 생성하세요.",
+  "helperMessage": "DJ처럼 실전 음악을 만들고 그 트랙을 녹음하세요.",
   "startRecording": "녹음 시작",
   "stopRecording": "녹음 중지",
   "downloadRecording": "녹음 파일 다운로드"

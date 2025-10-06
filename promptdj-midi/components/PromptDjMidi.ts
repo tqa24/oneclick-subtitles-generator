@@ -10,8 +10,6 @@ import { throttle } from '../utils/throttle';
 
 import './PromptController';
 import './PlayPauseMorphWrapper';
-import './MaterialSwitchWrapper';
-import './CustomDropdownWrapper';
 import type { PlaybackState, Prompt } from '../types';
 import { MidiDispatcher } from '../utils/MidiDispatcher';
 
@@ -178,20 +176,6 @@ export class PromptDjMidi extends LitElement {
     30, // don't re-render more than once every XXms
   );
 
-  private toggleShowMidi() {
-    return this.setShowMidi(!this.showMidi);
-  }
-
-  private tr(key: 'midi' | 'noDevices') {
-    const dict: Record<string, Record<'midi' | 'noDevices', string>> = {
-      en: { midi: 'MIDI', noDevices: 'No devices found' },
-      ko: { midi: 'MIDI', noDevices: '장치를 찾을 수 없습니다' },
-      vi: { midi: 'MIDI', noDevices: 'Không tìm thấy thiết bị' },
-    };
-    const lang = (this.lang || 'en').toLowerCase();
-    return (dict[lang] || dict.en)[key];
-  }
-
   public async setShowMidi(show: boolean) {
     this.showMidi = show;
     if (!this.showMidi) return;
@@ -314,8 +298,6 @@ export class PromptDjMidi extends LitElement {
       ? this.optimisticPlaying
       : (this.playbackState === 'playing');
     const loadingProp = this.optimisticLoading || this.playbackState === 'loading';
-
-    const deviceOptions = this.midiInputIds.map(id => ({ value: id, label: this.midiDispatcher.getDeviceName(id) }));
 
     return html`<div id="background" style=${bg}></div>
       <div id="content">

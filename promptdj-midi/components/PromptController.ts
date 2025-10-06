@@ -58,7 +58,7 @@ export class PromptController extends LitElement {
       font-family: monospace;
       text-align: center;
       font-size: 1.5vmin;
-      border-radius: 0.5vmin;
+      border-radius: 1.5vmin;
       padding: 2px 5px;
       color: #fff;
       background: #222; /* Solid background */

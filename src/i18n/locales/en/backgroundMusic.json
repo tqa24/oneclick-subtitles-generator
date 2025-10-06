@@ -6,7 +6,7 @@
   "statusRecording": "Recording...",
   "statusRecordingStopped": "Recording stopped.",
   "statusRecordingError": "Recording error: {{error}}",
-  "helperMessage": "Configure prompts inside the embedded app to generate live background music.",
+  "helperMessage": "Create DJ‑style live music and record it.",
   "startRecording": "Start Recording",
   "stopRecording": "Stop Recording",
   "downloadRecording": "Download Recording"

@@ -161,7 +161,7 @@ const BackgroundMusicSection = () => {
       {/* Header */}
       <div className="music-generator-header">
         <div className="header-left" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 48, flexWrap: 'wrap' }}>
-          <h2 style={{ margin: 0 }}>{t('backgroundMusic.title', 'Background Music Generator')}</h2>
+          {isCollapsed && (<h2 style={{ margin: 0 }}>{t('backgroundMusic.title', 'Background Music Generator')}</h2>)}
 
           {/* MIDI controls in header - hidden when collapsed */}
           {!isCollapsed && (
