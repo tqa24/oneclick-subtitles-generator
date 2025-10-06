@@ -101,6 +101,8 @@ const useNarrationState = (initialReferenceAudio) => {
   const [referenceAudio, setReferenceAudio] = useState(initialReferenceAudio);
   const [referenceText, setReferenceText] = useState(initialReferenceAudio?.text || '');
   const [isRecording, setIsRecording] = useState(false);
+  const [isStartingRecording, setIsStartingRecording] = useState(false);
+  const [recordingStartTime, setRecordingStartTime] = useState(null);
   // recordedAudio is used in the handlers but not directly in this component
   const [recordedAudio, setRecordedAudio] = useState(null);
   const [isExtractingSegment, setIsExtractingSegment] = useState(false);
@@ -298,6 +300,10 @@ const useNarrationState = (initialReferenceAudio) => {
     setReferenceText,
     isRecording,
     setIsRecording,
+    isStartingRecording,
+    setIsStartingRecording,
+    recordingStartTime,
+    setRecordingStartTime,
     recordedAudio,
     setRecordedAudio,
     isExtractingSegment,
