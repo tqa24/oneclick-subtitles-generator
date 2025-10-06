@@ -89,7 +89,7 @@ export class PromptController extends LitElement {
       position: relative;
       width: 17vmin;
       height: 6vmin;
-      margin-top: -7vmin;
+      margin-top: -6vmin;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -107,7 +107,7 @@ export class PromptController extends LitElement {
 
     #text-svg text {
       font-weight: 500;
-      font-size: 2.2vmin;
+      font-size: 2vmin;
       fill: #fff;
       text-anchor: middle;
       -webkit-font-smoothing: antialiased;

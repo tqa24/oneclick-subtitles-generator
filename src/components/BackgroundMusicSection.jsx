@@ -146,7 +146,7 @@ const BackgroundMusicSection = () => {
             </div>
           )}
 
-          <div style={{ position: 'relative', width: '100%', height: 480, background: '#111', borderRadius: 6, overflow: 'hidden' }}>
+          <div style={{ position: 'relative', width: '100%', height: 600, background: '#111', borderRadius: 6, overflow: 'hidden' }}>
             <iframe
               ref={iframeRef}
               title="promptdj-midi"
