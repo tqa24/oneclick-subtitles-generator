@@ -34,7 +34,7 @@ export class PromptController extends LitElement {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      /* NEW: Establish a positioning context for the MIDI label */
+      /* Establish a positioning context for the MIDI label */
       position: relative;
     }
     weight-knob {
@@ -45,23 +45,18 @@ export class PromptController extends LitElement {
     }
     
     #midi {
-      /* NEW: Take the label out of the document flow to float it */
       position: absolute;
-      /* NEW: Position it at the top-center of the parent */
       top: 1vmin;
       left: 50%;
-      /* NEW: Ensure perfect horizontal centering */
       transform: translateX(-50%);
-      /* NEW: Guarantee it renders on top of everything */
       z-index: 10;
-
       font-family: monospace;
       text-align: center;
       font-size: 1.5vmin;
       border-radius: 1.5vmin;
       padding: 2px 5px;
       color: #fff;
-      background: #222; /* Solid background */
+      background: #222;
       cursor: pointer;
       visibility: hidden;
       user-select: none;
@@ -70,14 +65,12 @@ export class PromptController extends LitElement {
     }
     
     #midi:hover {
-      /* NEW: Combine hover scale with the centering transform */
       transform: translateX(-50%) scale(1.1);
       box-shadow: 0 0 0.5vmin #fff;
     }
     
     .learn-mode #midi {
       color: orange;
-      /* Use the updated animation with the transform */
       animation: pulse-orange 1.5s infinite;
     }
     
@@ -93,7 +86,17 @@ export class PromptController extends LitElement {
       display: flex;
       align-items: center;
       justify-content: center;
-      pointer-events: auto;
+      
+      /* 
+       * ==================================================================
+       * THE FIX: This is the key change.
+       * By setting pointer-events to 'none', this wrapper becomes 
+       * transparent to mouse clicks, allowing them to pass through to the
+       * weight-knob underneath it. The interactive children below will
+       * re-enable pointer-events for themselves.
+       * ==================================================================
+       */
+      pointer-events: none;
       order: 3;
     }
 
@@ -102,7 +105,7 @@ export class PromptController extends LitElement {
       height: 100%;
       overflow: visible;
       user-select: none;
-      pointer-events: none;
+      pointer-events: none; /* The SVG container itself is not interactive */
     }
 
     /* Default = dark-friendly (white text with black glow) */
@@ -113,7 +116,8 @@ export class PromptController extends LitElement {
       text-anchor: middle;
       -webkit-font-smoothing: antialiased;
       text-shadow: 0 0 0.5vmin #000, 0 0 0.5vmin #000;
-      pointer-events: auto;
+      /* FIX: Re-enable pointer events for the text so it can be clicked */
+      pointer-events: auto; 
       cursor: text;
       transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275),
         text-shadow 0.2s ease-out, fill 0.2s ease-out;
@@ -169,6 +173,7 @@ export class PromptController extends LitElement {
       position: absolute;
       visibility: hidden;
       z-index: 2;
+      /* FIX: Re-enable pointer events for the input field so it can be focused */
       pointer-events: auto;
       cursor: text;
 
@@ -186,7 +191,7 @@ export class PromptController extends LitElement {
       opacity: 0; /* capture input but keep visual on arc */
     }
 
-    /* NEW: Make the arched text visually distinct during editing. */
+    /* Make the arched text visually distinct during editing. */
     .is-editing #text-svg text {
       /* Retain the scale from the hover state to prevent a visual "jump". */
       transform: scale(1.2) translateY(-4px);
