@@ -10,38 +10,65 @@ import { classMap } from 'lit/directives/class-map.js';
 export class ToastMessage extends LitElement {
   static override styles = css`
     .toast {
-      line-height: 1.6;
       position: fixed;
-      top: 20px;
       left: 50%;
-      transform: translateX(-50%);
-      background-color: #000;
-      color: white;
-      padding: 15px;
-      border-radius: 5px;
-      display: flex;
+      bottom: 24px;
+      transform: translate(-50%, 16px);
+      opacity: 0;
+
+      display: inline-flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 15px;
-      width: min(450px, 80vw);
-      transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-      border: 2px solid #fff;
-      box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5);
+      gap: 12px;
+      padding: 12px 16px;
+      max-width: min(520px, 88vw);
+
+      border-radius: 16px;
+      border: 1px solid var(--md-outline-variant);
+      background: color-mix(in srgb, var(--md-surface), transparent 0%);
+      color: var(--md-on-surface);
+      box-shadow: var(--md-elevation-level3);
+      backdrop-filter: blur(6px);
+
+      line-height: 1.5;
       text-wrap: pretty;
+      z-index: 999999;
+      transition: transform var(--md-duration-medium3) var(--md-easing-emphasized),
+                  opacity var(--md-duration-medium3) var(--md-easing-emphasized),
+                  box-shadow var(--md-duration-short4) var(--md-easing-standard);
     }
+
+    .toast.showing {
+      transform: translate(-50%, 0);
+      opacity: 1;
+      box-shadow: var(--md-elevation-level4);
+    }
+
+    .message {
+      flex: 1 1 auto;
+      color: var(--md-on-surface);
+    }
+
     button {
-      border-radius: 100px;
-      aspect-ratio: 1;
-      border: none;
-      color: #000;
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 9999px;
+      border: 1px solid var(--md-outline-variant);
+      background: var(--md-primary-container);
+      color: var(--md-on-primary-container);
       cursor: pointer;
+      transition: box-shadow var(--md-duration-short3) var(--md-easing-standard),
+                  background-color var(--md-duration-short3) var(--md-easing-standard);
     }
-    .toast:not(.showing) {
-      transition-duration: 1s;
-      transform: translate(-50%, -200%);
-    }
+
+    button:hover { box-shadow: var(--md-elevation-level1); }
+    button:active { box-shadow: var(--md-elevation-level0, none); }
+
     a {
-      color: #acacac;
+      color: var(--md-primary);
       text-decoration: underline;
     }
   `;

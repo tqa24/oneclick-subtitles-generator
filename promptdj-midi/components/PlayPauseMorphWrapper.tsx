@@ -1,4 +1,3 @@
-import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import PlayPauseMorphType4 from './react/PlayPauseMorphType4.jsx';
 import LoadingIndicator from './react/LoadingIndicator.jsx';
@@ -77,8 +76,19 @@ class PlayPauseMorphElement extends HTMLElement {
     if (!this._root) return;
     const size = this._size;
     const spinnerSize = Math.max(24, Math.floor(size * 0.8));
+    // Detect theme from iframe document element
+    let isLight = true;
+    try { isLight = (document.documentElement.getAttribute('data-theme') || 'light') !== 'dark'; } catch {}
     this._root.render(
-      <div style={{ position: 'relative', width: size, height: size }}>
+      <div
+        style={{
+          position: 'relative',
+          width: size,
+          height: size,
+          // Add shadow only in light theme for better depth
+          filter: isLight ? 'drop-shadow(0 6px 20px rgba(0,0,0,0.25)) drop-shadow(0 2px 8px rgba(0,0,0,0.18))' : undefined,
+        }}
+      >
         <PlayPauseMorphType4
           playing={this._playing}
           onToggle={this.onToggle}

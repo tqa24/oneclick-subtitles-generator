@@ -105,6 +105,7 @@ export class PromptController extends LitElement {
       pointer-events: none;
     }
 
+    /* Default = dark-friendly (white text with black glow) */
     #text-svg text {
       font-weight: 500;
       font-size: 2vmin;
@@ -117,6 +118,12 @@ export class PromptController extends LitElement {
       transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275),
         text-shadow 0.2s ease-out;
       transform-origin: 50% 50%;
+    }
+
+    /* Light theme: black text with white shadows */
+    :host-context([data-theme="light"]) #text-svg text {
+      fill: #000;
+      text-shadow: 0 0 0.6vmin #fff, 0 0 1.2vmin rgba(255,255,255,0.85);
     }
 
     .edit-icon {
