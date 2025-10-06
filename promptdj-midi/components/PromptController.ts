@@ -116,7 +116,7 @@ export class PromptController extends LitElement {
       pointer-events: auto;
       cursor: text;
       transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-        text-shadow 0.2s ease-out;
+        text-shadow 0.2s ease-out, fill 0.2s ease-out;
       transform-origin: 50% 50%;
     }
 
@@ -184,6 +184,21 @@ export class PromptController extends LitElement {
     .is-editing #text {
       visibility: visible;
       opacity: 0; /* capture input but keep visual on arc */
+    }
+
+    /* NEW: Make the arched text visually distinct during editing. */
+    .is-editing #text-svg text {
+      /* Retain the scale from the hover state to prevent a visual "jump". */
+      transform: scale(1.2) translateY(-4px);
+      /* Invert colors to make the editing mode highly visible. */
+      fill: #000;
+      text-shadow: 0 0 0.6vmin #fff, 0 0 1.2vmin rgba(255, 255, 255, 0.85);
+    }
+
+    /* Invert editing mode colors for the light theme too. */
+    :host-context([data-theme='light']) .is-editing #text-svg text {
+      fill: #fff;
+      text-shadow: 0 0 0.5vmin #000, 0 0 0.5vmin #000;
     }
 
     :host([filtered]) {

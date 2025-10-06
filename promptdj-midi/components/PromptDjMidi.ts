@@ -61,7 +61,7 @@ export class PromptDjMidi extends LitElement {
 
     .add-slot {
       width: 17vmin;
-      height: 12vmin;
+      height: 11vmin;
       display: inline-flex;
       align-items: center;
       justify-content: center;
