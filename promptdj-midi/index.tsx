@@ -12,6 +12,8 @@ import { LiveMusicHelper } from './utils/LiveMusicHelper';
 import { AudioAnalyser } from './utils/AudioAnalyser';
 
 let ai: GoogleGenAI | null = null;
+// Temporary debug logging
+console.log('[PDJ] index.tsx loaded');
 const model = 'lyria-realtime-exp';
 
 // Recorder plumbing shared across message handlers
@@ -26,13 +28,16 @@ let audioAnalyser: AudioAnalyser | null = null;
 
 
 function main() {
+  console.log('[PDJ] main() start');
   const initialPrompts = buildInitialPrompts();
 
   const pdjMidi = new PromptDjMidi(initialPrompts);
   document.body.appendChild(pdjMidi);
+  console.log('[PDJ] <prompt-dj-midi> attached');
 
   const toastMessage = new ToastMessage();
   document.body.appendChild(toastMessage);
+  console.log('[PDJ] <toast-message> attached');
 
   // Wire UI events regardless of helper init timing
   pdjMidi.addEventListener('prompts-changed', ((e: Event) => {
@@ -41,8 +46,22 @@ function main() {
     liveMusicHelper?.setWeightedPrompts(prompts);
   }));
 
+  // New explicit play/pause events to avoid accidental re-toggles
+  pdjMidi.addEventListener('play', () => {
+    liveMusicHelper?.play();
+  });
+  pdjMidi.addEventListener('pause', () => {
+    // Use stop() to fully stop and prevent stray chunks from re-triggering
+    liveMusicHelper?.stop();
+  });
+  // Back-compat: if any 'play-pause' is emitted, map based on current state
   pdjMidi.addEventListener('play-pause', () => {
-    liveMusicHelper?.playPause();
+    if (!liveMusicHelper) return;
+    const stateMsg = '[PDJ] back-compat play-pause used; mapping to explicit action';
+    try { console.log(stateMsg); } catch {}
+    // Best-effort mapping: if not playing, play; else stop
+    // This minimizes chance of spurious re-plays
+    liveMusicHelper?.play?.();
   });
 
   const attachHelperListeners = () => {

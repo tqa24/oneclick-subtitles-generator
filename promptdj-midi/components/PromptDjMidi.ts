@@ -9,7 +9,7 @@ import { styleMap } from 'lit/directives/style-map.js';
 import { throttle } from '../utils/throttle';
 
 import './PromptController';
-import './PlayPauseButton';
+import './PlayPauseMorphWrapper';
 import type { PlaybackState, Prompt } from '../types';
 import { MidiDispatcher } from '../utils/MidiDispatcher';
 
@@ -34,20 +34,35 @@ export class PromptDjMidi extends LitElement {
       z-index: -1;
       background: #111;
     }
+    /* Main layout: grid on the left, controls on the right */
+    #content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12vmin;
+      margin-top: 8vmin;
+    }
     #grid {
       width: 80vmin;
       height: 80vmin;
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 2.5vmin;
-      margin-top: 8vmin;
     }
     prompt-controller {
       width: 100%;
     }
-    play-pause-button {
-      position: relative;
-      width: 15vmin;
+    #sideControls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 80vmin;
+    }
+    play-pause-morph {
+      width: 23vmin;
+      height: 23vmin;
+      display: inline-block;
     }
     #buttons {
       position: absolute;
@@ -68,11 +83,8 @@ export class PromptDjMidi extends LitElement {
       border-radius: 4px;
       user-select: none;
       padding: 3px 6px;
-      &.active {
-        background-color: #fff;
-        color: #000;
-      }
     }
+    button.active { background-color: #fff; color: #000; }
     select {
       font: inherit;
       padding: 5px;
@@ -92,8 +104,14 @@ export class PromptDjMidi extends LitElement {
   @property({ type: String }) public playbackState: PlaybackState = 'stopped';
   @property({ type: String }) public lang: string = 'en';
   @state() public audioLevel = 0;
+  private lastUserAction: 'play' | 'pause' | null = null;
+
   @state() private midiInputIds: string[] = [];
   @state() private activeMidiInputId: string | null = null;
+  @state() private optimisticLoading: boolean = false;
+  @state() private optimisticPlaying: boolean | null = null; // null = follow real state
+  private clickCooldownUntil: number = 0; // epoch ms; during this window, ignore extra toggles
+
 
   @property({ type: Object })
   private filteredPrompts = new Set<string>();
@@ -193,8 +211,34 @@ export class PromptDjMidi extends LitElement {
     this.midiDispatcher.activeMidiInputId = newMidiId;
   }
 
-  private playPause() {
-    this.dispatchEvent(new CustomEvent('play-pause'));
+  private playPause(e: Event) {
+    // Prevent the bubbling play-pause event from also reaching outer listeners
+    e.stopPropagation();
+
+    // Debounce rapid clicks to avoid double toggles
+    const now = Date.now();
+    if (now < this.clickCooldownUntil) return;
+    this.clickCooldownUntil = now + 500;
+
+    const morphEl = this.renderRoot?.querySelector('play-pause-morph') as HTMLElement | null;
+
+    // If currently playing or loading: this click means STOP
+    if (this.playbackState === 'playing' || this.playbackState === 'loading') {
+      this.lastUserAction = 'pause';
+      this.optimisticPlaying = false; // pause -> play morph immediately
+      this.optimisticLoading = false; // ensure spinner is off
+      morphEl?.removeAttribute('loading');
+      morphEl?.setAttribute('playing', 'false');
+      this.dispatchEvent(new CustomEvent('pause', { bubbles: true })); // explicit pause/stop
+      return;
+    }
+
+    // If paused/stopped: this click means PLAY
+    this.lastUserAction = 'play';
+    this.optimisticLoading = true; // show spinner immediately
+    this.optimisticPlaying = null; // follow real state for icon
+    morphEl?.setAttribute('loading', '');
+    this.dispatchEvent(new CustomEvent('play', { bubbles: true }));
   }
 
   public addFilteredPrompt(prompt: string) {
@@ -218,10 +262,47 @@ export class PromptDjMidi extends LitElement {
     return new Map(this.prompts);
   }
 
+  protected updated(changedProps: Map<string, any>) {
+    if (changedProps.has('playbackState')) {
+      const state = this.playbackState;
+      // Apply rules based on last user action to avoid flicker and ensure immediate UX
+      if (this.lastUserAction === 'play') {
+        if (state === 'playing') {
+          // Real play started: clear spinner and reset
+          this.optimisticLoading = false;
+          this.optimisticPlaying = null;
+          this.lastUserAction = null;
+        } else if (state === 'loading') {
+          // Keep spinner on
+          this.optimisticLoading = true;
+        } else if (state === 'paused' || state === 'stopped') {
+          // Transient stopped/paused after play click: keep spinner until real loading/playing
+          this.optimisticLoading = true;
+        }
+      } else if (this.lastUserAction === 'pause') {
+        // Force pause morph, never show spinner
+        this.optimisticLoading = false;
+        this.optimisticPlaying = false;
+        if (state === 'paused' || state === 'stopped') {
+          this.lastUserAction = null;
+        }
+      } else {
+        // No recent action: follow real state
+        this.optimisticLoading = (state === 'loading');
+        this.optimisticPlaying = null;
+      }
+    }
+  }
+
   override render() {
     const bg = styleMap({
       backgroundImage: this.makeBackground(),
     });
+    const playingProp = this.optimisticPlaying !== null
+      ? this.optimisticPlaying
+      : (this.playbackState === 'playing');
+    const loadingProp = this.optimisticLoading || this.playbackState === 'loading';
+
     return html`<div id="background" style=${bg}></div>
       <div id="buttons">
         <button
@@ -243,8 +324,16 @@ export class PromptDjMidi extends LitElement {
         : html`<option value="">${this.tr('noDevices')}</option>`}
         </select>
       </div>
-      <div id="grid">${this.renderPrompts()}</div>
-      <play-pause-button .playbackState=${this.playbackState} @click=${this.playPause}></play-pause-button>`;
+      <div id="content">
+        <div id="grid">${this.renderPrompts()}</div>
+        <div id="sideControls">
+          <play-pause-morph
+            ?playing=${playingProp}
+            ?loading=${loadingProp}
+            @play-pause=${this.playPause}
+          ></play-pause-morph>
+        </div>
+      </div>`;
   }
 
   private renderPrompts() {
