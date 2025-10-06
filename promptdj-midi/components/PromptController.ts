@@ -83,7 +83,7 @@ export class PromptController extends LitElement {
       fill: #fff;
       text-anchor: middle;
       -webkit-font-smoothing: antialiased;
-      text-shadow: 0 0 0.8vmin #000, 0 0 0.2vmin #000;
+      text-shadow: 0 0 0.5vmin #000, 0 0 0.5vmin #000, 0 0 0.5vmin #000;
     }
 
     /* The editable span, now positioned for in-place editing */
