@@ -92,6 +92,10 @@
   animation: slideUp var(--md-duration-medium3) var(--md-easing-emphasized-decelerate);
 }
 
+.video-rendering-content {
+  padding: 24px;
+}
+
 /* Expanded content wrapper */
 .video-rendering-content,
 .music-generator-content {

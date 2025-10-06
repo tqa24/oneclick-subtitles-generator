@@ -203,6 +203,9 @@ function main() {
     if (data.type === 'midi:setActiveInput' && typeof data.id === 'string') {
       (pdjMidi as any).setActiveMidiInputId?.(data.id);
     }
+    if (data.type === 'pm-dj-reset') {
+      (pdjMidi as any).resetAll?.();
+    }
   });
 
 }

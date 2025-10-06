@@ -39,8 +39,46 @@ export class PromptDjMidi extends LitElement {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 12vmin;
+      gap: 8vmin;
+      position: relative;
     }
+
+    /* Grid wrapper includes left add column and the 4x4 grid */
+    #gridWrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2.5vmin;
+      height: 80vmin;
+    }
+
+    #addColumn {
+      display: grid;
+      grid-template-rows: repeat(4, 1fr);
+      gap: 2.5vmin;
+      height: 80vmin;
+    }
+
+    .add-slot {
+      width: 17vmin;
+      height: 12vmin;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+    .add-slot .add-icon {
+      width: 9vmin;
+      height: 9vmin;
+      color: #fff;
+      filter: drop-shadow(0 12px 22px rgba(0,0,0,0.25)) drop-shadow(0 4px 10px rgba(0,0,0,0.18));
+      transition: transform var(--md-duration-short3) var(--md-easing-emphasized);
+    }
+    :host([data-theme="light"]) .add-slot .add-icon { color: #fff; }
+    .add-slot:hover .add-icon { transform: scale(1.05); }
+
     #grid {
       width: 80vmin;
       height: 80vmin;
@@ -48,9 +86,34 @@ export class PromptDjMidi extends LitElement {
       grid-template-columns: repeat(4, 1fr);
       gap: 2.5vmin;
     }
-    prompt-controller {
-      width: 100%;
+    .pc-wrap {
+      position: relative;
+      overflow: visible;
     }
+    .pc-clear {
+      position: absolute;
+      top: -0.8vmin;
+      right: -0.8vmin;
+      width: 3.2vmin;
+      height: 3.2vmin;
+      border-radius: 9999px;
+      border: 1px solid var(--md-outline-variant);
+      background: var(--md-surface);
+      color: var(--md-on-surface);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--md-elevation-level1);
+      opacity: 0;
+      z-index: 20;
+      pointer-events: auto;
+      transition: opacity var(--md-duration-short3) var(--md-easing-standard),
+                  transform var(--md-duration-short3) var(--md-easing-standard);
+      transform: scale(0.9);
+    }
+    .pc-wrap:hover .pc-clear { opacity: 1; transform: scale(1); }
+
     #sideControls {
       display: flex;
       flex-direction: column;
@@ -63,37 +126,8 @@ export class PromptDjMidi extends LitElement {
       height: 23vmin;
       display: inline-block;
     }
-    #buttons {
-      position: absolute;
-      top: 0;
-      left: 0;
-      padding: 5px;
-      display: flex;
-      gap: 5px;
-    }
-    button {
-      font: inherit;
-      font-weight: 600;
-      cursor: pointer;
-      color: #fff;
-      background: #0002;
-      -webkit-font-smoothing: antialiased;
-      border: 1.5px solid #fff;
-      border-radius: 4px;
-      user-select: none;
-      padding: 3px 6px;
-    }
-    button.active { background-color: #fff; color: #000; }
-    select {
-      font: inherit;
-      padding: 5px;
-      background: #fff;
-      color: #000;
-      border-radius: 4px;
-      border: none;
-      outline: none;
-      cursor: pointer;
-    }
+
+
   `;
 
   private prompts: Map<string, Prompt>;
@@ -111,15 +145,28 @@ export class PromptDjMidi extends LitElement {
   @state() private optimisticPlaying: boolean | null = null; // null = follow real state
   private clickCooldownUntil: number = 0; // epoch ms; during this window, ignore extra toggles
 
+  // Left add-column activation state (4 slots)
+  @state() private addSlotsActive: boolean[] = [false, false, false, false];
+  // Track which base grid slots are removed (to render add buttons in-grid)
+  @state() private removedSlots: Set<string> = new Set();
 
   @property({ type: Object })
   private filteredPrompts = new Set<string>();
+
+  private basePrompts: Map<string, Prompt>;
+  private baseOrder: string[] = [];
 
   constructor(
     initialPrompts: Map<string, Prompt>,
   ) {
     super();
-    this.prompts = initialPrompts;
+    // Deep-copy base prompts so we can reset later
+    this.basePrompts = new Map<string, Prompt>();
+    for (const [k, p] of initialPrompts.entries()) {
+      this.basePrompts.set(k, { ...p });
+      this.baseOrder.push(k);
+    }
+    this.prompts = new Map(this.basePrompts);
     this.midiDispatcher = new MidiDispatcher();
   }
 
@@ -213,6 +260,19 @@ export class PromptDjMidi extends LitElement {
     this.requestUpdate();
   }
 
+  // Localized placeholder text
+  private trPlaceholder(): string {
+    const dict: Record<string, string> = {
+      en: 'Type a sound prompt',
+      ko: '사운드 프롬프트를 입력하세요',
+      vi: 'Nhập prompt âm thanh',
+    };
+    const lc = (this.lang || 'en').toLowerCase();
+    if (lc.startsWith('ko')) return dict.ko;
+    if (lc.startsWith('vi')) return dict.vi;
+    return dict.en;
+  }
+
   private playPause(e: Event) {
     // Prevent the bubbling play-pause event from also reaching outer listeners
     e.stopPropagation();
@@ -264,6 +324,67 @@ export class PromptDjMidi extends LitElement {
     return new Map(this.prompts);
   }
 
+  private addExtraSlot(idx: number) {
+    const promptId = `extra-${idx}`;
+    if (this.prompts.has(promptId)) return;
+    const color = ['#9900ff', '#2af6de', '#ff25f6', '#ffdd28'][idx % 4];
+    const p: Prompt = { promptId, text: this.trPlaceholder(), weight: 0, cc: 100 + idx, color };
+    const updated = new Map(this.prompts);
+    updated.set(promptId, p);
+    this.prompts = updated;
+    const slots = [...this.addSlotsActive];
+    slots[idx] = true;
+    this.addSlotsActive = slots;
+    this.requestUpdate();
+  }
+
+  private addBaseSlot(idx: number) {
+    const id = this.baseOrder[idx];
+    if (!id || this.prompts.has(id)) return;
+    const base = this.basePrompts.get(id);
+    if (!base) return;
+    const updated = new Map(this.prompts);
+    updated.set(id, { ...base });
+    this.prompts = updated;
+    const rem = new Set(this.removedSlots);
+    rem.delete(id);
+    this.removedSlots = rem;
+    this.requestUpdate();
+  }
+
+  private clearPrompt(promptId: string) {
+    if (!this.prompts.has(promptId)) return;
+    if (promptId.startsWith('extra-')) {
+      // Remove extra prompt and deactivate slot
+      const idx = Number(promptId.split('-')[1] || 0);
+      const updated = new Map(this.prompts);
+      updated.delete(promptId);
+      this.prompts = updated;
+      const slots = [...this.addSlotsActive];
+      if (!Number.isNaN(idx)) slots[idx] = false;
+      this.addSlotsActive = slots;
+      this.requestUpdate();
+      return;
+    }
+    // Remove built-in prompt and mark slot as removed to render add button in-grid
+    const updated = new Map(this.prompts);
+    updated.delete(promptId);
+    this.prompts = updated;
+    const rem = new Set(this.removedSlots);
+    rem.add(promptId);
+    this.removedSlots = rem;
+    this.requestUpdate();
+  }
+
+  private resetAll() {
+    // Reset to original base prompts and deactivate extra slots and removed slots
+    this.prompts = new Map(this.basePrompts);
+    this.addSlotsActive = [false, false, false, false];
+    this.removedSlots = new Set();
+    this.requestUpdate();
+    this.dispatchEvent(new CustomEvent('prompts-changed', { detail: this.prompts }));
+  }
+
   protected updated(changedProps: Map<string, any>) {
     if (changedProps.has('playbackState')) {
       const state = this.playbackState;
@@ -301,7 +422,17 @@ export class PromptDjMidi extends LitElement {
 
     return html`<div id="background" style=${bg}></div>
       <div id="content">
-        <div id="grid">${this.renderPrompts()}</div>
+        <div id="gridWrap">
+          <div id="addColumn">
+            ${[0,1,2,3].map((idx) => this.addSlotsActive[idx]
+              ? this.renderPromptWithClear(`extra-${idx}`)
+              : html`<button class="add-slot" @click=${() => this.addExtraSlot(idx)} title="Add">
+                  <svg class="add-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M412-412H222q-29 0-48.5-20.2T154-480q0-29 19.5-48.5T222-548h190v-191q0-27.6 20.2-47.8Q452.4-807 480-807q27.6 0 47.8 20.2Q548-766.6 548-739v191h190q29 0 48.5 19.5t19.5 48q0 28.5-19.5 48.5T738-412H548v190q0 27.6-20.2 47.8Q507.6-154 480-154q-27.6 0-47.8-20.2Q412-194.4 412-222v-190Z"/></svg>
+                </button>`
+            )}
+          </div>
+          <div id="grid">${this.renderPrompts()}</div>
+        </div>
         <div id="sideControls">
           <play-pause-morph
             ?playing=${playingProp}
@@ -312,20 +443,42 @@ export class PromptDjMidi extends LitElement {
       </div>`;
   }
 
-  private renderPrompts() {
-    return [...this.prompts.values()].map((prompt) => {
-      return html`<prompt-controller
-        promptId=${prompt.promptId}
-        ?filtered=${this.filteredPrompts.has(prompt.text)}
-        cc=${prompt.cc}
-        text=${prompt.text}
-        weight=${prompt.weight}
-        color=${prompt.color}
+  private renderPromptWithClear(promptId: string) {
+    const p = this.prompts.get(promptId);
+    if (!p) return html``;
+    return html`<div class="pc-wrap">
+      <button class="pc-clear" title="Clear" @click=${() => this.clearPrompt(promptId)}>
+        <!-- X icon -->
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <prompt-controller
+        promptId=${p.promptId}
+        ?filtered=${this.filteredPrompts.has(p.text)}
+        cc=${p.cc}
+        text=${p.text}
+        weight=${p.weight}
+        color=${p.color}
         .midiDispatcher=${this.midiDispatcher}
         .showCC=${this.showMidi}
         audioLevel=${this.audioLevel}
-        @prompt-changed=${this.handlePromptChanged}>
-      </prompt-controller>`;
+        @prompt-changed=${this.handlePromptChanged}
+      ></prompt-controller>
+    </div>`;
+  }
+
+  private renderPrompts() {
+    const nodes: any[] = [];
+    // Render in base grid order, allowing removed slots to show an add button
+    this.baseOrder.forEach((id, idx) => {
+      const p = this.prompts.get(id);
+      if (!p || this.removedSlots.has(id)) {
+        nodes.push(html`<button class="add-slot" @click=${() => this.addBaseSlot(idx)} title="Add">
+          <svg class="add-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M412-412H222q-29 0-48.5-20.2T154-480q0-29 19.5-48.5T222-548h190v-191q0-27.6 20.2-47.8Q452.4-807 480-807q27.6 0 47.8 20.2Q548-766.6 548-739v191h190q29 0 48.5 19.5t19.5 48q0 28.5-19.5 48.5T738-412H548v190q0 27.6-20.2 47.8Q507.6-154 480-154q-27.6 0-47.8-20.2Q412-194.4 412-222v-190Z"/></svg>
+        </button>`);
+      } else {
+        nodes.push(this.renderPromptWithClear(id));
+      }
     });
+    return nodes;
   }
 }
