@@ -128,7 +128,6 @@ export class WeightKnob extends LitElement {
     scale += MIN_HALO_SCALE;
     scale += this.audioLevel * HALO_LEVEL_MODIFIER;
 
-    const isLight = (() => { try { return (document.documentElement.getAttribute('data-theme') || '').toLowerCase() !== 'dark'; } catch { return true; } })();
 
     const haloStyle = styleMap({
       display: this.value > 0 ? 'block' : 'none',
@@ -157,7 +156,7 @@ export class WeightKnob extends LitElement {
         <path
           d=${this.describeArc(40, 40, minRot, rot, 34.5)}
           fill="none"
-          stroke=${isLight ? this.color : '#fff'}
+          stroke="#fff"
           stroke-width="3"
           stroke-linecap="round" />
       </svg>
