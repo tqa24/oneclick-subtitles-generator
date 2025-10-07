@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import '../styles/CollapsibleSection.css';
 import '../styles/BackgroundMusicSection.css';
+import '../styles/components/panel-resizer.css';
 
 import { useTranslation } from 'react-i18next';
 import { getCurrentKey } from '../services/gemini/keyManager';
@@ -24,12 +25,82 @@ const BackgroundMusicSection = () => {
     return saved === 'true';
   });
 
+  // Resizable panel height state
+  const [panelHeight, setPanelHeight] = useState(() => {
+    const saved = parseInt(localStorage.getItem('bg_music_panel_height') || '600', 10);
+    return Number.isFinite(saved) ? saved : 600;
+  });
+  const panelMinHeight = 280;
+  const panelMaxHeight = 1400;
+
+  // Track active resizing to place an overlay above the iframe
+  const [isResizing, setIsResizing] = useState(false);
+
   // MIDI UI state now lives in the main app header
   const [midiShow, setMidiShow] = useState(false);
   const [midiInputs, setMidiInputs] = useState([]); // [{id, name}]
   const [activeMidiId, setActiveMidiId] = useState('');
 
   const midiAppUrl = useMemo(() => 'http://127.0.0.1:3037/', []);
+
+  // Resizer refs and handlers for panel height
+  const panelRef = useRef(null);
+  const resizingRef = useRef(false);
+  const startYRef = useRef(0);
+  const startHeightRef = useRef(0);
+
+  // Keep latest height in a ref to avoid stale closures
+  const latestHeightRef = useRef(panelHeight);
+  useEffect(() => { latestHeightRef.current = panelHeight; }, [panelHeight]);
+
+  const endResize = useCallback(() => {
+    if (!resizingRef.current) return;
+    resizingRef.current = false;
+    try { document.body.style.cursor = ''; document.body.style.userSelect = ''; } catch {}
+    const finalH = Math.round(panelRef.current?.offsetHeight || latestHeightRef.current || 600);
+    try { localStorage.setItem('bg_music_panel_height', String(finalH)); } catch {}
+    // Remove all possible listeners
+    window.removeEventListener('pointermove', onAnyMove);
+    window.removeEventListener('pointerup', endResize);
+    window.removeEventListener('pointercancel', endResize);
+    window.removeEventListener('mousemove', onAnyMove);
+    window.removeEventListener('mouseup', endResize);
+    window.removeEventListener('touchmove', onAnyTouchMove);
+    window.removeEventListener('touchend', endResize);
+    window.removeEventListener('touchcancel', endResize);
+    window.removeEventListener('blur', endResize);
+    setIsResizing(false);
+  }, []);
+
+  const onAnyMove = useCallback((e) => {
+    if (!resizingRef.current) return;
+    const clientY = e.clientY ?? (e.touches && e.touches[0] && e.touches[0].clientY) ?? 0;
+    const dy = clientY - startYRef.current;
+    let next = startHeightRef.current + dy;
+    next = Math.max(panelMinHeight, Math.min(panelMaxHeight, next));
+    setPanelHeight(next);
+  }, []);
+
+  const onAnyTouchMove = useCallback((e) => onAnyMove(e), [onAnyMove]);
+
+  function onResizePointerDown(e) {
+    e.preventDefault();
+    resizingRef.current = true;
+    setIsResizing(true);
+    startYRef.current = (e.clientY ?? (e.touches && e.touches[0] && e.touches[0].clientY) ?? 0);
+    startHeightRef.current = panelRef.current?.offsetHeight || latestHeightRef.current || panelHeight;
+    try { document.body.style.cursor = 'row-resize'; document.body.style.userSelect = 'none'; } catch {}
+    try { e.currentTarget.setPointerCapture?.(e.pointerId); } catch {}
+    window.addEventListener('pointermove', onAnyMove);
+    window.addEventListener('pointerup', endResize);
+    window.addEventListener('pointercancel', endResize);
+    window.addEventListener('mousemove', onAnyMove);
+    window.addEventListener('mouseup', endResize);
+    window.addEventListener('touchmove', onAnyTouchMove, { passive: false });
+    window.addEventListener('touchend', endResize);
+    window.addEventListener('touchcancel', endResize);
+    window.addEventListener('blur', endResize);
+  }
 
   const postApiKeyToIframe = useCallback(() => {
     const apiKey = getCurrentKey?.() || localStorage.getItem('gemini_api_key') || '';
@@ -369,8 +440,11 @@ const BackgroundMusicSection = () => {
           </p>
         </div>
       ) : (
-        <div className="music-generator-content">
-          <div style={{ position: 'relative', width: '100%', height: 600, background: '#111', borderRadius: 6, overflow: 'hidden' }}>
+        <div className="music-generator-content" style={{ gap: 0 }}>
+          <div
+            ref={panelRef}
+            style={{ position: 'relative', width: '100%', height: panelHeight, background: '#111', borderRadius: 6, overflow: 'hidden' }}
+         >
             <iframe
               ref={iframeRef}
               title="promptdj-midi"
@@ -379,13 +453,21 @@ const BackgroundMusicSection = () => {
               allow="midi"
               style={{ border: 'none', width: '100%', height: '100%' }}
             />
+            {isResizing && (
+              <div
+                style={{
+                  position: 'absolute', inset: 0, cursor: 'row-resize',
+                  zIndex: 10, background: 'transparent'
+                }}
+              />
+            )}
             {/* Overlayed reset button (page bottom-left) */}
             <button
               onClick={() => { try { iframeRef.current?.contentWindow?.postMessage({ type: 'pm-dj-reset' }, '*'); } catch {} }}
               title={t('common.reset', 'Reset')}
               style={{
-                position: 'absolute', left: 24, bottom: 24,
-                width: 44, height: 44, borderRadius: 9999,
+                position: 'absolute', left: 16, bottom: 16,
+                width: 40, height: 40, borderRadius: 9999,
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 border: '1px solid var(--md-outline-variant)',
                 background: 'var(--md-primary-container)', color: 'var(--md-on-primary-container)',
@@ -394,7 +476,24 @@ const BackgroundMusicSection = () => {
             >
               <svg xmlns="http://www.w3.org/2000/svg" height="28" viewBox="0 -960 960 960" width="28" fill="currentColor"><path d="M352-96q-106-40-172-132.5T114-438q0-47 12-92t33-86q15-30 48-32.5t60 23.5q14 14 16.5 36t-8.5 42q-12 26-18.5 53.5T250-438q0 70 37.5 127t99.5 84q21 8 34.5 27t13.5 39q0 37-25.5 57T352-96Zm256 0q-32 13-57.5-7.5T525-161q0-19 13.5-38.5T573-227q61-27 99-84t38-127q0-89-58.5-155T506-667h-6l11 11q15 15 13.5 36.5T509-584q-16 15-37.5 15T434-584L324-694q-10-10-15-22.5t-5-25.5q0-13 5-25.5t15-21.5l111-112q15-15 36.5-15t37.5 15q15 16 15.5 37T511-829l-25 25h7q148 0 250.5 107.5T846-438q0 117-66 209.5T608-96Z"/></svg>
             </button>
+
+            {/* Floating resizer pill (bottom-right) */}
+            <div
+              className="floating-resizer-pill"
+              onPointerDown={onResizePointerDown}
+              onDoubleClick={() => {
+                const def = 600;
+                setPanelHeight(def);
+                try { localStorage.setItem('bg_music_panel_height', String(def)); } catch {}
+              }}
+              title={t('common.resize', 'Resize height')}
+              role="separator"
+              aria-orientation="vertical"
+              aria-label={t('common.resize', 'Resize height')}
+            />
           </div>
+          {/* Horizontal resizer handle */}
+
         </div>
       )}
     </div>
