@@ -8,6 +8,7 @@
   "statusRecordingError": "Recording error: {{error}}",
   "sectionMessage": "Create DJ‑style live music and record it.",
   "helperMessage": "Don’t worry about network interruptions or Lyria errors — the recorded audio will automatically remove all silence.",
+  "noDevices": "No devices found",
   "startRecording": "Start Recording",
   "stopRecording": "Stop Recording",
   "downloadRecording": "Download Recording"
