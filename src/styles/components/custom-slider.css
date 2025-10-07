@@ -521,6 +521,24 @@
 }
 
 
-/* ... (rest of the existing CSS file) ... */
+/* Add this to your existing CSS file */
 
-/* ... (ensure you have the original CSS for .standard-slider-value-badge, .standard-slider-track-stop, etc.) ... */
+/* Start stop - dot at the beginning of the inactive track (for range sliders) */
+.standard-slider-start-stop {
+  position: absolute;
+  left: 6px; /* 6px from the start of the track */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 4px;
+  background-color: var(--md-outline, #79747E);
+  border-radius: 50%;
+  z-index: 5;
+  opacity: 1;
+  transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Hide start stop when handle is near the start (<15% value) */
+.standard-slider-start-stop.hidden {
+  opacity: 0;
+}

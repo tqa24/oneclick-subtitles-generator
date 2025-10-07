@@ -98,7 +98,9 @@ const StandardSlider = ({
   const inactiveStartFlex = percentageStart / 100;
   const activeFlex = (percentageEnd - percentageStart) / 100;
   const inactiveEndFlex = (100 - percentageEnd) / 100;
-
+  
+  // Logic to hide stops when thumb is too close to avoid visual overlap
+  const shouldHideStartStop = percentageStart < 15;
   const shouldHideEndStop = percentageEnd > 85;
 
   const snapToStep = useCallback((val) => {
@@ -281,6 +283,7 @@ const StandardSlider = ({
         ) : (
           <>
             <div className="standard-slider-inactive-track" style={{ flexGrow: inactiveStartFlex, minWidth: 0 }}>
+              <div className={`standard-slider-start-stop ${shouldHideStartStop ? 'hidden' : ''}`}></div>
               <div className="track start"></div>
             </div>
             <div className="standard-slider-handle handle-start" onMouseDown={(e) => handleDragStart(e, 'start')}>
