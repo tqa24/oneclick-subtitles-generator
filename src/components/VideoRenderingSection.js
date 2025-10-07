@@ -6,6 +6,7 @@ import RemotionVideoPreview from './RemotionVideoPreview';
 import QueueManagerPanel from './QueueManagerPanel';
 import LoadingIndicator from './common/LoadingIndicator';
 import CustomDropdown from './common/CustomDropdown';
+import { formatTime } from '../utils/timeFormatter';
 import '../styles/VideoRenderingSection.css';
 import '../styles/CollapsibleSection.css';
 import '../styles/components/upload-drop-zone.css';
@@ -38,6 +39,14 @@ const VideoRenderingSection = ({
   const [currentRenderId, setCurrentRenderId] = useState(null);
   const [abortController, setAbortController] = useState(null);
 
+  // Ref for the Remotion video player
+  const videoPlayerRef = useRef(null);
+
+  // Callback to receive duration from RemotionVideoPreview
+  const handleVideoDuration = (duration) => {
+    setSelectedVideoFile(prev => prev ? { ...prev, duration } : prev);
+  };
+
   // Form state with localStorage persistence
   const [selectedVideoFile, setSelectedVideoFile] = useState(null);
   const [selectedSubtitles, setSelectedSubtitles] = useState(() => {
@@ -48,16 +57,39 @@ const VideoRenderingSection = ({
   });
   const [renderSettings, setRenderSettings] = useState(() => {
     const saved = localStorage.getItem('videoRender_renderSettings');
-    return saved ? JSON.parse(saved) : {
+    const defaultSettings = {
       resolution: '1080p',
       frameRate: 60,
       videoType: 'Subtitled Video',
       originalAudioVolume: 100,
-      narrationVolume: 100
+      narrationVolume: 100,
+      trimStart: 0,
+      trimEnd: 0,
     };
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Ensure trim values from previous sessions are included, or use defaults
+      return { ...defaultSettings, ...parsed };
+    }
+    return defaultSettings;
   });
 
-  // New feature states with localStorage persistence
+  // *** FIXED ***
+  // This effect correctly resets the trim range ONLY when a new video's duration is determined.
+  // It no longer causes an infinite loop when the user adjusts the trim slider.
+  useEffect(() => {
+    if (selectedVideoFile && typeof selectedVideoFile.duration === 'number') {
+      // Update the settings to match the new video's duration.
+      // This resets the trim range whenever a new video is loaded.
+      setRenderSettings(prev => ({
+        ...prev,
+        trimStart: 0,
+        trimEnd: selectedVideoFile.duration,
+      }));
+    }
+  }, [selectedVideoFile?.duration]); // Dependency is now just the duration, which is stable.
+
+
   const [subtitleCustomization, setSubtitleCustomization] = useState(() => {
     const saved = localStorage.getItem('videoRender_subtitleCustomization');
     return saved ? JSON.parse(saved) : defaultCustomization;
@@ -75,6 +107,7 @@ const VideoRenderingSection = ({
   const [renderQueue, setRenderQueue] = useState([]);
   const [currentQueueItem, setCurrentQueueItem] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  const userTrimAdjustedRef = useRef(false);
   const [isRefreshingNarration, setIsRefreshingNarration] = useState(false);
 
   // Panel resizing states with localStorage persistence
@@ -1123,6 +1156,8 @@ const VideoRenderingSection = ({
           ...renderSettings,
           subtitleCustomization: queueItem.customization, // Include subtitle customization in metadata
           cropSettings: queueItem.cropSettings, // Include crop settings in metadata
+          trimStart: typeof renderSettings.trimStart === 'number' ? renderSettings.trimStart : 0,
+          trimEnd: typeof renderSettings.trimEnd === 'number' ? renderSettings.trimEnd : 0,
         },
         narrationUrl: narrationUrl, // Use HTTP URL instead of blob URL
         isVideoFile: true
@@ -1825,6 +1860,7 @@ const VideoRenderingSection = ({
               tabIndex={0}
             >
               <RemotionVideoPreview
+                ref={videoPlayerRef}
                 videoFile={selectedVideoFile}
                 subtitles={getCurrentSubtitles()}
                 narrationAudioUrl={(selectedNarration === 'generated' && isAlignedNarrationAvailable()) ? window.alignedNarrationCache?.url : null}
@@ -1837,6 +1873,7 @@ const VideoRenderingSection = ({
                 narrationVolume={selectedNarration === 'none' ? 0 : renderSettings.narrationVolume}
                 cropSettings={cropSettings}
                 onCropChange={setCropSettings}
+                onDurationChange={handleVideoDuration}
               />
             </div>
 
@@ -1860,6 +1897,57 @@ const VideoRenderingSection = ({
 
 
 
+          {/* Trimming timeline/slider below preview-customization-row */}
+          <div className="trimming-timeline-row" style={{ margin: '0 0 16px 0', width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <span style={{ minWidth: 60, textAlign: 'right' }}>
+                {formatTime(renderSettings.trimStart || 0, 'hms')}
+              </span>
+              <StandardSlider
+                range
+                value={[
+                  renderSettings.trimStart || 0,
+                  renderSettings.trimEnd || 0
+                ]}
+                min={0}
+                // *** FIXED ***
+                // Default max to 1 to prevent division by zero errors when duration is not yet known.
+                max={selectedVideoFile && selectedVideoFile.duration ? selectedVideoFile.duration : 1}
+                step={0.01}
+                onChange={([start, end]) => {
+                  setRenderSettings(prev => ({ ...prev, trimStart: start, trimEnd: end }));
+
+                  const oldStart = renderSettings.trimStart || 0;
+                  const oldEnd = renderSettings.trimEnd || 0;
+
+                  // Seek the Remotion player to the new position
+                  if (videoPlayerRef.current) {
+                    const frameRate = renderSettings.frameRate || 30;
+                    if (start !== oldStart) {
+                      // Seek to start position
+                      const frameToSeek = Math.floor(start * frameRate);
+                      videoPlayerRef.current.seekTo(frameToSeek);
+                    } else if (end !== oldEnd) {
+                      // Seek to end position
+                      const frameToSeek = Math.floor(end * frameRate);
+                      videoPlayerRef.current.seekTo(frameToSeek);
+                    }
+                  }
+                }}
+                orientation="Horizontal"
+                size="Large"
+                width="full"
+                showValueIndicator={false}
+                showStops={false}
+                className="trimming-slider"
+                id="trimming-slider"
+                ariaLabel={t('videoRendering.trimmingTimeline', 'Trim Video')}
+              />
+              <span style={{ minWidth: 60, textAlign: 'left' }}>
+                {formatTime(renderSettings.trimEnd || 0, 'hms')}
+              </span>
+            </div>
+          </div>
           {/* Render Settings and Controls - compact single row */}
           <div className="rendering-row">
             <div className="row-label">
