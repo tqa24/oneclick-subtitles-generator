@@ -42,10 +42,11 @@ const VideoRenderingSection = ({
   // Ref for the Remotion video player
   const videoPlayerRef = useRef(null);
 
-  // Callback to receive duration from RemotionVideoPreview
-  const handleVideoDuration = (duration) => {
-    setSelectedVideoFile(prev => prev ? { ...prev, duration } : prev);
-  };
+  // *** FIX START ***
+  // State for video duration is now separate from selectedVideoFile
+  // to prevent re-render cascades that cause the video player to reload.
+  const [videoDuration, setVideoDuration] = useState(0);
+  // *** FIX END ***
 
   // Form state with localStorage persistence
   const [selectedVideoFile, setSelectedVideoFile] = useState(null);
@@ -68,27 +69,31 @@ const VideoRenderingSection = ({
     };
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Ensure trim values from previous sessions are included, or use defaults
       return { ...defaultSettings, ...parsed };
     }
     return defaultSettings;
   });
 
-  // *** FIXED ***
-  // This effect correctly resets the trim range ONLY when a new video's duration is determined.
-  // It no longer causes an infinite loop when the user adjusts the trim slider.
+  // *** FIX START ***
+  // This effect resets the video duration state whenever a new video file is selected.
+  // This ensures that the trim range is correctly re-initialized for the new video.
   useEffect(() => {
-    if (selectedVideoFile && typeof selectedVideoFile.duration === 'number') {
-      // Update the settings to match the new video's duration.
-      // This resets the trim range whenever a new video is loaded.
+    // A new video means we don't know the duration yet.
+    setVideoDuration(0);
+  }, [selectedVideoFile]); // This dependency is stable; a new file is a new object.
+
+  // This effect sets the initial trim range once the video's duration is known.
+  // It runs only when videoDuration changes from 0 to a positive number.
+  useEffect(() => {
+    if (videoDuration > 0) {
       setRenderSettings(prev => ({
         ...prev,
         trimStart: 0,
-        trimEnd: selectedVideoFile.duration,
+        trimEnd: videoDuration,
       }));
     }
-  }, [selectedVideoFile?.duration]); // Dependency is now just the duration, which is stable.
-
+  }, [videoDuration]);
+  // *** FIX END ***
 
   const [subtitleCustomization, setSubtitleCustomization] = useState(() => {
     const saved = localStorage.getItem('videoRender_subtitleCustomization');
@@ -1873,7 +1878,7 @@ const VideoRenderingSection = ({
                 narrationVolume={selectedNarration === 'none' ? 0 : renderSettings.narrationVolume}
                 cropSettings={cropSettings}
                 onCropChange={setCropSettings}
-                onDurationChange={handleVideoDuration}
+                onDurationChange={setVideoDuration}
               />
             </div>
 
@@ -1912,9 +1917,10 @@ const VideoRenderingSection = ({
                     renderSettings.trimEnd || 0
                   ]}
                   min={0}
-                  // *** FIXED ***
-                  // Default max to 1 to prevent division by zero errors when duration is not yet known.
-                  max={selectedVideoFile && selectedVideoFile.duration ? selectedVideoFile.duration : 1}
+                  // *** FIX ***
+                  // Use the independent videoDuration state for the slider's max value.
+                  // Default to 1 to prevent errors before duration is known.
+                  max={videoDuration || 1}
                   step={0.01}
                   onChange={([start, end]) => {
                     setRenderSettings(prev => ({ ...prev, trimStart: start, trimEnd: end }));
