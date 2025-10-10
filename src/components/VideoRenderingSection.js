@@ -1951,10 +1951,10 @@ const VideoRenderingSection = ({
                   step={0.01}
                   onChange={([start, end]) => {
                     setRenderSettings(prev => ({ ...prev, trimStart: start, trimEnd: end }));
-
+    
                     const oldStart = renderSettings.trimStart || 0;
                     const oldEnd = renderSettings.trimEnd || 0;
-
+    
                     // Seek the Remotion player to the new position
                     if (videoPlayerRef.current) {
                       const frameRate = renderSettings.frameRate || 30;
@@ -1978,6 +1978,7 @@ const VideoRenderingSection = ({
                   id="trimming-slider"
                   ariaLabel={t('videoRendering.trimmingTimeline', 'Trim Video')}
                   style={{
+                    width: '-webkit-fill-available',
                     maxWidth: 'none',
                     '--standard-slider-active-track-height': '12px',
                     '--standard-slider-inactive-track-height': '8px'
