@@ -181,6 +181,7 @@ const VideoRenderingSection = ({
   }, [isResizing]);
 
   const sectionRef = useRef(null);
+  const dragCounterRef = useRef(0);
   // Auto-fill data when autoFillData changes - with improved state management
   useEffect(() => {
     if (autoFillData) {
@@ -934,39 +935,65 @@ const VideoRenderingSection = ({
     }
   };
 
-  // Drag and drop handlers
+  // Drag and drop handlers (robust: use counter + global cleanup to avoid stuck overlay)
   const handleDragEnter = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    // Increment counter for nested dragenter/dragleave events
+    dragCounterRef.current = (dragCounterRef.current || 0) + 1;
     setIsDragging(true);
   };
-
+  
   const handleDragLeave = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.currentTarget === e.target) {
+    // Decrement counter and only clear when no more entered elements remain
+    dragCounterRef.current = Math.max(0, (dragCounterRef.current || 0) - 1);
+    if (dragCounterRef.current === 0) {
       setIsDragging(false);
     }
   };
-
+  
   const handleDragOver = (e) => {
     e.preventDefault();
     e.stopPropagation();
   };
-
+  
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    // Reset counter and dragging state on drop
+    dragCounterRef.current = 0;
     setIsDragging(false);
-
-    const files = Array.from(e.dataTransfer.files);
+  
+    const files = Array.from(e.dataTransfer.files || []);
     if (files.length > 0) {
-      const videoFile = files.find(file => file.type.startsWith('video/'));
+      const videoFile = files.find(file => file.type && file.type.startsWith && file.type.startsWith('video/'));
       if (videoFile) {
         setSelectedVideoFile(videoFile);
       }
     }
   };
+  
+  // Ensure overlay is cleared if drag ends outside the component or window
+  useEffect(() => {
+    const onWindowDragEnd = () => {
+      dragCounterRef.current = 0;
+      setIsDragging(false);
+    };
+    const onWindowDrop = () => {
+      dragCounterRef.current = 0;
+      setIsDragging(false);
+    };
+  
+    window.addEventListener('dragend', onWindowDragEnd);
+    window.addEventListener('drop', onWindowDrop);
+  
+    return () => {
+      window.removeEventListener('dragend', onWindowDragEnd);
+      window.removeEventListener('drop', onWindowDrop);
+    };
+  }, []);
 
   // Upload file to video-renderer server
   const uploadFileToRenderer = async (file, type = 'video') => {
