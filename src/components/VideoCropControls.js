@@ -56,6 +56,8 @@ const VideoCropControls = ({
   const dragBaseRectRef = useRef(null);
   const dragBaseCropRef = useRef(null);
 
+  const dragBaseDisplayCropRef = useRef(null);
+
   // Draggable UI positions (percentages within videoRect)
   const defaultUiPos = {
     aspect: { xPct: 50, yPct: 2 },
@@ -67,6 +69,25 @@ const VideoCropControls = ({
   const [uiDrag, setUiDrag] = useState(null);
   const uiInitializedRef = useRef(false);
   const didDragRef = useRef(false);
+
+  // Map between logical crop (original video space) and display crop (UI space respecting flips)
+  const toDisplayCrop = useCallback((crop) => {
+    if (!crop) return crop;
+    const flipX = Boolean(crop.flipX);
+    const flipY = Boolean(crop.flipY);
+    const x = flipX ? 100 - (crop.x ?? 0) - (crop.width ?? 0) : (crop.x ?? 0);
+    const y = flipY ? 100 - (crop.y ?? 0) - (crop.height ?? 0) : (crop.y ?? 0);
+    return { ...crop, x, y };
+  }, []);
+  const fromDisplayCrop = useCallback((displayCrop) => {
+    if (!displayCrop) return displayCrop;
+    const flipX = Boolean(displayCrop.flipX);
+    const flipY = Boolean(displayCrop.flipY);
+    const x = flipX ? 100 - (displayCrop.x ?? 0) - (displayCrop.width ?? 0) : (displayCrop.x ?? 0);
+    const y = flipY ? 100 - (displayCrop.y ?? 0) - (displayCrop.height ?? 0) : (displayCrop.y ?? 0);
+    return { ...displayCrop, x, y };
+  }, []);
+
 
 
   useEffect(() => {
@@ -85,8 +106,9 @@ const VideoCropControls = ({
       flipX: cropSettings.flipX ?? false,
       flipY: cropSettings.flipY ?? false,
     };
-    setTempCrop(normalized);
-  }, [cropSettings]);
+    // Convert to display-space crop so UI manipulates flipped coordinates naturally
+    setTempCrop(toDisplayCrop(normalized));
+  }, [cropSettings, toDisplayCrop]);
 
   // Find and track the actual video element position
   useEffect(() => {
@@ -289,9 +311,13 @@ const VideoCropControls = ({
   const handleAspectRatioChange = (value) => {
     setSelectedAspectRatio(value);
     if (value !== 'custom') {
-      const newCrop = calculateCropDimensions(value);
-      setTempCrop(newCrop);
-      onCropChange(newCrop);
+      const newLogical = calculateCropDimensions(value);
+      // Preserve flip flags from current tempCrop
+      newLogical.flipX = tempCrop?.flipX ?? false;
+      newLogical.flipY = tempCrop?.flipY ?? false;
+      const newDisplay = toDisplayCrop(newLogical);
+      setTempCrop(newDisplay);
+      onCropChange(fromDisplayCrop(newDisplay));
     }
   };
 
@@ -547,9 +573,10 @@ const VideoCropControls = ({
     if (isDragging) {
       setIsDragging(false);
       setDragType(null);
-      onCropChange(tempCrop);
+      // Convert display-space crop back to logical crop for consumers
+      onCropChange(fromDisplayCrop(tempCrop));
     }
-  }, [isDragging, tempCrop, onCropChange]);
+  }, [isDragging, tempCrop, onCropChange, fromDisplayCrop]);
 
   useEffect(() => {
     if (isDragging) {
@@ -807,7 +834,7 @@ const VideoCropControls = ({
                   onChange={(value) => {
                     const next = { ...tempCrop, canvasBgMode: value };
                     setTempCrop(next);
-                    onCropChange(next);
+                    onCropChange(fromDisplayCrop(next));
                   }}
                   options={[
                     { value: 'solid', label: t('videoRendering.solidCanvas','Solid') },
@@ -821,7 +848,7 @@ const VideoCropControls = ({
                     onChange={(e) => {
                       const next = { ...tempCrop, canvasBgColor: e.target.value };
                       setTempCrop(next);
-                      onCropChange(next);
+                      onCropChange(fromDisplayCrop(next));
                     }}
                     title={t('videoRendering.canvasColor','Canvas color')}
                     className="color-picker"
@@ -835,7 +862,7 @@ const VideoCropControls = ({
                       onChange={(value) => {
                         const next = { ...tempCrop, canvasBgBlur: parseInt(value) };
                         setTempCrop(next);
-                        onCropChange(next);
+                        onCropChange(fromDisplayCrop(next));
                       }}
                       min={0}
                       max={60}
@@ -858,8 +885,8 @@ const VideoCropControls = ({
               </div>
             )}
 
-            <button className={`flip-btn ${tempCrop.flipX ? 'active' : ''}`} onClick={(e)=>{e.stopPropagation(); const next={...tempCrop,flipX:!tempCrop.flipX}; setTempCrop(next); onCropChange(next);}}>H</button>
-            <button className={`flip-btn ${tempCrop.flipY ? 'active' : ''}`} onClick={(e)=>{e.stopPropagation(); const next={...tempCrop,flipY:!tempCrop.flipY}; setTempCrop(next); onCropChange(next);}}>V</button>
+            <button className={`flip-btn ${tempCrop.flipX ? 'active' : ''}`} onClick={(e)=>{e.stopPropagation(); const next={...tempCrop,flipX:!tempCrop.flipX}; setTempCrop(next); onCropChange(fromDisplayCrop(next));}}>H</button>
+            <button className={`flip-btn ${tempCrop.flipY ? 'active' : ''}`} onClick={(e)=>{e.stopPropagation(); const next={...tempCrop,flipY:!tempCrop.flipY}; setTempCrop(next); onCropChange(fromDisplayCrop(next));}}>V</button>
 
             <button
               className="crop-action-btn cancel"
