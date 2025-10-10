@@ -106,7 +106,9 @@ export const SubtitledVideoComposition = ({
   const getResponsiveScaledValue = (value) => {
     const baseHeight = 1080; // Reference height (1080p)
     const scale = compositionHeight / baseHeight;
-    return Math.round(value * scale);
+    // Preserve fractional pixel values (up to 2 decimal places) so stroke widths can be non-integer
+    if (typeof value !== 'number') return value;
+    return Number((value * scale).toFixed(2));
   };
 
   // Get consistent relative position as percentage (based on 1080p reference)
