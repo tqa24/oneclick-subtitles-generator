@@ -81,6 +81,9 @@ const VideoCropControls = ({
       canvasBgMode: cropSettings.canvasBgMode ?? 'solid',
       canvasBgColor: cropSettings.canvasBgColor ?? '#000000',
       canvasBgBlur: cropSettings.canvasBgBlur ?? 24,
+      // Ensure flip flags are always present on the normalized crop object
+      flipX: cropSettings.flipX ?? false,
+      flipY: cropSettings.flipY ?? false,
     };
     setTempCrop(normalized);
   }, [cropSettings]);
@@ -854,6 +857,9 @@ const VideoCropControls = ({
 
               </div>
             )}
+
+            <button className={`flip-btn ${tempCrop.flipX ? 'active' : ''}`} onClick={(e)=>{e.stopPropagation(); const next={...tempCrop,flipX:!tempCrop.flipX}; setTempCrop(next); onCropChange(next);}}>H</button>
+            <button className={`flip-btn ${tempCrop.flipY ? 'active' : ''}`} onClick={(e)=>{e.stopPropagation(); const next={...tempCrop,flipY:!tempCrop.flipY}; setTempCrop(next); onCropChange(next);}}>V</button>
 
             <button
               className="crop-action-btn cancel"

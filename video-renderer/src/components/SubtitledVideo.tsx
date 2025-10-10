@@ -34,7 +34,8 @@ export const SubtitledVideoContent: React.FC<Props> = ({
   backgroundImageUrl,
   metadata,
   isVideoFile = false,
-  framesPathUrl
+  framesPathUrl,
+  extractedAudioUrl
 }) => {
   const frame = useCurrentFrame();
   const { fps, height: compositionHeight } = useVideoConfig();
@@ -67,6 +68,31 @@ export const SubtitledVideoContent: React.FC<Props> = ({
     [metadata.subtitleCustomization]
   );
 
+  
+    // Compute flip transforms from metadata so server-frame rendering matches frontend preview
+    const flipXScale = (metadata?.cropSettings as any)?.flipX ? -1 : 1;
+    const flipYScale = (metadata?.cropSettings as any)?.flipY ? -1 : 1;
+    const videoFlipTransform = `scaleX(${flipXScale}) scaleY(${flipYScale})`;
+  
+    // Compute adjusted positioning for cropping, taking flips into account.
+    // When flipX is true the visible crop origin is mirrored horizontally, so left must be computed from the opposite edge.
+    // NOTE: if frames were pre-cropped server-side, composition should NOT re-apply cropping (double-zoom bug).
+    const computeCropPosition = (cs: any, metadataFlag?: any) => {
+      if (metadataFlag?.framesPreCropped) return {};
+      if (!cs) return {};
+      const isIdentity = cs.width === 100 && cs.height === 100 && cs.x === 0 && cs.y === 0;
+      if (isIdentity) return {};
+      const widthPct = `${(100 / cs.width) * 100}%`;
+      const heightPct = `${(100 / cs.height) * 100}%`;
+      const leftPct = cs.flipX
+        ? `${(-(100 - (cs.x) - cs.width) / cs.width) * 100}%`
+        : `${(-(cs.x / cs.width) * 100)}%`;
+      const topPct = cs.flipY
+        ? `${(-(100 - (cs.y) - cs.height) / cs.height) * 100}%`
+        : `${(-(cs.y / cs.height) * 100)}%`;
+      return { widthPct, heightPct, leftPct, topPct };
+    };
+    const cropPosition = computeCropPosition(metadata?.cropSettings as any, metadata);
   // Process subtitles based on line threshold
   const processedSubtitles = useMemo(() => {
     if (!lyrics) {
@@ -279,7 +305,7 @@ export const SubtitledVideoContent: React.FC<Props> = ({
                   useServerFrames ? (
                     <Img
                       src={`${framesPathUrl}/${String(frame + 1).padStart(6, '0')}.png`}
-                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: `blur(${(metadata.cropSettings?.canvasBgBlur ?? 24)}px) brightness(0.7)`, transform: 'scale(1.06)' }}
+                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: `blur(${(metadata.cropSettings?.canvasBgBlur ?? 24)}px) brightness(0.7)`, transform: `scale(1.06) ${videoFlipTransform}`, transformOrigin: 'center center' }}
                     />
                   ) : (
                     <OffthreadVideo
@@ -287,7 +313,7 @@ export const SubtitledVideoContent: React.FC<Props> = ({
                       volume={0}
                       transparent={false}
                       toneMapped={false}
-                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: `blur(${(metadata.cropSettings?.canvasBgBlur ?? 24)}px) brightness(0.7)`, transform: 'scale(1.06)' }}
+                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: `blur(${(metadata.cropSettings?.canvasBgBlur ?? 24)}px) brightness(0.7)`, transform: `scale(1.06) ${videoFlipTransform}`, transformOrigin: 'center center' }}
                     />
                   )
                 )}
@@ -302,11 +328,11 @@ export const SubtitledVideoContent: React.FC<Props> = ({
                   position: 'absolute',
                   ...(metadata.cropSettings && (metadata.cropSettings.width !== 100 || metadata.cropSettings.height !== 100 || metadata.cropSettings.x !== 0 || metadata.cropSettings.y !== 0)
                     ? {
-                        width: `${(100 / metadata.cropSettings.width) * 100}%`,
-                        height: `${(100 / metadata.cropSettings.height) * 100}%`,
-                        left: `${-(metadata.cropSettings.x / metadata.cropSettings.width) * 100}%`,
-                        top: `${-(metadata.cropSettings.y / metadata.cropSettings.height) * 100}%`,
-                        objectFit: 'cover',
+                        width: cropPosition.widthPct,
+                        height: cropPosition.heightPct,
+                        left: cropPosition.leftPct,
+                        top: cropPosition.topPct,
+                        objectFit: 'contain',
                       }
                     : {
                         inset: 0,
@@ -315,7 +341,9 @@ export const SubtitledVideoContent: React.FC<Props> = ({
                         objectFit: 'contain',
                       }
                   ),
-                  backgroundColor: '#000'
+                  backgroundColor: '#000',
+                  transform: videoFlipTransform,
+                  transformOrigin: 'center center'
                 }}
               />
             ) : (
@@ -327,16 +355,18 @@ export const SubtitledVideoContent: React.FC<Props> = ({
                 style={{
                   ...(metadata.cropSettings && (metadata.cropSettings.width !== 100 || metadata.cropSettings.height !== 100 || metadata.cropSettings.x !== 0 || metadata.cropSettings.y !== 0) ? {
                     position: 'absolute',
-                    width: `${(100 / metadata.cropSettings.width) * 100}%`,
-                    height: `${(100 / metadata.cropSettings.height) * 100}%`,
-                    left: `${-(metadata.cropSettings.x / metadata.cropSettings.width) * 100}%`,
-                    top: `${-(metadata.cropSettings.y / metadata.cropSettings.height) * 100}%`,
+                    width: cropPosition.widthPct,
+                    height: cropPosition.heightPct,
+                    left: cropPosition.leftPct,
+                    top: cropPosition.topPct,
                     objectFit: 'contain'
                   } : {
                     width: '100%',
                     height: '100%',
                     objectFit: 'contain'
-                  })
+                  }),
+                  transform: videoFlipTransform,
+                  transformOrigin: 'center center'
                 }}
               />
             )}
@@ -478,7 +508,6 @@ export const SubtitledVideoContent: React.FC<Props> = ({
                   boxShadow,
                   // Advanced styling features
                   WebkitTextStroke: textStroke,
-                  textStroke: textStroke,
                   backgroundImage: backgroundImage,
                   WebkitBackgroundClip: customization.gradientEnabled ? 'text' : 'initial',
                   backgroundClip: customization.gradientEnabled ? 'text' : 'initial',

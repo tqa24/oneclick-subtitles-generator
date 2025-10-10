@@ -221,6 +221,9 @@ app.post('/render', async (req, res) => {
 
     const entryPoint = path.join(__dirname, '../../src/remotion/index.ts');
     updateStatus({ phase: 'Bundling Remotion app' });
+    // Force rebuild bundle during development to ensure updated Remotion components (flip handling) are picked up.
+    // This avoids stale bundle results when the server process stays running.
+    bundleCache = null;
     const bundleResult = await getOrCreateBundle(entryPoint);
 
     let compositionProps: any = { lyrics, metadata, narrationUrl, isVideoFile, audioUrl: `http://localhost:${port}/uploads/${audioFile}` };
@@ -350,8 +353,10 @@ app.post('/render', async (req, res) => {
       desiredH = Math.floor(desiredH ?? (crop ? crop.h : info.height));
 
 
-	      // Prevent unintended upscaling unless explicitly allowed
-	      if (!metadata?.allowUpscale) {
+	      // Honor requested output resolution by default, even if it requires upscaling from the crop.
+	      // Only prevent upscaling if the client explicitly sets allowUpscale=false.
+	      const allowUpscale = metadata?.allowUpscale !== false;
+	      if (!allowUpscale) {
 	        const maxW = crop ? crop.w : info.width;
 	        const maxH = crop ? crop.h : info.height;
 	        if (desiredW > maxW || desiredH > maxH) {
@@ -392,6 +397,31 @@ app.post('/render', async (req, res) => {
       const canCropInFfmpeg = crop && crop.x >= 0 && crop.y >= 0 && (crop.x + crop.w) <= info.width && (crop.y + crop.h) <= info.height;
       if (canCropInFfmpeg && crop) vfParts.push(`crop=${crop.w}:${crop.h}:${crop.x}:${crop.y}`);
 
+      // Flip handling: detect flip flags but DO NOT apply flips via ffmpeg here.
+      // Flips are applied inside the Remotion composition so preview and final render share identical transform math.
+      const metaCropForFlip = (metadata?.crop ?? metadata?.cropSettings) && typeof (metadata?.crop ?? metadata?.cropSettings) === 'object'
+        ? (metadata?.crop ?? metadata?.cropSettings)
+        : undefined;
+  
+      const shouldHFlip = Boolean(
+        (metaCropForFlip && (metaCropForFlip.flipX === true || metaCropForFlip.flipX === 'true')) ||
+        metadata?.flipX === true ||
+        metadata?.flipX === 'true'
+      );
+      const shouldVFlip = Boolean(
+        (metaCropForFlip && (metaCropForFlip.flipY === true || metaCropForFlip.flipY === 'true')) ||
+        metadata?.flipY === true ||
+        metadata?.flipY === 'true'
+      );
+  
+      try {
+        console.log(`[${renderId}] Flip flags detected: shouldHFlip=${shouldHFlip}, shouldVFlip=${shouldVFlip} — skipping ffmpeg flip filters and delegating to Remotion composition.`);
+      } catch (e) {}
+  
+      try {
+        console.log(`[${renderId}] vfParts (final): ${vfParts.join(',')}`);
+      } catch (e) {}
+
       // Trimming: apply start/end time if provided
       const trimArgs = [];
       if (!isNaN(trimStart) && trimStart > 0) trimArgs.push('-ss', trimStart.toString());
@@ -425,6 +455,20 @@ app.post('/render', async (req, res) => {
       // Update props for Remotion to use the extracted frames
       compositionProps.framesPathUrl = `http://localhost:${port}/temp/${path.basename(tempDir)}/frames`;
       app.use(`/temp/${path.basename(tempDir)}`, express.static(tempDir)); // Serve the temp dir
+
+      // If ffmpeg applied a crop during frame extraction, the extracted frames are already cropped.
+      // In that case we must NOT also apply the crop again inside the Remotion composition
+      // (that causes the double-zoom effect the user reported).
+      if (canCropInFfmpeg && crop) {
+        try { console.log(`[${renderId}] Frames were pre-cropped by ffmpeg; clearing metadata.cropSettings to avoid double-cropping.`); } catch (e) {}
+        if (compositionProps && compositionProps.metadata) {
+          // Remove crop settings so the Remotion composition renders the pre-cropped frames without re-cropping.
+          delete compositionProps.metadata.cropSettings;
+          delete compositionProps.metadata.crop;
+          compositionProps.metadata.framesPreCropped = true;
+        }
+      }
+
       updateStatus({ progress: 0.1, status: 'rendering', phase: 'Preparing Remotion render' });
 
     } else {
