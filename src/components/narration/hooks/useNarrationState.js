@@ -161,24 +161,24 @@ const useNarrationState = (initialReferenceAudio) => {
     // Default settings
     return {
       // Voice Style Controls - only speechRate is supported
-      speechRate: 1.3,
-
+      speechRate: 1.1,
+  
       // Generation Quality Controls
       nfeStep: '32',  // Number of Function Evaluations (diffusion steps)
       swayCoef: -1.0, // Sway Sampling Coefficient
       cfgStrength: 2.0, // Classifier-Free Guidance Strength
-
+  
       // Seed Control
       useRandomSeed: true,
       seed: 42,
-
+  
       // Audio Processing Options - only removeSilence is supported
       removeSilence: true,
-
+  
       // Output Format Options
       sampleRate: '44100',
       audioFormat: 'wav',
-
+  
       // Batch Processing Options
       batchSize: '8',
       mergeOutput: false
