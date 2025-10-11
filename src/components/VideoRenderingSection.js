@@ -1117,11 +1117,6 @@ const VideoRenderingSection = ({
         throw new Error(t('videoRendering.noVideoSelected', 'Please select a video file'));
       }
 
-      const currentSubtitles = getCurrentSubtitles();
-      if (!currentSubtitles || currentSubtitles.length === 0) {
-        throw new Error(t('videoRendering.noSubtitles', 'No subtitles available'));
-      }
-
       // Upload video file if it's a File object
       let audioFile;
       if (selectedVideoFile instanceof File) {
@@ -1183,7 +1178,7 @@ const VideoRenderingSection = ({
       const renderRequest = {
         compositionId: 'subtitled-video',
         audioFile: audioFile,
-        lyrics: currentSubtitles,
+        lyrics: getCurrentSubtitles(),
         metadata: {
           ...renderSettings,
           subtitleCustomization: queueItem.customization, // Include subtitle customization in metadata
@@ -2030,7 +2025,7 @@ const VideoRenderingSection = ({
               <button
                 className="pill-button primary"
                 onClick={handleRender}
-                disabled={!selectedVideoFile || getCurrentSubtitles().length === 0}
+                disabled={!selectedVideoFile}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
