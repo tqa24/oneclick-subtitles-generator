@@ -10,6 +10,7 @@ const https = require('https');
 const http = require('http');
 const { VIDEOS_DIR } = require('../../config');
 const { setDownloadProgress } = require('../shared/progressTracker');
+const { detectAvailableBrowser, isChromeCookieUnlockAvailable } = require('../shared/ytdlpUtils');
 
 // Cache for browser instance to avoid repeated launches
 let browserInstance = null;
@@ -42,7 +43,7 @@ async function getBrowserInstance() {
     browserInitPromise = (async () => {
     console.log('[PlaywrightDouyin] Launching browser...');
     browserInstance = await chromium.launch({
-      headless: true,
+      headless: false,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -58,9 +59,8 @@ async function getBrowserInstance() {
       ]
     });
 
-    // Create a new context with realistic user agent and headers
+    // Create a new context with minimal settings to match Chrome DevTools
     browserContext = await browserInstance.newContext({
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36',
       viewport: { width: 1920, height: 1080 },
       locale: 'zh-CN',
       extraHTTPHeaders: {
@@ -74,8 +74,64 @@ async function getBrowserInstance() {
       // Add performance optimizations
       bypassCSP: true,
       ignoreHTTPSErrors: true,
-      javaScriptEnabled: true  // Keep JS enabled but optimize other aspects
+      javaScriptEnabled: true
     });
+
+    // Load cookies from Chrome for douyin.com
+    try {
+      const availableBrowser = detectAvailableBrowser();
+      if (availableBrowser === 'chrome') {
+        console.log('[PlaywrightDouyin] Loading cookies from Chrome for douyin.com...');
+        // Extract cookies using yt-dlp
+        const { spawn } = require('child_process');
+        const ytdlpPath = path.join(process.cwd(), '.venv', 'Scripts', 'yt-dlp.exe');
+        const pluginDir = path.join(process.cwd(), '.venv', 'yt-dlp-plugins');
+        const tempCookieFile = path.join(require('os').tmpdir(), 'douyin_cookies.txt');
+
+        const args = [];
+        if (fs.existsSync(pluginDir)) {
+          args.push('--plugin-dirs', pluginDir);
+        }
+        args.push('--cookies-from-browser', 'chrome', '--cookies', tempCookieFile, '--no-download', '--print', 'cookies_extracted', 'https://www.douyin.com/');
+
+        await new Promise((resolve, reject) => {
+          const process = spawn(ytdlpPath, args);
+          process.on('close', (code) => {
+            if (code === 0 && fs.existsSync(tempCookieFile)) {
+              resolve();
+            } else {
+              reject(new Error('Cookie extraction failed'));
+            }
+          });
+          process.on('error', reject);
+        });
+
+        // Load cookies into Playwright context
+        if (fs.existsSync(tempCookieFile)) {
+          const cookieData = fs.readFileSync(tempCookieFile, 'utf8');
+          const lines = cookieData.split('\n').filter(line => line.trim() && !line.startsWith('#'));
+          const cookies = lines.map(line => {
+            const parts = line.split('\t');
+            if (parts.length >= 7) {
+              return {
+                name: parts[5],
+                value: parts[6],
+                domain: parts[0],
+                path: parts[2],
+                httpOnly: parts[1].includes('HTTP'),
+                secure: parts[1].includes('SSL')
+              };
+            }
+          }).filter(Boolean);
+
+          await browserContext.addCookies(cookies);
+          console.log(`[PlaywrightDouyin] Loaded ${cookies.length} cookies for douyin.com`);
+          fs.unlinkSync(tempCookieFile); // Clean up
+        }
+      }
+    } catch (error) {
+      console.log('[PlaywrightDouyin] Failed to load cookies:', error.message);
+    }
     })();
     
     await browserInitPromise;
@@ -98,145 +154,32 @@ async function extractVideoInfo(douyinUrl, useCookies = false) {
   try {
     console.log('[PlaywrightDouyin] Navigating to:', douyinUrl);
 
-    // Set additional page properties to avoid detection
-    await page.addInitScript(() => {
-      Object.defineProperty(navigator, 'webdriver', {
-        get: () => undefined,
-      });
-    });
+    // Navigate to the URL (matching Chrome DevTools method)
+    await page.goto(douyinUrl, { waitUntil: 'load', timeout: 30000 });
 
-    // Navigate to the Douyin URL with balanced settings
-    try {
-      await page.goto(douyinUrl, {
-        waitUntil: 'domcontentloaded',
-        timeout: 30000  // Reasonable timeout for slow connections
-      });
-    } catch (timeoutError) {
-      console.log('[PlaywrightDouyin] First navigation attempt timed out, trying with networkidle...');
-      await page.goto(douyinUrl, {
-        waitUntil: 'networkidle',
-        timeout: 20000  // Fallback timeout
-      });
-    }
+    // Wait a bit for page to load
+    await page.waitForTimeout(3000);
 
-    // Wait for initial page JavaScript to execute (necessary for video loading)
-    await page.waitForTimeout(2000);  // Reduced from 5000ms but still safe
-    
-    // Try to close login panel if it exists
-    try {
-      const loginPanel = page.locator('#douyin_login_comp_tab_panel');
-      if (await loginPanel.isVisible({ timeout: 500 })) {  // Quick check but not too quick
-        console.log('[PlaywrightDouyin] Closing login panel...');
-        await loginPanel.getByRole('img').nth(1).click({ timeout: 1000 });
-        await page.waitForTimeout(500);  // Small wait to ensure panel closes
-      }
-    } catch (error) {
-      // Silently continue - login panel not critical
-    }
-    
-    // Wait for page content to load with optimized parallel checking
-    let videoFound = false;
-    const videoSelectors = [
-      'video',
-      '[data-e2e="feed-video"] video',
-      '.video-player video',
-      'video[src]',
-      'video source'
-    ];
-
-    // Try all selectors in parallel with Promise.race for speed
-    try {
-      await Promise.race(
-        videoSelectors.map(selector => 
-          page.waitForSelector(selector, { timeout: 5000 })  // Balanced timeout
-        )
-      );
-      videoFound = true;
-    } catch (error) {
-      // All selectors timed out
-    }
-
-    if (!videoFound) {
-      // Check if page loaded at all
-      const pageContent = await page.content();
-      if (!pageContent.includes('video') && !pageContent.includes('mp4')) {
-        throw new Error('No video content found on page');
-      }
-    }
-
-    // Wait for video metadata to load (balanced timeout)
-    await page.waitForFunction(() => {
-      const video = document.querySelector('video');
-      return video && (video.videoWidth > 0 || video.duration > 0 || video.src);
-    }, { timeout: 5000 }).catch(() => {  // Balanced timeout for metadata
-      // Proceed with available data
-    });
-
-    // Extract video information with fallbacks
+    // Extract video URL directly like in Chrome DevTools
     const videoInfo = await page.evaluate(() => {
-      // Try multiple ways to find video elements
-      let videos = document.querySelectorAll('video');
+      const videos = document.querySelectorAll('video');
       if (videos.length === 0) {
-        // Try more specific selectors
-        videos = document.querySelectorAll('[data-e2e="feed-video"] video, .video-player video');
+        throw new Error('No video elements found');
       }
-
-      if (videos.length === 0) {
-        // Look for video URLs in the page
-        const pageText = document.documentElement.innerHTML;
-        const mp4Matches = pageText.match(/https?:\/\/[^"'\s]+\.mp4[^"'\s]*/g);
-
-        if (mp4Matches && mp4Matches.length > 0) {
-          return {
-            title: (document.title || 'Douyin Video').replace(/[^\w\s-]/g, '').trim(),
-            videoId: window.location.pathname.split('/').pop() || Date.now().toString(),
-            currentSrc: mp4Matches[0],
-            sources: mp4Matches.map(url => ({ src: url, type: 'video/mp4' })),
-            duration: 0,
-            videoWidth: 720,  // Default dimensions
-            videoHeight: 1280,
-            sourcesCount: mp4Matches.length
-          };
-        }
-
-        throw new Error('No video elements or sources found');
-      }
-
       const video = videos[0];
-      const sources = Array.from(video.querySelectorAll('source')).map(source => ({
-        src: source.src,
-        type: source.type || 'video/mp4'
-      }));
-
-      // If no sources in video element, check video.src
-      if (sources.length === 0 && video.src) {
-        sources.push({ src: video.src, type: 'video/mp4' });
+      const currentSrc = video.currentSrc;
+      if (!currentSrc) {
+        throw new Error('No currentSrc found');
       }
-
-      // Get video metadata with fallbacks
-      const title = document.title || 'Douyin Video';
-      const videoId = window.location.pathname.split('/').pop() || Date.now().toString();
-
-      // Get dimensions with fallbacks
-      let videoWidth = video.videoWidth || 0;
-      let videoHeight = video.videoHeight || 0;
-
-      // If dimensions not available, try to get from CSS or attributes
-      if (videoWidth === 0 || videoHeight === 0) {
-        const computedStyle = window.getComputedStyle(video);
-        videoWidth = parseInt(computedStyle.width) || 720;
-        videoHeight = parseInt(computedStyle.height) || 1280;
-      }
-
       return {
-        title: title.replace(/[^\w\s-]/g, '').trim(),
-        videoId,
-        currentSrc: video.currentSrc || video.src,
-        sources,
+        title: document.title || 'Douyin Video',
+        videoId: window.location.pathname.split('/').pop() || 'unknown',
+        currentSrc: currentSrc,
+        sources: [{ src: currentSrc, type: 'video/mp4' }],
         duration: video.duration || 0,
-        videoWidth,
-        videoHeight,
-        sourcesCount: sources.length
+        videoWidth: video.videoWidth || 720,
+        videoHeight: video.videoHeight || 1280,
+        sourcesCount: 1
       };
     });
     

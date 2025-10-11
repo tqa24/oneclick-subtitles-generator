@@ -148,17 +148,6 @@ export const downloadAndPrepareYouTubeVideo = async (
           setDownloadProgress(progress);
         }
       );
-    } else if (selectedVideo.source === 'douyin-playwright') {
-      // Extract Douyin video ID and set it as current download
-      videoId = extractDouyinVideoId(selectedVideo.url);
-      setCurrentDownloadId(videoId);
-
-      videoUrl = await downloadDouyinVideoPlaywright(
-        selectedVideo.url,
-        (progress) => {
-          setDownloadProgress(progress);
-        }
-      );
     } else if (selectedVideo.source === 'all-sites') {
       // For generic URLs using yt-dlp
       videoId = selectedVideo.id;
