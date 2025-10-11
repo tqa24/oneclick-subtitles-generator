@@ -191,25 +191,25 @@ const getExampleAudioList = async (_req, res) => {
         filename: 'basic_ref_en.wav',
         displayName: 'basic_ref_en.wav',
         language: 'English',
-        description: 'English reference audio'
+        descriptionKey: 'narration.exampleAudio.basic_ref_en'
       },
       {
         filename: 'basic_ref_zh.wav',
         displayName: 'basic_ref_zh.wav',
         language: 'Chinese',
-        description: 'Chinese reference audio'
+        descriptionKey: 'narration.exampleAudio.basic_ref_zh'
       },
       {
         filename: 'viet_female_south.mp3',
         displayName: 'viet_female_south.mp3',
         language: 'Vietnamese',
-        description: 'Vietnamese female south reference audio'
+        descriptionKey: 'narration.exampleAudio.viet_female_south'
       },
       {
         filename: 'korean_male_seoul.mp3',
         displayName: 'korean_male_seoul.mp3',
         language: 'Korean',
-        description: 'Korean male Seoul reference audio'
+        descriptionKey: 'narration.exampleAudio.korean_male_seoul'
       }
     ];
 

@@ -296,5 +296,11 @@
   "geminiGenerationCancelling": "Gemini 내레이션 생성을 취소하는 중...",
   "retryingGeminiGeneration": "자막 {{id}}에 대한 내레이션 생성을 재시도하는 중...",
   "subtitleGroupingError": "자막 그룹화 오류: {{error}}",
-  "serverError": "서버 오류: {{status}} {{statusText}}"
+  "serverError": "서버 오류: {{status}} {{statusText}}",
+  "exampleAudio": {
+    "basic_ref_en": "기본 영어 참조 오디오",
+    "basic_ref_zh": "기본 중국어 참조 오디오",
+    "viet_female_south": "베트남 남부 여성 음성",
+    "korean_male_seoul": "서울 남성 음성"
+  }
 }

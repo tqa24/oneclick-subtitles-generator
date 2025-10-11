@@ -306,5 +306,11 @@
   "geminiGenerationCancelling": "Đang hủy quá trình tạo lời thoại Gemini...",
   "retryingGeminiGeneration": "Đang thử lại tạo lời thoại cho phụ đề {{id}}...",
   "subtitleGroupingError": "Lỗi nhóm phụ đề: {{error}}",
-  "serverError": "Lỗi máy chủ: {{status}} {{statusText}}"
+  "serverError": "Lỗi máy chủ: {{status}} {{statusText}}",
+  "exampleAudio": {
+    "basic_ref_en": "Âm thanh tham chiếu tiếng Anh cơ bản",
+    "basic_ref_zh": "Âm thanh tham chiếu tiếng Trung cơ bản",
+    "viet_female_south": "Giọng nữ miền Nam Việt Nam",
+    "korean_male_seoul": "Giọng nam Seoul"
+  }
 }

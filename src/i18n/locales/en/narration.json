@@ -20,6 +20,12 @@
   "selectExample": "Select Example Audio",
   "loading": "Loading...",
   "loadingExamples": "Loading examples...",
+  "exampleAudio": {
+    "english": "English reference audio",
+    "chinese": "Chinese reference audio",
+    "vietnameseFemaleSouth": "Vietnamese female south reference audio",
+    "koreanMaleSeoul": "Korean male Seoul reference audio"
+  },
   "startTime": "Start",
   "endTime": "End",
   "extract": "Extract",
