@@ -21,10 +21,11 @@
   "loading": "Loading...",
   "loadingExamples": "Loading examples...",
   "exampleAudio": {
-    "english": "English reference audio",
-    "chinese": "Chinese reference audio",
-    "vietnameseFemaleSouth": "Vietnamese female south reference audio",
-    "koreanMaleSeoul": "Korean male Seoul reference audio"
+    "basic_ref_en": "Basic English reference audio",
+    "basic_ref_zh": "Basic Chinese reference audio",
+    "viet_female_south": "Vietnamese Southern female voice",
+    "korean_male_seoul": "Seoul male voice",
+    "viet_male_saigon": "Saigon male voice"
   },
   "startTime": "Start",
   "endTime": "End",
