@@ -229,13 +229,19 @@ const serveExampleAudio = async (req, res) => {
       return res.status(400).json({ error: 'Invalid filename' });
     }
 
-    // Define the path to example audio directory
+    // Define the path to example audio directory (main app)
     const exampleAudioPath = path.join(__dirname, '../../../server/example-audio');
-    const filePath = path.join(exampleAudioPath, filename);
+    let filePath = path.join(exampleAudioPath, filename);
 
-    // Check if file exists
+    // Check if file exists in main app directory
     if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'Example audio file not found' });
+      // Fallback to F5-TTS directory for existing files
+      const f5ttsExamplesPath = path.join(__dirname, '../../../F5-TTS/src/f5_tts/infer/examples/basic');
+      filePath = path.join(f5ttsExamplesPath, filename);
+
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'Example audio file not found' });
+      }
     }
 
     // Determine content type based on file extension
@@ -269,13 +275,19 @@ const uploadExampleAudio = async (req, res) => {
       return res.status(400).json({ error: 'Invalid filename' });
     }
 
-    // Define the path to example audio directory
+    // Define the path to example audio directory (main app)
     const exampleAudioPath = path.join(__dirname, '../../../server/example-audio');
-    const sourcePath = path.join(exampleAudioPath, filename);
+    let sourcePath = path.join(exampleAudioPath, filename);
 
-    // Check if source file exists
+    // Check if source file exists in main app directory
     if (!fs.existsSync(sourcePath)) {
-      return res.status(404).json({ error: 'Example audio file not found' });
+      // Fallback to F5-TTS directory for existing files
+      const f5ttsExamplesPath = path.join(__dirname, '../../../F5-TTS/src/f5_tts/infer/examples/basic');
+      sourcePath = path.join(f5ttsExamplesPath, filename);
+
+      if (!fs.existsSync(sourcePath)) {
+        return res.status(404).json({ error: 'Example audio file not found' });
+      }
     }
 
     // Generate a unique filename for the copied file
@@ -293,7 +305,7 @@ const uploadExampleAudio = async (req, res) => {
     } else if (filename.includes('_zh.')) {
       reference_text = '对不起，我不会说中文。';
     } else if (filename.includes('viet_')) {
-      reference_text = 'Xin chào, tôi là một người Việt Nam.';
+      reference_text = 'Trời ơi hôm nay thiệt là mệt luôn á, tao đi học mà gặp bà cô khó tính, tao chưa kịp học gì hết mà bị la trước lớp quê ơi là quê muốn xỉu luôn á.';
     }
 
     // Return success response (same format as regular upload)
