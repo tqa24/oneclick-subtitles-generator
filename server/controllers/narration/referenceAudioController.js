@@ -198,6 +198,12 @@ const getExampleAudioList = async (_req, res) => {
         displayName: 'basic_ref_zh.wav',
         language: 'Chinese',
         description: 'Chinese reference audio'
+      },
+      {
+        filename: 'viet_female_south.mp3',
+        displayName: 'viet_female_south.mp3',
+        language: 'Vietnamese',
+        description: 'Vietnamese female south reference audio'
       }
     ];
 
@@ -223,19 +229,25 @@ const serveExampleAudio = async (req, res) => {
       return res.status(400).json({ error: 'Invalid filename' });
     }
 
-    // Define the path to F5-TTS examples directory
-    const f5ttsExamplesPath = path.join(__dirname, '../../../F5-TTS/src/f5_tts/infer/examples/basic');
-    const filePath = path.join(f5ttsExamplesPath, filename);
+    // Define the path to example audio directory
+    const exampleAudioPath = path.join(__dirname, '../../../server/example-audio');
+    const filePath = path.join(exampleAudioPath, filename);
 
     // Check if file exists
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: 'Example audio file not found' });
     }
 
+    // Determine content type based on file extension
+    let contentType = 'audio/wav'; // default
+    if (filename.endsWith('.mp3')) {
+      contentType = 'audio/mpeg';
+    }
+
     // Serve the file
     res.sendFile(filePath, {
       headers: {
-        'Content-Type': 'audio/wav',
+        'Content-Type': contentType,
         'Cache-Control': 'public, max-age=3600' // Cache for 1 hour
       }
     });
@@ -257,9 +269,9 @@ const uploadExampleAudio = async (req, res) => {
       return res.status(400).json({ error: 'Invalid filename' });
     }
 
-    // Define the path to F5-TTS examples directory
-    const f5ttsExamplesPath = path.join(__dirname, '../../../F5-TTS/src/f5_tts/infer/examples/basic');
-    const sourcePath = path.join(f5ttsExamplesPath, filename);
+    // Define the path to example audio directory
+    const exampleAudioPath = path.join(__dirname, '../../../server/example-audio');
+    const sourcePath = path.join(exampleAudioPath, filename);
 
     // Check if source file exists
     if (!fs.existsSync(sourcePath)) {
@@ -280,6 +292,8 @@ const uploadExampleAudio = async (req, res) => {
       reference_text = 'Some call me nature, others call me mother nature.';
     } else if (filename.includes('_zh.')) {
       reference_text = '对不起，我不会说中文。';
+    } else if (filename.includes('viet_')) {
+      reference_text = 'Xin chào, tôi là một người Việt Nam.';
     }
 
     // Return success response (same format as regular upload)
