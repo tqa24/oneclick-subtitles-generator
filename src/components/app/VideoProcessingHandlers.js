@@ -1,6 +1,5 @@
 import { extractYoutubeVideoId, downloadYoutubeVideo } from '../../utils/videoDownloader';
 import { extractDouyinVideoId, downloadDouyinVideo } from '../../utils/douyinDownloader';
-import { downloadDouyinVideoPlaywright } from '../../utils/douyinPlaywrightDownloader';
 import { downloadGenericVideo } from '../../utils/allSitesDownloader';
 
 // Function to ensure video compatibility

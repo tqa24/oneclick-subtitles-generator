@@ -340,7 +340,7 @@ Access settings via the gear icon in the top-right corner:
 - **Video Rendering**: Remotion 4 with GPU acceleration (Vulkan/OpenGL)
 - **Backend**: Node.js/Express, Python Flask, FastAPI
 - **AI Integration**: Google Gemini API, F5-TTS, Chatterbox TTS
-- **Audio/Video**: FFmpeg, Web Audio API, yt-dlp, Playwright
+- **Audio/Video**: FFmpeg, Web Audio API, yt-dlp, Puppeteer
 - **Performance**: React Window virtualization, multi-level caching, hardware acceleration
 
 ## Performance Features
@@ -371,7 +371,6 @@ Access settings via the gear icon in the top-right corner:
 ### 🎬 Video & Audio Processing
 - **[FFmpeg](https://ffmpeg.org/)** - Comprehensive multimedia framework
 - **[yt-dlp](https://github.com/yt-dlp/yt-dlp)** - Universal video downloader for 1000+ platforms
-- **[Playwright](https://playwright.dev/)** - Browser automation for complex site interactions
 - **[Puppeteer](https://pptr.dev/)** - Headless Chrome control for web scraping
 
 ### 🎨 UI & Visualization
