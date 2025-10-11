@@ -60,6 +60,27 @@
 .example-audio-dropdown-list {
   max-height: 200px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--md-primary-rgb), 0.4) rgba(var(--md-outline-variant-rgb), 0.2);
+}
+
+.example-audio-dropdown-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.example-audio-dropdown-list::-webkit-scrollbar-track {
+  background: rgba(var(--md-outline-variant-rgb), 0.2);
+  border-radius: 10px;
+}
+
+.example-audio-dropdown-list::-webkit-scrollbar-thumb {
+  background: rgba(var(--md-primary-rgb), 0.4);
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.example-audio-dropdown-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--md-primary-rgb), 0.6);
 }
 
 .example-audio-option {

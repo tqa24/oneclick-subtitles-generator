@@ -204,6 +204,12 @@ const getExampleAudioList = async (_req, res) => {
         displayName: 'viet_female_south.mp3',
         language: 'Vietnamese',
         description: 'Vietnamese female south reference audio'
+      },
+      {
+        filename: 'korean_male_seoul.mp3',
+        displayName: 'korean_male_seoul.mp3',
+        language: 'Korean',
+        description: 'Korean male Seoul reference audio'
       }
     ];
 
@@ -306,6 +312,8 @@ const uploadExampleAudio = async (req, res) => {
       reference_text = '对不起，我不会说中文。';
     } else if (filename.includes('viet_')) {
       reference_text = 'Trời ơi hôm nay thiệt là mệt luôn á, tao đi học mà gặp bà cô khó tính, tao chưa kịp học gì hết mà bị la trước lớp quê ơi là quê muốn xỉu luôn á.';
+    } else if (filename.includes('korean_')) {
+      reference_text = '안녕하세요. 유익하고 좋은 내용을 알기 쉽고 빠르게 전해 드리겠습니다. 오늘 전해 드릴 소식은요, 여러분들이 가장 필요한 정보들로 준비해 보았는데요. 먼저 구독과 좋아요';
     }
 
     // Return success response (same format as regular upload)
