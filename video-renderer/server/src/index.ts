@@ -284,13 +284,25 @@ app.post('/render', async (req, res) => {
       const frameExtractionArgs = [ ...trimArgs, '-i', sourceVideoPath, '-vf', vfParts.join(','), '-compression_level', '1', path.join(framesDir, '%06d.png') ];
       await runFfmpeg(frameExtractionArgs, renderId, 'Frame Extraction', durationInFrames, (p) => { updateStatus({ progress: p * 0.08 }); });
 
+      // Count actual extracted frames to match Remotion's expectations
+      const extractedFrames = fs.readdirSync(framesDir).filter(f => f.endsWith('.png')).length;
+      if (extractedFrames !== durationInFrames) {
+        console.log(`[${renderId}] Frame count mismatch: expected ${durationInFrames}, got ${extractedFrames}. Adjusting durationInFrames.`);
+        durationInFrames = extractedFrames;
+      }
+
       updateStatus({ phase: 'Extracting audio track', progress: 0.08 });
       const audioExtractionArgs = [ ...trimArgs, '-i', sourceVideoPath, '-vn', '-c:a', 'aac', '-b:a', '256k', extractedAudioFile ];
       await runFfmpeg(audioExtractionArgs, renderId, 'Audio Extraction', durationInFrames, () => {});
       finalAudioPath = extractedAudioFile;
 
-      compositionProps.framesPathUrl = `http://localhost:${port}/temp/${path.basename(tempDir)}/frames`;
-      app.use(`/temp/${path.basename(tempDir)}`, express.static(tempDir));
+      // Register static route IMMEDIATELY after frame extraction and BEFORE Remotion render
+      const tempDirBasename = path.basename(tempDir);
+      compositionProps.framesPathUrl = `http://localhost:${port}/temp/${tempDirBasename}/frames`;
+      app.use(`/temp/${tempDirBasename}`, express.static(tempDir));
+
+      // Add a small delay to ensure the static route is fully registered
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       updateStatus({ progress: 0.1, status: 'rendering', phase: 'Preparing Remotion render' });
 
@@ -341,6 +353,19 @@ app.post('/render', async (req, res) => {
         }
     }
 
+    // Clean up temp directory AFTER successful render completion
+    if (tempDir && fs.existsSync(tempDir)) {
+      console.log(`[${renderId}] Cleaning up temporary directory after successful render: ${tempDir}`);
+      const tempDirToClean = tempDir; // Capture the value to avoid null issues
+      setTimeout(() => {
+        fs.rm(tempDirToClean, { recursive: true, force: true }, (err) => {
+          if (err) console.error(`[${renderId}] Failed to clean up temp directory:`, err);
+          else console.log(`[${renderId}] Temp directory cleaned up successfully`);
+        });
+      }, 5000); // Wait 5 seconds to ensure all file handles are released
+      tempDir = null; // Mark as cleaned to avoid duplicate cleanup
+    }
+
     setTimeout(() => activeRenders.delete(renderId), 300000);
 
   } catch (err) {
@@ -359,8 +384,9 @@ app.post('/render', async (req, res) => {
         setTimeout(() => activeRenders.delete(renderId), 300000);
     }
   } finally {
+    // Only clean up temp directory if it wasn't already cleaned up after successful render
     if (tempDir && fs.existsSync(tempDir)) {
-      console.log(`[${renderId}] Cleaning up temporary directory: ${tempDir}`);
+      console.log(`[${renderId}] Cleaning up temporary directory (error/cancellation cleanup): ${tempDir}`);
       fs.rm(tempDir, { recursive: true, force: true }, () => {});
     }
   }
