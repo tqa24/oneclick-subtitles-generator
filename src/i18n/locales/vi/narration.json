@@ -312,6 +312,8 @@
     "basic_ref_zh": "Âm thanh tham chiếu tiếng Trung cơ bản",
     "viet_female_south": "Giọng nữ miền Nam Việt Nam",
     "korean_male_seoul": "Giọng nam Seoul",
-    "viet_male_saigon": "Giọng nam Sài Gòn"
+    "viet_male_saigon": "Giọng nam Sài Gòn",
+    "viet_female_north_1": "Giọng nữ miền Bắc Việt Nam 1",
+    "viet_female_north_2": "Giọng nữ miền Bắc Việt Nam 2"
   }
 }

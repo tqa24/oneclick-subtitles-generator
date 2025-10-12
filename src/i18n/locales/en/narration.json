@@ -25,7 +25,9 @@
     "basic_ref_zh": "Basic Chinese reference audio",
     "viet_female_south": "Vietnamese Southern female voice",
     "korean_male_seoul": "Seoul male voice",
-    "viet_male_saigon": "Saigon male voice"
+    "viet_male_saigon": "Saigon male voice",
+    "viet_female_north_1": "Vietnamese Northern female voice 1",
+    "viet_female_north_2": "Vietnamese Northern female voice 2"
   },
   "startTime": "Start",
   "endTime": "End",
