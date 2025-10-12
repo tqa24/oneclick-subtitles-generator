@@ -317,7 +317,7 @@ const uploadExampleAudio = async (req, res) => {
     } else if (filename === 'basic_ref_zh.wav') {
       reference_text = '对不起，我不会说中文。';
     } else if (filename === 'viet_male_saigon.mp3') {
-      reference_text = 'Chào mừng quý vị đến với Đài truyền hình Việt Nam, cập nhật tin tức nóng hổi, sự kiện nổi bật và thông tin đa dạng trong nước và quốc tế.';
+      reference_text = 'Xin chào, mình là Thế Hào, rất vui vì hôm nay chúng ta lại có dịp ngồi lại với nhau trong không gian nhỏ bé nhưng đầy yêu thương.';
     } else if (filename === 'viet_female_south.mp3') {
       reference_text = 'Trời ơi hôm nay thiệt là mệt luôn á, tao đi học mà gặp bà cô khó tính, tao chưa kịp học gì hết mà bị la trước lớp quê ơi là quê muốn xỉu luôn á.';
     } else if (filename === 'korean_male_seoul.mp3') {
