@@ -4,11 +4,121 @@ import { LyricEntry, VideoMetadata } from '../types';
 import { ThemeProvider } from 'styled-components';
 import { defaultCustomization } from './SubtitleCustomization';
 
-// Optimized font loading - only load essential fonts to reduce component loading time
-const fontStyles = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
-`;
+// Dynamic font loading - only load fonts that are actually selected
+const fontUrlMap: Record<string, string> = {
+  // Korean fonts
+  'Noto Sans KR': 'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap',
+  'Nanum Gothic': 'https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap',
+  'Nanum Myeongjo': 'https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&display=swap',
+  'Nanum Barun Gothic': 'https://fonts.googleapis.com/css2?family=Nanum+Barun+Gothic&display=swap',
+  'Spoqa Han Sans': 'https://fonts.googleapis.com/css2?family=Spoqa+Han+Sans:wght@400;500;700&display=swap',
+  'KoPub Batang': 'https://fonts.googleapis.com/css2?family=KoPub+Batang&display=swap',
+  'Gowun Dodum': 'https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap',
+  'Nanum Gothic Coding': 'https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding&display=swap',
+
+  // Vietnamese fonts
+  'Google Sans': 'https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap',
+  'Noto Sans Vietnamese': 'https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600&display=swap',
+  'Be Vietnam Pro': 'https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&display=swap',
+  'Sarabun': 'https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600&display=swap',
+  'Montserrat Alternates': 'https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;500;600&display=swap',
+  'Josefin Sans': 'https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@400;500;600&display=swap',
+  'Lexend': 'https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600&display=swap',
+
+  // Multilingual fonts
+  'Open Sans': 'https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap',
+  'Noto Sans': 'https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;700&display=swap',
+  'Noto Serif': 'https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700&display=swap',
+  'Arial Unicode MS': 'https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400&display=swap',
+  'Source Sans Pro': 'https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600&display=swap',
+
+  // Standard fonts
+  'Poppins': 'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap',
+  'Inter': 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+  'Roboto': 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap',
+  'Montserrat': 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap',
+
+  // Serif fonts
+  'Georgia': 'https://fonts.googleapis.com/css2?family=Georgia&display=swap',
+  'Times New Roman': 'https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap',
+  'Playfair Display': 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap',
+  'Cormorant Garamond': 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap',
+  'Merriweather': 'https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap',
+  'Lora': 'https://fonts.googleapis.com/css2?family=Lora:wght@400;700&display=swap',
+  'Cinzel': 'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&display=swap',
+  'Crimson Text': 'https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600&display=swap',
+  'Libre Baskerville': 'https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap',
+
+  // Monospace fonts
+  'JetBrains Mono': 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap',
+  'Courier New': 'https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap',
+  'Fira Code': 'https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&display=swap',
+  'Share Tech Mono': 'https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap',
+
+  // Display fonts
+  'Impact': 'https://fonts.googleapis.com/css2?family=Impact&display=swap',
+  'Orbitron': 'https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&display=swap',
+  'Oswald': 'https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&display=swap',
+  'Bebas Neue': 'https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap',
+  'Anton': 'https://fonts.googleapis.com/css2?family=Anton&display=swap',
+  'Audiowide': 'https://fonts.googleapis.com/css2?family=Audiowide&display=swap',
+
+  // Creative fonts
+  'Creepster': 'https://fonts.googleapis.com/css2?family=Creepster&display=swap',
+  'Nosifer': 'https://fonts.googleapis.com/css2?family=Nosifer&display=swap',
+  'Bungee': 'https://fonts.googleapis.com/css2?family=Bungee&display=swap',
+  'Fredoka One': 'https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap',
+  'Kalam': 'https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&display=swap',
+  'Bangers': 'https://fonts.googleapis.com/css2?family=Bangers&display=swap',
+  'Righteous': 'https://fonts.googleapis.com/css2?family=Righteous&display=swap',
+  'Comic Sans MS': 'https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap',
+
+  // Cute fonts
+  'Nunito': 'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap',
+  'Quicksand': 'https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap',
+  'Comfortaa': 'https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;500;600;700&display=swap',
+
+  // Gaming fonts
+  'Press Start 2P': 'https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap',
+  'VT323': 'https://fonts.googleapis.com/css2?family=VT323&display=swap',
+
+  // Chinese fonts
+  'Noto Sans SC': 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap',
+  'Noto Sans TC': 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap',
+  'Source Han Sans': 'https://fonts.googleapis.com/css2?family=Source+Han+Sans:wght@400;500;700&display=swap',
+  'PingFang SC': 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400&display=swap',
+
+  // Japanese fonts
+  'Noto Sans JP': 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap',
+  'Hiragino Sans': 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400&display=swap',
+  'Yu Gothic': 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400&display=swap',
+
+  // Arabic fonts
+  'Noto Sans Arabic': 'https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;700&display=swap',
+  'Amiri': 'https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap',
+  'Cairo': 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap',
+};
+
+// Function to extract font family name from CSS font-family string
+const extractFontName = (fontFamily: string): string => {
+  // Remove quotes and extract the first font name
+  const cleanFont = fontFamily.replace(/['"]/g, '').split(',')[0].trim();
+  return cleanFont;
+};
+
+// Generate dynamic font styles based on selected font
+const generateFontStyles = (fontFamily: string): string => {
+  const fontName = extractFontName(fontFamily);
+  const fontUrl = fontUrlMap[fontName];
+
+  if (fontUrl) {
+    return `@import url('${fontUrl}');`;
+  }
+
+  // Fallback for unknown fonts - don't load anything
+  console.warn(`[REMOTION] Unknown font: ${fontName}, will use fallback fonts`);
+  return '';
+};
 
 export interface Props {
   audioUrl: string; // Original video/audio file
@@ -60,6 +170,12 @@ export const SubtitledVideoContent: React.FC<Props> = ({
   const customization = useMemo(() =>
     metadata.subtitleCustomization || defaultCustomization,
     [metadata.subtitleCustomization]
+  );
+
+  // Generate dynamic font styles based on selected font
+  const dynamicFontStyles = useMemo(() =>
+    generateFontStyles(customization.fontFamily),
+    [customization.fontFamily]
   );
 
   
@@ -155,7 +271,7 @@ export const SubtitledVideoContent: React.FC<Props> = ({
 
   return (
     <ThemeProvider theme={{ resolution: metadata.resolution, frameRate: metadata.frameRate }}>
-      <style dangerouslySetInnerHTML={{ __html: fontStyles }} />
+      <style dangerouslySetInnerHTML={{ __html: dynamicFontStyles }} />
       <AbsoluteFill style={{ backgroundColor: '#000', overflow: 'hidden', position: 'relative' }}>
         {showVideo ? (
           <div style={{ width: '100%', height: '100%', backgroundColor: '#000', position: 'relative', overflow: 'hidden' }}>
@@ -236,6 +352,7 @@ export const SubtitledVideoContent: React.FC<Props> = ({
             let displayText = currentSubtitle.text;
             if (customization.textTransform !== 'none') { switch (customization.textTransform) { case 'uppercase': displayText = displayText.toUpperCase(); break; case 'lowercase': displayText = displayText.toLowerCase(); break; case 'capitalize': displayText = displayText.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()); break; } }
             if (customization.animationType === 'typewriter') { displayText = getTypewriterText(displayText, currentSubtitle.animationProgress, currentSubtitle.isAnimatingIn); }
+            console.log(`[REMOTION] Applying font: ${customization.fontFamily} (weight: ${customization.fontWeight}) for text: "${displayText.substring(0, 50)}${displayText.length > 50 ? '...' : ''}"`);
             return (<div style={{ opacity: currentSubtitle.opacity, transform: transform !== 'none' ? transform : undefined, fontSize: getResponsiveScaledValue(customization.fontSize), fontFamily: customization.fontFamily, fontWeight: customization.fontWeight, color: textColor, textAlign: customization.textAlign, lineHeight: customization.lineHeight, letterSpacing: getResponsiveScaledValue(customization.letterSpacing || 0), textShadow, backgroundColor, border, borderRadius: getResponsiveScaledValue(customization.borderRadius), padding: `${getResponsiveScaledValue(8)}px ${getResponsiveScaledValue(16)}px`, maxWidth: `${customization.maxWidth}%`, whiteSpace: customization.wordWrap ? 'pre-wrap' : 'nowrap', boxShadow, WebkitTextStroke: textStroke, backgroundImage: backgroundImage, WebkitBackgroundClip: customization.gradientEnabled ? 'text' : 'initial', backgroundClip: customization.gradientEnabled ? 'text' : 'initial', textTransform: customization.textTransform || 'none', direction: customization.rtlSupport ? 'rtl' : 'ltr', transformOrigin: 'center center' }}>{displayText}</div>);
           })()}
         </div>
