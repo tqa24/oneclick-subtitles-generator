@@ -156,7 +156,7 @@ const extractFontName = (fontFamily: string): string => {
   return cleanFont;
 };
 
-// Generate dynamic font styles based on selected font
+// Generate font styles based on selected font
 const generateFontStyles = (fontFamily: string): string => {
   const fontName = extractFontName(fontFamily);
   const fontUrl = fontUrlMap[fontName];
@@ -165,12 +165,8 @@ const generateFontStyles = (fontFamily: string): string => {
     return `@import url('${fontUrl}');`;
   }
 
-  // For Google Fonts not in the static map, generate URL dynamically
-  // This handles fonts selected from the Google Fonts API search
-  const encodedFontName = fontName.replace(/\s+/g, '+');
-  const googleFontUrl = `https://fonts.googleapis.com/css2?family=${encodedFontName}:wght@400;500;600;700&display=swap`;
-  console.log(`[REMOTION] Loading dynamic Google Font: ${fontName} from ${googleFontUrl}`);
-  return `@import url('${googleFontUrl}');`;
+  // Font not found in static map - return empty string
+  return '';
 };
 
 export interface Props {

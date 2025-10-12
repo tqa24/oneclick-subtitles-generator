@@ -401,7 +401,6 @@ app.use('/api', qualityScanRoutes);
 app.use('/api', downloadOnlyRoutes);
 app.use('/api/download-management', downloadManagementRoutes);
 app.use('/api/video', videoCompatibilityRoutes);
-app.use('/api', fontRoutes);
 
 app.use('/api/narration', narrationRoutes);
 app.use('/api/test', testAudioRoute);
