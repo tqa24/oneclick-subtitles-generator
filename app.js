@@ -28,7 +28,6 @@ const videoCompatibilityRoutes = require('./server/routes/videoCompatibilityRout
 const downloadOnlyRoutes = require('./server/routes/downloadOnlyRoutes');
 const downloadManagementRoutes = require('./server/routes/downloadManagementRoutes');
 const diagnosticsRoutes = require('./server/routes/diagnostics');
-const fontRoutes = require('./server/routes/fontRoutes');
 const { scanModels } = require('./server/utils/scan-models');
 
 // Initialize Express app
