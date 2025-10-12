@@ -107,7 +107,57 @@ export const fontOptions = [
   // Cute & Kawaii fonts
   { value: "'Nunito', sans-serif", label: 'Nunito', group: 'Cute', koreanSupport: false, vietnameseSupport: true },
   { value: "'Quicksand', sans-serif", label: 'Quicksand', group: 'Cute', koreanSupport: false, vietnameseSupport: true },
-  { value: "'Comfortaa', cursive", label: 'Comfortaa', group: 'Cute', koreanSupport: false, vietnameseSupport: false }
+  { value: "'Comfortaa', cursive", label: 'Comfortaa', group: 'Cute', koreanSupport: false, vietnameseSupport: false },
+
+  // Popular Video Editing Fonts (from CapCut, Adobe, DaVinci research)
+  { value: "'Futura', sans-serif", label: 'Futura', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Calibri', sans-serif", label: 'Calibri', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Lato', sans-serif", label: 'Lato', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Ubuntu', sans-serif", label: 'Ubuntu', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Raleway', sans-serif", label: 'Raleway', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Dosis', sans-serif", label: 'Dosis', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Cabin', sans-serif", label: 'Cabin', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'PT Sans', sans-serif", label: 'PT Sans', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Exo', sans-serif", label: 'Exo', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Rajdhani', sans-serif", label: 'Rajdhani', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Signika', sans-serif", label: 'Signika', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Rubik', sans-serif", label: 'Rubik', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Work Sans', sans-serif", label: 'Work Sans', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Fira Sans', sans-serif", label: 'Fira Sans', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Barlow', sans-serif", label: 'Barlow', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Karla', sans-serif", label: 'Karla', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Mukti', sans-serif", label: 'Mukti', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Niramit', sans-serif", label: 'Niramit', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Sarala', sans-serif", label: 'Sarala', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Teko', sans-serif", label: 'Teko', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Viga', sans-serif", label: 'Viga', group: 'Professional', koreanSupport: false, vietnameseSupport: true },
+
+  // Trending & Unique Fonts (2024-2025 popular)
+  { value: "'Gotham', sans-serif", label: 'Gotham', group: 'Trending', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Harriet Display', serif", label: 'Harriet Display', group: 'Trending', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Doctor Glitch', cursive", label: 'Doctor Glitch', group: 'Trending', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Azonix', cursive", label: 'Azonix', group: 'Trending', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Maximum Impact', cursive", label: 'Maximum Impact', group: 'Trending', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Episode 1', cursive", label: 'Episode 1', group: 'Trending', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Dollamin', cursive", label: 'Dollamin', group: 'Trending', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Jomhuria', cursive", label: 'Jomhuria', group: 'Trending', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Shrikhand', cursive", label: 'Shrikhand', group: 'Trending', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Montages Retro', cursive", label: 'Montages Retro', group: 'Trending', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Moenstories', serif", label: 'Moenstories', group: 'Trending', koreanSupport: false, vietnameseSupport: false },
+  { value: "'Peacock Showier', cursive", label: 'Peacock Showier', group: 'Trending', koreanSupport: false, vietnameseSupport: false },
+
+  // Modern & Contemporary Fonts
+  { value: "'Spectral', serif", label: 'Spectral', group: 'Modern', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Crimson Pro', serif", label: 'Crimson Pro', group: 'Modern', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Space Grotesk', sans-serif", label: 'Space Grotesk', group: 'Modern', koreanSupport: false, vietnameseSupport: true },
+  { value: "'DM Sans', sans-serif", label: 'DM Sans', group: 'Modern', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Manrope', sans-serif", label: 'Manrope', group: 'Modern', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Epilogue', sans-serif", label: 'Epilogue', group: 'Modern', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Figtree', sans-serif", label: 'Figtree', group: 'Modern', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Lexend Deca', sans-serif", label: 'Lexend Deca', group: 'Modern', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Readex Pro', sans-serif", label: 'Readex Pro', group: 'Modern', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Outfit', sans-serif", label: 'Outfit', group: 'Modern', koreanSupport: false, vietnameseSupport: true },
+  { value: "'Plus Jakarta Sans', sans-serif", label: 'Plus Jakarta Sans', group: 'Modern', koreanSupport: false, vietnameseSupport: true }
 ];
 
 // Animation types - now using translation keys

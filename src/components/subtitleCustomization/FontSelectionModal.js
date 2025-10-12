@@ -5,14 +5,76 @@ import CloseButton from '../common/CloseButton';
 import CustomDropdown from '../common/CustomDropdown';
 import '../../styles/subtitle-customization/FontSelectionModal.css';
 
+// Debounce hook for search input
+const useDebounce = (value, delay) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
 const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [modalHeight, setModalHeight] = useState('auto');
+  const [googleFonts, setGoogleFonts] = useState([]);
+  const [googleFontsLoading, setGoogleFontsLoading] = useState(false);
+  const [googleFontsError, setGoogleFontsError] = useState(null);
+  const [showGoogleFonts, setShowGoogleFonts] = useState(false);
   const modalRef = useRef(null);
   const searchInputRef = useRef(null);
   const contentRef = useRef(null);
+
+  // Debounce search term for Google Fonts API
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  // Search Google Fonts API
+  const searchGoogleFonts = useCallback(async (query) => {
+    if (!query || query.length < 2) {
+      setGoogleFonts([]);
+      setShowGoogleFonts(false);
+      return;
+    }
+
+    setGoogleFontsLoading(true);
+    setGoogleFontsError(null);
+
+    try {
+      const response = await fetch(`/api/fonts/search?q=${encodeURIComponent(query)}&limit=20`);
+      const data = await response.json();
+
+      if (data.success) {
+        setGoogleFonts(data.fonts);
+        setShowGoogleFonts(data.fonts.length > 0);
+      } else {
+        setGoogleFontsError(data.error || 'Failed to search fonts');
+        setGoogleFonts([]);
+        setShowGoogleFonts(false);
+      }
+    } catch (error) {
+      console.error('Google Fonts search error:', error);
+      setGoogleFontsError('Network error while searching fonts');
+      setGoogleFonts([]);
+      setShowGoogleFonts(false);
+    } finally {
+      setGoogleFontsLoading(false);
+    }
+  }, []);
+
+  // Trigger Google Fonts search when debounced search term changes
+  useEffect(() => {
+    searchGoogleFonts(debouncedSearchTerm);
+  }, [debouncedSearchTerm, searchGoogleFonts]);
 
 
   // Calculate and set modal height for smooth transitions
@@ -122,7 +184,13 @@ const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => 
   }, {});
 
   const handleFontSelect = (font) => {
-    onFontSelect(font.value);
+    if (typeof font === 'string') {
+      // Local font
+      onFontSelect(font);
+    } else {
+      // Google Font
+      onFontSelect(font.value);
+    }
     onClose();
   };
 
@@ -138,7 +206,9 @@ const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => 
         <div className="font-modal-header">
           <h2>{t('fontModal.selectFont', 'Select Font')}</h2>
           <div className="font-count">
-            {t('fontModal.fontsAvailable', '{{count}} fonts available', { count: Object.values(filteredGroups).flat().length })}
+            {t('fontModal.fontsAvailable', '{{count}} fonts available', {
+              count: Object.values(filteredGroups).flat().length + (showGoogleFonts ? googleFonts.length : 0)
+            })}
           </div>
           <CloseButton onClick={onClose} variant="modal" size="large" />
         </div>
@@ -208,7 +278,43 @@ const FontSelectionModal = ({ isOpen, onClose, selectedFont, onFontSelect }) => 
             </div>
           ))}
 
-          {Object.keys(filteredGroups).length === 0 && (
+          {/* Google Fonts Section */}
+          {showGoogleFonts && (
+            <div className="font-category-section">
+              <h3 className="font-category-title">Google Fonts</h3>
+              <div className="font-grid">
+                {googleFontsLoading ? (
+                  <div className="loading-indicator">Searching fonts...</div>
+                ) : googleFontsError ? (
+                  <div className="error-message">{googleFontsError}</div>
+                ) : (
+                  googleFonts.map((font) => (
+                    <div
+                      key={font.family}
+                      className={`font-card ${font.family === selectedFont ? 'selected' : ''}`}
+                      onClick={() => handleFontSelect({ value: font.family, label: font.family, group: 'Google Fonts' })}
+                    >
+                      <div className="font-info">
+                        <span className="font-name">{font.family}</span>
+                        <div className="font-meta">
+                          <span className="font-category">Google Fonts</span>
+                        </div>
+                      </div>
+                      <div
+                        className="font-preview-text"
+                        style={{ fontFamily: font.family }}
+                        title="AaBbCc"
+                      >
+                        AaBbCc
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {Object.keys(filteredGroups).length === 0 && !showGoogleFonts && (
             <div className="no-results">
               <div className="no-results-icon">🔍</div>
               <h3>{t('fontModal.noFontsFound', 'No fonts found')}</h3>

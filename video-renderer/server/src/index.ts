@@ -221,16 +221,6 @@ app.post('/render', async (req, res) => {
       updateStatus({ phase: 'Probing video info' });
       const info = await probeVideoInfo(sourceVideoPath);
 
-      try {
-        console.log(`[${renderId}] Incoming metadata:`, JSON.stringify(metadata));
-        const fontFamily = metadata?.subtitleCustomization?.fontFamily;
-        if (fontFamily) {
-          console.log(`[${renderId}] Selected font family: ${fontFamily}`);
-        } else {
-          console.log(`[${renderId}] No font family specified in metadata`);
-        }
-      } catch {}
-
       const toNumber = (v: any): number | undefined => {
         if (v === undefined || v === null || v === '') return undefined;
         const n = Number(v);

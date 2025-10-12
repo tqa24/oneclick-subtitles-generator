@@ -97,6 +97,56 @@ const fontUrlMap: Record<string, string> = {
   'Noto Sans Arabic': 'https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;700&display=swap',
   'Amiri': 'https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap',
   'Cairo': 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap',
+
+  // Popular Video Editing Fonts
+  'Futura': 'https://fonts.googleapis.com/css2?family=Futura:wght@400;500;600;700&display=swap',
+  'Calibri': 'https://fonts.googleapis.com/css2?family=Carlito:wght@400;700&display=swap',
+  'Lato': 'https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap',
+  'Ubuntu': 'https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap',
+  'Raleway': 'https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap',
+  'Dosis': 'https://fonts.googleapis.com/css2?family=Dosis:wght@400;500;600;700&display=swap',
+  'Cabin': 'https://fonts.googleapis.com/css2?family=Cabin:wght@400;500;600;700&display=swap',
+  'PT Sans': 'https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap',
+  'Exo': 'https://fonts.googleapis.com/css2?family=Exo:wght@400;500;600;700&display=swap',
+  'Rajdhani': 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap',
+  'Signika': 'https://fonts.googleapis.com/css2?family=Signika:wght@400;500;600;700&display=swap',
+  'Rubik': 'https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap',
+  'Work Sans': 'https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap',
+  'Fira Sans': 'https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&display=swap',
+  'Barlow': 'https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap',
+  'Karla': 'https://fonts.googleapis.com/css2?family=Karla:wght@400;500;600;700&display=swap',
+  'Mukti': 'https://fonts.googleapis.com/css2?family=Mukti:wght@400;500;600;700&display=swap',
+  'Niramit': 'https://fonts.googleapis.com/css2?family=Niramit:wght@400;500;600;700&display=swap',
+  'Sarala': 'https://fonts.googleapis.com/css2?family=Sarala:wght@400;700&display=swap',
+  'Teko': 'https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600;700&display=swap',
+  'Viga': 'https://fonts.googleapis.com/css2?family=Viga&display=swap',
+
+  // Trending & Unique Fonts
+  'Gotham': 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+  'Harriet Display': 'https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600&display=swap',
+  'Doctor Glitch': 'https://fonts.googleapis.com/css2?family=Righteous&display=swap',
+  'Azonix': 'https://fonts.googleapis.com/css2?family=Audiowide&display=swap',
+  'Maximum Impact': 'https://fonts.googleapis.com/css2?family=Bungee&display=swap',
+  'Episode 1': 'https://fonts.googleapis.com/css2?family=Creepster&display=swap',
+  'Dollamin': 'https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap',
+  'Jomhuria': 'https://fonts.googleapis.com/css2?family=Jomhuria&display=swap',
+  'Shrikhand': 'https://fonts.googleapis.com/css2?family=Shrikhand&display=swap',
+  'Montages Retro': 'https://fonts.googleapis.com/css2?family=Righteous&display=swap',
+  'Moenstories': 'https://fonts.googleapis.com/css2?family=Crimson+Text:wght@400;600&display=swap',
+  'Peacock Showier': 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap',
+
+  // Modern & Contemporary Fonts
+  'Spectral': 'https://fonts.googleapis.com/css2?family=Spectral:wght@400;500;600;700&display=swap',
+  'Crimson Pro': 'https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600;700&display=swap',
+  'Space Grotesk': 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap',
+  'DM Sans': 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap',
+  'Manrope': 'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap',
+  'Epilogue': 'https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700&display=swap',
+  'Figtree': 'https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap',
+  'Lexend Deca': 'https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@400;500;600;700&display=swap',
+  'Readex Pro': 'https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap',
+  'Outfit': 'https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap',
+  'Plus Jakarta Sans': 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap'
 };
 
 // Function to extract font family name from CSS font-family string
@@ -115,9 +165,12 @@ const generateFontStyles = (fontFamily: string): string => {
     return `@import url('${fontUrl}');`;
   }
 
-  // Fallback for unknown fonts - don't load anything
-  console.warn(`[REMOTION] Unknown font: ${fontName}, will use fallback fonts`);
-  return '';
+  // For Google Fonts not in the static map, generate URL dynamically
+  // This handles fonts selected from the Google Fonts API search
+  const encodedFontName = fontName.replace(/\s+/g, '+');
+  const googleFontUrl = `https://fonts.googleapis.com/css2?family=${encodedFontName}:wght@400;500;600;700&display=swap`;
+  console.log(`[REMOTION] Loading dynamic Google Font: ${fontName} from ${googleFontUrl}`);
+  return `@import url('${googleFontUrl}');`;
 };
 
 export interface Props {
@@ -352,7 +405,6 @@ export const SubtitledVideoContent: React.FC<Props> = ({
             let displayText = currentSubtitle.text;
             if (customization.textTransform !== 'none') { switch (customization.textTransform) { case 'uppercase': displayText = displayText.toUpperCase(); break; case 'lowercase': displayText = displayText.toLowerCase(); break; case 'capitalize': displayText = displayText.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase()); break; } }
             if (customization.animationType === 'typewriter') { displayText = getTypewriterText(displayText, currentSubtitle.animationProgress, currentSubtitle.isAnimatingIn); }
-            console.log(`[REMOTION] Applying font: ${customization.fontFamily} (weight: ${customization.fontWeight}) for text: "${displayText.substring(0, 50)}${displayText.length > 50 ? '...' : ''}"`);
             return (<div style={{ opacity: currentSubtitle.opacity, transform: transform !== 'none' ? transform : undefined, fontSize: getResponsiveScaledValue(customization.fontSize), fontFamily: customization.fontFamily, fontWeight: customization.fontWeight, color: textColor, textAlign: customization.textAlign, lineHeight: customization.lineHeight, letterSpacing: getResponsiveScaledValue(customization.letterSpacing || 0), textShadow, backgroundColor, border, borderRadius: getResponsiveScaledValue(customization.borderRadius), padding: `${getResponsiveScaledValue(8)}px ${getResponsiveScaledValue(16)}px`, maxWidth: `${customization.maxWidth}%`, whiteSpace: customization.wordWrap ? 'pre-wrap' : 'nowrap', boxShadow, WebkitTextStroke: textStroke, backgroundImage: backgroundImage, WebkitBackgroundClip: customization.gradientEnabled ? 'text' : 'initial', backgroundClip: customization.gradientEnabled ? 'text' : 'initial', textTransform: customization.textTransform || 'none', direction: customization.rtlSupport ? 'rtl' : 'ltr', transformOrigin: 'center center' }}>{displayText}</div>);
           })()}
         </div>
