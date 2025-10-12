@@ -9,6 +9,7 @@ import {
   formatTimestamp
 } from '../../utils/historyUtils';
 import { getVideoDetails } from '../../services/youtubeApiService';
+import { downloadDouyinVideo } from '../../utils/douyinDownloader';
 import DownloadOnlyModal from '../DownloadOnlyModal';
 
 // Helper functions for Douyin URL history
@@ -377,78 +378,42 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
     setDouyinDownloadProgress(0);
 
     try {
-      // Use consistent videoId for caching (same as other Douyin methods)
-      const videoId = extractDouyinVideoId(selectedVideo.url);
-      if (!videoId) {
-        throw new Error('Could not extract video ID from URL');
-      }
-
-      // Start download using unified downloader
-      const response = await fetch('http://localhost:3031/api/download-douyin-video', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          videoId,
-          url: selectedVideo.url,
-          quality: 'original',
-          useCookies: true
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Download failed: ${response.status}`);
-      }
-
-      // Poll for progress
-      const pollProgress = setInterval(async () => {
-        try {
-          const progressResponse = await fetch(`http://localhost:3031/api/douyin-download-progress/${videoId}`);
-          const progressData = await progressResponse.json();
-
-          if (progressData.success) {
-            setDouyinDownloadProgress(progressData.progress || 0);
-
-            if (progressData.completed && progressData.path) {
-              clearInterval(pollProgress);
-              setIsDouyinDownloading(false);
-
-              // Use direct video URL for download
-              try {
-                const filename = `${videoId}.mp4`;
-                const downloadUrl = `http://localhost:3031/videos/${filename}`;
-
-                // Create download link that will trigger proper download
-                const a = document.createElement('a');
-                a.href = downloadUrl;
-                a.download = filename;
-                a.style.display = 'none';
-                a.target = '_blank'; // Ensure it doesn't replace current page
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-              } catch (downloadError) {
-                console.error('[UnifiedUrlInput] Error downloading file:', downloadError);
-                // Show user a message instead of navigating
-                alert(`Download completed! File saved as: ${videoId}.mp4`);
-              }
-            } else if (!progressData.isActive && !progressData.completed) {
-              // Download failed
-              clearInterval(pollProgress);
-              setIsDouyinDownloading(false);
-              throw new Error('Download failed');
-            }
-          }
-        } catch (error) {
-          clearInterval(pollProgress);
-          setIsDouyinDownloading(false);
+      // Use the same download function as the main generate flow
+      const videoUrl = await downloadDouyinVideo(
+        selectedVideo.url,
+        (progress) => {
+          setDouyinDownloadProgress(progress);
         }
-      }, 2000);
+      );
 
+      // Download completed successfully
+      setIsDouyinDownloading(false);
+
+      // Trigger file download
+      try {
+        const videoId = extractDouyinVideoId(selectedVideo.url);
+
+        // Use the dedicated download endpoint that sets proper headers
+        const downloadUrl = `http://localhost:3031/api/douyin-download-file/${videoId}`;
+
+        // Create download link that will trigger proper download
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = `${videoId}.mp4`;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (downloadError) {
+        console.error('[UnifiedUrlInput] Error downloading file:', downloadError);
+        // Show user a message instead of navigating
+        alert(`Download completed! File saved as: ${extractDouyinVideoId(selectedVideo.url)}.mp4`);
+      }
     } catch (error) {
+      console.error('Error downloading Douyin video:', error);
       setIsDouyinDownloading(false);
       setDouyinDownloadProgress(0);
+      alert(`Download failed: ${error.message}`);
     }
   };
 
