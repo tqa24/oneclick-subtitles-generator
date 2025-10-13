@@ -722,8 +722,24 @@ try {
     execSync(cloneCmd, { stdio: 'inherit' });
     logger.success('F5-TTS repository cloned');
 
-    // F5-TTS pyproject.toml is already compatible with our PyTorch 2.4.1 setup
-    // No modifications needed to dependencies
+    // Modify F5-TTS pyproject.toml to include package data (configs, etc.)
+    logger.progress('Ensuring F5-TTS package data is included');
+    const f5PyprojectPath = path.join(F5_TTS_DIR, 'pyproject.toml');
+
+    if (fs.existsSync(f5PyprojectPath)) {
+        let f5PyprojectContent = fs.readFileSync(f5PyprojectPath, 'utf8');
+
+        // Add package data configuration if not present
+        if (!f5PyprojectContent.includes('[tool.setuptools.packages.find]')) {
+            f5PyprojectContent += '\n\n[tool.setuptools.packages.find]\nwhere = ["src"]\n\n[tool.setuptools.package-data]\nf5_tts = ["configs/*.yaml", "model/*.pt", "model/*.safetensors"]\n';
+            fs.writeFileSync(f5PyprojectPath, f5PyprojectContent, 'utf8');
+            logger.success('Added package data configuration to F5-TTS pyproject.toml');
+        } else {
+            logger.info('F5-TTS pyproject.toml already has package data configuration');
+        }
+    } else {
+        logger.warning('F5-TTS pyproject.toml not found, package data may not be included');
+    }
 
     // Install F5-TTS from the local modified directory
     logger.progress('Installing F5-TTS from local directory');
