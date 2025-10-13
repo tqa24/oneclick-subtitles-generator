@@ -190,7 +190,7 @@ async function runSetup() {
 
     // --- 1. Check for uv ---
     logger.section('OneClick Subtitles Generator - Narration Setup');
-    logger.step(1, 6, 'Checking for uv package manager');
+    logger.step(1, 8, 'Checking for uv package manager');
 
 if (!commandExists('uv')) {
     logger.error('uv is not installed or not found in PATH.');
@@ -206,89 +206,10 @@ try {
     process.exit(1);
 }
 
-// --- 2. Check for git and Initialize/Update Submodules ---
-logger.step(2, 6, 'Checking for git and updating submodules');
-
-if (!commandExists('git')) {
-    logger.error('git is not installed or not found in PATH.');
-    logger.info('Please install git first. See: https://git-scm.com/downloads');
-    process.exit(1);
-}
-logger.found('git');
-
-logger.progress('Initializing and updating git submodules (F5-TTS)');
-try {
-    // Initialize submodules if not already done
-    execSync('git submodule init', { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
-    logger.success('Git submodules initialized');
-
-    // Try to update submodules to get the latest content
-    try {
-        execSync('git submodule update --remote', { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
-        logger.success('Git submodules updated');
-    } catch (updateError) {
-        logger.warning(`Git submodule update --remote failed: ${updateError.message}`);
-        logger.info('Trying alternative update method...');
-
-        // Try without --remote flag
-        try {
-            execSync('git submodule update', { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
-            logger.success('Git submodules updated (using existing commits)');
-        } catch (altError) {
-            logger.warning(`Alternative submodule update also failed: ${altError.message}`);
-            logger.info('Continuing without submodule update - will check directories manually...');
-        }
-    }
-} catch (error) {
-    logger.error(`Error with git submodules: ${error.message}`);
-    logger.info('Please ensure you are in a git repository with properly configured submodules.');
-    logger.info('If this is a fresh clone, the submodules should be configured automatically.');
-    process.exit(1);
-}
-
-// --- 2.5. Verify submodules are properly initialized or clone them manually ---
-logger.progress('Verifying submodules are properly initialized');
-
-// Check F5-TTS submodule
-if (!fs.existsSync(F5_TTS_DIR)) {
-    logger.warning(`F5-TTS submodule directory "${F5_TTS_DIR}" not found.`);
-    logger.info('Attempting to clone F5-TTS manually...');
-    try {
-        execSync(`git clone ${F5_TTS_REPO_URL} ${F5_TTS_DIR}`, { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
-        logger.success('F5-TTS cloned successfully');
-    } catch (cloneError) {
-        logger.error(`Failed to clone F5-TTS: ${cloneError.message}`);
-        logger.info('Please manually clone F5-TTS:');
-        logger.info(`git clone ${F5_TTS_REPO_URL} ${F5_TTS_DIR}`);
-        process.exit(1);
-    }
-} else {
-    // Check if the submodule directory has actual content (not just .git)
-    const dirContents = fs.readdirSync(F5_TTS_DIR);
-    const hasContent = dirContents.some(item => item !== '.git' && item !== '.gitignore');
-
-    if (!hasContent) {
-        logger.warning(`F5-TTS submodule directory exists but appears empty (only contains: ${dirContents.join(', ')})`);
-        logger.info('Attempting to populate F5-TTS submodule...');
-        try {
-            // Remove the empty directory and clone fresh
-            fs.rmSync(F5_TTS_DIR, { recursive: true, force: true });
-            execSync(`git clone ${F5_TTS_REPO_URL} ${F5_TTS_DIR}`, { stdio: logger.verboseMode ? 'inherit' : 'ignore' });
-            logger.success('F5-TTS cloned successfully');
-        } catch (cloneError) {
-            logger.error(`Failed to clone F5-TTS: ${cloneError.message}`);
-            process.exit(1);
-        }
-    } else {
-        logger.success('F5-TTS submodule found with content');
-    }
-}
-
-logger.success('Submodule verification completed');
 
 
-// --- 3. Check for/Install Python 3.11 ---
-logger.step(3, 6, `Checking for Python ${PYTHON_VERSION_TARGET}`);
+// --- 2. Check for/Install Python 3.11 ---
+logger.step(2, 8, `Checking for Python ${PYTHON_VERSION_TARGET}`);
 let pythonInterpreterIdentifier = null;
 let triedUvInstall = false;
 
@@ -375,8 +296,8 @@ if (!pythonInterpreterIdentifier) {
 }
 
 
-// --- 4. Create or verify virtual environment with uv ---
-logger.step(4, 6, 'Setting up Python virtual environment');
+// --- 3. Create or verify virtual environment with uv ---
+logger.step(3, 8, 'Setting up Python virtual environment');
 
 // Check if virtual environment already exists and is valid
 let venvExists = false;
@@ -435,8 +356,8 @@ if (fs.existsSync(VENV_DIR)) {
     }
 }
 
-// --- 5. Detect GPU and Install Appropriate PyTorch Build ---
-logger.step(5, 6, 'Installing PyTorch with GPU support');
+// --- 4. Detect GPU and Install Appropriate PyTorch Build ---
+logger.step(4, 8, 'Installing PyTorch with GPU support');
 logger.info(`The virtual environment at ./${VENV_DIR} will be used for both F5-TTS and Chatterbox installations.`);
 
 const gpuVendor = detectGpuVendor(); // Call the detection function
@@ -704,7 +625,8 @@ try {
     process.exit(1);
 }
 
-// --- 7. Install F5-TTS using uv pip ---
+// --- 5. Install F5-TTS using uv pip ---
+logger.step(5, 8, 'Installing F5-TTS');
 logger.installing('Text-to-Speech AI engine');
 try {
     // Clone the official F5-TTS repository
@@ -861,7 +783,8 @@ print('✅ F5-TTS verification completed successfully')
     process.exit(1);
 }
 
-// --- 7.5. Install official chatterbox using uv pip ---
+// --- 6. Install official chatterbox using uv pip ---
+logger.step(6, 8, 'Installing chatterbox');
 logger.installing('Voice cloning engine (chatterbox)');
 const CHATTERBOX_DIR = 'chatterbox-temp'; // Temporary directory for cloning
 try {
@@ -1540,12 +1463,12 @@ async function installYtDlpCookiePlugin() {
     }
 }
 
-// --- 12. Install yt-dlp ChromeCookieUnlock Plugin ---
-logger.step(6, 7, 'Installing yt-dlp ChromeCookieUnlock plugin...');
+// --- 7. Install yt-dlp ChromeCookieUnlock Plugin ---
+logger.step(7, 8, 'Installing yt-dlp ChromeCookieUnlock plugin...');
 await installYtDlpCookiePlugin();
 
-// --- 13. Final Summary ---
-logger.step(7, 7, 'Setup completed successfully!');
+// --- 8. Final Summary ---
+logger.step(8, 8, 'Setup completed successfully!');
 
 const summaryItems = [
     `Target PyTorch backend: ${gpuVendor}`,
