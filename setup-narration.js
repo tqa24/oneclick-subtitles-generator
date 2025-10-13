@@ -731,9 +731,9 @@ try {
 
         // Add package data configuration if not present
         if (!f5PyprojectContent.includes('[tool.setuptools.packages.find]')) {
-            f5PyprojectContent += '\n\n[tool.setuptools.packages.find]\nwhere = ["src"]\n\n[tool.setuptools.package-data]\nf5_tts = ["configs/*.yaml", "model/*.pt", "model/*.safetensors"]\n';
+            f5PyprojectContent += '\n\n[tool.setuptools.packages.find]\nwhere = ["src"]\n\n[tool.setuptools.package-data]\nf5_tts = ["configs/*.yaml", "model/*.pt", "model/*.safetensors", "infer/examples/*.txt", "infer/examples/multi/*.txt", "runtime/**/*.txt"]\n';
             fs.writeFileSync(f5PyprojectPath, f5PyprojectContent, 'utf8');
-            logger.success('Added package data configuration to F5-TTS pyproject.toml');
+            logger.success('Added comprehensive package data configuration to F5-TTS pyproject.toml');
         } else {
             logger.info('F5-TTS pyproject.toml already has package data configuration');
         }
