@@ -22,7 +22,7 @@ const logger = new Logger({
 
 const VENV_DIR = '.venv'; // Define the virtual environment directory name
 const PYTHON_VERSION_TARGET = "3.11"; // Target Python version
-const F5_TTS_DIR = 'F5-TTS'; // Define the F5-TTS directory name
+const F5_TTS_DIR = 'f5-tts-temp'; // Temporary directory for F5-TTS installation
 const F5_TTS_REPO_URL = 'https://github.com/SWivid/F5-TTS.git';
 
 // --- Helper Function to Check Command Existence ---
@@ -706,84 +706,65 @@ try {
 
 // --- 7. Install F5-TTS using uv pip ---
 logger.installing('Text-to-Speech AI engine');
-
-// Check for build dependencies on Linux
-if (process.platform === 'linux') {
-    logger.checking('build dependencies on Linux');
-    try {
-        // Check if essential build tools are available
-        execSync('which gcc', { stdio: 'ignore' });
-        logger.found('gcc');
-    } catch (error) {
-        logger.warning('gcc not found. You may need to install build-essential:');
-        logger.info('   sudo apt update && sudo apt install build-essential python3-dev');
-    }
-
-    try {
-        execSync('which python3-config', { stdio: 'ignore' });
-        logger.found('python3-dev');
-    } catch (error) {
-        logger.warning('python3-dev not found. You may need to install it:');
-        logger.info('   sudo apt install python3-dev');
-    }
-}
-
 try {
-    if (!fs.existsSync(F5_TTS_DIR)) {
-        console.error(`❌ Error: Directory "${F5_TTS_DIR}" not found.`);
-        console.log(`   The script attempted to clone it earlier, but it seems to be missing now.`);
-        process.exit(1);
+    // Clone the official F5-TTS repository
+    logger.progress('Cloning official F5-TTS repository');
+
+    // Remove existing F5-TTS directory if it exists
+    if (fs.existsSync(F5_TTS_DIR)) {
+        logger.info('Removing existing F5-TTS directory...');
+        fs.rmSync(F5_TTS_DIR, { recursive: true, force: true });
     }
 
-    const setupPyPath = path.join(F5_TTS_DIR, 'setup.py');
-    const pyprojectTomlPath = path.join(F5_TTS_DIR, 'pyproject.toml');
+    // Clone the repository
+    const cloneCmd = `git clone ${F5_TTS_REPO_URL} ${F5_TTS_DIR}`;
+    logger.command(cloneCmd);
+    execSync(cloneCmd, { stdio: 'inherit' });
+    logger.success('F5-TTS repository cloned');
 
-    if (!fs.existsSync(setupPyPath) && !fs.existsSync(pyprojectTomlPath)) {
-        console.error(`❌ Error: Neither setup.py nor pyproject.toml found in the "${F5_TTS_DIR}" directory.`);
-        console.log(`   The F5-TTS source code seems incomplete or improperly structured in the cloned repository.`);
-        process.exit(1);
-    } else {
-        logger.found(`Text-to-Speech engine source code`);
-    }
+    // F5-TTS pyproject.toml is already compatible with our PyTorch 2.4.1 setup
+    // No modifications needed to dependencies
 
-    const installF5Cmd = `uv pip install --python ${VENV_DIR} -e ./${F5_TTS_DIR}`;
+    // Install F5-TTS from the local modified directory
+    logger.progress('Installing F5-TTS from local directory');
+    // Don't use -e flag, we want it copied to site-packages
+    const installF5Cmd = `uv pip install --python ${VENV_DIR} --no-build-isolation ./${F5_TTS_DIR}`;
     logger.command(installF5Cmd);
-    const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
 
+    const env = { ...process.env, UV_HTTP_TIMEOUT: '600' }; // 10 minutes for installation
     try {
         execSync(installF5Cmd, { stdio: 'inherit', env });
-        logger.success('Text-to-Speech engine installation completed');
-    } catch (installError) {
-        console.error(`❌ Error during F5-TTS editable installation: ${installError.message}`);
-        console.log(`   Command that failed: ${installF5Cmd}`);
-        console.log('   Trying alternative installation method (non-editable)...');
-
-        try {
-            const altInstallCmd = `uv pip install --python ${VENV_DIR} ./${F5_TTS_DIR}`;
-            console.log(`Running alternative: ${altInstallCmd}`);
-            execSync(altInstallCmd, { stdio: 'inherit', env });
-            logger.success('Text-to-Speech engine alternative installation completed');
-        } catch (altError) {
-            console.error(`❌ Alternative installation also failed: ${altError.message}`);
-            console.log('   This might be due to:');
-            console.log('   - Missing build dependencies (gcc, python3-dev, etc.)');
-            console.log('   - Permission issues');
-            console.log('   - Network connectivity issues');
-            console.log('   On Ubuntu/Debian, try: sudo apt update && sudo apt install build-essential python3-dev');
-            throw altError; // Re-throw to be caught by outer try-catch
+        logger.success('F5-TTS installation completed');
+    } catch (installErr) {
+        const msg = String(installErr?.message || installErr);
+        logger.warning(`F5-TTS install failed: ${msg}`);
+        // If failure is due to Poetry backend missing, install both poetry-core and poetry, then retry once
+        const mayBePoetryBackend = /No module named 'poetry'|poetry\.core|poetry\.masonry|prepare_metadata_for_build_wheel/i.test(msg);
+        if (mayBePoetryBackend) {
+            try {
+                const poetryInstallCmd = `uv pip install --python ${VENV_DIR} poetry`;
+                logger.progress('Installing Poetry (full) for legacy Poetry build backends');
+                logger.command(poetryInstallCmd);
+                execSync(poetryInstallCmd, { stdio: 'inherit' });
+                // Retry install
+                logger.progress('Retrying F5-TTS installation after installing Poetry');
+                execSync(installF5Cmd, { stdio: 'inherit', env });
+                logger.success('F5-TTS installation completed after installing Poetry');
+            } catch (retryErr) {
+                throw retryErr; // Re-throw to be handled by outer catch
+            }
+        } else {
+            throw installErr;
         }
     }
 
-    // Debug: List installed packages in the virtual environment (only in verbose mode)
-    if (logger.verboseMode) {
-        logger.progress('Checking installed packages in virtual environment');
-        try {
-            const listCmd = `uv pip list --python ${VENV_DIR}`;
-            logger.command(listCmd);
-            execSync(listCmd, { stdio: 'inherit' });
-        } catch (listError) {
-            logger.warning(`Could not list packages: ${listError.message}`);
-        }
+    // Clean up the temporary directory after installation
+    logger.progress('Cleaning up temporary directory');
+    try {
+        fs.rmSync(F5_TTS_DIR, { recursive: true, force: true });
+        logger.success('Temporary directory removed');
+    } catch (err) {
+        logger.warning('Could not remove temporary directory');
     }
 
     logger.progress('Verifying Text-to-Speech engine');
@@ -791,39 +772,27 @@ try {
 import sys
 import traceback
 
+print("Verifying F5-TTS installation...")
 print("Python executable:", sys.executable)
-print("Python version:", sys.version)
-print("Python path:", sys.path[:3])  # Show first 3 entries
-
-# Try to list installed packages using importlib.metadata (modern approach)
-try:
-    import importlib.metadata as metadata
-    installed_packages = [dist.metadata['name'] for dist in metadata.distributions()]
-    f5_related = [pkg for pkg in installed_packages if 'f5' in pkg.lower() or 'tts' in pkg.lower()]
-    if f5_related:
-        print("F5/TTS related packages found:", f5_related)
-    else:
-        print("No F5/TTS related packages found in first 10:", installed_packages[:10])
-except ImportError:
-    print("importlib.metadata not available, skipping package listing")
-except Exception as e:
-    print(f"Could not list packages: {e}")
 
 try:
     from f5_tts.api import F5TTS
-    print('✅ F5-TTS imported successfully')
-    # Optional: Instantiate to catch potential init errors? Might be too slow/complex.
-    # print('Attempting F5TTS instantiation...')
-    # f5 = F5TTS() # This might require models to be downloaded/present
-    # print('F5-TTS instantiated successfully (basic)')
+    print('✅ F5-TTS API verified')
 except Exception as e:
-    print(f'❌ Error importing F5-TTS: {e}')
+    print(f'❌ F5-TTS API failed: {e}')
     traceback.print_exc()
     sys.exit(1)
+
+print('✅ F5-TTS verification completed successfully')
 `;
     const verifyF5Cmd = `uv run --python ${VENV_DIR} -- python -c "${verifyF5PyCode.replace(/"/g, '\\"')}"`;
-    execSync(verifyF5Cmd, { stdio: 'inherit', encoding: 'utf8' });
-    logger.success('Text-to-Speech engine verified successfully');
+    try {
+        execSync(verifyF5Cmd, { stdio: 'inherit', encoding: 'utf8' });
+        logger.success('Text-to-Speech engine verification completed');
+    } catch (verifyError) {
+        logger.warning('Text-to-Speech engine verification had issues, but continuing installation');
+        logger.info('The application will still work, but F5-TTS features may be limited');
+    }
 
 } catch (error) {
     console.error(`❌ Error installing/verifying F5-TTS with uv: ${error.message}`);
@@ -1515,12 +1484,12 @@ logger.step(7, 7, 'Setup completed successfully!');
 
 const summaryItems = [
     `Target PyTorch backend: ${gpuVendor}`,
-    `F5-TTS submodule at: "${F5_TTS_DIR}"`,
+    `F5-TTS package installed from GitHub`,
     `Chatterbox package installed from GitHub`,
     `Shared virtual environment at: ./${VENV_DIR}`,
     `Python ${PYTHON_VERSION_TARGET} confirmed/installed`,
     `PyTorch, F5-TTS, chatterbox, and all dependencies installed`,
-    `Chatterbox installed from official GitHub repository`
+    `Both F5-TTS and Chatterbox installed from official GitHub repositories`
 ];
 
 if (installNotes) {

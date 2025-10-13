@@ -29,7 +29,7 @@
     "install:deps": "uv pip install --python .venv flask flask-cors soundfile numpy torch torchaudio vocos setuptools",
     "install:yt-dlp": "node install-yt-dlp.js",
     "install:all": "node utils/npm-quiet.js install && node setup-narration.js && node install-yt-dlp.js",
-    "postinstall": "node install-yt-dlp.js && npm run workspace:build",
+    "postinstall": "node update-narration-packages.js && node install-yt-dlp.js && npm run workspace:build",
     "setup:f5tts": "node setup-f5tts.js",
     "python:start:cuda": "uv run --python .venv -- python server/narrationApp.py",
     "dev:cuda": "node scripts/start-all.js",

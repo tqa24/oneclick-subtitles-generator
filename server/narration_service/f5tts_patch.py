@@ -14,10 +14,7 @@ from hydra.utils import get_class
 import torch
 import numpy as np
 
-# Add F5-TTS to path if not already there
-f5tts_path = os.path.join(os.path.dirname(__file__), '..', '..', 'F5-TTS', 'src')
-if f5tts_path not in sys.path:
-    sys.path.insert(0, f5tts_path)
+# F5-TTS is now installed as a package, no need to manipulate sys.path
 
 from f5_tts.infer.utils_infer import load_model, load_vocoder
 from f5_tts.model.utils import seed_everything
