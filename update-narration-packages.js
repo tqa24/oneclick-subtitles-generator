@@ -92,7 +92,7 @@ try {
   if (!isOutdated) {
     logger.success(`F5-TTS is already up to date (${currentVersion})`);
   } else {
-    // Update F5-TTS
+    // Update F5-TTS (preserve working PyTorch versions)
     logger.progress(`Updating F5-TTS from ${currentVersion} to latest version`);
     try {
       executeWithRetry('uv pip install --python .venv --upgrade f5-tts');
@@ -171,3 +171,20 @@ logger.success('Narration packages update check completed!');
 logger.info('F5-TTS and Chatterbox packages checked for updates.');
 logger.info('If packages were in use, restart the application to apply any pending updates.');
 logger.info('If you need to install them initially, run: npm run setup:narration:uv');
+
+// Safeguard: Ensure PyTorch versions remain compatible
+logger.checking('PyTorch version compatibility');
+try {
+  const torchCheckCmd = 'uv run --python .venv -- python -c "import torch; print(f\"PyTorch: {torch.__version__}\"); assert torch.__version__.startswith(\"2.5.1\"), f\"PyTorch version {torch.__version__} is not compatible\";"';
+  execSync(torchCheckCmd, { stdio: 'ignore' });
+  logger.success('PyTorch version is compatible');
+} catch (error) {
+  logger.warning('PyTorch version compatibility check failed');
+  logger.info('Reinstalling compatible PyTorch versions...');
+  try {
+    executeWithRetry('uv pip install --python .venv torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --force-reinstall');
+    logger.success('PyTorch versions restored to compatible versions');
+  } catch (fixError) {
+    logger.warning(`Could not restore PyTorch versions: ${fixError.message}`);
+  }
+}
