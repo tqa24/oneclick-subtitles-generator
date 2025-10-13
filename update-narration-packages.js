@@ -175,9 +175,15 @@ logger.info('If you need to install them initially, run: npm run setup:narration
 // Safeguard: Ensure PyTorch versions remain compatible
 logger.checking('PyTorch version compatibility');
 try {
-  const torchCheckCmd = 'uv run --python .venv -- python -c "import torch; print(f\"PyTorch: {torch.__version__}\"); assert torch.__version__.startswith(\"2.5.1\"), f\"PyTorch version {torch.__version__} is not compatible\";"';
-  execSync(torchCheckCmd, { stdio: 'ignore' });
-  logger.success('PyTorch version is compatible');
+  // Check PyTorch version without assert to avoid shell escaping issues
+  const torchCheckCmd = 'uv run --python .venv -- python -c "import torch; print(torch.__version__)"';
+  const versionOutput = execSync(torchCheckCmd, { encoding: 'utf8', stdio: 'pipe' }).trim();
+
+  if (versionOutput.startsWith('2.5.1')) {
+    logger.success('PyTorch version is compatible');
+  } else {
+    throw new Error(`PyTorch version ${versionOutput} is not compatible`);
+  }
 } catch (error) {
   logger.warning('PyTorch version compatibility check failed');
   logger.info('Reinstalling compatible PyTorch versions...');
