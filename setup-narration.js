@@ -731,7 +731,7 @@ try {
 
         // Add package data configuration if not present
         if (!f5PyprojectContent.includes('[tool.setuptools.packages.find]')) {
-            f5PyprojectContent += '\n\n[tool.setuptools.packages.find]\nwhere = ["src"]\n\n[tool.setuptools.package-data]\nf5_tts = ["configs/*.yaml", "model/*.pt", "model/*.safetensors", "infer/examples/*.txt", "infer/examples/multi/*.txt", "runtime/**/*.txt"]\n';
+            f5PyprojectContent += '\n\n[tool.setuptools.packages.find]\nwhere = ["src"]\n\n[tool.setuptools.package-data]\nf5_tts = ["configs/*.yaml", "model/*.pt", "model/*.safetensors", "infer/examples/*.txt", "infer/examples/*.wav", "infer/examples/*.flac", "infer/examples/*.toml", "infer/examples/multi/*.txt", "infer/examples/multi/*.flac", "infer/examples/multi/*.toml", "infer/examples/basic/*.wav", "infer/examples/basic/*.toml", "runtime/**/*.txt"]\n';
             fs.writeFileSync(f5PyprojectPath, f5PyprojectContent, 'utf8');
             logger.success('Added comprehensive package data configuration to F5-TTS pyproject.toml');
         } else {
@@ -772,6 +772,51 @@ try {
         } else {
             throw installErr;
         }
+    }
+
+    // Copy example audio files to server directory for the reference audio controller
+    logger.progress('Copying example audio files to server directory');
+    try {
+        const exampleAudioDir = path.join(__dirname, 'server', 'example-audio');
+        if (!fs.existsSync(exampleAudioDir)) {
+            fs.mkdirSync(exampleAudioDir, { recursive: true });
+        }
+
+        // Copy basic reference audio files from F5-TTS package
+        const basicRefEnSrc = path.join(VENV_DIR, 'Lib', 'site-packages', 'f5_tts', 'infer', 'examples', 'basic', 'basic_ref_en.wav');
+        const basicRefEnDest = path.join(exampleAudioDir, 'basic_ref_en.wav');
+        if (fs.existsSync(basicRefEnSrc)) {
+            fs.copyFileSync(basicRefEnSrc, basicRefEnDest);
+            logger.info('Copied basic_ref_en.wav to server/example-audio/');
+        }
+
+        const basicRefZhSrc = path.join(VENV_DIR, 'Lib', 'site-packages', 'f5_tts', 'infer', 'examples', 'basic', 'basic_ref_zh.wav');
+        const basicRefZhDest = path.join(exampleAudioDir, 'basic_ref_zh.wav');
+        if (fs.existsSync(basicRefZhSrc)) {
+            fs.copyFileSync(basicRefZhSrc, basicRefZhDest);
+            logger.info('Copied basic_ref_zh.wav to server/example-audio/');
+        }
+
+        // Copy additional example files that might be useful
+        const additionalFiles = [
+            { src: 'infer/examples/basic/basic.toml', dest: 'basic.toml' },
+            { src: 'infer/examples/multi/story.txt', dest: 'story.txt' },
+            { src: 'infer/examples/multi/story.toml', dest: 'story.toml' },
+            { src: 'infer/examples/vocab.txt', dest: 'vocab.txt' }
+        ];
+
+        for (const file of additionalFiles) {
+            const srcPath = path.join(VENV_DIR, 'Lib', 'site-packages', 'f5_tts', file.src);
+            const destPath = path.join(exampleAudioDir, file.dest);
+            if (fs.existsSync(srcPath) && !fs.existsSync(destPath)) {
+                fs.copyFileSync(srcPath, destPath);
+                logger.info(`Copied ${file.dest} to server/example-audio/`);
+            }
+        }
+
+        logger.success('Example audio files copied successfully');
+    } catch (copyError) {
+        logger.warning(`Could not copy example audio files: ${copyError.message}`);
     }
 
     // Clean up the temporary directory after installation
