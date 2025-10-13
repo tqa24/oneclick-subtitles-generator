@@ -62,10 +62,10 @@
     "@mui/icons-material": "^7.0.2",
     "@mui/material": "^7.0.2",
     "@react-oauth/google": "^0.12.1",
-    "@remotion/bundler": "^4.0.341",
-    "@remotion/google-fonts": "^4.0.341",
-    "@remotion/player": "^4.0.341",
-    "@remotion/renderer": "^4.0.341",
+    "@remotion/bundler": "4.0.357",
+    "@remotion/google-fonts": "4.0.357",
+    "@remotion/player": "4.0.357",
+    "@remotion/renderer": "4.0.357",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
     "@testing-library/user-event": "^13.5.0",
@@ -109,7 +109,7 @@
     "react-scripts": "5.0.1",
     "react-tabs": "^6.1.0",
     "react-window": "^1.8.11",
-    "remotion": "^4.0.314",
+    "remotion": "4.0.357",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
     "styled-components": "^6.1.15",
@@ -120,8 +120,8 @@
     "ws": "^8.18.2"
   },
   "devDependencies": {
-    "@remotion/cli": "^4.0.278",
-    "@remotion/eslint-plugin": "^4.0.278",
+    "@remotion/cli": "4.0.357",
+    "@remotion/eslint-plugin": "4.0.357",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "chalk": "^4.1.2",
@@ -146,5 +146,14 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "resolutions": {
+    "remotion": "4.0.357",
+    "@remotion/bundler": "4.0.357",
+    "@remotion/google-fonts": "4.0.357",
+    "@remotion/player": "4.0.357",
+    "@remotion/renderer": "4.0.357",
+    "@remotion/cli": "4.0.357",
+    "@remotion/eslint-plugin": "4.0.357"
   }
 }
