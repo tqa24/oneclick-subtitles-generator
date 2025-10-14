@@ -7,6 +7,12 @@ This document outlines the steps required to add new example audio files to the 
 ### 1. Prepare the Audio Files
 - Place the new MP3 audio files in the `server/example-audio/` directory
 - Ensure files are named descriptively (e.g., `viet_female_north_1.mp3`, `viet_female_north_2.mp3`)
+
+### 1.5. Normalize Audio Volume (Optional but Recommended)
+- Analyze volume: `ffmpeg -i file.mp3 -af volumedetect -f null -`
+- Normalize to match reference max volume (~ -1.5 dB): `ffmpeg -i input.mp3 -af 'volume=XdB' temp.mp3 && move temp.mp3 input.mp3`
+- Ensure consistent loudness across all example audio files
+
 ### 2. Add Files to Git
 ```bash
 git add server/example-audio/your_new_file.mp3
