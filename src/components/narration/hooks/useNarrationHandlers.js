@@ -822,7 +822,9 @@ const useNarrationHandlers = ({
         // It's only used in the UI for user preference
         batchSize: advancedSettings.batchSize === 'all' ? subtitlesWithIds.length : parseInt(advancedSettings.batchSize),
         // Include the selected model ID
-        modelId: selectedNarrationModel
+        modelId: selectedNarrationModel,
+        // Include Gemini API key for text normalization
+        gemini_api_key: localStorage.getItem('gemini_api_key')
       };
 
       // Handle seed
@@ -1375,7 +1377,9 @@ const useNarrationHandlers = ({
         // Include the selected model ID
         modelId: selectedNarrationModel,
         // CRITICAL FIX: Add a flag to skip clearing the output directory
-        skipClearOutput: true
+        skipClearOutput: true,
+        // Include Gemini API key for text normalization
+        gemini_api_key: localStorage.getItem('gemini_api_key')
       };
 
       // Handle seed
@@ -1606,7 +1610,9 @@ const useNarrationHandlers = ({
           cfgStrength: parseFloat(advancedSettings.cfgStrength),
           removeSilence: advancedSettings.removeSilence,
           modelId: selectedNarrationModel,
-          skipClearOutput: true
+          skipClearOutput: true,
+          // Include Gemini API key for text normalization
+          gemini_api_key: localStorage.getItem('gemini_api_key')
         };
 
         // Handle seed

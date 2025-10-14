@@ -6,6 +6,7 @@ import time
 import torch
 import gc
 import re
+import requests
 from flask import Blueprint, request, jsonify, Response
 from .narration_config import HAS_F5TTS, OUTPUT_AUDIO_DIR
 from .narration_utils import load_tts_model
@@ -13,6 +14,54 @@ from .narration_utils import load_tts_model
 from .directory_utils import ensure_subtitle_directory, get_next_file_number
 
 logger = logging.getLogger(__name__)
+
+def normalize_gen_text(text, api_key=None):
+    """Normalize text for F5-TTS generation by removing disruptive punctuation and converting numbers/dates to spoken words."""
+    if not text:
+        return text
+
+    # Remove disruptive punctuation while keeping commas and periods for natural pauses
+    text = re.sub(r'[!?;:()\[\]{}]', '', text)
+
+    # If API key is provided, use Gemini to convert numbers and dates to Vietnamese spoken words
+    if api_key:
+        try:
+            # Check if text contains numbers or dates
+            has_numbers_dates = bool(re.search(r'\d', text)) or bool(re.search(r'\b\d{1,2}/\d{1,2}/\d{4}\b|\b\d{4}-\d{2}-\d{2}\b', text))
+
+            if has_numbers_dates:
+                prompt = f"""Convert any numbers and dates in the following Vietnamese text to their spoken word equivalents in Vietnamese. Keep the rest of the text unchanged. Only output the converted text, no explanations.
+
+Text: {text}"""
+
+                response = requests.post(
+                    'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent',
+                    headers={
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': api_key
+                    },
+                    json={
+                        'contents': [{
+                            'parts': [{
+                                'text': prompt
+                            }]
+                        }]
+                    },
+                    timeout=10
+                )
+
+                if response.status_code == 200:
+                    result = response.json()
+                    if 'candidates' in result and result['candidates']:
+                        converted_text = result['candidates'][0]['content']['parts'][0]['text'].strip()
+                        if converted_text:
+                            text = converted_text
+
+        except Exception as e:
+            logger.warning(f"Failed to normalize text with Gemini: {e}")
+            # Continue with original text if API call fails
+
+    return text
 
 # Create blueprint for generation routes
 generation_bp = Blueprint('narration_generation', __name__)
@@ -138,6 +187,9 @@ def generate_narration():
 
                     # Clean text: Remove control characters, ensure UTF-8
                     cleaned_text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', text)
+                    # Normalize text for better TTS pronunciation
+                    gemini_api_key = settings.get('gemini_api_key')
+                    cleaned_text = normalize_gen_text(cleaned_text, gemini_api_key)
                     # Ensure string type and UTF-8 encoding (though F5TTS might handle bytes too)
                     # cleaned_text = cleaned_text.encode('utf-8').decode('utf-8')
                     # Ensure reference text is also clean string
