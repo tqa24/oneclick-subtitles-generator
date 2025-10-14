@@ -916,14 +916,14 @@ try {
     // Verify PyTorch versions are correct
     logger.progress('Verifying PyTorch compatibility after chatterbox installation');
     try {
-        const verifyCmd = `uv run --python ${VENV_DIR} -- python -c "import torch; print(f'PyTorch version: {torch.__version__}')"`;
+        const verifyCmd = `uv run --python ${VENV_DIR} -- python -c "import torch; print(f'PyTorch version: {torch.__version__}')`;
         const output = execSync(verifyCmd, { encoding: 'utf8' });
-        if (output.includes('2.4.1')) {
-            logger.success('PyTorch 2.4.1 verified successfully');
+        if (output.includes('2.5.1')) {
+            logger.success('PyTorch 2.5.1 verified successfully');
         } else {
             logger.warning('PyTorch version mismatch detected, reinstalling...');
             execSync(torchInstallCmd, { stdio: 'inherit', env });
-            logger.success('PyTorch 2.4.1 reinstalled');
+            logger.success('PyTorch 2.5.1 reinstalled');
         }
     } catch (error) {
         logger.warning(`PyTorch verification failed: ${error.message}`);
