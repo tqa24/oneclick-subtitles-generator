@@ -379,8 +379,6 @@ def patch_utils_infer():
 
         def process_batch(gen_text):
             local_speed = speed
-            if len(gen_text.encode("utf-8")) < 10:
-                local_speed = 0.3
 
             # Prepare the text
             text_list = [ref_text + gen_text]
@@ -393,7 +391,8 @@ def patch_utils_infer():
                 # Calculate duration using character length instead of byte length
                 ref_text_len = len(ref_text)
                 gen_text_len = len(gen_text)
-                duration = ref_audio_len + int(ref_audio_len / ref_text_len * gen_text_len / local_speed * 1.5)
+                multiplier = 5.0 if gen_text_len < 20 else 1.5
+                duration = ref_audio_len + int(ref_audio_len / ref_text_len * gen_text_len / local_speed * multiplier)
 
             # inference
             with torch.inference_mode():
