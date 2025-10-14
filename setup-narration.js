@@ -813,27 +813,12 @@ try {
         let pyprojectContent = fs.readFileSync(pyprojectPath, 'utf8');
 
         // Replace incompatible PyTorch versions with working ones that support both F5-TTS and Chatterbox
-        // Handle both single and double quotes, and various version formats
+        // Handle both requirements.txt and pyproject.toml formats
         pyprojectContent = pyprojectContent
-            .replace(/["']torch==2\.[0-6]\.\d+["']/g, '"torch>=2.5.1,<2.6.0"')
-            .replace(/["']torchaudio==2\.[0-6]\.\d+["']/g, '"torchaudio>=2.5.1,<2.6.0"')
-            .replace(/["']torchvision==0\.1[5-9]\.\d+["']/g, '"torchvision>=0.20.1,<0.21.0"')
-            .replace(/["']transformers==4\.4[6-9]\.\d+["']/g, '"transformers>=4.40.0,<4.47.0"')
-            .replace(/["']diffusers==0\.2[9]\.\d+["']/g, '"diffusers>=0.25.0,<0.30.0"')
-            // Fallback for exact matches that might be too old or too new
-            .replace('"torch==2.4.1"', '"torch>=2.5.1,<2.6.0"')
-            .replace('"torch==2.4.0"', '"torch>=2.5.1,<2.6.0"')
-            .replace('"torch==2.3.1"', '"torch>=2.5.1,<2.6.0"')
-            .replace('"torch==2.6.0"', '"torch>=2.5.1,<2.6.0"')
-            .replace('"torchaudio==2.4.1"', '"torchaudio>=2.5.1,<2.6.0"')
-            .replace('"torchaudio==2.4.0"', '"torchaudio>=2.5.1,<2.6.0"')
-            .replace('"torchaudio==2.3.1"', '"torchaudio>=2.5.1,<2.6.0"')
-            .replace('"torchaudio==2.6.0"', '"torchaudio>=2.5.1,<2.6.0"')
-            .replace('"torchvision==0.19.1"', '"torchvision>=0.20.1,<0.21.0"')
-            .replace('"torchvision==0.19.0"', '"torchvision>=0.20.1,<0.21.0"')
-            .replace('"torchvision==0.18.1"', '"torchvision>=0.20.1,<0.21.0"')
-            .replace('"transformers==4.46.3"', '"transformers>=4.40.0,<4.47.0"')
-            .replace('"diffusers==0.29.0"', '"diffusers>=0.25.0,<0.30.0"');
+            .replace(/==2\.[0-6]\.\d+/g, '>=2.5.1,<2.6.0')
+            .replace(/==0\.1[5-9]\.\d+/g, '>=0.20.1,<0.21.0')
+            .replace(/==4\.4[6-9]\.\d+/g, '>=4.40.0,<4.47.0')
+            .replace(/==0\.2[9]\.\d+/g, '>=0.25.0,<0.30.0');
 
 
         // Remove russian-text-stresser due to spacy==3.6.* hard pin causing conflict with gradio/typer (pydantic v2)
