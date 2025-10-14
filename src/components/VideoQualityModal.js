@@ -621,9 +621,9 @@ const VideoQualityModal = ({
                     alignItems: 'center',
                     gap: 8,
                     width: '100%',
-                    ['--wavy-progress-color']: waveColor,
-                    ['--figma-progress-color']: waveColor,
-                    ['--figma-track-color']: waveTrackColor
+                    '--wavy-progress-color': waveColor,
+                    '--figma-progress-color': waveColor,
+                    '--figma-track-color': waveTrackColor
                   }}
                 >
                   <WavyProgressIndicator

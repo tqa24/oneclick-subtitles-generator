@@ -1,4 +1,4 @@
-﻿import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import LiquidGlass from '../common/LiquidGlass';
 import PlayPauseMorphType4 from '../common/PlayPauseMorphType4';
 import WavyProgressIndicator from '../common/WavyProgressIndicator';
