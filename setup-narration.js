@@ -872,8 +872,8 @@ try {
     logger.progress('Installing chatterbox from local modified directory');
     // Don't use -e flag, we want it copied to site-packages
     // Root fix: install chatterbox together with python-dateutil in a single resolution to prevent pruning
-    // Use --force-reinstall to prevent Chatterbox from overriding PyTorch versions
-    const installChatterboxCmd = `uv pip install --python ${VENV_DIR} --no-build-isolation --force-reinstall ./${CHATTERBOX_DIR} python-dateutil==2.9.0.post0`;
+    // Use CUDA index to ensure PyTorch CUDA version is used
+    const installChatterboxCmd = `uv pip install --python ${VENV_DIR} --no-build-isolation --force-reinstall --index-url https://download.pytorch.org/whl/cu121 --extra-index-url https://pypi.org/simple ./${CHATTERBOX_DIR} python-dateutil==2.9.0.post0`;
     logger.command(installChatterboxCmd);
     logger.info(`Installing chatterbox with pinned python-dateutil (single resolution, site-packages)`);
 
