@@ -813,11 +813,11 @@ try {
         let pyprojectContent = fs.readFileSync(pyprojectPath, 'utf8');
 
         // Replace incompatible PyTorch versions with working ones that support both F5-TTS and Chatterbox
-        // Handle both requirements.txt and pyproject.toml formats - target specific packages only
+        // Pin to CUDA versions to prevent CPU installs - target specific packages only
         pyprojectContent = pyprojectContent
-            .replace(/torch==2\.[0-6]\.\d+/g, 'torch>=2.5.1,<2.6.0')
-            .replace(/torchaudio==2\.[0-6]\.\d+/g, 'torchaudio>=2.5.1,<2.6.0')
-            .replace(/torchvision==0\.1[5-9]\.\d+/g, 'torchvision>=0.20.1,<0.21.0')
+            .replace(/torch==2\.[0-6]\.\d+/g, 'torch==2.5.1+cu121')
+            .replace(/torchaudio==2\.[0-6]\.\d+/g, 'torchaudio==2.5.1+cu121')
+            .replace(/torchvision==0\.1[5-9]\.\d+/g, 'torchvision==0.20.1+cu121')
             .replace(/transformers==4\.4[6-9]\.\d+/g, 'transformers>=4.40.0,<4.47.0')
             .replace(/diffusers==0\.2[9]\.\d+/g, 'diffusers>=0.25.0,<0.30.0');
 
