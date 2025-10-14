@@ -56,6 +56,19 @@ def seed_everything(*args, **kwargs):
     _lazy_import_f5tts()
     _seed_everything(*args, **kwargs)
 
+def trim_leading_silence(audio, sr, threshold=0.01):
+    """Trim leading silence from audio array using a simple threshold."""
+    # Convert to float if not already
+    if audio.dtype != np.float32:
+        audio = audio.astype(np.float32)
+
+    # Find the first sample above the threshold
+    above_threshold = np.abs(audio) > threshold
+    if np.any(above_threshold):
+        start_idx = np.argmax(above_threshold)
+        return audio[start_idx:]
+    return audio
+
 
 class PatchedF5TTS:
     """
@@ -391,7 +404,7 @@ def patch_utils_infer():
                 # Calculate duration using character length instead of byte length
                 ref_text_len = len(ref_text)
                 gen_text_len = len(gen_text)
-                multiplier = 5.0 if gen_text_len < 20 else 1.5
+                multiplier = 3.0 if gen_text_len < 20 else 1.5
                 duration = ref_audio_len + int(ref_audio_len / ref_text_len * gen_text_len / local_speed * multiplier)
 
             # inference
@@ -418,6 +431,9 @@ def patch_utils_infer():
 
                 # wav -> numpy
                 generated_wave = generated_wave.squeeze().cpu().numpy()
+
+                # Trim leading silence
+                generated_wave = trim_leading_silence(generated_wave, utils_infer.target_sample_rate)
 
                 if streaming:
                     for j in range(0, len(generated_wave), chunk_size):
