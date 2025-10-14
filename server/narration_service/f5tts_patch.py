@@ -405,7 +405,15 @@ def patch_utils_infer():
                 ref_text_len = len(ref_text)
                 gen_text_len = len(gen_text)
                 multiplier = 3.0 if gen_text_len < 20 else 1.5
+                if gen_text_len < 5:
+                    multiplier = 5.0  # Increase multiplier for very short texts
                 duration = ref_audio_len + int(ref_audio_len / ref_text_len * gen_text_len / local_speed * multiplier)
+
+                # Ensure minimum generated duration for short texts
+                generated_frames = duration - ref_audio_len
+                min_generated_frames = 150  # ~1 second at typical hop_length
+                if generated_frames < min_generated_frames:
+                    duration = ref_audio_len + min_generated_frames
 
             # inference
             with torch.inference_mode():
