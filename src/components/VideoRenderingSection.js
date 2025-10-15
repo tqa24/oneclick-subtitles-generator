@@ -60,7 +60,7 @@ const VideoRenderingSection = ({
     const saved = localStorage.getItem('videoRender_renderSettings');
     const defaultSettings = {
       resolution: '1080p',
-      frameRate: 60,
+      frameRate: 30,
       videoType: 'Subtitled Video',
       originalAudioVolume: 100,
       narrationVolume: 100,
