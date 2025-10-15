@@ -37,9 +37,9 @@ const ResultRow = ({ index, style, data }) => {
     if (!isTransformed || !result.transformations) return null;
 
     const parts = [];
-    if (result.transformations.punctuation_removed && result.transformations.punctuation_removed.length > 0) {
-      parts.push(t('narration.transformations.punctuationRemoved', {
-        punctuation: result.transformations.punctuation_removed.join('')
+    if (result.transformations.punctuation_replaced && result.transformations.punctuation_replaced.length > 0) {
+      parts.push(t('narration.transformations.punctuationReplaced', {
+        punctuation: result.transformations.punctuation_replaced.join('')
       }));
     }
 

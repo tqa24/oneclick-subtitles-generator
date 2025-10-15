@@ -308,7 +308,7 @@
     "viet_loli_south": "베트남 남부 로리 음성"
   },
   "transformations": {
-    "punctuationRemoved": "구두점 제거됨: {{punctuation}}",
+    "punctuationReplaced": "구두점을 공백으로 대체: {{punctuation}}",
     "numbersConverted": "숫자를 말로 변환",
     "datesConverted": "날짜를 말로 변환",
     "numbersAndDatesConverted": "숫자와 날짜를 말로 변환"

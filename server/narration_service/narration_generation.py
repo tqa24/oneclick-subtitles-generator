@@ -15,23 +15,23 @@ from .directory_utils import ensure_subtitle_directory, get_next_file_number
 
 logger = logging.getLogger(__name__)
 
-def normalize_gen_text(text, api_key=None):
+def normalize_gen_text(text, api_key=None, language='vi'):
     """Normalize text for F5-TTS generation by removing disruptive punctuation and converting numbers/dates to spoken words."""
     if not text:
         return text, {'transformed': False}
 
     original_text = text
-    transformations = {'transformed': False, 'punctuation_removed': [], 'numbers_converted': [], 'dates_converted': []}
+    transformations = {'transformed': False, 'punctuation_replaced': [], 'numbers_converted': [], 'dates_converted': []}
 
-    # Remove disruptive punctuation while keeping commas and periods for natural pauses
+    # Replace disruptive punctuation with spaces while keeping commas and periods for natural pauses
     punctuation_pattern = r'[!?;:()\[\]{}]'
     punctuation_matches = re.findall(punctuation_pattern, text)
     if punctuation_matches:
         transformations['transformed'] = True
-        transformations['punctuation_removed'] = list(set(punctuation_matches))  # unique punctuation removed
-        text = re.sub(punctuation_pattern, '', text)
+        transformations['punctuation_replaced'] = list(set(punctuation_matches))  # unique punctuation replaced with spaces
+        text = re.sub(punctuation_pattern, ' ', text)
 
-    # If API key is provided, use Gemini to convert numbers and dates to Vietnamese spoken words
+    # If API key is provided, use Gemini to convert numbers and dates to spoken words in the specified language
     if api_key:
         try:
             # Check if text contains numbers or dates
@@ -40,7 +40,9 @@ def normalize_gen_text(text, api_key=None):
 
             if has_numbers or has_dates:
                 pre_gemini_text = text
-                prompt = f"""Convert any numbers and dates in the following Vietnamese text to their spoken word equivalents in Vietnamese. Keep the rest of the text unchanged. Only output the converted text, no explanations.
+
+                # Create a flexible prompt that works with any language code
+                prompt = f"""Convert any numbers and dates in the following {language} text to their spoken word equivalents in {language}. Keep the rest of the text unchanged. Only output the converted text, no explanations.
 
 Text: {text}"""
 
@@ -207,7 +209,9 @@ def generate_narration():
                     original_text = cleaned_text
                     # Normalize text for better TTS pronunciation
                     gemini_api_key = settings.get('gemini_api_key')
-                    cleaned_text, transformations = normalize_gen_text(cleaned_text, gemini_api_key)
+                    # Get language from settings, default to 'vi' for backward compatibility
+                    language = settings.get('language', 'vi')
+                    cleaned_text, transformations = normalize_gen_text(cleaned_text, gemini_api_key, language)
                     # Ensure string type and UTF-8 encoding (though F5TTS might handle bytes too)
                     # cleaned_text = cleaned_text.encode('utf-8').decode('utf-8')
                     # Ensure reference text is also clean string

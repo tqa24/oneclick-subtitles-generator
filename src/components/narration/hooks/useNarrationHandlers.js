@@ -810,6 +810,11 @@ const useNarrationHandlers = ({
         window.useGroupedSubtitles = true;
       }
 
+      // Get the language code for the selected subtitles
+      const detectedLanguageCode = subtitleSource === 'original'
+        ? (originalLanguage?.languageCode || 'en')
+        : (translatedLanguage?.languageCode || 'en');
+
       // Prepare advanced settings for the API - only include supported parameters
       const apiSettings = {
         // Convert string values to appropriate types
@@ -824,7 +829,9 @@ const useNarrationHandlers = ({
         // Include the selected model ID
         modelId: selectedNarrationModel,
         // Include Gemini API key for text normalization
-        gemini_api_key: localStorage.getItem('gemini_api_key')
+        gemini_api_key: localStorage.getItem('gemini_api_key'),
+        // Include detected language for text normalization
+        language: detectedLanguageCode
       };
 
       // Handle seed
@@ -1366,6 +1373,11 @@ const useNarrationHandlers = ({
         forceRegenerate: true
       };
 
+      // Get the language code for the selected subtitles
+      const detectedLanguageCode = subtitleSource === 'original'
+        ? (originalLanguage?.languageCode || 'en')
+        : (translatedLanguage?.languageCode || 'en');
+
       // Prepare advanced settings for the API - only include supported parameters
       const apiSettings = {
         // Convert string values to appropriate types
@@ -1379,7 +1391,9 @@ const useNarrationHandlers = ({
         // CRITICAL FIX: Add a flag to skip clearing the output directory
         skipClearOutput: true,
         // Include Gemini API key for text normalization
-        gemini_api_key: localStorage.getItem('gemini_api_key')
+        gemini_api_key: localStorage.getItem('gemini_api_key'),
+        // Include detected language for text normalization
+        language: detectedLanguageCode
       };
 
       // Handle seed
@@ -1602,6 +1616,11 @@ const useNarrationHandlers = ({
           forceRegenerate: true
         };
 
+        // Get the language code for the selected subtitles
+        const detectedLanguageCode = subtitleSource === 'original'
+          ? (originalLanguage?.languageCode || 'en')
+          : (translatedLanguage?.languageCode || 'en');
+
         // Prepare advanced settings for the API
         const apiSettings = {
           speechRate: parseFloat(advancedSettings.speechRate),
@@ -1612,7 +1631,9 @@ const useNarrationHandlers = ({
           modelId: selectedNarrationModel,
           skipClearOutput: true,
           // Include Gemini API key for text normalization
-          gemini_api_key: localStorage.getItem('gemini_api_key')
+          gemini_api_key: localStorage.getItem('gemini_api_key'),
+          // Include detected language for text normalization
+          language: detectedLanguageCode
         };
 
         // Handle seed
