@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import SliderWithValue from '../../common/SliderWithValue';
 import LoadingIndicator from '../../common/LoadingIndicator';
+import HelpIcon from '../../common/HelpIcon';
 import '../../../utils/functionalScrollbar';
 import { VariableSizeList as List } from 'react-window';
 import { SERVER_URL } from '../../../config';
@@ -29,18 +30,56 @@ const ResultRow = ({ index, style, data }) => {
   const result = generationResults[index];
   const subtitle_id = result.subtitle_id;
 
-  return (
+  const isTransformed = result.transformations && result.transformations.transformed;
+
+  // Generate tooltip content for transformations
+  const getTransformationTooltip = () => {
+    if (!isTransformed || !result.transformations) return null;
+
+    const parts = [];
+    if (result.transformations.punctuation_removed && result.transformations.punctuation_removed.length > 0) {
+      parts.push(t('narration.transformations.punctuationRemoved', {
+        punctuation: result.transformations.punctuation_removed.join('')
+      }));
+    }
+
+    const hasNumbers = result.transformations.numbers_converted && result.transformations.numbers_converted.length > 0;
+    const hasDates = result.transformations.dates_converted && result.transformations.dates_converted.length > 0;
+
+    if (hasNumbers && hasDates) {
+      parts.push(t('narration.transformations.numbersAndDatesConverted'));
+    } else if (hasNumbers) {
+      parts.push(t('narration.transformations.numbersConverted'));
+    } else if (hasDates) {
+      parts.push(t('narration.transformations.datesConverted'));
+    }
+
+    return parts.join(', ');
+  };
+
+  const tooltipContent = getTransformationTooltip();
+
+  const resultItem = (
     <div
       style={style}
       className={`result-item
         ${result.success ? '' : result.pending ? 'pending' : 'failed'}
         ${currentAudio && currentAudio.id === subtitle_id ? 'playing' : ''}
-        ${retryingSubtitleId === subtitle_id ? 'retrying' : ''}`}
+        ${retryingSubtitleId === subtitle_id ? 'retrying' : ''}
+        ${isTransformed ? 'transformed' : ''}`}
     >
       <div className="result-text hide-native-scrollbar">
         {/* Display 1-based row number for user-friendly sequential numbering */}
         <span className="result-id">{index + 1}.</span>
         {result.text}
+        {isTransformed && tooltipContent && (
+          <HelpIcon
+            title={tooltipContent}
+            size={12}
+            className="transformation-help-icon"
+            style={{ marginLeft: '8px', verticalAlign: 'middle' }}
+          />
+        )}
       </div>
 
       <div className="result-controls">
@@ -178,6 +217,8 @@ const ResultRow = ({ index, style, data }) => {
       </div>
     </div>
   );
+
+  return resultItem;
 };
 
 /**

@@ -18,18 +18,28 @@ logger = logging.getLogger(__name__)
 def normalize_gen_text(text, api_key=None):
     """Normalize text for F5-TTS generation by removing disruptive punctuation and converting numbers/dates to spoken words."""
     if not text:
-        return text
+        return text, {'transformed': False}
+
+    original_text = text
+    transformations = {'transformed': False, 'punctuation_removed': [], 'numbers_converted': [], 'dates_converted': []}
 
     # Remove disruptive punctuation while keeping commas and periods for natural pauses
-    text = re.sub(r'[!?;:()\[\]{}]', '', text)
+    punctuation_pattern = r'[!?;:()\[\]{}]'
+    punctuation_matches = re.findall(punctuation_pattern, text)
+    if punctuation_matches:
+        transformations['transformed'] = True
+        transformations['punctuation_removed'] = list(set(punctuation_matches))  # unique punctuation removed
+        text = re.sub(punctuation_pattern, '', text)
 
     # If API key is provided, use Gemini to convert numbers and dates to Vietnamese spoken words
     if api_key:
         try:
             # Check if text contains numbers or dates
-            has_numbers_dates = bool(re.search(r'\d', text)) or bool(re.search(r'\b\d{1,2}/\d{1,2}/\d{4}\b|\b\d{4}-\d{2}-\d{2}\b', text))
+            has_numbers = bool(re.search(r'\d', text))
+            has_dates = bool(re.search(r'\b\d{1,2}/\d{1,2}/\d{4}\b|\b\d{4}-\d{2}-\d{2}\b', text))
 
-            if has_numbers_dates:
+            if has_numbers or has_dates:
+                pre_gemini_text = text
                 prompt = f"""Convert any numbers and dates in the following Vietnamese text to their spoken word equivalents in Vietnamese. Keep the rest of the text unchanged. Only output the converted text, no explanations.
 
 Text: {text}"""
@@ -54,14 +64,20 @@ Text: {text}"""
                     result = response.json()
                     if 'candidates' in result and result['candidates']:
                         converted_text = result['candidates'][0]['content']['parts'][0]['text'].strip()
-                        if converted_text:
+                        if converted_text and converted_text != pre_gemini_text:
+                            transformations['transformed'] = True
+                            # Track what was converted
+                            if has_numbers:
+                                transformations['numbers_converted'] = ['numbers']
+                            if has_dates:
+                                transformations['dates_converted'] = ['dates']
                             text = converted_text
 
         except Exception as e:
             logger.warning(f"Failed to normalize text with Gemini: {e}")
             # Continue with original text if API call fails
 
-    return text
+    return text, transformations
 
 # Create blueprint for generation routes
 generation_bp = Blueprint('narration_generation', __name__)
@@ -187,9 +203,11 @@ def generate_narration():
 
                     # Clean text: Remove control characters, ensure UTF-8
                     cleaned_text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', text)
+                    # Store original text before normalization
+                    original_text = cleaned_text
                     # Normalize text for better TTS pronunciation
                     gemini_api_key = settings.get('gemini_api_key')
-                    cleaned_text = normalize_gen_text(cleaned_text, gemini_api_key)
+                    cleaned_text, transformations = normalize_gen_text(cleaned_text, gemini_api_key)
                     # Ensure string type and UTF-8 encoding (though F5TTS might handle bytes too)
                     # cleaned_text = cleaned_text.encode('utf-8').decode('utf-8')
                     # Ensure reference text is also clean string
@@ -230,9 +248,11 @@ def generate_narration():
                         result = {
                             'subtitle_id': original_id,
                             'text': cleaned_text, # Return the cleaned text used for generation
+                            'original_text': original_text, # Include original text for display
                             'audio_path': output_path,
                             'filename': full_filename, # Return the path relative to OUTPUT_AUDIO_DIR
-                            'success': True
+                            'success': True,
+                            'transformations': transformations
                         }
                         results.append(result)
 
@@ -247,8 +267,10 @@ def generate_narration():
                         result = {
                             'subtitle_id': original_id,
                             'text': cleaned_text,
+                            'original_text': original_text,
                             'error': error_message,
-                            'success': False
+                            'success': False,
+                            'transformations': transformations
                         }
                         results.append(result)
 

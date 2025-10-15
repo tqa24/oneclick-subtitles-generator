@@ -296,5 +296,11 @@
   "geminiGenerationError": "Error generating narration with Gemini",
   "retryingGeminiGeneration": "Retrying narration generation for subtitle {{id}}...",
   "subtitleGroupingError": "Error grouping subtitles: {{error}}",
-  "serverError": "Server error: {{status}} {{statusText}}"
+  "serverError": "Server error: {{status}} {{statusText}}",
+  "transformations": {
+    "punctuationRemoved": "Punctuation removed: {{punctuation}}",
+    "numbersConverted": "Numbers converted to spoken words",
+    "datesConverted": "Dates converted to spoken words",
+    "numbersAndDatesConverted": "Numbers and dates converted to spoken words"
+  }
 }
