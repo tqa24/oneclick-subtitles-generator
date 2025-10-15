@@ -98,7 +98,6 @@ const VideoCropControls = ({
       y: cropSettings.y ?? 0,
       width: cropSettings.width ?? 100,
       height: cropSettings.height ?? 100,
-      aspectRatio: cropSettings.aspectRatio ?? null,
       canvasBgMode: cropSettings.canvasBgMode ?? 'solid',
       canvasBgColor: cropSettings.canvasBgColor ?? '#000000',
       canvasBgBlur: cropSettings.canvasBgBlur ?? 24,
@@ -274,8 +273,7 @@ const VideoCropControls = ({
         x: 0,
         y: 0,
         width: 100,
-        height: 100,
-        aspectRatio: videoWidth / videoHeight
+        height: 100
       };
     } else if (aspectRatio === 'custom') {
       // Keep current crop
@@ -302,8 +300,7 @@ const VideoCropControls = ({
         x,
         y,
         width: cropWidth,
-        height: cropHeight,
-        aspectRatio
+        height: cropHeight
       };
     }
   }, [videoDimensions, cropSettings]);
@@ -677,9 +674,11 @@ const VideoCropControls = ({
   }, [isEnabled, videoRect]);
 
 
-  // Reset floating UI positions when leaving crop mode
+  // Reset selected aspect ratio when entering crop mode, reset UI positions when leaving
   useEffect(() => {
-    if (!isEnabled) {
+    if (isEnabled) {
+      setSelectedAspectRatio(null);
+    } else {
       resetUiPositions();
     }
   }, [isEnabled, resetUiPositions]);
