@@ -17,6 +17,7 @@ import '../../../styles/ModelDropdown.css';
 import '../../../styles/narration/subtitleSourceSelectionMaterial.css';
 import SubtitleGroupingModal from './SubtitleGroupingModal';
 import ModelSelectionModal from './ModelSelectionModal';
+import ManualLanguageSelectionModal from './ManualLanguageSelectionModal';
 
 /**
  * Subtitle Source Selection component
@@ -67,6 +68,14 @@ const SubtitleSourceSelection = ({
 
   // State for subtitle grouping modal
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // State for manual language selection modal
+  const [isManualLanguageModalOpen, setIsManualLanguageModalOpen] = useState(false);
+  const [manualLanguageSource, setManualLanguageSource] = useState(null);
+
+  // State for hover detection on radio pills (for manual button visibility)
+  const [hoveredPill, setHoveredPill] = useState(null);
+
 
   // Function to handle subtitle grouping toggle
   const handleGroupingToggle = async (checked) => {
@@ -162,6 +171,52 @@ const SubtitleSourceSelection = ({
   // Functions to handle modal
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
+
+  // Functions to handle manual language modal
+  const openManualLanguageModal = (source) => {
+    setManualLanguageSource(source);
+    setIsManualLanguageModalOpen(true);
+  };
+  const closeManualLanguageModal = () => {
+    setIsManualLanguageModalOpen(false);
+    setManualLanguageSource(null);
+  };
+
+  // Handle manual language save
+  const handleManualLanguageSave = (languages) => {
+    if (!manualLanguageSource) return;
+
+    // If no languages selected, clear the language selection
+    if (!languages || languages.length === 0) {
+      if (manualLanguageSource === 'original') {
+        setOriginalLanguage(null);
+      } else if (manualLanguageSource === 'translated') {
+        setTranslatedLanguage(null);
+      }
+      return;
+    }
+
+    // Create a manual language object
+    const manualLanguage = {
+      languageCode: languages[0] || 'unknown',
+      secondaryLanguages: languages.length > 1 ? languages.slice(1) : [],
+      isMultiLanguage: languages.length > 1,
+      isManualSelection: true,
+      confidence: 1.0 // Manual selection has full confidence
+    };
+
+    // Set the language based on source
+    if (manualLanguageSource === 'original') {
+      setOriginalLanguage(manualLanguage);
+    } else if (manualLanguageSource === 'translated') {
+      setTranslatedLanguage(manualLanguage);
+    }
+
+    // Call the callback if provided
+    if (onLanguageDetected) {
+      onLanguageDetected(manualLanguageSource, manualLanguage);
+    }
+  };
 
   // State for language detection
   const [isDetectingOriginal, setIsDetectingOriginal] = useState(false);
@@ -511,6 +566,28 @@ const SubtitleSourceSelection = ({
     );
   };
 
+  // Helper to render manual language selection button
+  const renderManualButton = (source, subtitles, isHovered) => {
+    if (!subtitles || subtitles.length === 0 || !isHovered) return null;
+
+    const handleManualSelect = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openManualLanguageModal(source);
+    };
+
+    return (
+      <button
+        className="language-manual-button"
+        onClick={handleManualSelect}
+        title={t('narration.manualLanguageSelection', 'Manual language selection')}
+        type="button"
+      >
+        {t('narration.manual', 'manual')}
+      </button>
+    );
+  };
+
   // Helper to render model languages in dropdown
   const renderModelLanguages = (model) => {
     // If model has multiple languages
@@ -548,7 +625,11 @@ const SubtitleSourceSelection = ({
                   onChange={() => handleSourceChange('original')}
                   disabled={isGenerating}
                 />
-                <label htmlFor="source-original">
+                <label
+                  htmlFor="source-original"
+                  onMouseEnter={() => setHoveredPill('original')}
+                  onMouseLeave={() => setHoveredPill(null)}
+                >
                   {isDetectingOriginal ? (
                     <span className="loading-animation">
                       <LoadingIndicator
@@ -564,6 +645,7 @@ const SubtitleSourceSelection = ({
                       {t('narration.originalSubtitles', 'Original Subtitles')}
                       {originalLanguage && renderLanguageBadge(originalLanguage)}
                       {!originalLanguage && renderRefreshButton('original', originalSubtitles, isDetectingOriginal)}
+                      {renderManualButton('original', originalSubtitles, hoveredPill === 'original')}
                     </>
                   )}
                 </label>
@@ -578,7 +660,11 @@ const SubtitleSourceSelection = ({
                   onChange={() => handleSourceChange('translated')}
                   disabled={isGenerating || !hasTranslatedSubtitles}
                 />
-                <label htmlFor="source-translated">
+                <label
+                  htmlFor="source-translated"
+                  onMouseEnter={() => setHoveredPill('translated')}
+                  onMouseLeave={() => setHoveredPill(null)}
+                >
                   {isDetectingTranslated ? (
                     <span className="loading-animation">
                       <LoadingIndicator
@@ -594,6 +680,7 @@ const SubtitleSourceSelection = ({
                       {t('narration.translatedSubtitles', 'Translated Subtitles')}
                       {translatedLanguage && renderLanguageBadge(translatedLanguage)}
                       {!translatedLanguage && hasTranslatedSubtitles && renderRefreshButton('translated', translatedSubtitles, isDetectingTranslated)}
+                      {hasTranslatedSubtitles && renderManualButton('translated', translatedSubtitles, hoveredPill === 'translated')}
                       {!hasTranslatedSubtitles && (
                         <span className="unavailable-indicator">
                           {t('narration.unavailable', '(unavailable)')}
@@ -797,6 +884,21 @@ const SubtitleSourceSelection = ({
         originalSubtitles={subtitleSource === 'translated' && hasTranslatedSubtitles ? translatedSubtitles : originalSubtitles}
         groupedSubtitles={groupedSubtitles}
         subtitleSource={subtitleSource}
+      />
+
+      {/* Manual Language Selection Modal */}
+      <ManualLanguageSelectionModal
+        isOpen={isManualLanguageModalOpen}
+        onClose={closeManualLanguageModal}
+        onSave={handleManualLanguageSave}
+        initialLanguages={
+          manualLanguageSource === 'original' && originalLanguage
+            ? [originalLanguage.languageCode, ...(originalLanguage.secondaryLanguages || [])]
+            : manualLanguageSource === 'translated' && translatedLanguage
+            ? [translatedLanguage.languageCode, ...(translatedLanguage.secondaryLanguages || [])]
+            : []
+        }
+        subtitleSource={manualLanguageSource}
       />
     </>
   );

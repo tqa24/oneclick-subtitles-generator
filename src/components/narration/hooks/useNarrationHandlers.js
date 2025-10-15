@@ -11,6 +11,7 @@ import {
   cancelNarrationGeneration
 } from '../../../services/narrationService';
 import { isModelAvailable } from '../../../services/modelAvailabilityService';
+import ISO6391 from 'iso-639-1';
 
 /**
  * Create a React-based loading overlay with LoadingIndicator component
@@ -815,6 +816,9 @@ const useNarrationHandlers = ({
         ? (originalLanguage?.languageCode || 'en')
         : (translatedLanguage?.languageCode || 'en');
 
+      // Convert language code to language name for backend
+      const detectedLanguageName = ISO6391.getName(detectedLanguageCode) || 'English';
+
       // Prepare advanced settings for the API - only include supported parameters
       const apiSettings = {
         // Convert string values to appropriate types
@@ -830,8 +834,8 @@ const useNarrationHandlers = ({
         modelId: selectedNarrationModel,
         // Include Gemini API key for text normalization
         gemini_api_key: localStorage.getItem('gemini_api_key'),
-        // Include detected language for text normalization
-        language: detectedLanguageCode
+        // Include detected language name for text normalization
+        language: detectedLanguageName
       };
 
       // Handle seed
@@ -1378,6 +1382,9 @@ const useNarrationHandlers = ({
         ? (originalLanguage?.languageCode || 'en')
         : (translatedLanguage?.languageCode || 'en');
 
+      // Convert language code to language name for backend
+      const detectedLanguageName = ISO6391.getName(detectedLanguageCode) || 'English';
+
       // Prepare advanced settings for the API - only include supported parameters
       const apiSettings = {
         // Convert string values to appropriate types
@@ -1392,8 +1399,8 @@ const useNarrationHandlers = ({
         skipClearOutput: true,
         // Include Gemini API key for text normalization
         gemini_api_key: localStorage.getItem('gemini_api_key'),
-        // Include detected language for text normalization
-        language: detectedLanguageCode
+        // Include detected language name for text normalization
+        language: detectedLanguageName
       };
 
       // Handle seed
@@ -1621,6 +1628,9 @@ const useNarrationHandlers = ({
           ? (originalLanguage?.languageCode || 'en')
           : (translatedLanguage?.languageCode || 'en');
 
+        // Convert language code to language name for backend
+        const detectedLanguageName = ISO6391.getName(detectedLanguageCode) || 'English';
+
         // Prepare advanced settings for the API
         const apiSettings = {
           speechRate: parseFloat(advancedSettings.speechRate),
@@ -1632,8 +1642,8 @@ const useNarrationHandlers = ({
           skipClearOutput: true,
           // Include Gemini API key for text normalization
           gemini_api_key: localStorage.getItem('gemini_api_key'),
-          // Include detected language for text normalization
-          language: detectedLanguageCode
+          // Include detected language name for text normalization
+          language: detectedLanguageName
         };
 
         // Handle seed

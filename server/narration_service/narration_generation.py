@@ -41,7 +41,7 @@ def normalize_gen_text(text, api_key=None, language='vi'):
             if has_numbers or has_dates:
                 pre_gemini_text = text
 
-                # Create a flexible prompt that works with any language code
+                # Use the language name directly (already converted in frontend)
                 prompt = f"""Convert any numbers and dates in the following {language} text to their spoken word equivalents in {language}. Keep the rest of the text unchanged. Only output the converted text, no explanations.
 
 Text: {text}"""
