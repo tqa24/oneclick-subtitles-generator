@@ -52,6 +52,23 @@ const RemotionVideoPreview = React.forwardRef(({
   // Use the forwarded ref or fallback to internal ref
   const actualPlayerRef = ref || playerRef;
 
+  // Load Google Fonts for preview
+  useEffect(() => {
+    if (subtitleCustomization?.fontFamily) {
+      const fontName = subtitleCustomization.fontFamily.replace(/['"]/g, '').split(',')[0].trim();
+      const fontUrl = `https://fonts.googleapis.com/css2?family=${fontName}:wght@400;500;600;700&display=swap`;
+      const link = document.createElement('link');
+      link.href = fontUrl;
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+      return () => {
+        if (document.head.contains(link)) {
+          document.head.removeChild(link);
+        }
+      };
+    }
+  }, [subtitleCustomization?.fontFamily]);
+
 
   // Create video URL from file
   useEffect(() => {
