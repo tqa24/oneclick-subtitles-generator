@@ -4,7 +4,6 @@
 # Explicitly declare text files you want to always be normalized and converted
 # to native line endings on checkout
 *.js text
-*.json text
 *.md text
 *.txt text
 *.html text
@@ -12,6 +11,9 @@
 *.scss text
 *.yml text
 *.yaml text
+
+# JSON files should always have LF line endings to prevent issues with Node.js
+*.json text eol=lf
 
 # Declare files that will always have LF line endings on checkout
 *.sh text eol=lf
