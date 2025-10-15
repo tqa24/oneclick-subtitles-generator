@@ -14,12 +14,49 @@ const ManualLanguageSelectionModal = ({
 }) => {
   const { t } = useTranslation();
   const [selectedLanguages, setSelectedLanguages] = useState(initialLanguages);
+  const [recentlyChosenLanguages, setRecentlyChosenLanguages] = useState([]);
 
-  // Language options - all ISO 639-1 languages that Gemini can handle
-  const languageOptions = ISO6391.getAllCodes().map(code => ({
-    value: code,
-    label: ISO6391.getName(code)
-  }));
+  // Load recently chosen languages from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('recentlyChosenLanguages');
+    if (stored) {
+      try {
+        setRecentlyChosenLanguages(JSON.parse(stored));
+      } catch (error) {
+        console.error('Error parsing recently chosen languages:', error);
+        setRecentlyChosenLanguages([]);
+      }
+    }
+  }, []);
+
+  // Save recently chosen languages to localStorage
+  const saveRecentlyChosenLanguages = (languages) => {
+    const updated = [languages, ...recentlyChosenLanguages.filter(lang => !languages.includes(lang))].slice(0, 5);
+    setRecentlyChosenLanguages(updated);
+    localStorage.setItem('recentlyChosenLanguages', JSON.stringify(updated));
+  };
+
+  // Create language options with recently chosen languages at the top
+  const languageOptions = React.useMemo(() => {
+    const allCodes = ISO6391.getAllCodes();
+    const allOptions = allCodes.map(code => ({
+      value: code,
+      label: ISO6391.getName(code)
+    }));
+
+    // Recently chosen languages with special label
+    const recentOptions = recentlyChosenLanguages.map(code => ({
+      value: code,
+      label: `${ISO6391.getName(code)} (Recently chosen)`
+    }));
+
+    // Other languages (excluding recently chosen ones)
+    const otherOptions = allOptions.filter(option =>
+      !recentlyChosenLanguages.includes(option.value)
+    );
+
+    return [...recentOptions, ...otherOptions];
+  }, [recentlyChosenLanguages]);
 
   // Initialize selected languages when modal opens
   useEffect(() => {
@@ -56,6 +93,11 @@ const ManualLanguageSelectionModal = ({
     // Filter out empty selections and duplicates
     const validLanguages = selectedLanguages.filter(lang => lang && lang.trim() !== '');
     const uniqueLanguages = [...new Set(validLanguages)];
+
+    // Save to recently chosen languages if there are any valid selections
+    if (uniqueLanguages.length > 0) {
+      saveRecentlyChosenLanguages(uniqueLanguages);
+    }
 
     onSave(uniqueLanguages);
     onClose();
@@ -131,10 +173,7 @@ const ManualLanguageSelectionModal = ({
                   <CustomDropdown
                     value={language}
                     onChange={(value) => handleLanguageChange(index, value)}
-                    options={languageOptions.map(lang => ({
-                      value: lang.value,
-                      label: `${lang.label} (${lang.value.toUpperCase()})`
-                    }))}
+                    options={languageOptions}
                     placeholder={t('narration.selectLanguage', 'Select language')}
                     className="manual-language-dropdown"
                   />
