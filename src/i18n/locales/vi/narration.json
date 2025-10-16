@@ -322,5 +322,12 @@
     "numbersConverted": "Đã chuyển đổi số thành từ nói",
     "datesConverted": "Đã chuyển đổi ngày tháng thành từ nói",
     "numbersAndDatesConverted": "Đã chuyển đổi số và ngày tháng thành từ nói"
-  }
+  },
+  "manualLanguageSelection": "Chọn ngôn ngữ thủ công",
+  "selectLanguagesFor": "Chọn ngôn ngữ cho phụ đề {{source}}",
+  "translated": "đã dịch",
+  "original": "gốc",
+  "typeLanguage": "Nhập ngôn ngữ",
+  "clearLanguage": "Xóa ngôn ngữ này",
+  "errorParsingRecentLanguages": "Lỗi phân tích ngôn ngữ gần đây"
 }

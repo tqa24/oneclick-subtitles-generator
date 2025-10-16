@@ -302,5 +302,12 @@
     "numbersConverted": "Numbers converted to spoken words",
     "datesConverted": "Dates converted to spoken words",
     "numbersAndDatesConverted": "Numbers and dates converted to spoken words"
-  }
+  },
+  "manualLanguageSelection": "Manual Language Selection",
+  "selectLanguagesFor": "Select languages for {{source}} subtitles",
+  "translated": "translated",
+  "original": "original",
+  "typeLanguage": "Type language",
+  "clearLanguage": "Clear this language",
+  "errorParsingRecentLanguages": "Error parsing recent languages"
 }

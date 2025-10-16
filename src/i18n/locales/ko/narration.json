@@ -312,5 +312,12 @@
     "numbersConverted": "숫자를 말로 변환",
     "datesConverted": "날짜를 말로 변환",
     "numbersAndDatesConverted": "숫자와 날짜를 말로 변환"
-  }
+  },
+  "manualLanguageSelection": "수동 언어 선택",
+  "selectLanguagesFor": "{{source}} 자막에 대한 언어 선택",
+  "translated": "번역됨",
+  "original": "원본",
+  "typeLanguage": "언어 입력",
+  "clearLanguage": "이 언어 지우기",
+  "errorParsingRecentLanguages": "최근 언어 파싱 오류"
 }

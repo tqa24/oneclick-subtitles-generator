@@ -77,10 +77,17 @@
 }
 
 .language-dropdown-wrapper {
-  min-height: 44px; /* Set consistent height to prevent layout shifts */
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.75rem;
   width: 100%;
+}
+
+.selected-languages-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 /* === THE CORE LAYOUT FIX: Input + Suggestions Row === */
@@ -197,7 +204,7 @@
 /* Footer & Actions */
 .language-modal-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   border-top: 1px solid var(--md-outline-variant);
   flex-shrink: 0;
@@ -206,6 +213,14 @@
 .modal-actions {
   display: flex;
   gap: 0.6rem;
+}
+
+.language-modal-footer .language-count {
+  padding-left: 1.25rem;
+}
+
+.language-modal-footer .modal-actions {
+  padding: 1.25rem 1rem;
 }
 
 .btn-secondary, .btn-primary {
