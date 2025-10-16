@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import ISO6391 from 'iso-639-1';
 import ReactDOM from 'react-dom';
 import CloseButton from '../../common/CloseButton';
+import initSettingsTabsDrag from '../../../utils/settingsTabsDrag';
 import '../../../styles/narration/ManualLanguageSelectionModal.css';
 
 const ManualLanguageSelectionModal = ({
@@ -144,6 +145,14 @@ const ManualLanguageSelectionModal = ({
       document.removeEventListener('keydown', handleEscKey);
       document.body.style.overflow = 'unset';
     };
+  }, [isOpen]);
+
+  // Initialize drag functionality for language suggestions
+  useEffect(() => {
+    if (isOpen) {
+      const cleanup = initSettingsTabsDrag('.language-suggestions');
+      return cleanup;
+    }
   }, [isOpen]);
 
 
