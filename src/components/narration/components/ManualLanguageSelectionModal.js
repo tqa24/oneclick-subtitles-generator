@@ -129,8 +129,8 @@ const ManualLanguageSelectionModal = ({
       const updatedRecent = [
         ...uniqueLanguages,
         ...recentLanguages.filter(lang => !uniqueLanguages.includes(lang))
-      ].slice(0, 5);
-      
+      ];
+
       setRecentLanguages(updatedRecent);
       localStorage.setItem('recentlyChosenLanguages', JSON.stringify(updatedRecent));
     }
@@ -212,29 +212,31 @@ const ManualLanguageSelectionModal = ({
                     className="language-input"
                   />
                   {(typingValues[selectedLanguages.length - 1] || recentLanguages.length > 0) && (
-                    <div className="language-suggestions">
-                      {typingValues[selectedLanguages.length - 1] ? (
-                        getFilteredSuggestions(typingValues[selectedLanguages.length - 1]).map(code => (
-                          <button
-                            key={code}
-                            onClick={() => handleLanguageSelect(selectedLanguages.length - 1, code)}
-                            className="suggestion-badge"
-                          >
-                            {ISO6391.getName(code)}
-                          </button>
-                        ))
-                      ) : (
-                        recentLanguages.slice(0, 5).map(code => (
-                          <button
-                            key={code}
-                            onClick={() => handleLanguageSelect(selectedLanguages.length - 1, code)}
-                            className="suggestion-badge recent"
-                          >
-                            {ISO6391.getName(code)}
-                          </button>
-                        ))
-                      )}
-                    </div>
+                    <div className="suggestions-wrapper"> {/* <<< Add this wrapper */}
+                      <div className="language-suggestions">
+                        {typingValues[selectedLanguages.length - 1] ? (
+                          getFilteredSuggestions(typingValues[selectedLanguages.length - 1]).map(code => (
+                            <button
+                              key={code}
+                              onClick={() => handleLanguageSelect(selectedLanguages.length - 1, code)}
+                              className="suggestion-badge"
+                            >
+                              {ISO6391.getName(code)}
+                            </button>
+                          ))
+                        ) : (
+                          recentLanguages.map(code => (
+                            <button
+                              key={code}
+                              onClick={() => handleLanguageSelect(selectedLanguages.length - 1, code)}
+                              className="suggestion-badge recent"
+                            >
+                              {ISO6391.getName(code)}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div> 
                   )}
                 </div>
               </div>

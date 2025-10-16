@@ -120,13 +120,20 @@
   box-shadow: 0 0 0 2px var(--md-primary-container);
 }
 
+/* NEW: The non-scrolling wrapper for the suggestions */
+.suggestions-wrapper {
+  position: relative; /* This is the new positioning context for the fades */
+  min-width: 0; /* Crucial for children of grid/flex containers */
+  isolation: isolate; /* Create stacking context here */
+}
+
+/* MODIFIED: The inner, scrolling container */
 .language-suggestions {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   overflow-x: auto; /* Enable horizontal scrolling */
   white-space: nowrap; /* Keep badges on a single line */
-  min-width: 0; /* Crucial for children of grid/flex containers */
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
   cursor: grab; /* Indicate suggestions are draggable */
@@ -142,6 +149,35 @@
 .language-suggestions.dragging {
   cursor: grabbing;
   scroll-behavior: auto; /* Disable smooth scrolling during drag for better performance */
+}
+
+.language-suggestions.dragging::before,
+.language-suggestions.dragging::after {
+  opacity: 0; /* Hide fades during dragging to avoid interference */
+}
+
+/* MODIFIED: Fade overlays now belong to the wrapper */
+.suggestions-wrapper::before,
+.suggestions-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 30px;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.suggestions-wrapper::before {
+  left: 0;
+  background: linear-gradient(to right, var(--md-surface-1), rgba(var(--md-surface-1-rgb), 0.3), transparent);
+}
+
+.suggestions-wrapper::after {
+  right: 0;
+  background: linear-gradient(to left, var(--md-surface-1), rgba(var(--md-surface-1-rgb), 0.3), transparent);
 }
 
 /* Badges (Selected and Suggestions) */
