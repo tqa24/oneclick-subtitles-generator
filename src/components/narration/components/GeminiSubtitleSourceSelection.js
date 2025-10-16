@@ -368,6 +368,7 @@ const GeminiSubtitleSourceSelection = ({
                   htmlFor="source-original"
                   onMouseEnter={() => setHoveredPill('original')}
                   onMouseLeave={() => setHoveredPill(null)}
+                  className={(originalLanguage || (!originalLanguage && originalSubtitles && originalSubtitles.length > 0 && !isDetectingOriginal) || hoveredPill === 'original') ? 'has-additional' : ''}
                 >
                   {isDetectingOriginal ? (
                     <span className="loading-animation">
@@ -398,6 +399,7 @@ const GeminiSubtitleSourceSelection = ({
                   htmlFor="source-translated"
                   onMouseEnter={() => setHoveredPill('translated')}
                   onMouseLeave={() => setHoveredPill(null)}
+                  className={(translatedLanguage || (!translatedLanguage && hasTranslatedSubtitles && !isDetectingTranslated) || hoveredPill === 'translated') ? 'has-additional' : ''}
                 >
                   {isDetectingTranslated ? (
                     <span className="loading-animation">

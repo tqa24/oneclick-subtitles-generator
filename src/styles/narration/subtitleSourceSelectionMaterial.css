@@ -60,12 +60,16 @@
   background-color: var(--md-primary-container);
   color: var(--md-on-primary-container);
   border-color: var(--md-primary);
-  padding: 5px 5px 5px 18px;
+  padding: 5px 18px;
 }
 
 .subtitle-selection-container .radio-pill input[type="radio"]:checked + label:hover {
   background-color: var(--md-primary-container);
   opacity: 0.9;
+}
+
+.subtitle-selection-container .radio-pill input[type="radio"]:checked + label.has-additional {
+  padding: 5px 5px 5px 18px;
 }
 
 .subtitle-selection-container .radio-pill input[type="radio"]:disabled + label {
