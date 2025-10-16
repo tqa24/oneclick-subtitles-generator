@@ -1,18 +1,16 @@
-/* Manual Language Selection Modal - Inspired by Settings modal visuals */
+/* --- Manual Language Selection Modal --- */
 
+/* Modal Base & Overlay */
 .language-modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 20001; /* Higher than other modals to ensure it floats above */
+  z-index: 20001;
   backdrop-filter: blur(3px);
-  isolation: isolate; /* Create a new stacking context */
+  isolation: isolate;
 }
 
 .language-modal {
@@ -28,7 +26,7 @@
   overflow: hidden;
   animation: language-modal-appear 0.25s var(--md-easing-emphasized);
   position: relative;
-  z-index: 20002; /* Ensure modal content is above overlay decorations */
+  z-index: 20002;
 }
 
 @keyframes language-modal-appear {
@@ -39,12 +37,13 @@
 /* Header */
 .language-modal-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.25rem;
-  background-color: var(--md-surface-1);
   border-bottom: 1px solid var(--md-outline-variant);
-  gap: 0.75rem;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .language-modal-header h2 {
@@ -52,28 +51,23 @@
   color: var(--text-primary);
   font-size: 1.125rem;
   font-weight: 600;
+  margin-right: auto;
 }
 
 .language-modal-header .language-count {
   font-size: 0.875rem;
   color: var(--text-secondary);
   font-weight: 400;
-  margin-left: auto;
-  margin-right: 0.5rem;
+  text-align: right;
+  white-space: nowrap;
 }
 
-/* Content */
+/* Content Area */
 .language-modal-content {
   overflow-y: auto;
-  overflow-x: hidden;
-  padding: 1rem 1.25rem 1.25rem 1.25rem;
+  padding: 1.25rem;
   background-color: var(--md-surface-1);
-}
-
-.manual-language-selection .language-selection-description {
-  color: var(--text-secondary);
-  font-size: 0.95rem;
-  margin: 0 0 0.75rem 0;
+  flex-grow: 1;
 }
 
 .language-dropdowns-container {
@@ -83,41 +77,25 @@
 }
 
 .language-dropdown-wrapper {
+  min-height: 44px; /* Set consistent height to prevent layout shifts */
   display: flex;
-  align-items: flex-start; /* align tops so input and chips share a line */
-  gap: 0.75rem;
+  align-items: center;
   width: 100%;
 }
 
-/* Removed remove-language-btn in favor of inline clear on badge */
-
-.selected-language-badge {
-  display: inline-flex;
+/* === THE CORE LAYOUT FIX: Input + Suggestions Row === */
+.language-row {
+  display: grid;
+  /* Column 1: Input field (responsive width) */
+  /* Column 2: Suggestions (takes remaining space) */
+  grid-template-columns: minmax(150px, 175px) 1fr;
+  gap: 0.75rem;
   align-items: center;
-  gap: 0.4rem;
-  background-color: var(--md-primary-container);
-  color: var(--md-on-primary-container);
-  border-radius: 18px;
-  padding: 0.35rem 0.6rem;
-  font-size: 0.85rem;
+  width: 100%;
 }
 
-.clear-language-btn {
-  background: transparent;
-  border: none;
-  color: inherit;
-  cursor: pointer;
-}
-
-/* Deprecated: replaced by .language-row layout */
-/* .language-input-container { } */
-
-/* Increase specificity to beat any global input 100% rules */
-.language-modal .language-input {
-  flex: 0 0 280px; /* fixed width input */
-  min-width: 220px;
-  width: 280px !important; /* fixed width for stable layout; adjust as needed */
-  max-width: 100%;
+.language-input {
+  width: 100%; /* Fill its grid column */
   box-sizing: border-box;
   padding: 0.6rem 0.8rem;
   border: 1px solid var(--md-outline-variant);
@@ -125,11 +103,9 @@
   background-color: var(--md-surface-2);
   color: var(--text-primary);
   font-size: 0.95rem;
-  display: inline-block; /* ensure it doesn't expand to the full row */
+  height: 44px; /* Match wrapper's min-height for alignment */
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-
-.language-modal .suggestions-container { grid-column: 2; align-items: center; }
-.language-modal .language-input { justify-self: start; }
 
 .language-input:focus {
   outline: none;
@@ -137,111 +113,141 @@
   box-shadow: 0 0 0 2px var(--md-primary-container);
 }
 
-/* Single-line suggestions to the right, horizontally scrollable if overflow */
-.suggestions-container {
+.language-suggestions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto; /* Enable horizontal scrolling */
+  white-space: nowrap; /* Keep badges on a single line */
+  min-width: 0; /* Crucial for children of grid/flex containers */
+  padding-bottom: 5px; /* Push scrollbar slightly out of view */
+  margin-bottom: -5px; /* Compensate for the padding */
+  scrollbar-width: thin;
+  scrollbar-color: var(--md-outline-variant) transparent;
+}
+
+/* Badges (Selected and Suggestions) */
+.selected-language-badge {
   display: inline-flex;
   align-items: center;
-  flex: 1 1 auto;
-  flex-wrap: nowrap;
-  gap: 0.5rem;
-  overflow-x: auto;
-  max-width: 100%;
-  white-space: nowrap;
-  border: none !important;
-  background: transparent !important;
-  padding: 0;
-  margin: 0; /* avoid dropping to a new line */
+  gap: 0.4rem;
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  padding: 0.4rem 0.6rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.clear-language-btn {
+  background: transparent;
+  border: none;
+  color: var(--md-on-primary-container);
+  cursor: pointer;
+  opacity: 0.7;
+  padding: 0 0.2rem;
+  font-size: 1rem;
+  line-height: 1;
+  transition: opacity 0.15s ease;
+}
+
+.clear-language-btn:hover {
+  opacity: 1;
 }
 
 .suggestion-badge {
   background-color: var(--md-surface-3);
   color: var(--text-primary);
   border: 1px solid var(--md-outline-variant);
-  border-radius: 999px;
   padding: 0.35rem 0.7rem;
   font-size: 0.85rem;
   cursor: pointer;
-
-/* New horizontal row layout for input + suggestions on the same line */
-.language-modal .language-row {
-  display: grid;
-  grid-template-columns: 280px 1fr; /* input fixed, suggestions fill */
-  column-gap: 0.75rem;
-  align-items: center;
-  width: 100%;
-}
-
-.language-modal .language-row .language-input {
-  width: 100% !important; /* fill first column */
-  min-width: 0;
-  box-sizing: border-box;
-}
-
-.language-modal .language-row .language-suggestions {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  white-space: nowrap;    /* single line */
-  overflow-x: auto;       /* scroll if overflow */
-  margin: 0;
-  padding: 0;
-  min-width: 0;           /* allow to shrink in grid */
-}
-
-  flex: 0 0 auto; /* prevent shrinking */
+  flex-shrink: 0; /* Prevent badges from shrinking */
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .suggestion-badge:hover {
   background-color: var(--md-surface-4);
+  border-color: var(--md-outline);
 }
 
 .suggestion-badge.recent {
-  background-color: var(--md-primary-container);
-  color: var(--md-on-primary-container);
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
   border-color: transparent;
 }
 
-/* Footer */
-.language-modal-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.9rem 1.25rem;
-  background-color: var(--md-surface-1);
-  border-top: 1px solid var(--md-outline-variant);
+.suggestion-badge.recent:hover {
+  filter: brightness(0.95);
 }
 
-.modal-actions { display: flex; gap: 0.6rem; }
+/* Footer & Actions */
+.language-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  border-top: 1px solid var(--md-outline-variant);
+  flex-shrink: 0;
+}
 
-.btn-secondary {
-  background-color: var(--md-surface-3);
-  color: var(--text-primary);
-  border: 1px solid var(--md-outline-variant);
+.modal-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.btn-secondary, .btn-primary {
   border-radius: 24px;
   padding: 0.6rem 1.2rem;
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.btn-secondary:hover { background-color: var(--md-surface-4); }
+.btn-secondary {
+  background-color: var(--md-surface-3);
+  color: var(--text-primary);
+  border: 1px solid var(--md-outline-variant);
+}
+
+.btn-secondary:hover {
+  background-color: var(--md-surface-4);
+}
 
 .btn-primary {
   background-color: var(--md-primary);
   color: var(--md-on-primary);
   border: none;
-  border-radius: 24px;
-  padding: 0.6rem 1.2rem;
-  font-size: 0.9rem;
   font-weight: 600;
-  cursor: pointer;
 }
 
-.btn-primary:hover { filter: brightness(1.05); }
-
-/* Mobile */
-@media (max-width: 480px) {
-  .language-modal { width: 100vw; height: 100vh; max-height: 100vh; border-radius: 0; }
-  .language-modal-header, .language-modal-content, .language-modal-footer { padding-left: 1rem; padding-right: 1rem; }
+.btn-primary:hover {
+  filter: brightness(1.1);
 }
 
+/* === Responsive Adjustments for Mobile === */
+@media (max-width: 600px) {
+  .language-modal {
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  /* Stack input and suggestions vertically on small screens */
+  .language-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch; /* Make children full width */
+    gap: 0.6rem;
+  }
+
+  /* Allow suggestions to wrap onto multiple lines */
+  .language-suggestions {
+    white-space: normal;
+    flex-wrap: wrap;
+    overflow-x: hidden; /* No horizontal scroll */
+    padding-bottom: 0;
+    margin-bottom: 0;
+  }
+}

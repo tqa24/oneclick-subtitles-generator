@@ -218,9 +218,6 @@ const ManualLanguageSelectionModal = ({
 
         <div className="language-modal-footer">
           <div className="modal-actions">
-            <button className="btn-secondary" onClick={handleClose}>
-              {t('common.cancel', 'Cancel')}
-            </button>
             <button className="btn-primary" onClick={handleSave}>
               {t('common.save', 'Save')}
             </button>
