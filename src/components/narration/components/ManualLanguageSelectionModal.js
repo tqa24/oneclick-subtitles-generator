@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import ISO6391 from 'iso-639-1';
+import ReactDOM from 'react-dom';
 import CloseButton from '../../common/CloseButton';
-import CustomDropdown from '../../common/CustomDropdown';
-import '../../../styles/narration/VoiceSelectionModal.css';
+import '../../../styles/narration/ManualLanguageSelectionModal.css';
 
 const ManualLanguageSelectionModal = ({
   isOpen,
@@ -13,110 +13,129 @@ const ManualLanguageSelectionModal = ({
   subtitleSource
 }) => {
   const { t } = useTranslation();
-  const [selectedLanguages, setSelectedLanguages] = useState(initialLanguages);
-  const [recentlyChosenLanguages, setRecentlyChosenLanguages] = useState([]);
+  const [selectedLanguages, setSelectedLanguages] = useState(['']);
+  const [recentLanguages, setRecentLanguages] = useState([]);
+  const [typingValues, setTypingValues] = useState({});
 
-  // Load recently chosen languages from localStorage
+  // Load recent languages from localStorage and normalize to lowercase valid ISO-639-1 codes
   useEffect(() => {
     const stored = localStorage.getItem('recentlyChosenLanguages');
     if (stored) {
       try {
-        setRecentlyChosenLanguages(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        const allCodes = new Set(ISO6391.getAllCodes());
+        const normalized = (Array.isArray(parsed) ? parsed : [])
+          .map(c => (typeof c === 'string' ? c.toLowerCase() : ''))
+          .filter(c => c && allCodes.has(c));
+        setRecentLanguages(normalized);
       } catch (error) {
-        console.error('Error parsing recently chosen languages:', error);
-        setRecentlyChosenLanguages([]);
+        console.error('Error parsing recent languages:', error);
+        setRecentLanguages([]);
       }
     }
   }, []);
 
-  // Save recently chosen languages to localStorage
-  const saveRecentlyChosenLanguages = (languages) => {
-    const updated = [languages, ...recentlyChosenLanguages.filter(lang => !languages.includes(lang))].slice(0, 5);
-    setRecentlyChosenLanguages(updated);
-    localStorage.setItem('recentlyChosenLanguages', JSON.stringify(updated));
-  };
-
-  // Create language options with recently chosen languages at the top
-  const languageOptions = React.useMemo(() => {
-    const allCodes = ISO6391.getAllCodes();
-    const allOptions = allCodes.map(code => ({
-      value: code,
-      label: ISO6391.getName(code)
-    }));
-
-    // Recently chosen languages with special label
-    const recentOptions = recentlyChosenLanguages.map(code => ({
-      value: code,
-      label: `${ISO6391.getName(code)} (Recently chosen)`
-    }));
-
-    // Other languages (excluding recently chosen ones)
-    const otherOptions = allOptions.filter(option =>
-      !recentlyChosenLanguages.includes(option.value)
-    );
-
-    return [...recentOptions, ...otherOptions];
-  }, [recentlyChosenLanguages]);
-
-  // Initialize selected languages when modal opens
+  // Initialize languages when modal opens
   useEffect(() => {
     if (isOpen) {
-      setSelectedLanguages(initialLanguages.length > 0 ? [...initialLanguages] : ['']);
+      if (initialLanguages.length > 0) {
+        setSelectedLanguages([...initialLanguages, '']);
+      } else {
+        setSelectedLanguages(['']);
+      }
+      setTypingValues({});
     }
   }, [isOpen, initialLanguages]);
 
-  // Handle language selection change
-  const handleLanguageChange = (index, value) => {
-    const newLanguages = [...selectedLanguages];
-    newLanguages[index] = value;
-    setSelectedLanguages(newLanguages);
-
-    // If this is the last dropdown and a language was selected, add a new empty dropdown
-    if (index === selectedLanguages.length - 1 && value && !newLanguages.includes('')) {
-      newLanguages.push('');
-      setSelectedLanguages(newLanguages);
+  // Get filtered suggestions based on typing
+  const getFilteredSuggestions = (typingValue) => {
+    if (!typingValue || typingValue.trim() === '') {
+      return [];
     }
+
+    const searchTerm = typingValue.toLowerCase();
+    const allCodes = ISO6391.getAllCodes();
+
+    return allCodes.filter(code => {
+      const name = ISO6391.getName(code).toLowerCase();
+      return name.includes(searchTerm) || code.toLowerCase().includes(searchTerm);
+    }).slice(0, 10);
   };
 
-  // Remove a language dropdown
+  // Handle typing in input
+  const handleTypingChange = (index, value) => {
+    setTypingValues(prev => ({
+      ...prev,
+      [index]: value
+    }));
+  };
+
+  // Handle language selection
+  const handleLanguageSelect = (index, langCode) => {
+    const newLanguages = [...selectedLanguages];
+    newLanguages[index] = langCode;
+
+    // Clear typing value
+    setTypingValues(prev => ({
+      ...prev,
+      [index]: ''
+    }));
+
+    // Add new empty slot if this was the last one
+    if (index === selectedLanguages.length - 1) {
+      newLanguages.push('');
+    }
+
+    setSelectedLanguages(newLanguages);
+  };
+
+  // Handle clearing a language
+  const handleClearLanguage = (index) => {
+    const newLanguages = [...selectedLanguages];
+    newLanguages[index] = '';
+    setSelectedLanguages(newLanguages);
+  };
+
+  // Remove a language slot
   const removeLanguage = (index) => {
     const newLanguages = selectedLanguages.filter((_, i) => i !== index);
-    // Always allow removing, but ensure at least one empty slot exists for adding new languages
-    if (newLanguages.length === 0 || newLanguages.every(lang => lang && lang.trim() !== '')) {
+    if (newLanguages.length === 0 || !newLanguages.includes('')) {
       newLanguages.push('');
     }
     setSelectedLanguages(newLanguages);
   };
 
-  // Handle save
+  // Save languages
   const handleSave = () => {
-    // Filter out empty selections and duplicates
-    const validLanguages = selectedLanguages.filter(lang => lang && lang.trim() !== '');
+    const validLanguages = selectedLanguages.filter(lang => 
+      lang && typeof lang === 'string' && lang.trim() !== ''
+    );
     const uniqueLanguages = [...new Set(validLanguages)];
 
-    // Save to recently chosen languages if there are any valid selections
+    // Save to recent languages
     if (uniqueLanguages.length > 0) {
-      saveRecentlyChosenLanguages(uniqueLanguages);
+      const updatedRecent = [
+        ...uniqueLanguages,
+        ...recentLanguages.filter(lang => !uniqueLanguages.includes(lang))
+      ].slice(0, 5);
+      
+      setRecentLanguages(updatedRecent);
+      localStorage.setItem('recentlyChosenLanguages', JSON.stringify(updatedRecent));
     }
 
     onSave(uniqueLanguages);
     onClose();
   };
 
-  // Handle modal close without saving
+  // Handle close
   const handleClose = () => {
-    setSelectedLanguages(initialLanguages.length > 0 ? [...initialLanguages] : ['']);
+    setSelectedLanguages(['']);
+    setTypingValues({});
     onClose();
   };
 
-  // Handle click outside modal
+  // Handle outside clicks and escape key
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (event.target.classList.contains('voice-modal-overlay')) {
-        handleClose();
-      }
-    };
-
     const handleEscKey = (event) => {
       if (event.key === 'Escape') {
         handleClose();
@@ -124,27 +143,30 @@ const ManualLanguageSelectionModal = ({
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('keydown', handleEscKey);
       document.body.style.overflow = 'hidden';
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscKey);
       document.body.style.overflow = 'unset';
     };
   }, [isOpen]);
 
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      handleClose();
+    }
+  };
+
   if (!isOpen) return null;
 
-  return (
-    <div className="voice-modal-overlay">
-      <div className="voice-modal" style={{ maxWidth: '600px' }}>
-        {/* Modal Header */}
-        <div className="voice-modal-header">
+  return ReactDOM.createPortal(
+    <div className="language-modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
+      <div className="language-modal" role="dialog" aria-modal="true" tabIndex="-1" onClick={(e) => e.stopPropagation()}>
+        <div className="language-modal-header">
           <h2>{t('narration.manualLanguageSelection', 'Manual Language Selection')}</h2>
-          <div className="voice-count">
+          <div className="language-count">
             {t('narration.selectLanguagesFor', 'Select languages for {{source}} subtitles', {
               source: subtitleSource === 'translated' ? t('narration.translated', 'translated') : t('narration.original', 'original')
             })}
@@ -152,12 +174,8 @@ const ManualLanguageSelectionModal = ({
           <CloseButton onClick={handleClose} variant="modal" size="medium" />
         </div>
 
-        {/* Modal Content */}
-        <div className="voice-modal-content" style={{ padding: '20px' }}>
+        <div className="language-modal-content">
           <div className="manual-language-selection">
-            <p style={{ marginBottom: '20px', color: '#666' }}>
-              {t('narration.manualLanguageDescription', 'Select the languages present in your subtitles. Multiple languages will be displayed as separate badges.')}
-            </p>
 
             <div className="language-dropdowns-container">
               {selectedLanguages.map((language, index) => (
@@ -170,58 +188,67 @@ const ManualLanguageSelectionModal = ({
                     ✕
                   </button>
 
-                  <CustomDropdown
-                    value={language}
-                    onChange={(value) => handleLanguageChange(index, value)}
-                    options={languageOptions}
-                    placeholder={t('narration.selectLanguage', 'Select language')}
-                    className="manual-language-dropdown"
-                  />
+                  {language ? (
+                    <div className="selected-language-badge">
+                      <span>{ISO6391.getName(language)}</span>
+                      <button onClick={() => handleClearLanguage(index)} className="clear-language-btn">✕</button>
+                    </div>
+                  ) : (
+                    <div className="language-input-container">
+                      <input
+                        type="text"
+                        value={typingValues[index] || ''}
+                        onChange={(e) => handleTypingChange(index, e.target.value)}
+                        placeholder={t('narration.typeLanguage', 'Type language')}
+                        className="language-input"
+                      />
+
+                      {(typingValues[index] || recentLanguages.length > 0) && (
+                        <div className="suggestions-container">
+                          {typingValues[index] ? (
+                            getFilteredSuggestions(typingValues[index]).map(code => (
+                              <button
+                                key={code}
+                                onClick={() => handleLanguageSelect(index, code)}
+                                className="suggestion-badge"
+                              >
+                                {ISO6391.getName(code)}
+                              </button>
+                            ))
+                          ) : (
+                            recentLanguages.slice(0, 5).map(code => (
+                              <button
+                                key={code}
+                                onClick={() => handleLanguageSelect(index, code)}
+                                className="suggestion-badge recent"
+                              >
+                                {ISO6391.getName(code)}
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
-
           </div>
         </div>
 
-        {/* Modal Footer */}
-        <div className="voice-modal-footer" style={{
-          padding: '15px 20px',
-          borderTop: '1px solid #e0e0e0',
-          display: 'flex',
-          justifyContent: 'flex-end',
-          gap: '10px'
-        }}>
-          <button
-            className="cancel-btn"
-            onClick={handleClose}
-            style={{
-              padding: '8px 16px',
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-              background: 'white',
-              cursor: 'pointer'
-            }}
-          >
-            {t('common.cancel', 'Cancel')}
-          </button>
-          <button
-            className="save-btn"
-            onClick={handleSave}
-            style={{
-              padding: '8px 16px',
-              border: 'none',
-              borderRadius: '4px',
-              background: '#007bff',
-              color: 'white',
-              cursor: 'pointer'
-            }}
-          >
-            {t('common.save', 'Save')}
-          </button>
+        <div className="language-modal-footer">
+          <div className="modal-actions">
+            <button className="btn-secondary" onClick={handleClose}>
+              {t('common.cancel', 'Cancel')}
+            </button>
+            <button className="btn-primary" onClick={handleSave}>
+              {t('common.save', 'Save')}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

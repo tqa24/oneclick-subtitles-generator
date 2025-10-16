@@ -517,11 +517,12 @@ const SubtitleSourceSelection = ({
 
     // If it's a multi-language text, show badges for all detected languages
     if (language.isMultiLanguage && Array.isArray(language.secondaryLanguages) && language.secondaryLanguages.length > 0) {
+      const allLangs = [language.languageCode, ...language.secondaryLanguages].filter(Boolean);
       return (
         <div className="language-badge-container">
-          {language.secondaryLanguages.map((langCode, index) => (
+          {allLangs.map((langCode, index) => (
             <span key={index} className="language-badge multi">
-              {langCode.toUpperCase()}
+              {String(langCode).toUpperCase()}
             </span>
           ))}
         </div>

@@ -457,6 +457,30 @@
     align-items: flex-start;
     margin-left: 0;
   }
+
+  /* Stack language dropdowns vertically on mobile */
+  .language-dropdowns-container {
+    flex-direction: column;
+  }
+
+  .language-dropdown-wrapper {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .language-input-container {
+    min-width: unset;
+  }
+
+  .suggestions-container {
+    max-height: 150px;
+  }
+
+  .suggestion-badge {
+    font-size: 0.75rem;
+    padding: 3px 10px;
+    min-height: 26px;
+  }
 }
 
 /* Manual Language Selection Modal Styles */
@@ -466,15 +490,19 @@
 
 .language-dropdowns-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 12px;
   margin-top: 16px;
+  align-items: flex-start;
 }
 
 .language-dropdown-wrapper {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 200px;
+  flex-shrink: 0;
 }
 
 .remove-language-btn {
@@ -500,6 +528,173 @@
   border-color: var(--md-error);
 }
 
-.manual-language-dropdown {
+/* Language Input Container */
+.language-input-container {
+  position: relative;
   flex: 1;
+  min-width: 200px;
+}
+
+/* Language Input Field */
+.language-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-pill);
+  background-color: var(--md-surface-1);
+  color: var(--md-on-surface);
+  font-size: 0.9rem;
+  font-family: var(--font-primary);
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  height: 42px;
+}
+
+.language-input:focus {
+  outline: none;
+  border-color: var(--md-primary);
+  box-shadow: 0 0 0 2px rgba(var(--md-primary-rgb), 0.2);
+  background-color: var(--md-surface-2);
+}
+
+.language-input::placeholder {
+  color: var(--md-on-surface-variant);
+  opacity: 0.7;
+}
+
+/* Suggestions Container */
+.suggestions-container {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: var(--md-surface-1);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 4px;
+  padding: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Suggestion Badge */
+.suggestion-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background-color: var(--md-surface-2);
+  color: var(--md-on-surface);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-height: 28px;
+  box-sizing: border-box;
+}
+
+.suggestion-badge:hover {
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border-color: var(--md-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.suggestion-badge:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Recent language badges styling */
+.suggestion-badge.recent {
+  background-color: var(--md-tertiary-container);
+  color: var(--md-on-tertiary-container);
+  border-color: var(--md-tertiary);
+}
+
+.suggestion-badge.recent:hover {
+  background-color: var(--md-tertiary);
+  color: var(--md-on-tertiary);
+}
+
+/* Language Selection Description */
+.language-selection-description {
+  margin-bottom: 20px;
+  color: var(--md-on-surface-variant);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* Primary Button for Modal */
+.btn-primary {
+  padding: 0.5rem 1rem;
+  background-color: var(--md-primary);
+  border: none;
+  border-radius: 24px;
+  color: var(--md-on-primary);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s var(--md-easing-standard);
+}
+
+.btn-primary:hover {
+  background-color: var(--md-primary-dark);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
+  box-shadow: var(--md-elevation-level0);
+}
+
+/* Selected Language Badge */
+.selected-language-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: var(--md-primary-container);
+  color: var(--md-on-primary-container);
+  border: 1px solid var(--md-primary);
+  border-radius: var(--md-shape-pill);
+  font-size: 0.9rem;
+  font-weight: 500;
+  height: 42px;
+  box-sizing: border-box;
+  flex: 1;
+}
+
+.clear-language-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background-color: rgba(var(--md-on-primary-container-rgb), 0.2);
+  color: var(--md-on-primary-container);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.clear-language-btn:hover {
+  background-color: rgba(var(--md-on-primary-container-rgb), 0.3);
+  transform: scale(1.1);
+}
+
+.clear-language-btn:active {
+  transform: scale(0.95);
 }
