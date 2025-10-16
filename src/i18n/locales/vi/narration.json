@@ -329,5 +329,7 @@
   "original": "gốc",
   "typeLanguage": "Nhập ngôn ngữ",
   "clearLanguage": "Xóa ngôn ngữ này",
+  "manual": "thủ công",
+  "detectLanguage": "Phát hiện ngôn ngữ",
   "errorParsingRecentLanguages": "Lỗi phân tích ngôn ngữ gần đây"
 }

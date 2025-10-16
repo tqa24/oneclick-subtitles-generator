@@ -319,5 +319,7 @@
   "original": "원본",
   "typeLanguage": "언어 입력",
   "clearLanguage": "이 언어 지우기",
+  "manual": "수동",
+  "detectLanguage": "언어 감지",
   "errorParsingRecentLanguages": "최근 언어 파싱 오류"
 }

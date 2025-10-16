@@ -309,5 +309,7 @@
   "original": "original",
   "typeLanguage": "Type language",
   "clearLanguage": "Clear this language",
+  "manual": "manual",
+  "detectLanguage": "Detect language",
   "errorParsingRecentLanguages": "Error parsing recent languages"
 }
