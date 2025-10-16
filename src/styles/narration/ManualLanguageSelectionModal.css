@@ -174,31 +174,36 @@
 }
 
 .suggestion-badge {
-  background-color: var(--md-surface-3);
-  color: var(--text-primary);
-  border: 1px solid var(--md-outline-variant);
-  padding: 0.35rem 0.7rem;
+  background-color: transparent;
+  color: var(--md-on-surface-variant);
+  border: 2px dashed var(--md-outline);
+  padding: 0.3rem 0.65rem;
   font-size: 0.85rem;
   cursor: pointer;
   flex-shrink: 0; /* Prevent badges from shrinking */
   white-space: nowrap;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   border-radius: 36px;
+  font-weight: 400;
 }
 
 .suggestion-badge:hover {
-  background-color: var(--md-surface-4);
-  border-color: var(--md-outline);
+  background-color: var(--md-surface-2);
+  border-color: var(--md-primary);
+  color: var(--md-on-surface);
 }
 
 .suggestion-badge.recent {
   background-color: var(--md-tertiary-container);
   color: var(--md-on-tertiary-container);
-  border-color: transparent;
+  border-color: var(--md-tertiary);
+  font-weight: 500;
 }
 
 .suggestion-badge.recent:hover {
+  background-color: var(--md-tertiary-container);
   filter: brightness(0.95);
+  border-color: var(--md-tertiary);
 }
 
 /* Footer & Actions */
