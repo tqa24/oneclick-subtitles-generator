@@ -84,18 +84,12 @@
 
 .language-dropdown-wrapper {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  align-items: flex-start; /* align tops so input and chips share a line */
+  gap: 0.75rem;
+  width: 100%;
 }
 
-.remove-language-btn {
-  background: var(--md-surface-3);
-  border: 1px solid var(--md-outline-variant);
-  color: var(--text-secondary);
-  border-radius: 10px;
-  padding: 0.25rem 0.5rem;
-  cursor: pointer;
-}
+/* Removed remove-language-btn in favor of inline clear on badge */
 
 .selected-language-badge {
   display: inline-flex;
@@ -115,20 +109,27 @@
   cursor: pointer;
 }
 
-.language-input-container {
-  position: relative;
-  flex: 1;
-}
+/* Deprecated: replaced by .language-row layout */
+/* .language-input-container { } */
 
-.language-input {
-  width: 100%;
+/* Increase specificity to beat any global input 100% rules */
+.language-modal .language-input {
+  flex: 0 0 280px; /* fixed width input */
+  min-width: 220px;
+  width: 280px !important; /* fixed width for stable layout; adjust as needed */
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 0.6rem 0.8rem;
   border: 1px solid var(--md-outline-variant);
   border-radius: 12px;
   background-color: var(--md-surface-2);
   color: var(--text-primary);
   font-size: 0.95rem;
+  display: inline-block; /* ensure it doesn't expand to the full row */
 }
+
+.language-modal .suggestions-container { grid-column: 2; align-items: center; }
+.language-modal .language-input { justify-self: start; }
 
 .language-input:focus {
   outline: none;
@@ -136,11 +137,20 @@
   box-shadow: 0 0 0 2px var(--md-primary-container);
 }
 
+/* Single-line suggestions to the right, horizontally scrollable if overflow */
 .suggestions-container {
-  margin-top: 0.4rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  overflow-x: auto;
+  max-width: 100%;
+  white-space: nowrap;
+  border: none !important;
+  background: transparent !important;
+  padding: 0;
+  margin: 0; /* avoid dropping to a new line */
 }
 
 .suggestion-badge {
@@ -151,6 +161,34 @@
   padding: 0.35rem 0.7rem;
   font-size: 0.85rem;
   cursor: pointer;
+
+/* New horizontal row layout for input + suggestions on the same line */
+.language-modal .language-row {
+  display: grid;
+  grid-template-columns: 280px 1fr; /* input fixed, suggestions fill */
+  column-gap: 0.75rem;
+  align-items: center;
+  width: 100%;
+}
+
+.language-modal .language-row .language-input {
+  width: 100% !important; /* fill first column */
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.language-modal .language-row .language-suggestions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;    /* single line */
+  overflow-x: auto;       /* scroll if overflow */
+  margin: 0;
+  padding: 0;
+  min-width: 0;           /* allow to shrink in grid */
+}
+
+  flex: 0 0 auto; /* prevent shrinking */
 }
 
 .suggestion-badge:hover {

@@ -96,14 +96,7 @@ const ManualLanguageSelectionModal = ({
     setSelectedLanguages(newLanguages);
   };
 
-  // Remove a language slot
-  const removeLanguage = (index) => {
-    const newLanguages = selectedLanguages.filter((_, i) => i !== index);
-    if (newLanguages.length === 0 || !newLanguages.includes('')) {
-      newLanguages.push('');
-    }
-    setSelectedLanguages(newLanguages);
-  };
+
 
   // Save languages
   const handleSave = () => {
@@ -153,11 +146,7 @@ const ManualLanguageSelectionModal = ({
     };
   }, [isOpen]);
 
-  const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
-      handleClose();
-    }
-  };
+
 
   if (!isOpen) return null;
 
@@ -180,21 +169,13 @@ const ManualLanguageSelectionModal = ({
             <div className="language-dropdowns-container">
               {selectedLanguages.map((language, index) => (
                 <div key={index} className="language-dropdown-wrapper">
-                  <button
-                    className="remove-language-btn"
-                    onClick={() => removeLanguage(index)}
-                    title={t('narration.removeLanguage', 'Remove this language')}
-                  >
-                    ✕
-                  </button>
-
                   {language ? (
                     <div className="selected-language-badge">
                       <span>{ISO6391.getName(language)}</span>
-                      <button onClick={() => handleClearLanguage(index)} className="clear-language-btn">✕</button>
+                      <button onClick={() => handleClearLanguage(index)} className="clear-language-btn" title={t('narration.clearLanguage', 'Clear this language')}>✕</button>
                     </div>
                   ) : (
-                    <div className="language-input-container">
+                    <div className="language-row">
                       <input
                         type="text"
                         value={typingValues[index] || ''}
@@ -202,9 +183,8 @@ const ManualLanguageSelectionModal = ({
                         placeholder={t('narration.typeLanguage', 'Type language')}
                         className="language-input"
                       />
-
                       {(typingValues[index] || recentLanguages.length > 0) && (
-                        <div className="suggestions-container">
+                        <div className="language-suggestions">
                           {typingValues[index] ? (
                             getFilteredSuggestions(typingValues[index]).map(code => (
                               <button
