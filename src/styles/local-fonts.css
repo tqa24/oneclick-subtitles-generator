@@ -8,3 +8,36 @@
   font-weight: 100 900;
   font-style: normal;
 }
+
+/* Product Sans (legacy Google Sans) */
+@font-face {
+  font-family: 'Product Sans';
+  src: url('../assets/fonts/Product\ Sans\ Regular.otf') format('opentype');
+  font-display: swap;
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Product Sans';
+  src: url('../assets/fonts/Product\ Sans\ Italic.otf') format('opentype');
+  font-display: swap;
+  font-weight: 400;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: 'Product Sans';
+  src: url('../assets/fonts/Product\ Sans\ Bold.otf') format('opentype');
+  font-display: swap;
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Product Sans';
+  src: url('../assets/fonts/Product\ Sans\ Bold\ Italic.otf') format('opentype');
+  font-display: swap;
+  font-weight: 700;
+  font-style: italic;
+}
