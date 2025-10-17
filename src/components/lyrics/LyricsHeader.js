@@ -116,11 +116,11 @@ const LyricsHeader = ({
         >
           {autoScrollEnabled ? (
             <span className="material-symbols-rounded auto-scroll-icon" style={{ fontSize: 16, display: 'inline-block' }}>
-              vertical_align_bottom
+              move_selection_down
             </span>
           ) : (
             <span className="material-symbols-rounded auto-scroll-icon" style={{ fontSize: 16, display: 'inline-block' }}>
-              stop
+              mobiledata_off
             </span>
           )}
           <span>{t('lyrics.autoScroll', 'Cuộn')}</span>
@@ -163,9 +163,20 @@ const LyricsHeader = ({
                 cursor: canSplitSubtitles ? 'pointer' : 'not-allowed'
               }}
             >
-              <span className="material-symbols-rounded" style={{ fontSize: 16, display: 'inline-block' }}>
-                content_cut
-              </span>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                {/* Left rectangle (before cut) */}
+                <path d="M2 8L8 8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M2 16L8 16" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M2 8L2 16" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+
+                {/* Right rectangle (after cut) */}
+                <path d="M16 8L22 8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 16L22 16" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M22 8L22 16" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+
+                {/* Vertical cutting line (knife) */}
+                <path d="M12 4L12 20" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </button>
 
             <button

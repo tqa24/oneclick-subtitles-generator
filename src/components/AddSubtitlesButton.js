@@ -137,7 +137,7 @@ const AddSubtitlesButton = ({
             </>
           ) : (
             <>
-              <span className="material-symbols-rounded icon" aria-hidden="true">upload_file</span>
+              <span className="material-symbols-rounded icon" aria-hidden="true">subject</span>
               <span>{t('subtitlesInput.addSubtitles', 'Add subtitles')}</span>
             </>
           )}

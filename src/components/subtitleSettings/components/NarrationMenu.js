@@ -90,7 +90,7 @@ const NarrationMenu = ({
         }}
         title={t('narration.settingsTooltip', 'Narration Settings')}
       >
-        <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>mic</span>
+        <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>record_voice_over</span>
         <span>{t('narration.toggleSettings', 'Narration Settings')}</span>
       </button>
 
@@ -108,7 +108,7 @@ const NarrationMenu = ({
             {!hasAnyNarrations && (
               <div className="setting-group">
                 <div className="status-message warning">
-                  <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>warning</span>
+                  <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>hearing_disabled</span>
                   <span>
                     {t('narration.noNarrationsAvailable', 'No narrations available. Generate narration first.')}
                   </span>
@@ -120,7 +120,7 @@ const NarrationMenu = ({
             <div className="setting-group">
               <label className={hasAnyNarrations ? '' : 'disabled'}>
                 <span className="icon-label-container">
-                  <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>volume_up</span>
+                  <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>voice_selection</span>
                   <span>
                     {t('narration.narrationVolume', 'Narration Volume')}
                     {currentNarration && (

@@ -129,8 +129,9 @@ grep -r "background-image.*data:image/svg+xml" src/styles/
 - **PlayPauseMorph components:** These use animated SVGs for morphing effects
 - **node_modules:** Third-party dependencies (handled by package managers)
 - **Build outputs:** Generated files in `build/` or `dist/`
-- **src/components/common/CustomDropdown.js:** Dropdown arrows - reverted by user preference
-- **src/components/common/MaterialSwitch.js:** Check/close icons - reverted by user preference
+- **src/components/common/CustomDropdown.js:** Dropdown arrows
+- **src/components/common/MaterialSwitch.js:** Check/close icons
+- **Split icon in LyricsHeader.js and icons in NarrationMethodSelection.js:** Custom SVGs
 
 ## Material Symbols Reference
 - **Font Family:** 'Material Symbols Rounded'

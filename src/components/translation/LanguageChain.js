@@ -375,7 +375,7 @@ const LanguageChain = ({
           }}
           disabled={disabled}
         >
-          <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>horizontal_rule</span>
+          <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>align_justify_space_between</span>
           {t('translation.addDelimiter', 'Add Delimiter')}
         </button>
 

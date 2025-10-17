@@ -71,8 +71,8 @@ const GenerateButton = ({
                 (referenceAudio !== null && !referenceAudio) ? t('narration.noReferenceAudioError', 'Please upload or record reference audio') : ''
               }
             >
-              <span className="material-symbols-rounded" style={{ fontSize: 16, display: 'inline-block' }}>
-                play_arrow
+              <span className="material-symbols-rounded" style={{ fontSize: 24, display: 'inline-block' }}>
+                motion_play
               </span>
               {t('narration.generate', 'Generate Narration')}
             </button>
@@ -89,7 +89,7 @@ const GenerateButton = ({
               disabled={!generationResults || generationResults.length === 0 || !generationResults.some(r => r.success && (r.audioData || r.filename))}
             >
               <span className="material-symbols-rounded" style={{ fontSize: 18, display: 'inline-block' }}>
-                download
+                archive
               </span>
               {t('narration.downloadAll', 'Tải xuống tất cả')}
             </button>

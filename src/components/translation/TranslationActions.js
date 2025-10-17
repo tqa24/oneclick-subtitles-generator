@@ -170,7 +170,7 @@ const TranslationActions = ({
             onClick={handleBrowseClick}
           >
             <div className="drop-zone-content">
-              <span className="material-symbols-rounded" style={{ fontSize: '18px' }}>description</span>
+              <span className="material-symbols-rounded" style={{ fontSize: '18px' }}>docs_add_on</span>
               <span className="drop-zone-text">
                 {bulkFiles.length === 0
                   ? t('translation.bulk.dropFilesWithSettings', 'Drop SRT/JSON files for bulk translation with above settings')

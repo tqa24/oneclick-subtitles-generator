@@ -365,7 +365,7 @@ const QueueManagerPanel = ({
     <div className={`queue-manager-panel ${gridLayout ? 'grid-layout' : ''}`}>
       <div className="panel-header">
         <div className="header-left">
-          <span className="material-symbols-rounded panel-icon" style={{ fontSize: '18px' }}>queue</span>
+          <span className="material-symbols-rounded panel-icon" style={{ fontSize: '18px' }}>video_library</span>
           <span className="panel-title">{t('videoRendering.renderQueue', 'Render Queue')}</span>
           <span className="queue-count">{queue.length}</span>
         </div>
@@ -385,7 +385,7 @@ const QueueManagerPanel = ({
       <div className="panel-content">
         {queue.length === 0 ? (
           <div className="empty-queue">
-            <span className="material-symbols-rounded" style={{ fontSize: '48px' }}>queue_music</span>
+            <span className="material-symbols-rounded" style={{ fontSize: '48px' }}>stack_off</span>
             <h3>{t('videoRendering.emptyQueue', 'Queue is Empty')}</h3>
             <p>{t('videoRendering.addVideosToQueue', 'Add videos to the queue to start batch rendering')}</p>
           </div>

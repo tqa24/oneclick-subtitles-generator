@@ -368,7 +368,7 @@ const RemotionVideoPreview = React.forwardRef(({
       <>
         <div className="placeholder-content">
           <div className="placeholder-icon">
-            <span className="material-symbols-rounded" style={{ fontSize: '64px' }}>play_arrow</span>
+            <span className="material-symbols-rounded" style={{ fontSize: '64px' }}>movie_off</span>
           </div>
           <p>{t('videoRendering.noVideoSelected', 'No video selected')}</p>
           <small>{t('videoRendering.selectVideoFileToPreview', 'Select a video file to see preview')}</small>

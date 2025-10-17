@@ -527,7 +527,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
       <div className="background-generator-header">
         <div className="header-left">
           <h2 style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-            <span className="material-symbols-rounded" style={{ fontSize: '24px' }}>image</span>
+            <span className="material-symbols-rounded" style={{ fontSize: '24px' }}>panorama</span>
             {t('backgroundGenerator.title', 'Background Image Generator')}
           </h2>
           <BackgroundPromptEditorButton />
@@ -610,7 +610,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
                   {isGeneratingPrompt ? (
                     <LoadingIndicator size={20} theme={currentTheme} showContainer={false} />
                   ) : (
-                    <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>refresh</span>
+                    <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>wand_stars</span>
                   )}
                   <span>
                     {isGeneratingPrompt
@@ -668,7 +668,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
               ) : (
                 <>
                   <div className="upload-placeholder">
-                    <span className="material-symbols-rounded" style={{ fontSize: '36px' }}>image</span>
+                    <span className="material-symbols-rounded" style={{ fontSize: '36px' }}>hide_image</span>
                     <p>{t('backgroundGenerator.noAlbumArt', 'No album art')}</p>
                   </div>
                   {/* Floating upload button even when no image */}
@@ -734,7 +734,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
                     {isGeneratingImage ? (
                       <LoadingIndicator size={20} theme={currentTheme} showContainer={false} />
                     ) : (
-                      <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>refresh</span>
+                      <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>image</span>
                     )}
                     <span>
                       {isGeneratingImage
@@ -764,7 +764,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
                     {isGeneratingPrompt || isGeneratingImage ? (
                       <LoadingIndicator size={20} theme={currentTheme} showContainer={false} />
                     ) : (
-                      <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>refresh</span>
+                      <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>imagesmode</span>
                     )}
                     <span>
                       {isGeneratingPrompt || isGeneratingImage
@@ -842,7 +842,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
             ) : (
               <div className="image-preview">
                 <div className="preview-placeholder">
-                  <span className="material-symbols-rounded" style={{ fontSize: '48px' }}>image</span>
+                  <span className="material-symbols-rounded" style={{ fontSize: '48px' }}>gallery_thumbnail</span>
                   <p>{t('backgroundGenerator.noGeneratedImage', 'No image generated yet')}</p>
                 </div>
               </div>

@@ -531,6 +531,7 @@ const BackgroundMusicSection = () => {
               srcDoc={wrapperHtml}
               onLoad={onIframeLoad}
               allow="microphone; midi; autoplay"
+              scrolling="no"
               style={{ border: 'none', width: '100%', height: '100%' }}
             />
             {isResizing && (

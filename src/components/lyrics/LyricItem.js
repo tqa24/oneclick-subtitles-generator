@@ -331,7 +331,7 @@ const LyricItem = ({
                       }}
                       onMouseLeave={handleInsertArrowMouseLeave}
                     >
-                      <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>keyboard_arrow_up</span>
+                      <span className="material-symbols-rounded" style={{ fontSize: '24px' }}>keyboard_arrow_up</span>
                     </button>
                     <button
                       className="arrow-button down"
@@ -346,7 +346,7 @@ const LyricItem = ({
                       }}
                       onMouseLeave={handleInsertArrowMouseLeave}
                     >
-                      <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>keyboard_arrow_down</span>
+                      <span className="material-symbols-rounded" style={{ fontSize: '24px' }}>keyboard_arrow_down</span>
                     </button>
                   </div>
                 )}
@@ -360,7 +360,7 @@ const LyricItem = ({
                   className="merge-lyrics-button"
                   title={t('lyrics.mergeTooltip', 'Merge lyrics')}
                 >
-                  <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>merge</span>
+                  <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>stack_group</span>
                 </div>
                 {showMergeArrows && (
                   <div className="arrow-buttons">

@@ -1596,7 +1596,7 @@ const VideoRenderingSection = ({
       <div className="video-rendering-header">
         <div className="header-left">
           <h2 style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-            <span className="material-symbols-rounded">video_camera_back</span>
+            <span className="material-symbols-rounded">movie</span>
             {t('videoRendering.title', 'Video Rendering')}
           </h2>
           <span style={{
@@ -1916,7 +1916,7 @@ const VideoRenderingSection = ({
 
             <div className="trimming-timeline-row" style={{ margin: '0 0 16px 0', width: '100%' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '0 16px' }}>
-                <span className="material-symbols-rounded" style={{ flexShrink: 0, color: '#e3e3e3' }}>timeline</span>
+                <span className="material-symbols-rounded" style={{ flexShrink: 0, color: '#e3e3e3' }}>content_cut</span>
                 <span style={{ minWidth: 70, maxWidth: 70, display: 'inline-block', textAlign: 'center', fontSize: '1.15em', fontFamily: 'monospace', fontWeight: 500 }}>
                   {formatTime(renderSettings.trimStart || 0, 'hms_ms')}
                 </span>
@@ -2015,7 +2015,7 @@ const VideoRenderingSection = ({
                 onClick={handleRender}
                 disabled={!selectedVideoFile}
               >
-                <span className="material-symbols-rounded">play_arrow</span>
+                <span className="material-symbols-rounded">desktop_windows</span>
                 {t('videoRendering.render', 'Render')}
               </button>
 

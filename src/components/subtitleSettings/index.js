@@ -90,7 +90,7 @@ const SubtitleSettings = ({
           }}
           title={t('subtitleSettings.settingsTooltip', 'Customize subtitle appearance')}
         >
-          <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>settings</span>
+          <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>subtitles_gear</span>
           <span>{t('subtitleSettings.toggleSettings', 'Subtitle Settings')}</span>
         </button>
 

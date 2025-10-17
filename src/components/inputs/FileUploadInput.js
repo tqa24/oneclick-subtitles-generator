@@ -413,7 +413,7 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
       ) : !uploadedFile ? (
         <div className="upload-content">
           <span className="material-symbols-rounded upload-icon" style={{ fontSize: 48, display: 'inline-block' }}>
-            cloud_upload
+            music_video
           </span>
           <h3>{t('inputMethods.dragDropText')}</h3>
           <p>{t('inputMethods.orText')}</p>

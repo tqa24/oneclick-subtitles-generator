@@ -701,7 +701,7 @@ const VideoCropControls = ({
             onClick={onToggle}
             title={hasAppliedCrop ? t('videoRendering.editCrop', 'Edit crop') : t('videoRendering.toggleCrop', 'Add crop')}
           >
-            <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>crop</span>
+            <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>transform</span>
             {hasAppliedCrop && <span className="crop-indicator">✓</span>}
           </button>
 
@@ -742,7 +742,7 @@ const VideoCropControls = ({
               title={t('videoRendering.exitCrop', 'Exit crop')}
               style={{ cursor: uiDrag?.kind === 'toggle' ? 'grabbing' : 'grab' }}
             >
-              <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>crop</span>
+              <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>transform</span>
             </button>
           </div>
 
@@ -785,7 +785,7 @@ const VideoCropControls = ({
                 aria-label={t('videoRendering.flipHorizontal','Flip horizontal')}
                 style={{ cursor: uiDrag?.kind === 'aspect' ? 'grabbing' : 'grab' }}
               >
-                <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>flip</span>
+                <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>split_scene_left</span>
               </button>
               <button
                 className={`flip-btn ${tempCrop.flipY ? 'active' : ''}`}
@@ -795,7 +795,7 @@ const VideoCropControls = ({
                 aria-label={t('videoRendering.flipVertical','Flip vertical')}
                 style={{ cursor: uiDrag?.kind === 'aspect' ? 'grabbing' : 'grab' }}
               >
-                <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>flip</span>
+                <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>split_scene_up</span>
               </button>
             </div>
           </div>
