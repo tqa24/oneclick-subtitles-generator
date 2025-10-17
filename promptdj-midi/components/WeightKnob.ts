@@ -210,7 +210,8 @@ export class WeightKnob extends LitElement {
         @pointerdown=${this.handlePointerDown}
         @wheel=${this.handleWheel}>
         <g style=${dotStyle}>
-          <circle cx="14" cy="0" r="2" fill="#000" />
+          <!-- indicator line from center -->
+          <line x1="6" y1="0" x2="14" y2="0" stroke="#000" stroke-width="4" stroke-linecap="round" />
         </g>
         <path
           d=${this.describeArc(40, 40, minRot, maxRot, 34.5)}
