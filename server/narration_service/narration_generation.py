@@ -318,17 +318,28 @@ def generate_narration():
 
                 # --- Resource Cleanup ---
                 # Explicitly delete model instance to release resources if loaded per-request
-                if tts_model_instance is not None:
+                logger.debug("Starting resource cleanup")
+                try:
+                    if tts_model_instance is not None:
+                        logger.debug("Deleting TTS model instance")
+                        del tts_model_instance
+                        tts_model_instance = None
+                        logger.debug("TTS model instance deleted successfully")
+                except Exception as del_err:
+                    logger.error(f"Error deleting TTS model instance: {del_err}", exc_info=True)
 
-                    del tts_model_instance
-                    try:
-                         gc.collect()
-                         from .narration_config import device
-                         if device.startswith("cuda") and torch.cuda.is_available():
-                             torch.cuda.empty_cache()
+                try:
+                    logger.debug("Running garbage collection")
+                    gc.collect()
+                    from .narration_config import device
+                    if device.startswith("cuda") and torch.cuda.is_available():
+                        logger.debug("Clearing CUDA cache")
+                        torch.cuda.empty_cache()
+                        logger.debug("CUDA cache cleared")
+                except Exception as final_clean_err:
+                    logger.warning(f"Error during final resource cleanup: {final_clean_err}")
 
-                    except Exception as final_clean_err:
-                        logger.warning(f"Error during final resource cleanup: {final_clean_err}")
+                logger.debug("Resource cleanup completed")
 
 
         # --- Return Streaming Response ---
