@@ -1,34 +1,10 @@
 /* Local font definitions */
 
-/* Product Sans (used as Google Sans) */
+/* Google Sans Flex (variable font) */
 @font-face {
   font-family: 'Google Sans';
+  src: url('../assets/fonts/GoogleSansFlex.ttf') format('truetype');
+  font-display: swap;
+  font-weight: 100 900;
   font-style: normal;
-  font-weight: 400;
-  src: url('../assets/fonts/Product Sans Regular.otf') format('opentype');
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Google Sans';
-  font-style: italic;
-  font-weight: 400;
-  src: url('../assets/fonts/Product Sans Italic.otf') format('opentype');
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Google Sans';
-  font-style: normal;
-  font-weight: 700;
-  src: url('../assets/fonts/Product Sans Bold.otf') format('opentype');
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Google Sans';
-  font-style: italic;
-  font-weight: 700;
-  src: url('../assets/fonts/Product Sans Bold Italic.otf') format('opentype');
-  font-display: swap;
 }
