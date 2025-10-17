@@ -67,8 +67,19 @@ In the `exampleAudio` object, add:
 - Korean: "베트남 북부 여성 음성 1/2"
 - Vietnamese: "Giọng nữ miền Bắc Việt Nam 1/2"
 
+## Visual Language Indicators
+
+Audio samples display country flag emojis with colored backgrounds based on language:
+- 🇺🇸 English (Blue)
+- 🇨🇳 Chinese (Yellow)
+- 🇰🇷 Korean (Green)
+- 🇻🇳 Vietnamese (Red)
+
+For new languages, add flag mapping in `ExampleAudioDropdown.js` and CSS class in `index.css`.
+
 ## Important Notes
 
 - Use exact filename matching in reference text logic to avoid conflicts
 - Ensure descriptionKey values match the translation file keys exactly
 - Files are served from `server/example-audio/` directory with fallback to F5-TTS examples
+- Visual indicators (flags and colors) are automatically applied based on the `language` field

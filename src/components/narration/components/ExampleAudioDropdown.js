@@ -19,6 +19,14 @@ const ExampleAudioDropdown = ({ onExampleSelect, disabled = false }) => {
   const dropdownRef = useRef(null);
   const buttonRef = useRef(null);
 
+  // Get flag emoji for language
+  const getFlagForLanguage = (language) => ({
+    'English': '🇺🇸',
+    'Chinese': '🇨🇳',
+    'Korean': '🇰🇷',
+    'Vietnamese': '🇻🇳'
+  }[language] || '🏳️');
+
   // Position the dropdown relative to the button
   const positionDropdown = useCallback(() => {
     if (!buttonRef.current || !dropdownRef.current) return;
@@ -174,8 +182,8 @@ const ExampleAudioDropdown = ({ onExampleSelect, disabled = false }) => {
                   disabled={isLoading}
                   role="menuitem"
                 >
-                  <div className="example-audio-option-icon">
-                    <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>music_note</span>
+                  <div className={`example-audio-option-icon ${file.language.toLowerCase()}`}>
+                    <span className="model-flag">{getFlagForLanguage(file.language)}</span>
                   </div>
                   <div className="example-audio-option-text">
                     <div className="example-audio-option-name">
