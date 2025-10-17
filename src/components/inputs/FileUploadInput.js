@@ -433,8 +433,10 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
 
           <div className="file-info-content">
             <h4 className="file-name">{fileInfo ? fileInfo.name : 'File'}</h4>
-            <span className="file-badge">{fileInfo ? fileInfo.mediaType : 'Video'}</span>
-            <span className="file-info-size">{fileInfo ? fileInfo.size : ''}</span>
+            <div className="file-details">
+              <span className="file-badge">{fileInfo ? fileInfo.mediaType : 'Video'}</span>
+              <span className="file-info-size">{fileInfo ? fileInfo.size : ''}</span>
+            </div>
 
             {fileInfo && (fileInfo.converting || fileInfo.copying) ? (
               <div className="converting-indicator">
@@ -452,52 +454,54 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
                     : t('fileUpload.processing', 'Processing media...')
                 }
               </div>
-            ) : (
-              <button
-                className="remove-file-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setFileInfo(null);
-                  setUploadedFile(null);
-
-                  // Revoke and clear current file URL
-                  const existingUrl = localStorage.getItem('current_file_url');
-                  if (existingUrl) {
-                    try { URL.revokeObjectURL(existingUrl); } catch {}
-                    localStorage.removeItem('current_file_url');
-                  }
-
-                  // Clear only session pointers; preserve gemini_file_* caches for reuse
-                  try {
-                    localStorage.removeItem('current_file_cache_id');
-                    localStorage.removeItem('current_video_url');
-                  } catch {}
-
-                  // Preserve subtitles_data for SRT-only mode; clear only transient latest segment output
-                  try {
-                    localStorage.removeItem('latest_segment_subtitles');
-                  } catch {}
-
-                  // Also reset any segment UI state if handlers provided
-                  try {
-                    if (setVideoSegments) setVideoSegments([]);
-                    if (setSegmentsStatus) setSegmentsStatus([]);
-                  } catch {}
-
-                  // If there are still subtitles to work with, switch to SRT-only mode
-                  const subtitlesData = localStorage.getItem('subtitles_data');
-                  if (subtitlesData && setIsSrtOnlyMode) {
-                    setIsSrtOnlyMode(true);
-                  }
-                }}
-              >
-                <span className="material-symbols-rounded" style={{ fontSize: 16, display: 'inline-block' }}>
-                  close
-                </span>
-                {t('fileUpload.remove', 'Remove')}
-              </button>
-            )}
+            ) : null}
           </div>
+
+          {fileInfo && !(fileInfo.converting || fileInfo.copying) ? (
+            <button
+              className="remove-file-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                setFileInfo(null);
+                setUploadedFile(null);
+
+                // Revoke and clear current file URL
+                const existingUrl = localStorage.getItem('current_file_url');
+                if (existingUrl) {
+                  try { URL.revokeObjectURL(existingUrl); } catch {}
+                  localStorage.removeItem('current_file_url');
+                }
+
+                // Clear only session pointers; preserve gemini_file_* caches for reuse
+                try {
+                  localStorage.removeItem('current_file_cache_id');
+                  localStorage.removeItem('current_video_url');
+                } catch {}
+
+                // Preserve subtitles_data for SRT-only mode; clear only transient latest segment output
+                try {
+                  localStorage.removeItem('latest_segment_subtitles');
+                } catch {}
+
+                // Also reset any segment UI state if handlers provided
+                try {
+                  if (setVideoSegments) setVideoSegments([]);
+                  if (setSegmentsStatus) setSegmentsStatus([]);
+                } catch {}
+
+                // If there are still subtitles to work with, switch to SRT-only mode
+                const subtitlesData = localStorage.getItem('subtitles_data');
+                if (subtitlesData && setIsSrtOnlyMode) {
+                  setIsSrtOnlyMode(true);
+                }
+              }}
+            >
+              <span className="material-symbols-rounded" style={{ fontSize: 16, display: 'inline-block' }}>
+                close
+              </span>
+              {t('fileUpload.remove', 'Remove')}
+            </button>
+          ) : null}
         </div>
       )}
 
