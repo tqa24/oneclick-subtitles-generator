@@ -408,7 +408,7 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
             size={48}
             className="file-upload-loading"
           />
-          <h3>{t('fileUpload.processing', 'Processing media...')}</h3>
+          <h3 style={{marginTop: '10px'}}>{t('fileUpload.processing', 'Processing media...')}</h3>
           <p>{t('fileUpload.pleaseWait', 'Please wait while we process your file')}</p>
         </div>
       ) : !uploadedFile ? (
