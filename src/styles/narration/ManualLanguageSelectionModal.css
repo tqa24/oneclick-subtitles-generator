@@ -287,7 +287,6 @@
   background-color: var(--md-primary);
   color: var(--md-on-primary);
   border: none;
-  font-weight: 600;
 }
 
 .btn-primary:hover {
