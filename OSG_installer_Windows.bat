@@ -242,26 +242,23 @@ ECHO Update check completed.
 POPD
 
 ECHO.
-SET /P "INSTALL_DEPS=Run 'npm install' now? (c/k): "
-IF /I "%INSTALL_DEPS%"=="c" (
-    ECHO Changing directory to "%PROJECT_PATH%"
-    PUSHD "%PROJECT_PATH%"
-    IF %ERRORLEVEL% NEQ 0 (
-        ECHO ERROR: Failed to change directory for npm install.
-        PAUSE
-        GOTO MainMenuVI
-    )
-    ECHO Configuring npm workspaces...
-    CALL node setup-workspaces.js
-    ECHO Running 'npm install'...
-    CALL npm install
-     IF %ERRORLEVEL% NEQ 0 (
-        ECHO WARNING: 'npm install' encountered errors. Check messages above.
-    ) ELSE (
-        ECHO 'npm install' completed.
-    )
-    POPD
+ECHO Changing directory to "%PROJECT_PATH%"
+PUSHD "%PROJECT_PATH%"
+IF %ERRORLEVEL% NEQ 0 (
+    ECHO ERROR: Failed to change directory for npm install.
+    PAUSE
+    GOTO MainMenuVI
 )
+ECHO Configuring npm workspaces...
+CALL node setup-workspaces.js
+ECHO Running 'npm install'...
+CALL npm install
+ IF %ERRORLEVEL% NEQ 0 (
+    ECHO WARNING: 'npm install' encountered errors. Check messages above.
+) ELSE (
+    ECHO 'npm install' completed.
+)
+POPD
 
 PAUSE
 GOTO MainMenuVI

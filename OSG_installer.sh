@@ -387,15 +387,6 @@ install_with_narration() {
         return
     fi
 
-    # Fix the start script in package.json to be cross-platform
-    colored_echo "[SETUP] Updating package.json for cross-platform compatibility..."
-    # Update the start script on Mac/Linux
-    sed -i.bak 's/"start": "set PORT=3030 && react-scripts start"/"start": "cross-env PORT=3030 react-scripts start"/' package.json >/dev/null 2>&1
-    if [ $? -ne 0 ]; then
-        colored_echo "[WARN] Failed to update package.json. The application might not work correctly."
-    else
-        colored_echo "[OK] Successfully updated package.json for cross-platform compatibility."
-    fi
 
     colored_echo "[SETUP] Configuring npm workspaces for optimal performance..."
     node setup-workspaces.js
