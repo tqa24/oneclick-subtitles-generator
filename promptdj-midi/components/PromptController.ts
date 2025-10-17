@@ -407,9 +407,6 @@ export class PromptController extends LitElement {
       'is-hovering': this.isHovering && !this.isEditing,
     });
 
-    const editIconPath = html`<path
-      d="M2.7 14.3l7.9-7.9 3.1 3.1-7.9 7.9-3.1-3.1z M15.5 2.5c-0.4-0.4-1-0.4-1.4 0l-1.4 1.4 3.1 3.1 1.4-1.4c0.4-0.4 0.4-1 0-1.4l-1.7-1.7z M1 17l1.9-5.6 3.1 3.1-5 2.5z"
-    ></path>`;
 
     return html`<div class=${promptClasses}>
       <weight-knob
@@ -435,7 +432,7 @@ export class PromptController extends LitElement {
           </text>
         </svg>
 
-        <svg class="edit-icon" viewBox="0 0 18 18">${editIconPath}</svg>
+        <span class="material-symbols-rounded edit-icon" style="font-size: 18px;">edit</span>
 
         <span
           id="text"

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiClock, FiX, FiExternalLink, FiDownload } from 'react-icons/fi';
 import {
   addYoutubeUrlToHistory,
   getYoutubeUrlHistory,
@@ -498,7 +497,7 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
                 onClick={() => setShowDownloadModal(true)}
                 title={t('unifiedUrlInput.downloadOnly', 'Download Only')}
               >
-                <FiDownload size={16} />
+                <span className="material-symbols-rounded" style={{ fontSize: 16 }}>download</span>
                 {t('unifiedUrlInput.downloadOnly', 'Download Only')}
               </button>
             </div>
@@ -516,7 +515,7 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
                 disabled={isDouyinDownloading}
                 title={t('unifiedUrlInput.downloadOnly', 'Download Only')}
               >
-                <FiDownload size={16} />
+                <span className="material-symbols-rounded" style={{ fontSize: 16 }}>download</span>
                 {isDouyinDownloading
                   ? `${t('unifiedUrlInput.downloading', 'Downloading...')} ${douyinDownloadProgress}%`
                   : t('unifiedUrlInput.downloadOnly', 'Download Only')
@@ -536,7 +535,7 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
                 onClick={() => setShowDownloadModal(true)}
                 title={t('unifiedUrlInput.downloadOnly', 'Download Only')}
               >
-                <FiDownload size={16} />
+                <span className="material-symbols-rounded" style={{ fontSize: 16 }}>download</span>
                 {t('unifiedUrlInput.downloadOnly', 'Download Only')}
               </button>
             </div>
@@ -582,7 +581,7 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
             style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
           >
             <span>{t('unifiedUrlInput.hundredsMoreWebsites', '...and hundreds more websites!')}</span>
-            <FiExternalLink size={14} />
+            <span className="material-symbols-rounded" style={{ fontSize: 14 }}>open_in_new</span>
           </div>
         </div>
       </div>
@@ -611,7 +610,7 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
             aria-label={t('common.history', 'History')}
             title={t('common.history', 'History')}
           >
-            <FiClock size={18} />
+            <span className="material-symbols-rounded" style={{ fontSize: 18 }}>schedule</span>
           </button>
         )}
 
@@ -629,7 +628,7 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
             }}
             aria-label="Clear input"
           >
-            <FiX size={18} />
+            <span className="material-symbols-rounded" style={{ fontSize: 18 }}>close</span>
           </button>
         )}
       </div>

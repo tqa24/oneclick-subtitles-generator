@@ -4,7 +4,6 @@ import MaterialSwitch from '../../common/MaterialSwitch';
 import CustomDropdown from '../../common/CustomDropdown';
 import '../../../styles/common/material-switch.css';
 import { detectSubtitleLanguage } from '../../../services/gemini/languageDetectionService';
-import { FiRefreshCw } from 'react-icons/fi';
 import '../../../styles/narration/subtitleSourceSelectionMaterial.css';
 import '../../../styles/narration/languageBadges.css';
 import ManualLanguageSelectionModal from './ManualLanguageSelectionModal';
@@ -340,7 +339,7 @@ const GeminiSubtitleSourceSelection = ({
         title={t('narration.detectLanguage', 'Detect language')}
         type="button"
       >
-        <FiRefreshCw size={12} />
+        <span className="material-symbols-rounded" style={{ fontSize: 12 }}>refresh</span>
       </button>
     );
   };
@@ -501,11 +500,7 @@ const GeminiSubtitleSourceSelection = ({
                     className="pill-button view-grouping-button"
                     onClick={openModal}
                   >
-                    <svg className="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="16" x2="12" y2="12" />
-                      <line x1="12" y1="8" x2="12.01" y2="8" />
-                    </svg>
+                    <span className="material-symbols-rounded info-icon" style={{ fontSize: '16px' }}>info</span>
                     {t('narration.viewGrouping', 'View Grouping')}
                   </button>
                   <span className="grouping-stats">

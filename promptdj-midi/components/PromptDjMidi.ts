@@ -555,7 +555,7 @@ export class PromptDjMidi extends LitElement {
             ${[0,1,2,3].map((idx) => this.addSlotsActive[idx]
               ? this.renderPromptWithClear(`extra-${idx}`)
               : html`<button class="add-slot" @click=${() => this.addExtraSlot(idx)} title="Add">
-                  <svg class="add-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M412-412H222q-29 0-48.5-20.2T154-480q0-29 19.5-48.5T222-548h190v-191q0-27.6 20.2-47.8Q452.4-807 480-807q27.6 0 47.8 20.2Q548-766.6 548-739v191h190q29 0 48.5 19.5t19.5 48q0 28.5-19.5 48.5T738-412H548v190q0 27.6-20.2 47.8Q507.6-154 480-154q-27.6 0-47.8-20.2Q412-194.4 412-222v-190Z"/></svg>
+                  <span class="material-symbols-rounded add-icon">add</span>
                 </button>`
             )}
           </div>
@@ -577,7 +577,7 @@ export class PromptDjMidi extends LitElement {
     return html`<div class="pc-wrap">
       <button class="pc-clear" title="Clear" @click=${() => this.clearPrompt(promptId)}>
         <!-- X icon -->
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="m480-384-67 66q-20 20-47.5 20.5T318-318q-20-20-20-48t20-47l66-67-67-67q-20-20-20-47.5t21-47.5q20-20 47.5-20t47.5 20l67 66 67-66q20-20 47.5-20t47.5 20q20 19 20 47t-20 48l-66 67 66 67q20 20 20 47.5T642-318q-19 19-47 19t-48-19l-67-66Z"/></svg>
+        <span class="material-symbols-rounded">close</span>
       </button>
       <prompt-controller
         promptId=${p.promptId}
@@ -601,7 +601,7 @@ export class PromptDjMidi extends LitElement {
       const p = this.prompts.get(id);
       if (!p || this.removedSlots.has(id)) {
         nodes.push(html`<button class="add-slot" @click=${() => this.addBaseSlot(idx)} title="Add">
-          <svg class="add-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor"><path d="M412-412H222q-29 0-48.5-20.2T154-480q0-29 19.5-48.5T222-548h190v-191q0-27.6 20.2-47.8Q452.4-807 480-807q27.6 0 47.8 20.2Q548-766.6 548-739v191h190q29 0 48.5 19.5t19.5 48q0 28.5-19.5 48.5T738-412H548v190q0 27.6-20.2 47.8Q507.6-154 480-154q-27.6 0-47.8-20.2Q412-194.4 412-222v-190Z"/></svg>
+          <span class="material-symbols-rounded add-icon">add</span>
         </button>`);
       } else {
         nodes.push(this.renderPromptWithClear(id));

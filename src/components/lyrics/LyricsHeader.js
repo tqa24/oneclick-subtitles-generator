@@ -209,11 +209,7 @@ const LyricsHeader = ({
                 flag
               </span>
               {/* Clock with reverse arrow icon - alternative (commented out) */}
-              {/* <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
-                <path d="M10 9V12H12.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M5 12C5 15.866 8.13401 19 12 19C15.866 19 19 15.866 19 12C19 8.13401 15.866 5 12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="4 4"/>
-                <path d="M5 12V7L7 8L5 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg> */}
+              {/* <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>schedule</span> */}
             </button>
             
             <button

@@ -4,7 +4,6 @@ import { SERVER_URL } from '../../../config';
 import MaterialSwitch from '../../common/MaterialSwitch';
 import CustomDropdown from '../../common/CustomDropdown';
 import LanguageSelectionModal from './LanguageSelectionModal';
-import { FiChevronDown } from 'react-icons/fi';
 import '../../../styles/narration/narrationAdvancedSettingsRedesign.css';
 import '../../../styles/narration/narrationModelDropdown.css';
 
@@ -189,7 +188,7 @@ const GTTSControls = ({
                     }
                   </span>
                 </span>
-                <FiChevronDown className="dropdown-icon" />
+                <span className="material-symbols-rounded dropdown-icon">expand_more</span>
               </button>
             </div>
           )}
