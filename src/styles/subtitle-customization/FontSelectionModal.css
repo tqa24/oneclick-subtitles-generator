@@ -132,9 +132,6 @@
   box-shadow: var(--md-elevation-level1);
 }
 
-.font-category-filter {
-  min-width: 180px;
-}
 
 .category-select {
   width: 100%;

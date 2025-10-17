@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getName } from 'iso-639-1';
 import { SERVER_URL } from '../../../config';
 import MaterialSwitch from '../../common/MaterialSwitch';
 import CustomDropdown from '../../common/CustomDropdown';
@@ -183,7 +184,7 @@ const GTTSControls = ({
                 <span className="model-dropdown-selected">
                   <span className="model-name">
                     {selectedLanguageDetails ?
-                      `${selectedLanguageDetails.name} (${selectedLanguageDetails.code})` :
+                      `${getName(selectedLanguageDetails.code.toLowerCase()) || selectedLanguageDetails.name} (${selectedLanguageDetails.code})` :
                       selectedLanguage || t('narration.selectLanguage', 'Select language')
                     }
                   </span>

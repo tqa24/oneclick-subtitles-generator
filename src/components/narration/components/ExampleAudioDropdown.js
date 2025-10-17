@@ -141,7 +141,7 @@ const ExampleAudioDropdown = ({ onExampleSelect, disabled = false }) => {
         aria-haspopup="true"
         aria-expanded={isOpen}
       >
-        <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>star</span>
+        <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>library_music</span>
         {isLoading ? t('narration.loading', 'Loading...') : t('narration.useExample', 'Use example')}
         <span className={`material-symbols-rounded dropdown-chevron ${isOpen ? 'open' : ''}`} style={{ fontSize: '12px' }}>expand_more</span>
       </button>
