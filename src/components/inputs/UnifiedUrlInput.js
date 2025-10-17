@@ -422,35 +422,43 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
     switch (urlType) {
       case 'youtube':
         return (
-          <svg className="url-icon" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none">
-            <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path>
-            <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon>
-          </svg>
+          <span
+            className="material-symbols-rounded url-icon"
+            aria-hidden="true"
+            style={{ fontSize: 24, display: 'inline-block' }}
+          >
+            ondemand_video
+          </span>
         );
       case 'douyin':
         return (
-          <svg className="url-icon" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"></path>
-            <path d="M12 6v6l4 2"></path>
-          </svg>
+          <span
+            className="material-symbols-rounded url-icon"
+            aria-hidden="true"
+            style={{ fontSize: 24, display: 'inline-block' }}
+          >
+            music_video
+          </span>
         );
       case 'all-sites':
         return (
-          <svg className="url-icon" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none">
-            <path d="M21 2H3a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"></path>
-            <path d="M7 10.5v3"></path>
-            <path d="M12 10.5v3"></path>
-            <path d="M17 10.5v3"></path>
-            <path d="M5 14h14"></path>
-          </svg>
+          <span
+            className="material-symbols-rounded url-icon"
+            aria-hidden="true"
+            style={{ fontSize: 24, display: 'inline-block' }}
+          >
+            public
+          </span>
         );
       default:
         return (
-          <svg className="url-icon" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="2" y1="12" x2="22" y2="12"></line>
-            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-          </svg>
+          <span
+            className="material-symbols-rounded url-icon"
+            aria-hidden="true"
+            style={{ fontSize: 24, display: 'inline-block' }}
+          >
+            public
+          </span>
         );
     }
   };

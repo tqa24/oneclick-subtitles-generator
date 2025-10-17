@@ -625,10 +625,9 @@ const ButtonsContainer = ({
               </svg>
             </div>
           </div>
-          <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
+          <span className="material-symbols-rounded" style={{ fontSize: 20, display: 'inline-block' }}>
+            close
+          </span>
           {t('output.cancelDownload', 'Cancel Download')}
         </button>
       )}
@@ -683,9 +682,9 @@ const ButtonsContainer = ({
         >
           {/* Dynamic Gemini effects container - populated by particle system */}
           <div className="gemini-icon-container"></div>
-          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          </svg>
+          <span className="material-symbols-rounded" style={{ fontSize: 16, display: 'inline-block' }}>
+            stop
+          </span>
           {t('output.forceStop', 'Force Stop')}
         </button>
       )}

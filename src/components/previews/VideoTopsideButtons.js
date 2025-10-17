@@ -449,7 +449,7 @@ const VideoTopsideButtons = ({
             ) : (
               // Show refresh icon when not refreshing
               <>
-                <span className="material-symbols-rounded" style={{ color: 'white', fontSize: 22, textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)', fontFamily: "'Material Symbols Rounded', 'Material Symbols'", fontVariationSettings: '"wght" 700, "GRAD" 200, "opsz" 24', display: 'inline-block' }}>
+                <span className="material-symbols-rounded" style={{ color: 'white', fontSize: 22, textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)', display: 'inline-block' }}>
                   refresh
                 </span>
                 <span style={{ color: 'white', fontSize: '13px', fontWeight: '600', textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)' }}>
@@ -500,10 +500,10 @@ const VideoTopsideButtons = ({
               minWidth: 'fit-content'
             }}
           >
-            <span className="material-symbols-rounded" style={{ color: 'white', fontSize: 24, textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)', fontFamily: "'Material Symbols Rounded', 'Material Symbols'", fontVariationSettings: '"wght" 700, "GRAD" 200, "opsz" 24', display: 'inline-block' }}>
+            <span className="material-symbols-rounded" style={{ color: 'white', fontSize: 24, textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)', display: 'inline-block' }}>
               info
             </span>
-            </div>
+          </div>
           </LiquidGlass>
         )}
         </div>
@@ -597,7 +597,7 @@ const VideoTopsideButtons = ({
             minWidth: 'fit-content',
             whiteSpace: 'nowrap'
           }}>
-            <span className="material-symbols-rounded" style={{ color: 'white', fontSize: 20, textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)', fontFamily: "'Material Symbols Rounded', 'Material Symbols'", fontVariationSettings: '"wght" 700, "GRAD" 200, "opsz" 24', display: 'inline-block' }}>
+            <span className="material-symbols-rounded" style={{ color: 'white', fontSize: 20, textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)', display: 'inline-block' }}>
               image
             </span>
             <span style={{ color: 'white', fontSize: '13px', fontWeight: '600', textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)' }}>
@@ -689,7 +689,7 @@ const VideoTopsideButtons = ({
             ) : (
               // Material Design download icon
               <>
-                <span className="material-symbols-rounded" style={{ color: 'white', fontSize: 20, textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)', fontFamily: "'Material Symbols Rounded', 'Material Symbols'", fontVariationSettings: '"wght" 700, "GRAD" 200, "opsz" 24', display: 'inline-block' }}>
+                <span className="material-symbols-rounded" style={{ color: 'white', fontSize: 20, textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)', display: 'inline-block' }}>
                   download
                 </span>
                 <span style={{ color: 'white', fontSize: '13px', fontWeight: '600', textShadow: '0 1px 2px rgba(0, 0, 0, 0.8)' }}>
