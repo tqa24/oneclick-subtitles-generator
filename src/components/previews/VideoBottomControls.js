@@ -479,19 +479,18 @@ const VideoBottomControls = ({
           onMouseEnter={() => setIsSpeedMenuVisible(true)}
           onMouseLeave={() => setIsSpeedMenuVisible(false)}
         >
-          {isSpeedMenuVisible && (
-            <div style={{
-              position: 'absolute',
-              bottom: '60px',
-              left: '35px',
-              transform: 'translateX(-50%)',
-              zIndex: 20,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '6px',
-              padding: '8px'
-            }}>
-              {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 2].map(speed => (
+          <div style={{
+            position: 'absolute',
+            bottom: '50px',
+            left: '35px',
+            transform: 'translateX(-50%)',
+            zIndex: 20,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
+            padding: '8px'
+          }}>
+              {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 2].map((speed, index) => (
                 <LiquidGlass
                   key={speed}
                   width={60}
@@ -506,6 +505,12 @@ const VideoBottomControls = ({
                   animateOnHover={true}
                   hoverScale={1.1}
                   updateOnMouseMove={true}
+                  style={{
+                    opacity: isSpeedMenuVisible ? 1 : 0,
+                    transition: 'opacity 0.1s ease-in-out',
+                    transitionDelay: isSpeedMenuVisible ? `${(6 - index) * 0.015}s` : `${index * 0.015}s`,
+                    pointerEvents: isSpeedMenuVisible ? 'auto' : 'none'
+                  }}
                   onClick={() => {
                     setPlaybackSpeed(speed);
                     if (videoRef.current) videoRef.current.playbackRate = speed;
@@ -527,7 +532,6 @@ const VideoBottomControls = ({
                 </LiquidGlass>
               ))}
             </div>
-          )}
 
           <LiquidGlass
             width={150}
