@@ -38,12 +38,12 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
     "audio/wav", "audio/mp3", "audio/aiff", "audio/aac", "audio/ogg", "audio/flac", "audio/mpeg",
     "audio/m4a", "audio/mp4", "audio/x-ms-wma", "audio/opus", "audio/amr", "audio/3gpp",
     "audio/basic", "audio/x-caf", "audio/vnd.dts", "audio/ac3", "audio/x-ape",
-    "audio/x-matroska", "audio/vnd.rn-realaudio"
+    "audio/x-matroska", "audio/vnd.rn-realaudio", "audio/webm"
   ], []);
 
   const SUPPORTED_AUDIO_EXTENSIONS = useMemo(() => [
     ".wav", ".mp3", ".aiff", ".aac", ".ogg", ".flac", ".m4a", ".wma", ".opus",
-    ".amr", ".au", ".caf", ".dts", ".ac3", ".ape", ".mka", ".ra"
+    ".amr", ".au", ".caf", ".dts", ".ac3", ".ape", ".mka", ".ra", ".webm"
   ], []);
 
   const SUPPORTED_VIDEO_EXTENSIONS = useMemo(() => [
@@ -63,14 +63,14 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
 
   // Check if file is an audio - wrapped in useCallback to avoid dependency issues
   const isAudioFile = useCallback((mimeType, fileName = '') => {
-    // First check MIME type
-    if (SUPPORTED_AUDIO_FORMATS.includes(mimeType)) {
+    // Allow any MIME type that starts with 'audio/'
+    if (mimeType.startsWith('audio/')) {
       return true;
     }
-    // Fallback to file extension check
+    // Fallback to file extension check for known audio extensions
     const extension = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
     return SUPPORTED_AUDIO_EXTENSIONS.includes(extension);
-  }, [SUPPORTED_AUDIO_FORMATS, SUPPORTED_AUDIO_EXTENSIONS]);
+  }, [SUPPORTED_AUDIO_EXTENSIONS]);
 
   // Display file information - wrapped in useCallback to avoid dependency issues
   const displayFileInfo = useCallback((file, originalFile = null) => {
@@ -153,7 +153,8 @@ const FileUploadInput = ({ uploadedFile, setUploadedFile, onVideoSelect, classNa
         }
 
         // Check if this is an audio file
-        const isAudio = file.type.startsWith('audio/');
+        // Include WebM files as they can be audio-only
+        const isAudio = file.type.startsWith('audio/') || file.name.toLowerCase().endsWith('.webm');
         let processedFile = file;
 
         // If it's an audio file, immediately convert it to video
