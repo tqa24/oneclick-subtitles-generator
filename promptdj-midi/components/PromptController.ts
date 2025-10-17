@@ -186,9 +186,15 @@ export class PromptController extends LitElement {
     .is-editing .edit-icon {
       visibility: hidden;
     }
+    .is-editing #text-svg {
+      opacity: 0;
+    }
     .is-editing #text {
       visibility: visible;
-      opacity: 0; /* capture input but keep visual on arc */
+      opacity: 1; /* show input for cursor */
+      border: 1px solid #fff;
+      border-radius: 1vmin;
+      background: rgba(0, 0, 0, 0.7);
       /* Stabilize caret behavior in production builds */
       text-align: left;
       direction: ltr;
@@ -371,6 +377,8 @@ export class PromptController extends LitElement {
   private startEditing() {
     if (this.isEditing) return;
     this.isEditing = true;
+    this.text = '';
+    this.textInput.textContent = '';
     this.updateComplete.then(() => {
       this.textInput.focus();
       this.onFocus();
