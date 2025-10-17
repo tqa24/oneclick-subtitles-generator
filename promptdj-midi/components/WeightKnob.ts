@@ -58,34 +58,99 @@ export class WeightKnob extends LitElement {
 
   private dragStartPos = 0;
   private dragStartValue = 0;
+  private activePointerId: number | null = null;
+  private isDragging = false;
 
   constructor() {
     super();
     this.handlePointerDown = this.handlePointerDown.bind(this);
     this.handlePointerMove = this.handlePointerMove.bind(this);
     this.handlePointerUp = this.handlePointerUp.bind(this);
+    this.handlePointerCancel = this.handlePointerCancel.bind(this);
+    this.onLostPointerCapture = this.onLostPointerCapture.bind(this);
+    this.onWindowBlur = this.onWindowBlur.bind(this);
+  }
+
+  connectedCallback(): void {
+    super.connectedCallback();
+  }
+
+  disconnectedCallback(): void {
+    // Ensure we always cleanup listeners if the element is removed
+    this.teardownDragListeners();
+    super.disconnectedCallback();
+  }
+
+  private setupDragListeners() {
+    window.addEventListener('pointermove', this.handlePointerMove);
+    window.addEventListener('pointerup', this.handlePointerUp);
+    window.addEventListener('pointercancel', this.handlePointerCancel);
+    window.addEventListener('blur', this.onWindowBlur);
+    // Fallback for mouse leaving the iframe without a pointerup firing
+    window.addEventListener('mouseleave', this.handlePointerCancel as any);
+    this.addEventListener('lostpointercapture', this.onLostPointerCapture);
+  }
+
+  private teardownDragListeners() {
+    window.removeEventListener('pointermove', this.handlePointerMove);
+    window.removeEventListener('pointerup', this.handlePointerUp);
+    window.removeEventListener('pointercancel', this.handlePointerCancel);
+    window.removeEventListener('blur', this.onWindowBlur);
+    window.removeEventListener('mouseleave', this.handlePointerCancel as any);
+    this.removeEventListener('lostpointercapture', this.onLostPointerCapture);
   }
 
   private handlePointerDown(e: PointerEvent) {
     e.preventDefault();
     this.dragStartPos = e.clientY;
     this.dragStartValue = this.value;
+    this.activePointerId = e.pointerId;
+    this.isDragging = true;
     document.body.classList.add('dragging');
-    window.addEventListener('pointermove', this.handlePointerMove);
-    window.addEventListener('pointerup', this.handlePointerUp);
+    // Try to retain events even when pointer leaves the iframe/element
+    try {
+      (this as unknown as Element).setPointerCapture(e.pointerId);
+    } catch {}
+    this.setupDragListeners();
   }
 
   private handlePointerMove(e: PointerEvent) {
+    if (!this.isDragging || (this.activePointerId !== null && e.pointerId !== this.activePointerId)) return;
     const delta = this.dragStartPos - e.clientY;
     this.value = this.dragStartValue + delta * 0.01;
     this.value = Math.max(0, Math.min(2, this.value));
     this.dispatchEvent(new CustomEvent<number>('input', { detail: this.value }));
   }
 
-  private handlePointerUp() {
-    window.removeEventListener('pointermove', this.handlePointerMove);
-    window.removeEventListener('pointerup', this.handlePointerUp);
+  private endDrag() {
+    if (!this.isDragging) return;
+    this.isDragging = false;
+    if (this.activePointerId !== null) {
+      try {
+        (this as unknown as Element).releasePointerCapture(this.activePointerId);
+      } catch {}
+    }
+    this.activePointerId = null;
+    this.teardownDragListeners();
     document.body.classList.remove('dragging');
+  }
+
+  private handlePointerUp() {
+    this.endDrag();
+  }
+
+  private handlePointerCancel() {
+    this.endDrag();
+  }
+
+  private onLostPointerCapture() {
+    // If we lose capture without a pointerup, end the drag to avoid sticky state
+    this.endDrag();
+  }
+
+  private onWindowBlur() {
+    // If iframe/window loses focus while dragging, end drag
+    this.endDrag();
   }
 
   private handleWheel(e: WheelEvent) {
