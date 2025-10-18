@@ -162,7 +162,7 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
               onClick={() => setShowLyricsInput(!showLyricsInput)}
               title={t('subtitlesInput.lyricsToggle', 'Toggle lyrics search')}
             >
-              <span className="material-symbols-rounded">music_note</span> {t('subtitlesInput.fetchLyrics', 'Fetch Song Lyrics')}
+              <span className="material-symbols-rounded">queue_music</span> {t('subtitlesInput.fetchLyrics', 'Fetch Song Lyrics')}
             </button>
           </div>
 
