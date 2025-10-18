@@ -19,6 +19,7 @@
   align-items: center;
 }
 
+.file-upload-input:hover,
 .file-upload-input.drag-over {
   border-color: var(--primary-color);
   background-color: rgba(var(--primary-rgb, 0, 123, 255), 0.05);
