@@ -327,12 +327,13 @@ const VideoBottomControls = ({
                   width: '30px',
                   height: '80px',
                   position: 'absolute',
-                  top: '40px',
+                  top: '48px',
                   display: 'flex',
                   justifyContent: 'center',
                   opacity: isVolumeSliderVisible ? 1 : 0,
                   transition: 'opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
                   pointerEvents: isVolumeSliderVisible ? 'auto' : 'none',
+                  filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.35)) drop-shadow(0 1px 3px rgba(0,0,0,0.25))'
                 }}
               >
                 <StandardSlider
@@ -351,7 +352,7 @@ const VideoBottomControls = ({
                 <div
                   style={{
                     position: 'absolute',
-                    top: '-25px',
+                    top: '-30px',
                     left: '50%',
                     transform: 'translateX(-50%)',
                     fontSize: '12px',

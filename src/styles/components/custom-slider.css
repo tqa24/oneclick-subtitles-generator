@@ -609,3 +609,29 @@
 .standard-slider-start-stop.hidden {
   opacity: 0;
 }
+
+/* Video volume slider overrides */
+.video-volume-slider.standard-slider-container {
+  /* Softer, consistent shadow similar to other controls */
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.05));
+}
+
+.video-volume-slider .standard-slider-active-track .track {
+  background-color: #FFFFFF !important;
+}
+
+.video-volume-slider .standard-slider-handle {
+  background-color: #FFFFFF !important;
+  /* Softer shadow */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25), 0 0 1px rgba(0,0,0,0.15) !important;
+}
+
+/* Keep vertical hover/drag behavior to adjust height only */
+.video-volume-slider.orientation-vertical .standard-slider-handle:hover,
+.video-volume-slider.orientation-Vertical .standard-slider-handle:hover {
+  height: 6px;
+}
+.video-volume-slider.orientation-vertical.dragging .standard-slider-handle,
+.video-volume-slider.orientation-Vertical.dragging .standard-slider-handle {
+  height: 2px;
+}
