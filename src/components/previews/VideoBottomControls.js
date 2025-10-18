@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import LiquidGlass from '../common/LiquidGlass';
 import PlayPauseMorphType4 from '../common/PlayPauseMorphType4';
 import WavyProgressIndicator from '../common/WavyProgressIndicator';
+import StandardSlider from '../common/StandardSlider'; // Import the slider
 
 const VideoBottomControls = ({
   showCustomControls,
@@ -121,6 +122,18 @@ const VideoBottomControls = ({
     hideControlsTimeoutRef,
     handleFullscreenExit
   ]);
+
+  const handleVolumeChange = (newVolume) => {
+    setVolume(newVolume);
+    if (videoRef.current) {
+      videoRef.current.volume = newVolume;
+      const newMuted = newVolume <= 0;
+      if (isMuted !== newMuted) {
+        videoRef.current.muted = newMuted;
+        setIsMuted(newMuted);
+      }
+    }
+  };
 
   if (!showCustomControls) return null;
 
@@ -309,108 +322,36 @@ const VideoBottomControls = ({
               position: 'relative'
             }}>
               <div
-                className="expanding-volume-slider"
+                className="expanding-volume-slider-container"
                 style={{
-                  width: '6px',
-                  height: '60px',
-                  background: 'rgba(255,255,255,0.3)',
-                  borderRadius: '3px',
+                  width: '30px',
+                  height: '80px',
                   position: 'absolute',
-                  top: '50px',
-                  cursor: 'pointer',
+                  top: '40px',
+                  display: 'flex',
+                  justifyContent: 'center',
                   opacity: isVolumeSliderVisible ? 1 : 0,
                   transition: 'opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
                   pointerEvents: isVolumeSliderVisible ? 'auto' : 'none',
-                  touchAction: 'none'
-                }}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsVolumeDragging(true);
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const newVolume = Math.max(0, Math.min(1, (rect.bottom - e.clientY) / rect.height));
-                  setVolume(newVolume);
-                  if (videoRef.current) {
-                    videoRef.current.volume = newVolume;
-                    videoRef.current.muted = newVolume === 0;
-                    setIsMuted(newVolume === 0);
-                  }
-                }}
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsVolumeDragging(true);
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const touch = e.touches && e.touches[0];
-                  if (touch) {
-                    const newVolume = Math.max(0, Math.min(1, (rect.bottom - touch.clientY) / rect.height));
-                    setVolume(newVolume);
-                    if (videoRef.current) {
-                      videoRef.current.volume = newVolume;
-                      videoRef.current.muted = newVolume === 0;
-                      setIsMuted(newVolume === 0);
-                    }
-                  }
-                }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const newVolume = Math.max(0, Math.min(1, (rect.bottom - e.clientY) / rect.height));
-                  setVolume(newVolume);
-                  if (videoRef.current) {
-                    videoRef.current.volume = newVolume;
-                    videoRef.current.muted = newVolume === 0;
-                    setIsMuted(newVolume === 0);
-                  }
                 }}
               >
-                <div style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  width: '100%',
-                  height: `${volume * 100}%`,
-                  background: 'linear-gradient(to top, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.6) 100%)',
-                  borderRadius: '3px',
-                  backdropFilter: 'blur(4px)',
-                  boxShadow: 'inset 0 1px 2px rgba(255,255,255,0.3), 0 1px 3px rgba(0,0,0,0.2)',
-                  transition: isVolumeDragging ? 'none' : 'height 0.2s ease'
-                }} />
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: `${volume * 100}%`,
-                    left: '50%',
-                    transform: 'translate(-50%, 50%)',
-                    width: isVolumeDragging ? '18px' : '16px',
-                    height: isVolumeDragging ? '18px' : '16px',
-                    background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,1), rgba(255,255,255,0.95), rgba(255,255,255,0.85))',
-                    borderRadius: '50%',
-                    backdropFilter: 'blur(2px)',
-                    boxShadow: isVolumeDragging
-                      ? '0 4px 12px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.6), 0 0 8px rgba(255,255,255,0.4)'
-                      : '0 2px 6px rgba(0,0,0,0.2), inset 0 1px 2px rgba(255,255,255,0.6), 0 0 4px rgba(255,255,255,0.3)',
-                    border: '1px solid rgba(255,255,255,0.8)',
-                    transition: isVolumeDragging ? 'none' : 'all 0.2s ease',
-                    cursor: 'pointer',
-                    zIndex: 10
-                  }}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsVolumeDragging(true);
-                  }}
-                  onTouchStart={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsVolumeDragging(true);
-                  }}
+                <StandardSlider
+                  orientation="vertical"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={volume}
+                  onChange={handleVolumeChange}
+                  onDragStart={() => setIsVolumeDragging(true)}
+                  onDragEnd={() => setIsVolumeDragging(false)}
+                  showValueIndicator={false}
+                  showValueBadge={false}
+                  className="video-volume-slider"
                 />
                 <div
                   style={{
                     position: 'absolute',
-                    top: '-35px',
+                    top: '-25px',
                     left: '50%',
                     transform: 'translateX(-50%)',
                     fontSize: '12px',
