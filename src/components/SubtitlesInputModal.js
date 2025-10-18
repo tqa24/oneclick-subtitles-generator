@@ -204,7 +204,7 @@ const SubtitlesInputModal = ({ initialText = '', onSave, onClose, onGenerateBack
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
             placeholder={t('subtitlesInput.placeholder', 'Enter your subtitles here...')}
-            rows={10}
+            rows={8}
             containerClassName="large"
           />
 
