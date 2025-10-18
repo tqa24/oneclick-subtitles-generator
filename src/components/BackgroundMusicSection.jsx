@@ -332,6 +332,15 @@ const BackgroundMusicSection = () => {
     } catch {}
     // Request current MIDI inputs/state
     try { iframeRef.current?.contentWindow?.postMessage({ type: 'midi:getInputs' }, '*'); } catch {}
+
+    // Prevent iframe from stealing focus on load
+    setTimeout(() => {
+      try {
+        if (iframeRef.current && document.activeElement === iframeRef.current) {
+          iframeRef.current.blur();
+        }
+      } catch {}
+    }, 100);
   }, [postApiKeyToIframe]);
 
   // Watch main app theme changes and forward to iframe
