@@ -517,7 +517,7 @@ const BackgroundMusicSection = () => {
             localStorage.setItem('bg_music_collapsed', next ? 'true' : 'false');
           }}
         >
-          <span className="material-symbols-rounded">expand_more</span>
+          <span className="material-symbols-rounded">{isCollapsed ? 'expand_more' : 'stat_1'}</span>
         </button>
       </div>
 
