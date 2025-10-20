@@ -284,51 +284,51 @@ const NarrationResults = ({
   })();
 
   const displayedResults = (() => {
-    // If we have actual results, merge them with pending items for remaining subtitles
-    if (generationResults && generationResults.length > 0) {
-      const completedIds = new Set(generationResults.map(r => r.subtitle_id));
-      const merged = [...generationResults];
+    // Always show all planned subtitles, with status based on generation results
+    if (trueSubtitles.length > 0) {
+      const completedIds = new Set();
+      const failedIds = new Set();
 
-      // Add pending items for subtitles that haven't been processed yet
-      if (isGenerating && trueSubtitles.length > 0) {
-        for (const subtitle of trueSubtitles) {
-          const subtitleId = subtitle.id ?? subtitle.subtitle_id ?? trueSubtitles.indexOf(subtitle);
-          if (!completedIds.has(subtitleId)) {
-            merged.push({
-              subtitle_id: subtitleId,
-              text: subtitle.text || '',
-              success: false,
-              pending: true,
-              start: subtitle.start,
-              end: subtitle.end,
-              original_ids: subtitle.original_ids || (subtitle.id ? [subtitle.id] : [])
-            });
+      // Track completed and failed results
+      if (generationResults && generationResults.length > 0) {
+        generationResults.forEach(result => {
+          if (result.success) {
+            completedIds.add(result.subtitle_id);
+          } else if (!result.pending) {
+            failedIds.add(result.subtitle_id);
           }
-        }
+        });
       }
 
-      // Sort by subtitle_id to maintain order
-      merged.sort((a, b) => a.subtitle_id - b.subtitle_id);
-      return merged;
-    }
+      // Create results for all subtitles
+      const results = trueSubtitles.map((subtitle, index) => {
+        const subtitleId = subtitle.id ?? subtitle.subtitle_id ?? index;
+        const existingResult = generationResults?.find(r => r.subtitle_id === subtitleId);
 
-    // If no results yet, show pending items if generating
-    if (isGenerating && trueSubtitles.length > 0) {
-      return trueSubtitles.map((s, i) => {
-        const subtitle_id = s.id ?? s.subtitle_id ?? i;
-        return {
-          subtitle_id,
-          text: s.text || '',
-          success: false,
-          pending: true,
-          start: s.start,
-          end: s.end,
-          original_ids: s.original_ids || (s.id ? [s.id] : [])
-        };
+        if (existingResult) {
+          // Use existing result
+          return existingResult;
+        } else {
+          // Create pending result
+          return {
+            subtitle_id: subtitleId,
+            text: subtitle.text || '',
+            success: false,
+            pending: true,
+            start: subtitle.start,
+            end: subtitle.end,
+            original_ids: subtitle.original_ids || (subtitle.id ? [subtitle.id] : [])
+          };
+        }
       });
+
+      // Sort by subtitle_id to maintain order
+      results.sort((a, b) => a.subtitle_id - b.subtitle_id);
+      return results;
     }
 
-    return [];
+    // Fallback: show generation results if no planned subtitles
+    return generationResults || [];
   })();
 
   // Speed control state
