@@ -154,7 +154,7 @@ const useEdgeTTSNarration = ({
                   current: data.current,
                   total: data.total
                 }));
-                
+
                 if (data.result) {
                   results.push(data.result);
                   setGenerationResults([...results]);

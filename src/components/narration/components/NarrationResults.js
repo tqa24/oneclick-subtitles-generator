@@ -262,7 +262,6 @@ const NarrationResults = ({
 
   const listRef = useRef(null);
   const rowHeights = useRef({});
-  const [loadedFromCache, setLoadedFromCache] = useState(false);
 
   // Derive a displayed list that immediately shows the full "true" list during generation (like Gemini)
   const trueSubtitles = (() => {
@@ -284,19 +283,53 @@ const NarrationResults = ({
     return [];
   })();
 
-  const displayedResults = (generationResults && generationResults.length > 0)
-    ? generationResults
-    : (isGenerating && trueSubtitles.length > 0
-        ? trueSubtitles.map((s, i) => ({
-            subtitle_id: s.id ?? s.subtitle_id ?? (i + 1),
-            text: s.text || '',
-            success: false,
-            pending: true,
-            start: s.start,
-            end: s.end,
-            original_ids: s.original_ids || (s.id ? [s.id] : [])
-          }))
-        : []);
+  const displayedResults = (() => {
+    // If we have actual results, merge them with pending items for remaining subtitles
+    if (generationResults && generationResults.length > 0) {
+      const completedIds = new Set(generationResults.map(r => r.subtitle_id));
+      const merged = [...generationResults];
+
+      // Add pending items for subtitles that haven't been processed yet
+      if (isGenerating && trueSubtitles.length > 0) {
+        for (const subtitle of trueSubtitles) {
+          const subtitleId = subtitle.id ?? subtitle.subtitle_id ?? trueSubtitles.indexOf(subtitle);
+          if (!completedIds.has(subtitleId)) {
+            merged.push({
+              subtitle_id: subtitleId,
+              text: subtitle.text || '',
+              success: false,
+              pending: true,
+              start: subtitle.start,
+              end: subtitle.end,
+              original_ids: subtitle.original_ids || (subtitle.id ? [subtitle.id] : [])
+            });
+          }
+        }
+      }
+
+      // Sort by subtitle_id to maintain order
+      merged.sort((a, b) => a.subtitle_id - b.subtitle_id);
+      return merged;
+    }
+
+    // If no results yet, show pending items if generating
+    if (isGenerating && trueSubtitles.length > 0) {
+      return trueSubtitles.map((s, i) => {
+        const subtitle_id = s.id ?? s.subtitle_id ?? i;
+        return {
+          subtitle_id,
+          text: s.text || '',
+          success: false,
+          pending: true,
+          start: s.start,
+          end: s.end,
+          original_ids: s.original_ids || (s.id ? [s.id] : [])
+        };
+      });
+    }
+
+    return [];
+  })();
 
   // Speed control state
   const [speedValue, setSpeedValue] = useState(1.0);
@@ -361,7 +394,6 @@ const NarrationResults = ({
   // Speed modification function
   const modifyAudioSpeed = async () => {
     if (!generationResults || generationResults.length === 0) {
-      console.log('No narration results to modify');
       return;
     }
 
@@ -369,7 +401,6 @@ const NarrationResults = ({
     const successfulNarrations = generationResults.filter(result => result.success && result.filename);
 
     if (successfulNarrations.length === 0) {
-      console.log('No successful narrations to modify');
       return;
     }
 
@@ -378,11 +409,8 @@ const NarrationResults = ({
     setCurrentFile('');
 
     try {
-      console.log(`Modifying speed of ${successfulNarrations.length} narration files to ${speedValue}x`);
-
       // Use batch endpoint to process all files at once
       const apiUrl = `${SERVER_URL}/api/narration/batch-modify-audio-speed`;
-      console.log(`Sending request to: ${apiUrl}`);
 
       // Use fetch with streaming response to get real-time progress updates
       const response = await fetch(apiUrl, {
@@ -420,7 +448,6 @@ const NarrationResults = ({
                 setProcessingProgress({ current: data.current, total: data.total });
                 setCurrentFile(data.filename || '');
               } else if (data.status === 'completed') {
-                console.log('Speed modification completed successfully');
                 setProcessingProgress({ current: data.total, total: data.total });
                 setCurrentFile('');
               } else if (data.status === 'error') {
@@ -433,7 +460,6 @@ const NarrationResults = ({
         }
       }
 
-      console.log('All files processed successfully');
     } catch (error) {
       console.error('Error modifying audio speed:', error);
       alert(t('narration.speedModificationError', `Error modifying audio speed: ${error.message}`));
@@ -588,35 +614,7 @@ const NarrationResults = ({
     }
   }, [generationResults]);
 
-  // We no longer need to load narrations from localStorage cache
-  // The narrations will be loaded from the file system by the parent component
-  // This useEffect is kept as a placeholder for future enhancements
-  useEffect(() => {
-    // Only try to load if we don't have results yet
-    if (generationResults && generationResults.length > 0) return;
 
-    // No need to do anything here - narrations are loaded from the file system
-    // by the parent component (UnifiedNarrationSection.js)
-  }, [generationResults]);
-
-  // Listen for narrations-updated event to update the component
-  useEffect(() => {
-    const handleNarrationsUpdated = (event) => {
-      if (event.detail && event.detail.narrations && event.detail.fromCache) {
-
-        // Reset loading state since we now have the narrations
-        setLoadedFromCache(false);
-      }
-    };
-
-    // Add event listener
-    window.addEventListener('narrations-updated', handleNarrationsUpdated);
-
-    // Clean up
-    return () => {
-      window.removeEventListener('narrations-updated', handleNarrationsUpdated);
-    };
-  }, []);
 
   return (
     <div className="results-section">
@@ -681,37 +679,23 @@ const NarrationResults = ({
       </div>
 
       <div className="results-list">
-        {(!generationResults || generationResults.length === 0) ? (
-          loadedFromCache ? (
-            // Show loading indicator when loading from cache
-            <div className="loading-from-cache-message">
-              <LoadingIndicator
-                theme="dark"
-                showContainer={false}
-                size={24}
-                className="cache-loading-indicator"
-              />
-              {t('narration.loadingFromCache', 'Loading narrations from previous session...')}
-            </div>
-          ) : (
-            // Show waiting message when no results and not loading from cache
-            <div className="no-results-message">
-              {t('narration.waitingForResults', 'Waiting for narration results...')}
-            </div>
-          )
+        {displayedResults.length === 0 ? (
+          <div className="no-results-message">
+            {t('narration.waitingForResults', 'Waiting for narration results...')}
+          </div>
         ) : (
           // Use virtualized list for better performance with large datasets
           <List
             ref={listRef}
             className="results-virtualized-list"
-            height={700} // Increased height for the F5-TTS virtualized container to show more results
+            height={400} // Increased height for the F5-TTS virtualized container to show more results
             width="100%"
-            itemCount={generationResults ? generationResults.length : 0}
+            itemCount={displayedResults.length}
             itemSize={getRowHeight} // Dynamic row heights based on content
             overscanCount={18} // Increase overscan to reduce blanking during fast scrolls
             itemKey={(index, data) => (data.generationResults[index] && data.generationResults[index].subtitle_id) ?? index}
             itemData={{
-              generationResults: generationResults || [],
+              generationResults: displayedResults,
               onRetry,
               retryingSubtitleId,
               currentAudio,
