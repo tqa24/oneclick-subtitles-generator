@@ -338,6 +338,19 @@ const ApiKeysTab = ({
 
       {/* Grid layout for API keys */}
       <div className="api-keys-grid">
+        {/* Gemini API usage link */}
+        <div className="api-key-link">
+          <a
+            href="https://aistudio.google.com/usage?timeRange=last-1-day&tab=rate-limit"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="usage-link"
+          >
+            <span className="material-symbols-rounded">analytics</span>
+            View Gemini API usage
+          </a>
+        </div>
+
         {/* Gemini API Keys - Left column (spans two rows) */}
         <div className="api-key-input gemini-column">
           <label htmlFor="gemini-api-keys">
