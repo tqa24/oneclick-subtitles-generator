@@ -2,7 +2,11 @@
  * Functions for checking Gemini API availability
  */
 
+import i18n from '../../../i18n/i18n';
 import { listGeminiModels, findSuitableAudioModel } from '../models/modelSelector';
+
+// Translation function shorthand
+const t = (key, fallback) => i18n.t(key, fallback);
 
 /**
  * Check if Gemini API is available
@@ -15,7 +19,7 @@ export const checkGeminiAvailability = async () => {
     if (!apiKey) {
       return {
         available: false,
-        error: 'Gemini API key not found',
+        error: t('settings.geminiApiKeyRequired', 'Gemini API key not found'),
         message: 'geminiApiKeyRequired'
       };
     }
