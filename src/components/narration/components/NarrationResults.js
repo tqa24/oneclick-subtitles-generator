@@ -643,15 +643,16 @@ const NarrationResults = ({
               onChange={(value) => setSpeedValue(parseFloat(value))}
               min={0.5}
               max={2.0}
-              step={0.1}
+              step={0.01}
               orientation="Horizontal"
               size="XSmall"
               state={isProcessing ? "Disabled" : "Enabled"}
               width="compact"
-              className="speed-control-slider"
+              className="standard-slider-container width-compact orientation-horizontal size-XSmall state-Enabled speed-control-slider"
+              style={{ width: '150px' }}
               id="narration-speed-control"
               ariaLabel={t('narration.speed', 'Speed')}
-              formatValue={(v) => `${Number(v).toFixed(1)}x`}
+              formatValue={(v) => `${Number(v).toFixed(2)}x`}
             />
             {isProcessing ? (
               <div className="speed-control-progress">
