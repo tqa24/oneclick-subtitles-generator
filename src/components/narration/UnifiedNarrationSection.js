@@ -735,6 +735,7 @@ const UnifiedNarrationSection = ({
             generationResults={generationResults}
             isServiceAvailable={isChatterboxAvailable}
             serviceUnavailableMessage={t('narration.chatterboxUnavailableMessage', 'Chatterbox API is not available. Please start the Chatterbox service.')}
+            narrationMethod="chatterbox"
           />
 
           {/* Generation Status */}
