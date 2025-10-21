@@ -912,7 +912,7 @@ const GeminiNarrationResults = ({
           <List
             ref={listRef}
             className="results-virtualized-list"
-            height={400} // Taller list to show more items and reduce churn while scrolling
+            height={700} // Taller list to show more items and reduce churn while scrolling
             width="100%"
             itemCount={displayedResults.length}
             itemSize={getRowHeight} // Dynamic row heights based on content

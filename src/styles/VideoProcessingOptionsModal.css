@@ -306,13 +306,14 @@
 /* Ensure inner wrappers expand to full width so sliders can fill */
 .video-processing-modal .combined-option-half > div {
   width: 100%;
+  max-width: 200px;
 }
 
 .combined-option-half label {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--md-on-surface);
-  margin-bottom: 4px;
+  margin-bottom: 0px;
 }
 
 /* Select dropdown styles with proper chevron spacing */
