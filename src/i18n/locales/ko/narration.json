@@ -23,6 +23,7 @@
   "extract": "추출",
   "extracting": "추출 중...",
   "generate": "나레이션 생성",
+  "generateAllPending": "실패/생성되지 않은 내레이션 다시 시도",
   "generating": "생성 중...",
   "preparingGeneration": "나레이션 생성 준비 중...",
   "initializingService": "첫 실행을 위해 나레이션 서버를 깨우는 중...",

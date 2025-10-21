@@ -37,6 +37,7 @@
   "extract": "Trích xuất",
   "extracting": "Đang trích xuất...",
   "generate": "Tạo thuyết minh",
+  "generateAllPending": "Thử lại các thuyết minh lỗi/chưa tạo",
   "generating": "Đang tạo...",
   "preparingGeneration": "Đang chuẩn bị tạo thuyết minh...",
   "generatingNarration": "Đang tạo thuyết minh cho {{count}} phụ đề...",

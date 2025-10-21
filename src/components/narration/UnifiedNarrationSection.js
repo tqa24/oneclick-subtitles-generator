@@ -1066,6 +1066,11 @@ const UnifiedNarrationSection = ({
             onGenerateAllPending={generateAllPendingGeminiNarrations}
             hasGenerationError={!!error && error.includes('Gemini')}
             subtitleSource={subtitleSource}
+            plannedSubtitles={(useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0)
+              ? groupedSubtitles
+              : (subtitleSource === 'translated' && translatedSubtitles && translatedSubtitles.length > 0)
+                ? translatedSubtitles
+                : (originalSubtitles || subtitles || [])}
           />
 
           {/* No need for a separate audio element here as it's included in the GeminiNarrationResults component */}
