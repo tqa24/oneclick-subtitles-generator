@@ -288,69 +288,68 @@ const ApiKeysTab = ({
 
   return (
     <div className="settings-section api-key-section">
-      {/* Notification Messages Container */}
-      {(showGeminiPausedMessage || showUDBMMessage || showUpcomingFeaturesMessage) && (
-        <div className="notification-messages-container">
-          {/* Gemini 2.5 Pro API Pause Message */}
-          {showGeminiPausedMessage && (
-            <div className="gemini-paused-message">
-              <div className="message-content">
-                <span>{t('settings.gemini25ProPaused')}</span>
-              </div>
-              <CloseButton
-                onClick={handleCloseGeminiPausedMessage}
-                variant="default"
-                size="small"
-                ariaLabel={t('settings.closeMessage')}
-              />
-            </div>
-          )}
-          
-          {/* UDBM Announcement Message */}
-          {showUDBMMessage && (
-            <div className="gemini-paused-message udbm-message">
-              <div className="message-content">
-                <span className="material-symbols-rounded message-icon">celebration</span>
-                <span>
-                  {t('settings.udbmIntroduction')}
-                  {' '}
-                  <a 
-                    href="https://github.com/nganlinh4/udbm/releases" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="message-link"
-                  >
-                    {t('settings.udbmDownloadHere')}
-                  </a>
-                </span>
-              </div>
-              <CloseButton
-                onClick={handleCloseUDBMMessage}
-                variant="default"
-                size="small"
-                ariaLabel={t('settings.closeMessage')}
-              />
-            </div>
-          )}
-          
-        </div>
-      )}
-
-      {/* Grid layout for API keys */}
-      <div className="api-keys-grid">
-        {/* Gemini API usage link */}
-        <div className="api-key-link">
-          <a
-            href="https://aistudio.google.com/usage?timeRange=last-1-day&tab=rate-limit"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="usage-link"
+      {/* Notification Messages and API Link Row - Layout Fixed */}
+      <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', width: '100%' }}>
+          {/* notification-messages-container: Added flex: 1, display: flex, flexDirection: column, and gap for correct stacking and horizontal filling */}
+          <div 
+            className="notification-messages-container"
+            style={{ flex: '1', display: 'flex', flexDirection: 'column', gap: '10px' }}
+          >
+              {/* Gemini 2.5 Pro API Pause Message */}
+              {showGeminiPausedMessage && (
+                <div className="gemini-paused-message">
+                  <div className="message-content">
+                    <span>{t('settings.gemini25ProPaused')}</span>
+                  </div>
+                  <CloseButton
+                    onClick={handleCloseGeminiPausedMessage}
+                    variant="default"
+                    size="small"
+                    ariaLabel={t('settings.closeMessage')}
+                  />
+                </div>
+              )}
+  
+              {/* UDBM Announcement Message */}
+              {showUDBMMessage && (
+                <div className="gemini-paused-message udbm-message">
+                  <div className="message-content">
+                    <span className="material-symbols-rounded message-icon">celebration</span>
+                    <span>
+                      {t('settings.udbmIntroduction')}
+                      {' '}
+                      <a
+                        href="https://github.com/nganlinh4/udbm/releases"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="message-link"
+                      >
+                        {t('settings.udbmDownloadHere')}
+                      </a>
+                    </span>
+                  </div>
+                  <CloseButton
+                    onClick={handleCloseUDBMMessage}
+                    variant="default"
+                    size="small"
+                    ariaLabel={t('settings.closeMessage')}
+                  />
+                </div>
+              )}
+  
+          </div>
+          {/* oauth-authenticate-btn: Added flexShrink: '0' for robust fixed-size positioning */}
+          <button
+            className="oauth-authenticate-btn"
+            onClick={() => window.open('https://aistudio.google.com/usage?timeRange=last-1-day&tab=rate-limit', '_blank')}
+            style={{ width: '95px', height: '95px', marginBottom: '16px', flexShrink: '0' }}
+            title="View Gemini API usage"
           >
             <span className="material-symbols-rounded">analytics</span>
-            View Gemini API usage
-          </a>
+          </button>
         </div>
-
+      {/* Grid layout for API keys */}
+      <div className="api-keys-grid">
         {/* Gemini API Keys - Left column (spans two rows) */}
         <div className="api-key-input gemini-column">
           <label htmlFor="gemini-api-keys">
