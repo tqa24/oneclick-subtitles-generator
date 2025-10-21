@@ -254,6 +254,7 @@ const NarrationResults = ({
   onRetry,
   retryingSubtitleId,
   onRetryFailed,
+  onGenerateAllPending,
   subtitleSource,
   isGenerating,
   plannedSubtitles
@@ -302,7 +303,7 @@ const NarrationResults = ({
 
       // Create results for all subtitles
       const results = trueSubtitles.map((subtitle, index) => {
-        const subtitleId = subtitle.id ?? subtitle.subtitle_id ?? index;
+        const subtitleId = subtitle.id ?? subtitle.subtitle_id ?? (index + 1);
         const existingResult = generationResults?.find(r => r.subtitle_id === subtitleId);
 
         if (existingResult) {
@@ -470,8 +471,11 @@ const NarrationResults = ({
     }
   };
 
-  // Check if there are any failed narrations
-  const hasFailedNarrations = generationResults && generationResults.some(result => !result.success);
+  // Check if there are any failed narrations (exclude pending items)
+  const hasFailedNarrations = generationResults && generationResults.some(result => !result.success && !result.pending);
+
+  // Check if there are any pending narrations
+  const hasPendingNarrations = displayedResults && displayedResults.some(result => result.pending);
 
   // Function to calculate row height based on explicit line breaks only (stable like LyricsDisplay)
   const getRowHeight = (index) => {
@@ -620,6 +624,19 @@ const NarrationResults = ({
     <div className="results-section">
       <div className="results-header">
         <h4>{t('narration.results', 'Generated Narration')}</h4>
+
+        {/* Generate All Pending Narrations button */}
+        {hasPendingNarrations && onGenerateAllPending && (
+          <button
+            className="pill-button secondary generate-all-pending-button"
+            onClick={onGenerateAllPending}
+            disabled={retryingSubtitleId !== null}
+            title={t('narration.generateAllPendingTooltip', 'Generate all pending narrations')}
+          >
+            <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>play_arrow</span>
+            {t('narration.generateAllPending', 'Generate All Pending')}
+          </button>
+        )}
 
         {/* Retry Failed Narrations button */}
         {hasFailedNarrations && onRetryFailed && (

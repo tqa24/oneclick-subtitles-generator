@@ -227,6 +227,7 @@ const GeminiNarrationResults = ({
   onRetry,
   retryingSubtitleId,
   onRetryFailed,
+  onGenerateAllPending,
   hasGenerationError = false,
   subtitleSource
 }) => {
@@ -246,6 +247,9 @@ const GeminiNarrationResults = ({
 
   // Check if there are any failed narrations
   const hasFailedNarrations = generationResults && generationResults.some(result => !result.success);
+
+  // Check if there are any pending narrations
+  const hasPendingNarrations = generationResults && generationResults.some(result => !result.success && result.pending);
 
   // Function to modify audio speed
   const modifyAudioSpeed = async () => {
@@ -758,6 +762,21 @@ const GeminiNarrationResults = ({
     <div className="results-section">
       <div className="results-header">
         <h4>{t('narration.results', 'Generated Narration')}</h4>
+
+        {/* Generate All Pending Narrations button */}
+        {hasPendingNarrations && onGenerateAllPending && (
+          <button
+            className="pill-button secondary generate-all-pending-button"
+            onClick={onGenerateAllPending}
+            disabled={retryingSubtitleId !== null || !subtitleSource}
+            title={!subtitleSource
+              ? t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)')
+              : t('narration.generateAllPendingTooltip', 'Generate all pending narrations')}
+          >
+            <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>play_arrow</span>
+            {t('narration.generateAllPending', 'Generate All Pending')}
+          </button>
+        )}
 
         {/* Retry Failed Narrations button */}
         {hasFailedNarrations && onRetryFailed && (
