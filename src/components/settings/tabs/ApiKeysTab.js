@@ -293,7 +293,7 @@ const ApiKeysTab = ({
           {/* notification-messages-container: Added flex: 1, display: flex, flexDirection: column, and gap for correct stacking and horizontal filling */}
           <div 
             className="notification-messages-container"
-            style={{ flex: '1', display: 'flex', flexDirection: 'column', gap: '10px' }}
+            style={{ flex: '1', display: 'flex', flexDirection: 'column'}}
           >
               {/* Gemini 2.5 Pro API Pause Message */}
               {showGeminiPausedMessage && (
@@ -342,10 +342,11 @@ const ApiKeysTab = ({
           <button
             className="oauth-authenticate-btn"
             onClick={() => window.open('https://aistudio.google.com/usage?timeRange=last-1-day&tab=rate-limit', '_blank')}
-            style={{ width: '95px', height: '95px', marginBottom: '16px', flexShrink: '0' }}
+            style={{ width: '85px', height: '85px', marginBottom: '16px', flexShrink: '0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: '2px' }}
             title="View Gemini API usage"
           >
             <span className="material-symbols-rounded">analytics</span>
+            <span style={{ fontSize: '10px', marginTop: '4px', whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.4', overflow: 'hidden' }}>{t('settings.geminiApiUsage', 'Gemini API usage')}</span>
           </button>
         </div>
       {/* Grid layout for API keys */}

@@ -8,6 +8,7 @@
   "closeMessage": "닫기",
   "geminiApiKey": "Gemini API 키",
   "geminiApiKeys": "Gemini API 키 목록",
+  "geminiApiUsage": "Gemini API 사용량",
   "youtubeApiKey": "YouTube API 키",
   "geniusApiKey": "Genius API 키",
   "apiKeyDescription": "API 키는 브라우저에 로컬로 저장되며 절대 우리 서버로 전송되지 않습니다.",

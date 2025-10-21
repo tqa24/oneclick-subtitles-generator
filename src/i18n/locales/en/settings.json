@@ -8,6 +8,7 @@
   "closeMessage": "Close",
   "geminiApiKey": "Gemini API Key",
   "geminiApiKeys": "Gemini API Keys",
+  "geminiApiUsage": "Gemini API usage",
   "youtubeApiKey": "YouTube API Key",
   "geniusApiKey": "Genius API Key",
   "apiKeyDescription": "Your API key is stored locally in your browser and never sent to our servers.",

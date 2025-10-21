@@ -10,6 +10,7 @@
   "closeMessage": "Đóng",
   "geminiApiKey": "Khóa API Gemini",
   "geminiApiKeys": "Các Khóa API Gemini",
+  "geminiApiUsage": "Mức dùng API Gemini",
   "youtubeApiKey": "Khóa API YouTube",
   "geniusApiKey": "Khóa API Genius",
   "apiKeyDescription": "Khóa API được lưu trữ cục bộ trong trình duyệt của bạn và không bao giờ được gửi đến máy chủ của chúng tôi.",
