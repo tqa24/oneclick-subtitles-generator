@@ -128,6 +128,16 @@ const useGeminiNarration = ({
       return;
     }
 
+    // Validate that language has been detected for the selected source (Gemini-specific requirement)
+    const selectedLanguage = subtitleSource === 'original' ? originalLanguage : translatedLanguage;
+    if (!selectedLanguage || !selectedLanguage.languageCode) {
+      const sourceName = subtitleSource === 'original'
+        ? t('narration.originalSubtitles', 'Original Subtitles')
+        : t('narration.translatedSubtitles', 'Translated Subtitles');
+      setError(t('narration.languageNotDetectedError', 'Please select language for {{source}} subtitles in the "Subtitle Source" section', { source: sourceName }));
+      return;
+    }
+
     // Get the appropriate subtitles based on the selected source
     const selectedSubtitles = subtitleSource === 'translated' && translatedSubtitles && translatedSubtitles.length > 0
       ? translatedSubtitles
@@ -404,6 +414,16 @@ const useGeminiNarration = ({
   const retryGeminiNarration = async (subtitleId) => {
     if (!subtitleSource) {
       setError(t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)'));
+      return;
+    }
+
+    // Validate that language has been detected for the selected source (Gemini-specific requirement)
+    const selectedLanguage = subtitleSource === 'original' ? originalLanguage : translatedLanguage;
+    if (!selectedLanguage || !selectedLanguage.languageCode) {
+      const sourceName = subtitleSource === 'original'
+        ? t('narration.originalSubtitles', 'Original Subtitles')
+        : t('narration.translatedSubtitles', 'Translated Subtitles');
+      setError(t('narration.languageNotDetectedError', 'Please select language for {{source}} subtitles in the "Subtitle Source" section', { source: sourceName }));
       return;
     }
 
@@ -855,6 +875,22 @@ const useGeminiNarration = ({
     try {
       setIsGenerating(true);
 
+      // Validate that a subtitle source is selected
+      if (!subtitleSource) {
+        setError(t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)'));
+        return;
+      }
+
+      // Validate that language has been detected for the selected source
+      const selectedLanguage = subtitleSource === 'original' ? originalLanguage : translatedLanguage;
+      if (!selectedLanguage || !selectedLanguage.languageCode) {
+        const sourceName = subtitleSource === 'original'
+          ? t('narration.originalSubtitles', 'Original Subtitles')
+          : t('narration.translatedSubtitles', 'Translated Subtitles');
+        setError(t('narration.languageNotDetectedError', 'Please select language for {{source}} subtitles in the "Subtitle Source" section', { source: sourceName }));
+        return;
+      }
+
       // Get all planned subtitles (same logic as NarrationResults component)
       const trueSubtitles = (() => {
         // Prefer grouped subtitles when enabled
@@ -896,9 +932,7 @@ const useGeminiNarration = ({
       console.log(`Generating ${pendingSubtitleIds.length} pending Gemini narrations`);
 
       // Get the language code for the selected subtitles
-      const detectedLanguageCode = subtitleSource === 'original'
-        ? (originalLanguage?.languageCode || 'en')
-        : (translatedLanguage?.languageCode || 'en');
+      const detectedLanguageCode = selectedLanguage.languageCode;
 
       // Convert to Gemini-compatible language code
       const language = getGeminiLanguageCode(detectedLanguageCode);

@@ -85,6 +85,7 @@
   "detectingLanguage": "Detecting language...",
   "narrationModel": "Narration Model",
   "noSourceSelectedError": "Please select a subtitle source (Original or Translated)",
+  "languageNotDetectedError": "Please select language for {{source}} subtitles in the \"Subtitle Source\" section",
   "checkingModelAvailability": "Checking model availability...",
   "modelNotAvailableError": "Please download at least one model that supports {{language}} from the Narration Model Management tab in Settings.",
   "advancedSettingsToggle": "Advanced Voice & Audio Settings",
