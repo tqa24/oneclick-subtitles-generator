@@ -526,6 +526,51 @@ const GeminiNarrationResults = ({
       }
 
       console.log(`Successfully modified narration speed to ${speedValue}x`);
+
+      // After speed change, reset per-item trim sliders to full range based on backup_for_trim durations
+      const getBackupForTrimName = (fn) => {
+        if (!fn) return null;
+        const lastSlash = fn.lastIndexOf('/');
+        const dir = lastSlash >= 0 ? fn.slice(0, lastSlash) : '';
+        const base = lastSlash >= 0 ? fn.slice(lastSlash + 1) : fn;
+        return `${dir ? dir + '/' : ''}backup_for_trim_${base}`;
+      };
+      const filenames = successfulNarrations.map(r => r.filename).filter(Boolean);
+      const backupFilenames = filenames.map(getBackupForTrimName).filter(Boolean);
+      const allFilenames = [...new Set([...filenames, ...backupFilenames])];
+      try {
+        const resp = await fetch(`${SERVER_URL}/api/narration/batch-get-audio-durations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filenames: allFilenames })
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          const durations = data?.durations || {};
+          // update local durations cache
+          setItemDurations(prev => ({ ...prev, ...durations }));
+          // reset trims to full range
+          setItemTrims(prev => {
+            const updated = { ...prev };
+            successfulNarrations.forEach(r => {
+              const backupName = getBackupForTrimName(r.filename);
+              const total = (backupName && typeof durations[backupName] === 'number')
+                ? durations[backupName]
+                : (typeof durations[r.filename] === 'number')
+                  ? durations[r.filename]
+                  : (typeof r.audioDuration === 'number' && r.audioDuration > 0)
+                    ? r.audioDuration
+                    : (typeof r.start === 'number' && typeof r.end === 'number' && r.end > r.start)
+                      ? (r.end - r.start)
+                      : 10;
+              updated[r.subtitle_id] = [0, total];
+            });
+            return updated;
+          });
+        }
+      } catch (e) {
+        // ignore duration refresh errors
+      }
     } catch (error) {
       console.error('Error calling audio speed modification API:', error);
     } finally {
