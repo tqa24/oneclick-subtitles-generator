@@ -532,45 +532,7 @@ const NarrationResults = ({
     setCurrentFile('');
 
     try {
-      const apiUrl = `${SERVER_URL}/api/narration/batch-modify-audio-speed`;
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filenames: successfulNarrations.map(r => r.filename),
-          speedFactor: speedValue
-        })
-      });
-      if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-              if (data.status === 'progress') {
-                setProcessingProgress({ current: data.current, total: data.total });
-                setCurrentFile(data.filename || '');
-              } else if (data.status === 'completed') {
-                setProcessingProgress({ current: data.total, total: data.total });
-                setCurrentFile('');
-              } else if (data.status === 'error') {
-                throw new Error(data.error || 'Unknown error occurred');
-              }
-            } catch (e) {
-              console.error('Error parsing progress data:', e);
-            }
-          }
-        }
-      }
-
-      // After speed change, reset per-item trim sliders to full range based on backup_ durations
+      // Build items with normalized trim (if any) relative to backup duration
       const getBackupName = (fn) => {
         if (!fn) return null;
         const lastSlash = fn.lastIndexOf('/');
@@ -578,10 +540,84 @@ const NarrationResults = ({
         const base = lastSlash >= 0 ? fn.slice(lastSlash + 1) : fn;
         return `${dir ? dir + '/' : ''}backup_${base}`;
       };
-      const filenames = successfulNarrations.map(r => r.filename).filter(Boolean);
-      const backupFilenames = filenames.map(getBackupName).filter(Boolean);
-      const allFilenames = [...new Set([...filenames, ...backupFilenames])];
+
+      const items = successfulNarrations.map(r => {
+        const id = r.subtitle_id;
+        const filename = r.filename;
+        const backupName = getBackupName(filename);
+        const total = (backupName && typeof itemDurations[backupName] === 'number')
+          ? itemDurations[backupName]
+          : (typeof itemDurations[filename] === 'number')
+            ? itemDurations[filename]
+            : undefined;
+        const [start, end] = itemTrims[id] || [0, total || 0];
+        let normalizedStart = 0, normalizedEnd = 1;
+        if (typeof total === 'number' && total > 0) {
+          const s = typeof start === 'number' ? start : 0;
+          const e = typeof end === 'number' ? end : total;
+          normalizedStart = s / total;
+          normalizedEnd = e / total;
+        }
+        return { filename, normalizedStart, normalizedEnd, speedFactor: speedValue };
+      });
+
+      const apiUrl = `${SERVER_URL}/api/narration/batch-modify-audio-trim-speed-combined`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items })
+      });
+      if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          // finalize immediately
+          setIsProcessing(false);
+          setCurrentFile('');
+          break;
+        }
+        buffer += decoder.decode(value, { stream: true });
+        let sep;
+        while ((sep = buffer.indexOf('\n\n')) !== -1) {
+          const chunk = buffer.slice(0, sep);
+          buffer = buffer.slice(sep + 2);
+          if (!chunk.startsWith('data: ')) continue;
+          try {
+            const obj = JSON.parse(chunk.slice(6));
+            if (obj.status === 'progress') {
+              const processed = obj.processed ?? 0;
+              const total = obj.total ?? items.length;
+              setProcessingProgress({ current: processed, total });
+              if (obj.current) {
+                const filename = String(obj.current).split('/').pop();
+                setCurrentFile(filename || '');
+              }
+            } else if (obj.status === 'completed') {
+              setProcessingProgress({ current: obj.processed ?? items.length, total: obj.total ?? items.length });
+              setCurrentFile('');
+              if (typeof window.resetAlignedNarration === 'function') {
+                window.resetAlignedNarration();
+              }
+              window.dispatchEvent(new CustomEvent('narration-speed-modified', { detail: { speed: speedValue, timestamp: Date.now() } }));
+              setIsProcessing(false);
+            }
+          } catch (e) {
+            // ignore malformed chunk
+          }
+        }
+      }
+
+      // Background duration refresh, non-blocking
       try {
+        const filenames = successfulNarrations.map(r => r.filename).filter(Boolean);
+        const backupFilenames = filenames.map(getBackupName).filter(Boolean);
+        const allFilenames = [...new Set([...filenames, ...backupFilenames])];
         const resp = await fetch(`${SERVER_URL}/api/narration/batch-get-audio-durations`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -590,37 +626,14 @@ const NarrationResults = ({
         if (resp.ok) {
           const data = await resp.json();
           const durations = data?.durations || {};
-          // update local durations cache
           setItemDurations(prev => ({ ...prev, ...durations }));
-          // reset trims to full range
-          setItemTrims(prev => {
-            const updated = { ...prev };
-            successfulNarrations.forEach(r => {
-              const backupName = getBackupName(r.filename);
-              const total = (backupName && typeof durations[backupName] === 'number')
-                ? durations[backupName]
-                : (typeof durations[r.filename] === 'number')
-                  ? durations[r.filename]
-                  : (typeof r.audioDuration === 'number' && r.audioDuration > 0)
-                    ? r.audioDuration
-                    : (typeof r.start === 'number' && typeof r.end === 'number' && r.end > r.start)
-                      ? (r.end - r.start)
-                      : 10;
-              updated[r.subtitle_id] = [0, total];
-            });
-            return updated;
-          });
         }
       } catch (e) {
-        // ignore duration refresh errors
+        // ignore
       }
     } catch (error) {
-      console.error('Error modifying audio speed:', error);
-      alert(t('narration.speedModificationError', `Error modifying audio speed: ${error.message}`));
-    } finally {
-      setIsProcessing(false);
-      setProcessingProgress({ current: 0, total: 0 });
-      setCurrentFile('');
+      console.error('Error applying batch combined edit:', error);
+      alert(t('narration.speedModificationError', `Error applying batch edit: ${error.message}`));
     }
   };
 

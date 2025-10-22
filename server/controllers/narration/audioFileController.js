@@ -29,9 +29,9 @@ const {
 } = require('./audioFile/speedModifier');
 
 const {
-  modifyAudioTrim,
   batchModifyAudioTrim,
-  modifyAudioTrimAndSpeedCombined
+  modifyAudioTrimAndSpeedCombined,
+  batchModifyAudioTrimAndSpeedCombined
 } = require('./audioFile/trimModifier');
 
 const {
@@ -47,9 +47,9 @@ module.exports = {
   enhanceF5TTSNarrations,
   modifyAudioSpeed,
   batchModifyAudioSpeed,
-  modifyAudioTrim,
   batchModifyAudioTrim,
   modifyAudioTrimAndSpeedCombined,
+  batchModifyAudioTrimAndSpeedCombined,
   getAudioDuration,
   batchGetAudioDurations
 };

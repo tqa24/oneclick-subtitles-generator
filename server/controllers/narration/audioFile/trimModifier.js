@@ -33,20 +33,8 @@ const runFfprobe = (filePath) => new Promise((resolve, reject) => {
   }
 });
 
-/**
- * Build codec args based on file extension
- */
-const getCodecArgs = (audioPath) => {
-  const ext = path.extname(audioPath).toLowerCase();
-  if (ext === '.mp3') {
-    return ['-c:a', 'libmp3lame', '-b:a', '192k'];
-  }
-  if (ext === '.wav') {
-    return ['-c:a', 'pcm_s16le', '-ar', '44100'];
-  }
-  // Default: let ffmpeg decide or copy if compatible
-  return ['-c:a', 'copy'];
-};
+// Shared codec args util
+const { getCodecArgs } = require('./audioUtils');
 
 /**
  * Ensure we have a sole immutable backup_<filename> created from the first generated audio.
@@ -73,55 +61,7 @@ const ensureBackupAndGetSource = (filename) => {
     : { sourceFile: audioPath, audioPath };
 };
 
-/**
- * Modify (trim) a single audio file on disk
- * Expects body: { filename: string, start: number, end: number }
- */
-const modifyAudioTrim = async (req, res) => {
-  try {
-    const { filename, start, end } = req.body || {};
-    if (!filename || typeof start !== 'number' || typeof end !== 'number') {
-      return res.status(400).json({ success: false, error: 'Missing required parameters (filename, start, end)' });
-    }
-    if (start < 0 || end <= 0 || end <= start) {
-      return res.status(400).json({ success: false, error: 'Invalid trim range. Ensure 0 <= start < end' });
-    }
 
-    const { sourceFile, audioPath } = ensureBackupAndGetSource(filename);
-    if (!fs.existsSync(sourceFile)) {
-      return res.status(404).json({ success: false, error: `Audio file not found: ${filename}` });
-    }
-
-    const duration = end - start;
-    const codecArgs = getCodecArgs(audioPath);
-
-    // Use accurate seek: place -ss and -t after -i for accuracy
-    const ffmpegArgs = [
-      '-i', sourceFile,
-      '-ss', String(start),
-      '-t', String(duration),
-      ...codecArgs,
-      '-y',
-      audioPath
-    ];
-
-    const ff = spawn('ffmpeg', ffmpegArgs);
-    let stderrData = '';
-    ff.stderr.on('data', (d) => { stderrData += d.toString(); });
-
-    ff.on('close', (code) => {
-      if (code === 0) {
-        res.json({ success: true, filename, start, end, message: 'Trim applied' });
-      } else {
-        console.error('ffmpeg trim error:', stderrData);
-        res.status(500).json({ success: false, error: `ffmpeg exited with code ${code}` });
-      }
-    });
-  } catch (error) {
-    console.error('modifyAudioTrim error:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
 
 /**
  * Batch trim multiple audio files
@@ -163,12 +103,14 @@ const batchModifyAudioTrim = async (req, res) => {
           continue;
         }
 
-        const duration = end - start;
+        const filters = [];
+        filters.push(`atrim=start=${start}:end=${end}`);
+        filters.push('asetpts=N/SR/TB');
         const codecArgs = getCodecArgs(audioPath);
         const ffmpegArgs = [
           '-i', sourceFile,
-          '-ss', String(start),
-          '-t', String(duration),
+          '-vn',
+          '-af', filters.join(','),
           ...codecArgs,
           '-y',
           audioPath
@@ -213,7 +155,7 @@ const batchModifyAudioTrim = async (req, res) => {
  * Combined trim + speed modification in a single ffmpeg command.
  * Expects body: { filename: string, speedFactor?: number, normalizedStart: number, normalizedEnd: number }
  * normalizedStart/normalizedEnd must be in [0,1] and are mapped to the backup source duration.
- * Implementation applies trim first (via -ss/-t) and then speed (via atempo), ensuring UI times map to original backup.
+ * Implementation applies trim first in the filter graph (atrim+asetpts) and then speed (atempo), ensuring UI times map to original backup.
  */
 const modifyAudioTrimAndSpeedCombined = async (req, res) => {
   try {
@@ -288,9 +230,146 @@ const modifyAudioTrimAndSpeedCombined = async (req, res) => {
   }
 };
 
+/**
+ * Batch combined trim + speed modification with SSE progress
+ * Body: { items: [{ filename, normalizedStart, normalizedEnd, speedFactor }] }
+ */
+const batchModifyAudioTrimAndSpeedCombined = async (req, res) => {
+  try {
+    const { items } = req.body || {};
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, error: 'Missing required parameter: items[]' });
+    }
+
+    // Stream headers
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Transfer-Encoding', 'chunked');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    if (typeof res.flushHeaders === 'function') res.flushHeaders();
+    console.log('[BatchCombined] Start', { total: items.length });
+
+    const total = items.length;
+    let processed = 0;
+    const results = [];
+    const errors = [];
+
+    res.write(`data: ${JSON.stringify({ success: true, status: 'progress', total, processed, message: 'Starting combined edits' })}\n\n`);
+
+    // Sequential processing
+    for (const it of items) {
+      const { filename, normalizedStart, normalizedEnd, speedFactor } = it || {};
+      const current = filename || '';
+      try {
+        if (!filename || typeof normalizedStart !== 'number' || typeof normalizedEnd !== 'number') {
+          processed++;
+          errors.push({ filename: current, error: 'Invalid params' });
+          console.log('[BatchCombined] Invalid params', { current, processed, total });
+          res.write(`data: ${JSON.stringify({ success: true, status: 'progress', total, processed, current, message: 'Invalid params' })}\n\n`);
+          continue;
+        }
+
+        const { sourceFile, audioPath } = ensureBackupAndGetSource(filename);
+        if (!fs.existsSync(sourceFile)) {
+          processed++;
+          errors.push({ filename: current, error: 'File not found' });
+          console.warn('[BatchCombined] File not found', { current, processed, total });
+          res.write(`data: ${JSON.stringify({ success: true, status: 'progress', total, processed, current, message: 'File not found' })}\n\n`);
+          continue;
+        }
+
+        const srcDuration = await runFfprobe(sourceFile).catch(() => null);
+        if (!(typeof srcDuration === 'number' && srcDuration > 0)) {
+          processed++;
+          errors.push({ filename: current, error: 'Failed to read duration' });
+          console.warn('[BatchCombined] Failed to read duration', { current, processed, total });
+          res.write(`data: ${JSON.stringify({ success: true, status: 'progress', total, processed, current, message: 'Failed to read duration' })}\n\n`);
+          continue;
+        }
+
+        const ns = Math.max(0, Math.min(1, normalizedStart));
+        const ne = Math.max(0, Math.min(1, normalizedEnd));
+        const trimStart = ns * srcDuration;
+        const trimEnd = ne * srcDuration;
+        if (!(trimStart >= 0 && trimEnd > trimStart)) {
+          processed++;
+          errors.push({ filename: current, error: 'Invalid normalized trim range' });
+          console.warn('[BatchCombined] Invalid trim range', { current, processed, total, trimStart, trimEnd });
+          res.write(`data: ${JSON.stringify({ success: true, status: 'progress', total, processed, current, message: 'Invalid trim range' })}\n\n`);
+          continue;
+        }
+
+        const filters = [];
+        filters.push(`atrim=start=${trimStart}:end=${trimEnd}`);
+        filters.push('asetpts=N/SR/TB');
+
+        if (typeof speedFactor === 'number' && !isNaN(speedFactor)) {
+          const speed = Number(speedFactor);
+          if (speed >= 0.5 && speed <= 2.0) {
+            filters.push(`atempo=${speed}`);
+          } else if (speed > 2.0 && speed <= 4.0) {
+            const half = Math.sqrt(speed);
+            filters.push(`atempo=${half}`);
+            filters.push(`atempo=${half}`);
+          } else if (speed < 0.5 && speed >= 0.25) {
+            const half = Math.sqrt(speed);
+            filters.push(`atempo=${half}`);
+            filters.push(`atempo=${half}`);
+          } else {
+            processed++;
+            errors.push({ filename: current, error: 'Invalid speed factor' });
+            console.warn('[BatchCombined] Invalid speed factor', { current, processed, total, speedFactor });
+            res.write(`data: ${JSON.stringify({ success: true, status: 'progress', total, processed, current, message: 'Invalid speed factor' })}\n\n`);
+            continue;
+          }
+        }
+
+        const ffmpegArgs = ['-i', sourceFile, '-vn', '-af', filters.join(','), ...getCodecArgs(audioPath), '-y', audioPath];
+
+        await new Promise((resolve) => {
+          const ff = spawn('ffmpeg', ffmpegArgs);
+          ff.on('close', (code) => {
+            processed++;
+            if (code === 0) {
+              results.push({ filename: current, success: true });
+              res.write(`data: ${JSON.stringify({ success: true, status: 'progress', total, processed, current, message: 'Edit applied' })}\n\n`);
+            } else {
+              errors.push({ filename: current, error: `ffmpeg exited ${code}` });
+              res.write(`data: ${JSON.stringify({ success: true, status: 'progress', total, processed, current, message: `ffmpeg exited ${code}` })}\n\n`);
+            }
+            resolve();
+          });
+          ff.on('error', (e) => {
+            processed++;
+            errors.push({ filename: current, error: e?.message || 'spawn error' });
+            console.error('[BatchCombined] Spawn error', { current, processed, total, error: e?.message });
+            res.write(`data: ${JSON.stringify({ success: true, status: 'progress', total, processed, current, message: 'Spawn error' })}\n\n`);
+            resolve();
+          });
+        });
+      } catch (e) {
+        processed++;
+        const msg = e?.message || String(e);
+        errors.push({ filename: current, error: msg });
+        console.error('[BatchCombined] Item error', { current, processed, total, error: msg });
+        res.write(`data: ${JSON.stringify({ success: true, status: 'progress', total, processed, current, message: msg })}\n\n`);
+      }
+    }
+
+    console.log('[BatchCombined] Completed', { total, processed, resultsCount: results.length, errorsCount: errors.length });
+    res.end(`data: ${JSON.stringify({ success: true, status: 'completed', total, processed, results, errors, message: 'Batch combined edits complete' })}\n\n`);
+  } catch (error) {
+    if (!res.headersSent) {
+      return res.status(500).json({ success: false, error: error.message });
+    }
+    res.end(`data: ${JSON.stringify({ success: false, status: 'error', error: error.message })}\n\n`);
+  }
+};
+
+
 module.exports = {
-  modifyAudioTrim,
   batchModifyAudioTrim,
   modifyAudioTrimAndSpeedCombined,
+  batchModifyAudioTrimAndSpeedCombined,
 };
 

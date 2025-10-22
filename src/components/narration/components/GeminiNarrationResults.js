@@ -448,86 +448,10 @@ const GeminiNarrationResults = ({
 
       console.log(`Modifying speed of ${successfulNarrations.length} narration files to ${speedValue}x`);
 
-      // Use batch endpoint to process all files at once
-      const apiUrl = `${SERVER_URL}/api/narration/batch-modify-audio-speed`;
+      // Use new batch combined endpoint to process all files at once
+      const apiUrl = `${SERVER_URL}/api/narration/batch-modify-audio-trim-speed-combined`;
 
-      // Use fetch with streaming response to get real-time progress updates
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          filenames: successfulNarrations.map(result => result.filename),
-          speedFactor: speedValue
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Server responded with status: ${response.status}`);
-      }
-
-      // Set up a reader to read the streaming response
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      // Process the stream
-      while (true) {
-        const { done, value } = await reader.read();
-
-        if (done) {
-          // Process any remaining data in the buffer
-          if (buffer) {
-            try {
-              const finalData = JSON.parse(buffer);
-              if (finalData.success && finalData.status === 'complete') {
-                setProcessingProgress({ current: finalData.processed, total: finalData.total });
-                if (typeof window.resetAlignedNarration === 'function') {
-                  window.resetAlignedNarration();
-                }
-                window.dispatchEvent(new CustomEvent('narration-speed-modified', {
-                  detail: { speed: speedValue, timestamp: Date.now() }
-                }));
-              }
-            } catch (e) {
-              console.error('Error parsing final JSON chunk:', e);
-            }
-          }
-          break;
-        }
-
-        // Decode the chunk and add it to our buffer
-        const chunk = decoder.decode(value, { stream: true });
-        buffer += chunk;
-
-        // Process complete JSON objects in the buffer
-        let startIndex = 0;
-        let endIndex;
-
-        while ((endIndex = buffer.indexOf('}', startIndex)) !== -1) {
-          try {
-            const jsonStr = buffer.substring(startIndex, endIndex + 1);
-            const data = JSON.parse(jsonStr);
-            if (data.success && data.processed !== undefined) {
-              setProcessingProgress({ current: data.processed, total: data.total });
-              if (data.current) {
-                const filename = data.current.split('/').pop();
-                setCurrentFile(filename);
-              }
-            }
-            startIndex = endIndex + 1;
-          } catch (e) {
-            startIndex++;
-          }
-        }
-
-        buffer = buffer.substring(startIndex);
-      }
-
-      console.log(`Successfully modified narration speed to ${speedValue}x`);
-
-      // After speed change, reset per-item trim sliders to full range based on backup_ durations
+      // Build items with normalized trim relative to backup duration
       const getBackupName = (fn) => {
         if (!fn) return null;
         const lastSlash = fn.lastIndexOf('/');
@@ -535,10 +459,92 @@ const GeminiNarrationResults = ({
         const base = lastSlash >= 0 ? fn.slice(lastSlash + 1) : fn;
         return `${dir ? dir + '/' : ''}backup_${base}`;
       };
-      const filenames = successfulNarrations.map(r => r.filename).filter(Boolean);
-      const backupFilenames = filenames.map(getBackupName).filter(Boolean);
-      const allFilenames = [...new Set([...filenames, ...backupFilenames])];
+
+      const items = successfulNarrations.map(r => {
+        const id = r.subtitle_id;
+        const filename = r.filename;
+        const backupName = getBackupName(filename);
+        const total = (backupName && typeof itemDurations[backupName] === 'number')
+          ? itemDurations[backupName]
+          : (typeof itemDurations[filename] === 'number')
+            ? itemDurations[filename]
+            : undefined;
+        const [start, end] = itemTrims[id] || [0, total || 0];
+        let normalizedStart = 0, normalizedEnd = 1;
+        if (typeof total === 'number' && total > 0) {
+          const s = typeof start === 'number' ? start : 0;
+          const e = typeof end === 'number' ? end : total;
+          normalizedStart = s / total;
+          normalizedEnd = e / total;
+        }
+        return { filename, normalizedStart, normalizedEnd, speedFactor: speedValue };
+      });
+
+      // Use fetch with streaming response to get real-time progress updates
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ items })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
+
+      // Set up a reader to read the streaming response (SSE parsing)
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          // Stream ended: immediately mark processing done
+          setIsProcessing(false);
+          setCurrentFile('');
+          break;
+        }
+        buffer += decoder.decode(value, { stream: true });
+        let sep;
+        while ((sep = buffer.indexOf('\n\n')) !== -1) {
+          const chunk = buffer.slice(0, sep);
+          buffer = buffer.slice(sep + 2);
+          if (!chunk.startsWith('data: ')) continue;
+          try {
+            const obj = JSON.parse(chunk.slice(6));
+            if (obj.status === 'progress') {
+              const processed = obj.processed ?? obj.current ?? 0;
+              const total = obj.total ?? items.length;
+              setProcessingProgress({ current: processed, total });
+              if (obj.current) {
+                const filename = String(obj.current).split('/').pop();
+                setCurrentFile(filename || '');
+              }
+            } else if (obj.status === 'completed') {
+              setProcessingProgress({ current: obj.processed ?? items.length, total: obj.total ?? items.length });
+              setCurrentFile('');
+              if (typeof window.resetAlignedNarration === 'function') {
+                window.resetAlignedNarration();
+              }
+              window.dispatchEvent(new CustomEvent('narration-speed-modified', {
+                detail: { speed: speedValue, timestamp: Date.now() }
+              }));
+            }
+          } catch (e) {
+            // ignore malformed chunks
+          }
+        }
+      }
+
+      console.log(`Successfully applied combined trim+speed to ${items.length} files`);
+
+      // Optionally refresh durations in background (non-blocking UI)
       try {
+        const filenames = successfulNarrations.map(r => r.filename).filter(Boolean);
+        const backupFilenames = filenames.map(getBackupName).filter(Boolean);
+        const allFilenames = [...new Set([...filenames, ...backupFilenames])];
         const resp = await fetch(`${SERVER_URL}/api/narration/batch-get-audio-durations`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -547,26 +553,7 @@ const GeminiNarrationResults = ({
         if (resp.ok) {
           const data = await resp.json();
           const durations = data?.durations || {};
-          // update local durations cache
           setItemDurations(prev => ({ ...prev, ...durations }));
-          // reset trims to full range
-          setItemTrims(prev => {
-            const updated = { ...prev };
-            successfulNarrations.forEach(r => {
-              const backupName = getBackupName(r.filename);
-              const total = (backupName && typeof durations[backupName] === 'number')
-                ? durations[backupName]
-                : (typeof durations[r.filename] === 'number')
-                  ? durations[r.filename]
-                  : (typeof r.audioDuration === 'number' && r.audioDuration > 0)
-                    ? r.audioDuration
-                    : (typeof r.start === 'number' && typeof r.end === 'number' && r.end > r.start)
-                      ? (r.end - r.start)
-                      : 10;
-              updated[r.subtitle_id] = [0, total];
-            });
-            return updated;
-          });
         }
       } catch (e) {
         // ignore duration refresh errors
@@ -601,16 +588,29 @@ const GeminiNarrationResults = ({
       : (typeof itemDurations[result.filename] === 'number')
         ? itemDurations[result.filename]
         : undefined;
-    const normalizedStart = (typeof start === 'number' && typeof total === 'number' && total > 0) ? (start / total) : undefined;
-    const normalizedEnd = (typeof end === 'number' && typeof total === 'number' && total > 0) ? (end / total) : undefined;
+
+    let normalizedStart;
+    let normalizedEnd;
+
+    if (typeof total === 'number' && total > 0) {
+      const s = typeof start === 'number' ? start : 0;
+      const e = typeof end === 'number' ? end : total;
+      normalizedStart = s / total;
+      normalizedEnd = e / total;
+    } else {
+      const isDefaultTrim = typeof start !== 'number' && typeof end !== 'number';
+      if (isDefaultTrim) {
+        normalizedStart = 0; normalizedEnd = 1;
+      } else {
+        alert(t('narration.durationNotReady', 'Audio duration not ready yet. Please wait a moment and try again.'));
+        return;
+      }
+    }
 
     setItemProcessing(prev => ({ ...prev, [id]: { inProgress: true } }));
     try {
       const apiUrl = `${SERVER_URL}/api/narration/modify-audio-trim-speed-combined`;
-      const body = { filename: result.filename };
-      if (typeof normalizedStart === 'number' && typeof normalizedEnd === 'number') {
-        body.normalizedStart = normalizedStart; body.normalizedEnd = normalizedEnd;
-      }
+      const body = { filename: result.filename, normalizedStart, normalizedEnd };
       if (typeof speed === 'number') {
         body.speedFactor = speed;
       }
@@ -619,7 +619,7 @@ const GeminiNarrationResults = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-      if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
+      if (!response.ok) throw new Error(`Server responded with status: ${response.status} - ${await response.text()}`);
       // Drain
       const reader = response.body.getReader();
       while (true) {
