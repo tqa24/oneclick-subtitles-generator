@@ -98,20 +98,14 @@ const ResultRow = ({ index, style, data }) => {
                 disabled={retryingSubtitleId === subtitle_id}
               >
                 {retryingSubtitleId === subtitle_id ? (
-                  <>
-                    <LoadingIndicator
-                      theme="dark"
-                      showContainer={false}
-                      size={14}
-                      className="generate-loading-indicator"
-                    />
-                    {t('narration.generating', 'Generating...')}
-                  </>
+                  <LoadingIndicator
+                    theme="dark"
+                    showContainer={false}
+                    size={14}
+                    className="generate-loading-indicator"
+                  />
                 ) : (
-                  <>
-                    <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>play_arrow</span>
-                    {t('narration.generate', 'Generate')}
-                  </>
+                  <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>play_arrow</span>
                 )}
               </button>
             )}
@@ -149,8 +143,8 @@ const ResultRow = ({ index, style, data }) => {
                   const [trimStart, trimEnd] = trim;
                   return (
                     <>
-                      <span style={{ minWidth: 70, maxWidth: 70, display: 'inline-block', textAlign: 'center', fontSize: '1.15em', fontFamily: 'monospace', fontWeight: 500 }}>
-                        {formatTime(trimStart, 'hms_ms')}
+                      <span style={{ minWidth: 35, maxWidth: 70, display: 'inline-block', textAlign: 'center', fontSize: '1em', fontWeight: 500 }}>
+                        {formatTime(trimStart, 's_ms')}
                       </span>
                       <StandardSlider
                         range
@@ -165,11 +159,11 @@ const ResultRow = ({ index, style, data }) => {
                         width="compact"
                         showValueIndicator={false}
                         showStops={false}
-                        className="per-item-trim-slider"
+                        className="per-item-trim-slider trim-slider"
                         style={{ width: 200 }}
                       />
-                      <span style={{ minWidth: 70, maxWidth: 70, display: 'inline-block', textAlign: 'center', fontSize: '1.15em', fontFamily: 'monospace', fontWeight: 500 }}>
-                        {formatTime(trimEnd, 'hms_ms')}
+                      <span style={{ minWidth: 35, maxWidth: 70, display: 'inline-block', textAlign: 'center', fontSize: '1em', fontWeight: 500 }}>
+                        {formatTime(trimEnd, 's_ms')}
                       </span>
                     </>
                   );
@@ -192,7 +186,7 @@ const ResultRow = ({ index, style, data }) => {
                 state={data.itemProcessing[subtitle_id]?.inProgress ? 'Disabled' : 'Enabled'}
                 width="compact"
                 className="standard-slider-container width-compact orientation-horizontal size-XSmall state-Enabled speed-control-slider"
-                style={{ width: '120px', marginRight: '8px' }}
+                style={{ width: '75px', marginRight: 0, gap: 0 }}
                 id={`item-speed-${subtitle_id}`}
                 ariaLabel={t('narration.speed', 'Speed')}
                 formatValue={(val) => `${Number(val).toFixed(2)}x`}
@@ -205,15 +199,9 @@ const ResultRow = ({ index, style, data }) => {
               disabled={!!data.itemProcessing[subtitle_id]?.inProgress}
             >
               {currentAudio && currentAudio.id === subtitle_id && isPlaying ? (
-                <>
-                  <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>pause</span>
-                  {t('narration.pause', 'Pause')}
-                </>
+                <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>pause</span>
               ) : (
-                <>
-                  <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>play_arrow</span>
-                  {t('narration.play', 'Play')}
-                </>
+                <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>play_arrow</span>
               )}
             </button>
             <button
@@ -222,30 +210,23 @@ const ResultRow = ({ index, style, data }) => {
               disabled={!!data.itemProcessing[subtitle_id]?.inProgress}
             >
               <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>download</span>
-              {t('narration.download', 'Download')}
             </button>
             {onRetry && (
               <button
-                className={`pill-button secondary retry-button ${retryingSubtitleId === subtitle_id ? 'retrying' : ''}`}
+                className={`pill-button secondary ${retryingSubtitleId === subtitle_id ? 'retrying' : ''}`}
                 onClick={() => onRetry(subtitle_id)}
                 title={t('narration.retry', 'Retry generation')}
                 disabled={retryingSubtitleId === subtitle_id || !!data.itemProcessing[subtitle_id]?.inProgress}
               >
                 {retryingSubtitleId === subtitle_id ? (
-                  <>
-                    <LoadingIndicator
-                      theme="dark"
-                      showContainer={false}
-                      size={14}
-                      className="retry-loading-indicator"
-                    />
-                    {t('narration.retrying', 'Retrying...')}
-                  </>
+                  <LoadingIndicator
+                    theme="dark"
+                    showContainer={false}
+                    size={14}
+                    className="retry-loading-indicator"
+                  />
                 ) : (
-                  <>
-                    <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>refresh</span>
-                    {t('narration.retry', 'Retry')}
-                  </>
+                  <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>refresh</span>
                 )}
               </button>
             )}
@@ -263,20 +244,14 @@ const ResultRow = ({ index, style, data }) => {
                 disabled={retryingSubtitleId === subtitle_id}
               >
                 {retryingSubtitleId === subtitle_id ? (
-                  <>
-                    <LoadingIndicator
-                      theme="dark"
-                      showContainer={false}
-                      size={14}
-                      className="retry-loading-indicator"
-                    />
-                    {t('narration.retrying', 'Retrying...')}
-                  </>
+                  <LoadingIndicator
+                    theme="dark"
+                    showContainer={false}
+                    size={14}
+                    className="retry-loading-indicator"
+                  />
                 ) : (
-                  <>
-                    <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>refresh</span>
-                    {t('narration.retry', 'Retry')}
-                  </>
+                  <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>refresh</span>
                 )}
               </button>
             )}
@@ -824,6 +799,7 @@ const NarrationResults = ({
 
   return (
     <div className="results-section">
+      <style dangerouslySetInnerHTML={{ __html: `.trim-slider .standard-slider-active-track .track, .trim-slider .standard-slider-inactive-track .track { height: 10px; } .range-slider .standard-slider-handle { height: 24px; }` }} />
       <div className="results-header">
         <h4>{t('narration.results', 'Generated Narration')}</h4>
 
