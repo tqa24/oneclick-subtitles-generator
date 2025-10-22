@@ -30,7 +30,8 @@ const {
 
 const {
   modifyAudioTrim,
-  batchModifyAudioTrim
+  batchModifyAudioTrim,
+  modifyAudioTrimAndSpeedCombined
 } = require('./audioFile/trimModifier');
 
 const {
@@ -48,6 +49,7 @@ module.exports = {
   batchModifyAudioSpeed,
   modifyAudioTrim,
   batchModifyAudioTrim,
+  modifyAudioTrimAndSpeedCombined,
   getAudioDuration,
   batchGetAudioDurations
 };

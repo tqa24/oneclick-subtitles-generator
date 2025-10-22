@@ -68,15 +68,15 @@ const GeminiResultRow = ({ index, style, data }) => {
             {item && (
               <div className="per-item-trim-controls" style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 8 }}>
                 {(() => {
-                  const getBackupForTrimName = (fn) => {
+                  const getBackupName = (fn) => {
                     if (!fn) return null;
                     const lastSlash = fn.lastIndexOf('/');
                     const dir = lastSlash >= 0 ? fn.slice(0, lastSlash) : '';
                     const base = lastSlash >= 0 ? fn.slice(lastSlash + 1) : fn;
-                    return `${dir ? dir + '/' : ''}backup_for_trim_${base}`;
+                    return `${dir ? dir + '/' : ''}backup_${base}`;
                   };
 
-                  const backupName = getBackupForTrimName(item.filename);
+                  const backupName = getBackupName(item.filename);
                   const backupDuration = (backupName && data.itemDurations && typeof data.itemDurations[backupName] === 'number')
                     ? data.itemDurations[backupName]
                     : null;
@@ -108,7 +108,7 @@ const GeminiResultRow = ({ index, style, data }) => {
                         step={0.01}
                         minGap={0.25}
                         onChange={([start, end]) => data.setItemTrim(subtitle_id, [start, end])}
-                        onDragEnd={() => data.modifySingleAudioTrim(item, [trimStart, trimEnd])}
+                        onDragEnd={() => data.modifySingleAudioEditCombined(item)}
                         orientation="Horizontal"
                         size="XSmall"
                         width="compact"
@@ -131,7 +131,7 @@ const GeminiResultRow = ({ index, style, data }) => {
               <SliderWithValue
                 value={data.itemSpeeds[subtitle_id] ?? 1.0}
                 onChange={(v) => data.setItemSpeed(subtitle_id, parseFloat(v))}
-                onDragEnd={() => data.modifySingleAudioSpeed(item, data.itemSpeeds[subtitle_id] ?? 1.0)}
+                onDragEnd={() => data.modifySingleAudioEditCombined(item)}
                 min={0.5}
                 max={2.0}
                 step={0.01}
@@ -396,19 +396,19 @@ const GeminiNarrationResults = ({
 
   // Load durations for both main files and their trim backups when the displayed list changes
   useEffect(() => {
-    const getBackupForTrimName = (fn) => {
+    const getBackupName = (fn) => {
       if (!fn) return null;
       const lastSlash = fn.lastIndexOf('/');
       const dir = lastSlash >= 0 ? fn.slice(0, lastSlash) : '';
       const base = lastSlash >= 0 ? fn.slice(lastSlash + 1) : fn;
-      return `${dir ? dir + '/' : ''}backup_for_trim_${base}`;
+      return `${dir ? dir + '/' : ''}backup_${base}`;
     };
 
     const filenames = (displayedResults || [])
       .map(r => r && r.filename)
       .filter(Boolean);
 
-    const backupFilenames = filenames.map(getBackupForTrimName).filter(Boolean);
+    const backupFilenames = filenames.map(getBackupName).filter(Boolean);
     const allFilenames = [...new Set([...filenames, ...backupFilenames])];
 
     if (allFilenames.length > 0) {
@@ -527,16 +527,16 @@ const GeminiNarrationResults = ({
 
       console.log(`Successfully modified narration speed to ${speedValue}x`);
 
-      // After speed change, reset per-item trim sliders to full range based on backup_for_trim durations
-      const getBackupForTrimName = (fn) => {
+      // After speed change, reset per-item trim sliders to full range based on backup_ durations
+      const getBackupName = (fn) => {
         if (!fn) return null;
         const lastSlash = fn.lastIndexOf('/');
         const dir = lastSlash >= 0 ? fn.slice(0, lastSlash) : '';
         const base = lastSlash >= 0 ? fn.slice(lastSlash + 1) : fn;
-        return `${dir ? dir + '/' : ''}backup_for_trim_${base}`;
+        return `${dir ? dir + '/' : ''}backup_${base}`;
       };
       const filenames = successfulNarrations.map(r => r.filename).filter(Boolean);
-      const backupFilenames = filenames.map(getBackupForTrimName).filter(Boolean);
+      const backupFilenames = filenames.map(getBackupName).filter(Boolean);
       const allFilenames = [...new Set([...filenames, ...backupFilenames])];
       try {
         const resp = await fetch(`${SERVER_URL}/api/narration/batch-get-audio-durations`, {
@@ -553,7 +553,7 @@ const GeminiNarrationResults = ({
           setItemTrims(prev => {
             const updated = { ...prev };
             successfulNarrations.forEach(r => {
-              const backupName = getBackupForTrimName(r.filename);
+              const backupName = getBackupName(r.filename);
               const total = (backupName && typeof durations[backupName] === 'number')
                 ? durations[backupName]
                 : (typeof durations[r.filename] === 'number')
@@ -580,52 +580,47 @@ const GeminiNarrationResults = ({
     }
   };
 
-  // Modify speed for a single item; auto-apply on mouse drop
-  const modifySingleAudioSpeed = async (result, speed) => {
+  // Combined edit (trim + speed) for a single item; called on slider drop
+  const modifySingleAudioEditCombined = async (result) => {
     if (!result?.filename) return;
     const id = result.subtitle_id;
-    setItemProcessing(prev => ({ ...prev, [id]: { inProgress: true } }));
-    try {
-      const apiUrl = `${SERVER_URL}/api/narration/batch-modify-audio-speed`;
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filenames: [result.filename], speedFactor: speed })
-      });
-      if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
-      const reader = response.body.getReader();
-      while (true) {
-        const { done } = await reader.read();
-        if (done) break;
-      }
-      if (typeof window !== 'undefined') {
-        if (typeof window.resetAlignedNarration === 'function') {
-          window.resetAlignedNarration();
-        }
-        window.dispatchEvent(new CustomEvent('narration-speed-modified', { detail: { speed, id, timestamp: Date.now() } }));
-      }
-    } catch (e) {
-      console.error('Error modifying single audio speed:', e);
-      alert(t('narration.speedModificationError', `Error modifying audio speed: ${e.message}`));
-    } finally {
-      setItemProcessing(prev => ({ ...prev, [id]: { inProgress: false } }));
-    }
-  };
+    const [start, end] = itemTrims[id] || [undefined, undefined];
+    const speed = itemSpeeds[id];
 
-  // Modify trim for a single item; auto-apply on range drop
-  const modifySingleAudioTrim = async (result, [start, end]) => {
-    if (!result?.filename) return;
-    const id = result.subtitle_id;
+    // Compute normalized range relative to backup duration to keep UI mapping stable
+    const getBackupName = (fn) => {
+      if (!fn) return null;
+      const lastSlash = fn.lastIndexOf('/');
+      const dir = lastSlash >= 0 ? fn.slice(0, lastSlash) : '';
+      const base = lastSlash >= 0 ? fn.slice(lastSlash + 1) : fn;
+      return `${dir ? dir + '/' : ''}backup_${base}`;
+    };
+    const backupName = getBackupName(result.filename);
+    const total = (backupName && typeof itemDurations[backupName] === 'number')
+      ? itemDurations[backupName]
+      : (typeof itemDurations[result.filename] === 'number')
+        ? itemDurations[result.filename]
+        : undefined;
+    const normalizedStart = (typeof start === 'number' && typeof total === 'number' && total > 0) ? (start / total) : undefined;
+    const normalizedEnd = (typeof end === 'number' && typeof total === 'number' && total > 0) ? (end / total) : undefined;
+
     setItemProcessing(prev => ({ ...prev, [id]: { inProgress: true } }));
     try {
-      const apiUrl = `${SERVER_URL}/api/narration/modify-audio-trim`;
+      const apiUrl = `${SERVER_URL}/api/narration/modify-audio-trim-speed-combined`;
+      const body = { filename: result.filename };
+      if (typeof normalizedStart === 'number' && typeof normalizedEnd === 'number') {
+        body.normalizedStart = normalizedStart; body.normalizedEnd = normalizedEnd;
+      }
+      if (typeof speed === 'number') {
+        body.speedFactor = speed;
+      }
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: result.filename, start, end })
+        body: JSON.stringify(body)
       });
       if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
-      // Drain body
+      // Drain
       const reader = response.body.getReader();
       while (true) {
         const { done } = await reader.read();
@@ -635,11 +630,11 @@ const GeminiNarrationResults = ({
         if (typeof window.resetAlignedNarration === 'function') {
           window.resetAlignedNarration();
         }
-        window.dispatchEvent(new CustomEvent('narration-trim-modified', { detail: { start, end, id, timestamp: Date.now() } }));
+        window.dispatchEvent(new CustomEvent('narration-edit-modified', { detail: { start, end, speed, id, timestamp: Date.now() } }));
       }
     } catch (e) {
-      console.error('Error modifying single audio trim:', e);
-      alert(t('narration.trimModificationError', `Error modifying audio trim: ${e.message}`));
+      console.error('Error applying combined audio edit:', e);
+      alert(t('narration.trimModificationError', `Error applying edit: ${e.message}`));
     } finally {
       setItemProcessing(prev => ({ ...prev, [id]: { inProgress: false } }));
     }
@@ -1135,8 +1130,7 @@ const GeminiNarrationResults = ({
               setItemTrim,
               itemSpeeds,
               setItemSpeed,
-              modifySingleAudioSpeed,
-              modifySingleAudioTrim,
+              modifySingleAudioEditCombined,
               itemProcessing,
               itemDurations,
               t

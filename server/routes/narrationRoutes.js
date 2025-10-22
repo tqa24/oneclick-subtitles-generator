@@ -93,6 +93,9 @@ router.post('/batch-modify-audio-speed', express.json(), narrationController.bat
 // Modify audio trim (single)
 router.post('/modify-audio-trim', express.json(), narrationController.modifyAudioTrim);
 
+// Combined modify trim + speed (single)
+router.post('/modify-audio-trim-speed-combined', express.json(), narrationController.modifyAudioTrimAndSpeedCombined);
+
 // Batch modify audio trim for multiple files
 router.post('/batch-modify-audio-trim', express.json(), narrationController.batchModifyAudioTrim);
 
@@ -126,7 +129,7 @@ router.use('/', async (req, res, next) => {
       req.url === '/generate' || req.url === '/record-reference' || req.url === '/upload-reference' ||
       req.url === '/clear-output' || req.url === '/save-gemini-audio' ||
       req.url === '/save-f5tts-audio' || req.url === '/save-chatterbox-audio' || req.url === '/modify-audio-speed' ||
-      req.url === '/batch-modify-audio-speed' || req.url === '/modify-audio-trim' || req.url === '/batch-modify-audio-trim' || req.url === '/get-audio-duration' || req.url === '/batch-get-audio-durations' || req.url.startsWith('/audio/') ||
+      req.url === '/batch-modify-audio-speed' || req.url === '/modify-audio-trim' || req.url === '/modify-audio-trim-speed-combined' || req.url === '/batch-modify-audio-trim' || req.url === '/get-audio-duration' || req.url === '/batch-get-audio-durations' || req.url.startsWith('/audio/') ||
       req.url.startsWith('/edge-tts/') || req.url.startsWith('/gtts/')) {
     return next();
   }

@@ -36,6 +36,7 @@ module.exports = {
   // Audio trim modification
   modifyAudioTrim: trimModifier.modifyAudioTrim,
   batchModifyAudioTrim: trimModifier.batchModifyAudioTrim,
+  modifyAudioTrimAndSpeedCombined: trimModifier.modifyAudioTrimAndSpeedCombined,
 
   // Duration info
   getAudioDuration: durationInfo.getAudioDuration,
