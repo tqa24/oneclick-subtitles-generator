@@ -775,125 +775,95 @@ const GeminiNarrationResults = ({
   }, [loadedFromCache, generationResults]);
 
   // Initialize audio element on component mount
-  // Super simple audio playback function - no initialization needed
-  const playAudio = (result) => {
-    // If already playing this audio, stop it
+  // Play directly from server URL from file system (no cache, no blob)
+  const playAudio = async (result) => {
+    if (!result?.filename) return;
+
+    // Toggle off if the same item is already playing
     if (currentlyPlaying === result.subtitle_id && isPlaying) {
       if (audioRef.current) {
-        audioRef.current.pause();
+        try { audioRef.current.pause(); } catch (_) {}
+        try {
+          if (audioRef.current.src && audioRef.current.src.startsWith('blob:')) {
+            URL.revokeObjectURL(audioRef.current.src);
+          }
+        } catch (_) {}
       }
       setIsPlaying(false);
       setCurrentlyPlaying(null);
       return;
     }
 
-    // Stop any currently playing audio
+    // Stop any currently playing audio and revoke blob URL
     if (audioRef.current) {
-      audioRef.current.pause();
+      try { audioRef.current.pause(); } catch (_) {}
+      try {
+        if (audioRef.current.src && audioRef.current.src.startsWith('blob:')) {
+          URL.revokeObjectURL(audioRef.current.src);
+        }
+      } catch (_) {}
     }
 
-    // Get the audio URL
-    const audioUrl = getAudioUrl(result.filename);
-    console.log(`[DEBUG] Playing audio with filename: ${result.filename}`);
-    console.log(`[DEBUG] Audio URL: ${audioUrl}`);
+    // Build cache-busting URL and fetch fresh file like other methods
+    const baseUrl = getAudioUrl(result.filename);
+    const cacheBustUrl = `${baseUrl}?t=${Date.now()}`;
+    console.log(`[DEBUG] Playing audio via fresh fetch: ${cacheBustUrl}`);
 
-    // Add a cache-busting parameter to the URL
-    const cacheBustUrl = `${audioUrl}?t=${Date.now()}`;
-    console.log(`[DEBUG] Cache-busting URL: ${cacheBustUrl}`);
+    try {
+      const resp = await fetch(cacheBustUrl, {
+        headers: { 'Accept': 'audio/*' },
+        credentials: 'include'
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status} ${resp.statusText}`);
+      const blob = await resp.blob();
+      const blobUrl = URL.createObjectURL(blob);
 
-    // Try to fetch the audio file first to check if it exists
-    fetch(cacheBustUrl)
-      .then(response => {
-        console.log(`[DEBUG] Fetch response status: ${response.status}`);
-        if (!response.ok) {
-          console.error(`[DEBUG] Fetch failed: ${response.status} ${response.statusText}`);
-          throw new Error(`Failed to fetch audio file: ${response.status} ${response.statusText}`);
-        }
-        return response.blob();
-      })
-      .then(blob => {
-        // Create a blob URL for the audio
-        const blobUrl = URL.createObjectURL(blob);
-        console.log(`[DEBUG] Created blob URL: ${blobUrl}`);
-
-        // Create a new audio element with the blob URL
-        const audio = new Audio(blobUrl);
-
-        // Add error handling
-        audio.onerror = (e) => {
-          console.error(`[DEBUG] Audio error for subtitle ${result.subtitle_id}:`, e);
-          console.error(`[DEBUG] Audio error code:`, audio.error?.code);
-          console.error(`[DEBUG] Audio error message:`, audio.error?.message);
-          console.error(`[DEBUG] Audio src:`, audio.src);
-        };
-
-        // Set up only what we need - play and handle ending
-        audio.onended = () => {
-          setIsPlaying(false);
-          setCurrentlyPlaying(null);
-          // Clean up the blob URL
-          URL.revokeObjectURL(blobUrl);
-        };
-
-        // Update state and play
-        setCurrentlyPlaying(result.subtitle_id);
-        setIsPlaying(true);
-
-        // Play it
-        audio.play().catch(error => {
-          console.error(`[DEBUG] Error playing audio:`, error);
-          setIsPlaying(false);
-          setCurrentlyPlaying(null);
-          URL.revokeObjectURL(blobUrl);
-        });
-
-        // Store reference
-        audioRef.current = audio;
-      })
-      .catch(error => {
-        console.error(`[DEBUG] Error fetching or playing audio:`, error);
+      const audio = new Audio(blobUrl);
+      audio.preload = 'none';
+      audio.onerror = (e) => {
+        console.error(`[DEBUG] Audio error for subtitle ${result.subtitle_id}:`, e);
+        console.error(`[DEBUG] Audio src:`, audio.src);
+      };
+      audio.onended = () => {
         setIsPlaying(false);
         setCurrentlyPlaying(null);
+        try {
+          if (audio.src && audio.src.startsWith('blob:')) URL.revokeObjectURL(audio.src);
+        } catch (_) {}
+      };
 
-        // Try to use the legacy filename format as a fallback
-        if (result.filename.includes('/')) {
-          const legacyFilename = `gemini_${result.subtitle_id}_${Date.now()}.wav`;
-          const legacyUrl = getAudioUrl(legacyFilename);
-          console.log(`[DEBUG] Trying legacy URL as fallback: ${legacyUrl}`);
+      setCurrentlyPlaying(result.subtitle_id);
+      setIsPlaying(true);
 
-          // Add a cache-busting parameter to the legacy URL
-          const cacheBustLegacyUrl = `${legacyUrl}?t=${Date.now()}`;
-          console.log(`[DEBUG] Cache-busting legacy URL: ${cacheBustLegacyUrl}`);
-
-          // Create a new audio element with the legacy URL
-          const audio = new Audio(cacheBustLegacyUrl);
-
-          // Add error handling
-          audio.onerror = (e) => {
-            console.error(`[DEBUG] Legacy audio error for subtitle ${result.subtitle_id}:`, e);
-          };
-
-          // Set up only what we need - play and handle ending
-          audio.onended = () => {
-            setIsPlaying(false);
-            setCurrentlyPlaying(null);
-          };
-
-          // Update state and play
-          setCurrentlyPlaying(result.subtitle_id);
-          setIsPlaying(true);
-
-          // Play it
-          audio.play().catch(legacyError => {
-            console.error(`[DEBUG] Error playing legacy audio:`, legacyError);
-            setIsPlaying(false);
-            setCurrentlyPlaying(null);
-          });
-
-          // Store reference
-          audioRef.current = audio;
-        }
+      audio.play().catch((err) => {
+        console.error('[DEBUG] Error playing audio:', err);
+        setIsPlaying(false);
+        setCurrentlyPlaying(null);
+        try {
+          if (audio.src && audio.src.startsWith('blob:')) URL.revokeObjectURL(audio.src);
+        } catch (_) {}
       });
+
+      audioRef.current = audio;
+    } catch (e) {
+      console.error('[DEBUG] Failed to fetch fresh audio, falling back to direct URL:', e);
+      const audio = new Audio(cacheBustUrl);
+      audio.preload = 'none';
+      audio.onerror = (err) => {
+        console.error('[DEBUG] Fallback audio error:', err);
+      };
+      audio.onended = () => {
+        setIsPlaying(false);
+        setCurrentlyPlaying(null);
+      };
+      setCurrentlyPlaying(result.subtitle_id);
+      setIsPlaying(true);
+      audio.play().catch(() => {
+        setIsPlaying(false);
+        setCurrentlyPlaying(null);
+      });
+      audioRef.current = audio;
+    }
   };
 
   // Download audio as WAV file

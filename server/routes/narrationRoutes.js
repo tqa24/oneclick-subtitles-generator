@@ -28,11 +28,14 @@ const upload = multer({
 
 // Serve narration audio files - use * to capture all path segments
 router.get('/audio/*', (req, res) => {
-  // Extract the filename from the URL path
+  // Extract the filename from the URL path (req.path excludes query string)
   const filename = req.path.replace('/audio/', '');
 
-  // Call the controller with the extracted filename
-  narrationController.serveAudioFile({ params: { filename } }, res);
+  // Preserve the original request (headers, range, etc.) and add params
+  req.params = { ...(req.params || {}), filename };
+
+  // Call the controller with the real req so Range and headers are available
+  narrationController.serveAudioFile(req, res);
 });
 
 // Serve reference audio files specifically (for Chatterbox API conversion)
