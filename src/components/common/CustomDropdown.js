@@ -26,7 +26,8 @@ const CustomDropdown = ({
   const [dropdownPosition, setDropdownPosition] = useState(() => ({
     top: 0, left: 0, width: 0, height: 0, upCount: 0, downCount: 0,
     revealMode: getChevronModeFromIndex(value, options),
-    expandedWidth: 0 // Track the expanded width for menu
+    expandedWidth: 0, // Track the expanded width for menu
+    optionHeight: 48 // Track measured option height for animations
   }));
   const dropdownRef = useRef(null);
   const menuRef = useRef(null);
@@ -369,7 +370,8 @@ const CustomDropdown = ({
       upCount,
       downCount,
       revealMode,
-      expandedWidth: maxOptionWidth // Store the target expanded width
+      expandedWidth: maxOptionWidth, // Store the target expanded width
+      optionHeight: optionHeight, // Store the measured option height
     });
   };
 
@@ -393,32 +395,46 @@ const CustomDropdown = ({
   useEffect(() => {
     if (!menuRef.current) return;
     const el = menuRef.current;
-    // Establish initial state when opening
+    
+    // Helper to calculate the correct clip-path values
+    const getClipValues = (mode, targetH, upCount, optionHeight) => {
+        const BUTTON_VISIBLE_HEIGHT = 42; // Height of the visible part matching the button
+        const OPTION_SLOT_HEIGHT = optionHeight || 48;
+        const PADDING_Y = Math.max(0, (OPTION_SLOT_HEIGHT - BUTTON_VISIBLE_HEIGHT) / 2);
+
+        let clipTop = 0, clipBottom = 0;
+
+        if (mode === 'up') {
+            clipTop = Math.max(0, targetH - BUTTON_VISIBLE_HEIGHT);
+        } else if (mode === 'down') {
+            clipBottom = Math.max(0, targetH - BUTTON_VISIBLE_HEIGHT);
+        } else { // 'center' mode
+            const selectedItemTopOffset = upCount * OPTION_SLOT_HEIGHT;
+            clipTop = selectedItemTopOffset + PADDING_Y;
+            clipBottom = targetH - clipTop - BUTTON_VISIBLE_HEIGHT;
+        }
+
+        return {
+            clipTop: Math.max(0, clipTop),
+            clipBottom: Math.max(0, clipBottom)
+        };
+    };
+
     if (isOpen) {
       const targetH = dropdownPosition.height || 200;
       const targetW = dropdownPosition.expandedWidth || dropdownPosition.width;
       el.style.setProperty('--menu-height', `${targetH}px`);
       el.style.setProperty('--menu-width', `${targetW}px`);
       
-      // Start with button width for smooth expansion
       el.style.width = `${dropdownPosition.width}px`;
 
-      // Compute initial clip based on reveal mode: 'center', 'up', or 'down'
-      let clipTop = 0, clipBottom = 0;
-      if (dropdownPosition.revealMode === 'up') {
-        // Reveal upward only: start collapsed at bottom edge
-        clipTop = Math.max(0, targetH - 42);
-        clipBottom = 0;
-      } else if (dropdownPosition.revealMode === 'down') {
-        // Reveal downward only: start collapsed at top edge
-        clipTop = 0;
-        clipBottom = Math.max(0, targetH - 42);
-      } else {
-        // Center reveal (default)
-        const inset = Math.max(0, (targetH - 42) / 2);
-        clipTop = inset;
-        clipBottom = inset;
-      }
+      // FIX: Compute initial clip based on selected item's position, not geometric center
+      const { clipTop, clipBottom } = getClipValues(
+          dropdownPosition.revealMode, 
+          targetH, 
+          dropdownPosition.upCount,
+          dropdownPosition.optionHeight
+      );
       el.style.clipPath = `inset(${clipTop}px 0 ${clipBottom}px 0 round var(--dropdown-radius, 24px))`;
 
       // next frame: animate reveal to full height and width
@@ -453,26 +469,20 @@ const CustomDropdown = ({
       // Only apply default closing if not handled by selection or scrollbar animation
       const targetH = dropdownPosition.height || 200;
       
-      // Smooth transition for closing without selection
       el.style.transition = 'clip-path 200ms cubic-bezier(0.4, 0, 0.2, 1), width 200ms cubic-bezier(0.4, 0, 0.2, 1)';
-      el.style.width = `${dropdownPosition.width}px`; // Shrink back to button width
+      el.style.width = `${dropdownPosition.width}px`;
       
-      let clipTop = 0, clipBottom = 0;
-      if (dropdownPosition.revealMode === 'up') {
-        clipTop = Math.max(0, targetH - 42);
-        clipBottom = 0;
-      } else if (dropdownPosition.revealMode === 'down') {
-        clipTop = 0;
-        clipBottom = Math.max(0, targetH - 42);
-      } else {
-        const inset = Math.max(0, (targetH - 42) / 2);
-        clipTop = inset;
-        clipBottom = inset;
-      }
+      // FIX: Use same corrected logic for closing animation
+      const { clipTop, clipBottom } = getClipValues(
+          dropdownPosition.revealMode, 
+          targetH, 
+          dropdownPosition.upCount,
+          dropdownPosition.optionHeight
+      );
       el.style.clipPath = `inset(${clipTop}px 0 ${clipBottom}px 0 round var(--dropdown-radius, 24px))`;
       el.classList.remove('is-open');
     }
-  }, [isOpen, dropdownPosition.height, dropdownPosition.width, dropdownPosition.expandedWidth]);
+  }, [isOpen, dropdownPosition]);
 
   // After opening, sync the scroll so the selected item stays anchored at center
   useEffect(() => {
@@ -534,17 +544,14 @@ const CustomDropdown = ({
       const list = el.querySelector('.dropdown-options-list');
       const hasScrollbar = list && list.scrollHeight > list.clientHeight;
       
-      // Add closing class
       el.classList.add('is-closing-no-selection');
       el.classList.remove('is-open');
       
-      // If scrollbar is present, use simpler fade animation
       if (hasScrollbar) {
         el.style.transition = 'opacity 150ms cubic-bezier(0.4, 0, 0.2, 1), width 150ms cubic-bezier(0.4, 0, 0.2, 1)';
         el.style.width = `${dropdownPosition.width}px`;
         el.style.opacity = '0';
         
-        // Close after animation completes
         setTimeout(() => {
           setIsOpen(false);
           if (menuRef.current) {
@@ -557,37 +564,34 @@ const CustomDropdown = ({
         return;
       }
       
-      // Get the current height for calculating clip
       const currentHeight = el.offsetHeight || dropdownPosition.height || 200;
       
-      // Apply reverse animation - exact opposite of opening
-      // 1. Start shrinking width back to button width
       el.style.transition = 'clip-path 200ms cubic-bezier(0.4, 0, 0.2, 1), width 200ms cubic-bezier(0.4, 0, 0.2, 1), opacity 150ms cubic-bezier(0.4, 0, 0.2, 1) 50ms';
       el.style.width = `${dropdownPosition.width}px`;
       
-      // 2. Apply clip-path based on reveal mode (reverse of opening)
+      // FIX: Calculate clip-path based on selected item's position for a perfect collapse
+      const BUTTON_VISIBLE_HEIGHT = 42;
+      const OPTION_SLOT_HEIGHT = dropdownPosition.optionHeight || 48;
+      const PADDING_Y = Math.max(0, (OPTION_SLOT_HEIGHT - BUTTON_VISIBLE_HEIGHT) / 2);
       let clipTop = 0, clipBottom = 0;
+
       if (dropdownPosition.revealMode === 'up') {
-        // Was revealed upward, collapse back down
-        clipTop = Math.max(0, currentHeight - 42);
-        clipBottom = 0;
+          clipTop = Math.max(0, currentHeight - BUTTON_VISIBLE_HEIGHT);
       } else if (dropdownPosition.revealMode === 'down') {
-        // Was revealed downward, collapse back up
-        clipTop = 0;
-        clipBottom = Math.max(0, currentHeight - 42);
-      } else {
-        // Center reveal - collapse from both sides
-        const inset = Math.max(0, (currentHeight - 42) / 2);
-        clipTop = inset;
-        clipBottom = inset;
+          clipBottom = Math.max(0, currentHeight - BUTTON_VISIBLE_HEIGHT);
+      } else { // 'center' mode
+          const selectedItemTopOffset = dropdownPosition.upCount * OPTION_SLOT_HEIGHT;
+          clipTop = selectedItemTopOffset + PADDING_Y;
+          clipBottom = currentHeight - clipTop - BUTTON_VISIBLE_HEIGHT;
       }
+
+      clipTop = Math.max(0, clipTop);
+      clipBottom = Math.max(0, clipBottom);
       
       el.style.clipPath = `inset(${clipTop}px 0 ${clipBottom}px 0 round var(--dropdown-radius, 24px))`;
       
-      // 3. Fade out gracefully
       el.style.opacity = '0';
       
-      // Close after animation completes
       setTimeout(() => {
         setIsOpen(false);
         if (menuRef.current) {
@@ -599,7 +603,6 @@ const CustomDropdown = ({
         }
       }, 200);
     } else {
-      // Fallback immediate close
       setIsOpen(false);
     }
   };
