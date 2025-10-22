@@ -208,7 +208,7 @@ const GeminiResultRow = ({ index, style, data }) => {
                   className="generate-loading-indicator"
                 />
               ) : (
-                <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>play_arrow</span>
+                <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>refresh</span>
               )}
             </button>
           </>
