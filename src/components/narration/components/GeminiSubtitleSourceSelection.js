@@ -472,7 +472,7 @@ const GeminiSubtitleSourceSelection = ({
             </div>
 
             {/* Material Web Switch and Grouping Info */}
-            <div className="grouping-controls-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="grouping-controls-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '5px' }}>
               <div className="material-switch-container">
                 <MaterialSwitch
                   id="subtitle-grouping"

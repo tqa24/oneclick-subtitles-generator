@@ -116,9 +116,32 @@ const ResultRow = ({ index, style, data }) => {
           </>
         ) : result.success ? (
           <>
+            {/* Per-item speed slider */}
+            {result.filename && (
+              <SliderWithValue
+                value={data.itemSpeeds[subtitle_id] ?? 1.0}
+                onChange={(v) => data.setItemSpeed(subtitle_id, parseFloat(v))}
+                onDragEnd={() => data.modifySingleAudioSpeed(result, data.itemSpeeds[subtitle_id] ?? 1.0)}
+                min={0.5}
+                max={2.0}
+                step={0.01}
+                defaultValue={1.0}
+                orientation="Horizontal"
+                size="XSmall"
+                state={data.itemProcessing[subtitle_id]?.inProgress ? 'Disabled' : 'Enabled'}
+                width="compact"
+                className="standard-slider-container width-compact orientation-horizontal size-XSmall state-Enabled speed-control-slider"
+                style={{ width: '120px', marginRight: '8px' }}
+                id={`item-speed-${subtitle_id}`}
+                ariaLabel={t('narration.speed', 'Speed')}
+                formatValue={(val) => `${Number(val).toFixed(2)}x`}
+              />
+            )}
+
             <button
               className="pill-button primary"
               onClick={() => playAudio(result)}
+              disabled={!!data.itemProcessing[subtitle_id]?.inProgress}
             >
               {currentAudio && currentAudio.id === subtitle_id && isPlaying ? (
                 <>
@@ -135,6 +158,7 @@ const ResultRow = ({ index, style, data }) => {
             <button
               className="pill-button secondary"
               onClick={() => downloadAudio(result)}
+              disabled={!!data.itemProcessing[subtitle_id]?.inProgress}
             >
               <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>download</span>
               {t('narration.download', 'Download')}
@@ -144,7 +168,7 @@ const ResultRow = ({ index, style, data }) => {
                 className={`pill-button secondary retry-button ${retryingSubtitleId === subtitle_id ? 'retrying' : ''}`}
                 onClick={() => onRetry(subtitle_id)}
                 title={t('narration.retry', 'Retry generation')}
-                disabled={retryingSubtitleId === subtitle_id}
+                disabled={retryingSubtitleId === subtitle_id || !!data.itemProcessing[subtitle_id]?.inProgress}
               >
                 {retryingSubtitleId === subtitle_id ? (
                   <>
@@ -392,17 +416,26 @@ const NarrationResults = ({
     }
   };
 
-  // Speed modification function
+  // Per-item speed state
+  const [itemSpeeds, setItemSpeeds] = useState({}); // { [subtitle_id]: number }
+  const [itemProcessing, setItemProcessing] = useState({}); // { [subtitle_id]: { inProgress: boolean } }
+
+  const setItemSpeed = (id, val) => {
+    setItemSpeeds(prev => ({ ...prev, [id]: val }));
+  };
+
+  // Modify speed for all successful items (existing global control)
   const modifyAudioSpeed = async () => {
-    if (!generationResults || generationResults.length === 0) {
-      return;
-    }
+    if (!generationResults || generationResults.length === 0) return;
 
-    // Filter successful narrations
-    const successfulNarrations = generationResults.filter(result => result.success && result.filename);
+    const successfulNarrations = generationResults.filter(r => r.success && r.filename);
+    if (successfulNarrations.length === 0) return;
 
-    if (successfulNarrations.length === 0) {
-      return;
+    // Adjust all individual sliders to match global speed (including 1x)
+    {
+      const newSpeeds = {};
+      successfulNarrations.forEach(r => { newSpeeds[r.subtitle_id] = Number(speedValue); });
+      setItemSpeeds(prev => ({ ...prev, ...newSpeeds }));
     }
 
     setIsProcessing(true);
@@ -410,41 +443,28 @@ const NarrationResults = ({
     setCurrentFile('');
 
     try {
-      // Use batch endpoint to process all files at once
       const apiUrl = `${SERVER_URL}/api/narration/batch-modify-audio-speed`;
-
-      // Use fetch with streaming response to get real-time progress updates
       const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          filenames: successfulNarrations.map(result => result.filename),
+          filenames: successfulNarrations.map(r => r.filename),
           speedFactor: speedValue
         })
       });
+      if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
 
-      if (!response.ok) {
-        throw new Error(`Server responded with status: ${response.status}`);
-      }
-
-      // Read the streaming response
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         const chunk = decoder.decode(value);
         const lines = chunk.split('\n');
-
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
-
               if (data.status === 'progress') {
                 setProcessingProgress({ current: data.current, total: data.total });
                 setCurrentFile(data.filename || '');
@@ -454,13 +474,12 @@ const NarrationResults = ({
               } else if (data.status === 'error') {
                 throw new Error(data.error || 'Unknown error occurred');
               }
-            } catch (parseError) {
-              console.error('Error parsing progress data:', parseError);
+            } catch (e) {
+              console.error('Error parsing progress data:', e);
             }
           }
         }
       }
-
     } catch (error) {
       console.error('Error modifying audio speed:', error);
       alert(t('narration.speedModificationError', `Error modifying audio speed: ${error.message}`));
@@ -468,6 +487,42 @@ const NarrationResults = ({
       setIsProcessing(false);
       setProcessingProgress({ current: 0, total: 0 });
       setCurrentFile('');
+    }
+  };
+
+  // Modify speed for a single item; auto-apply on mouse drop
+  const modifySingleAudioSpeed = async (result, speed) => {
+    if (!result?.filename) return;
+    const id = result.subtitle_id;
+    setItemProcessing(prev => ({ ...prev, [id]: { inProgress: true } }));
+    try {
+      const apiUrl = `${SERVER_URL}/api/narration/batch-modify-audio-speed`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filenames: [result.filename], speedFactor: speed })
+      });
+      if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
+      // Consume stream quickly; we don't need per-chunk UI for single item
+      const reader = response.body.getReader();
+      // Drain
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { done } = await reader.read();
+        if (done) break;
+      }
+      // Notify other parts to refresh aligned narration if needed
+      if (typeof window !== 'undefined') {
+        if (typeof window.resetAlignedNarration === 'function') {
+          window.resetAlignedNarration();
+        }
+        window.dispatchEvent(new CustomEvent('narration-speed-modified', { detail: { speed, id, timestamp: Date.now() } }));
+      }
+    } catch (e) {
+      console.error('Error modifying single audio speed:', e);
+      alert(t('narration.speedModificationError', `Error modifying audio speed: ${e.message}`));
+    } finally {
+      setItemProcessing(prev => ({ ...prev, [id]: { inProgress: false } }));
     }
   };
 
@@ -721,6 +776,11 @@ const NarrationResults = ({
               playAudio,
               getAudioUrl,
               downloadAudio,
+              // per-item speed control
+              itemSpeeds,
+              setItemSpeed,
+              modifySingleAudioSpeed,
+              itemProcessing,
               t
             }}
           >

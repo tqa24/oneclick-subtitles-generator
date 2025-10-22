@@ -62,9 +62,32 @@ const GeminiResultRow = ({ index, style, data }) => {
         {item.success && (item.audioData || item.filename) ? (
           // Successful generation with audio data or filename
           <>
+            {/* Per-item speed slider before Play/Pause */}
+            {item.filename && (
+              <SliderWithValue
+                value={data.itemSpeeds[subtitle_id] ?? 1.0}
+                onChange={(v) => data.setItemSpeed(subtitle_id, parseFloat(v))}
+                onDragEnd={() => data.modifySingleAudioSpeed(item, data.itemSpeeds[subtitle_id] ?? 1.0)}
+                min={0.5}
+                max={2.0}
+                step={0.01}
+                defaultValue={1.0}
+                orientation="Horizontal"
+                size="XSmall"
+                state={data.itemProcessing[subtitle_id]?.inProgress ? 'Disabled' : 'Enabled'}
+                width="compact"
+                className="standard-slider-container width-compact orientation-horizontal size-XSmall state-Enabled speed-control-slider"
+                style={{ width: '120px', marginRight: '8px' }}
+                id={`gemini-item-speed-${subtitle_id}`}
+                ariaLabel={t('narration.speed', 'Speed')}
+                formatValue={(val) => `${Number(val).toFixed(2)}x`}
+              />
+            )}
+
             <button
               className="pill-button primary"
               onClick={() => playAudio(item)}
+              disabled={!!data.itemProcessing[subtitle_id]?.inProgress}
             >
               {currentlyPlaying === subtitle_id && isPlaying ? (
                 <>
@@ -81,6 +104,7 @@ const GeminiResultRow = ({ index, style, data }) => {
             <button
               className="pill-button secondary"
               onClick={() => downloadAudio(item)}
+              disabled={!!data.itemProcessing[subtitle_id]?.inProgress}
             >
               <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>download</span>
               {t('narration.download', 'Download')}
@@ -91,7 +115,7 @@ const GeminiResultRow = ({ index, style, data }) => {
               title={!data.subtitleSource
                 ? t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)')
                 : t('narration.retry', 'Retry generation')}
-              disabled={retryingSubtitleId === subtitle_id || !data.subtitleSource}
+              disabled={retryingSubtitleId === subtitle_id || !data.subtitleSource || !!data.itemProcessing[subtitle_id]?.inProgress}
             >
               {retryingSubtitleId === subtitle_id ? (
                 <>
@@ -240,11 +264,16 @@ const GeminiNarrationResults = ({
   const rowHeights = useRef({});
   const [loadedFromCache, setLoadedFromCache] = useState(false);
 
-  // Speed control state
+  // Speed control state (global)
   const [speedValue, setSpeedValue] = useState(1.0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState({ current: 0, total: 0 });
   const [currentFile, setCurrentFile] = useState('');
+
+  // Per-item speed state
+  const [itemSpeeds, setItemSpeeds] = useState({}); // { [subtitle_id]: number }
+  const [itemProcessing, setItemProcessing] = useState({}); // { [subtitle_id]: { inProgress: boolean } }
+  const setItemSpeed = (id, val) => setItemSpeeds(prev => ({ ...prev, [id]: val }));
 
   // Check if there are any failed narrations
   const hasFailedNarrations = generationResults && generationResults.some(result => !result.success);
@@ -301,18 +330,13 @@ const GeminiNarrationResults = ({
     return generationResults || [];
   })();
 
-  // Function to modify audio speed
+  // Function to modify audio speed (global batch)
   const modifyAudioSpeed = async () => {
     if (!generationResults || generationResults.length === 0) {
       return;
     }
 
     try {
-      // Start processing
-      setIsProcessing(true);
-      setProcessingProgress({ current: 0, total: generationResults.length });
-      setCurrentFile('');
-
       // Get all successful narrations with filenames
       const successfulNarrations = generationResults.filter(
         result => result.success && result.filename
@@ -323,12 +347,22 @@ const GeminiNarrationResults = ({
         return;
       }
 
+      // Adjust all individual sliders to match global speed (including 1x)
+      {
+        const newSpeeds = {};
+        successfulNarrations.forEach(r => { newSpeeds[r.subtitle_id] = Number(speedValue); });
+        setItemSpeeds(prev => ({ ...prev, ...newSpeeds }));
+      }
+
+      // Start processing
+      setIsProcessing(true);
+      setProcessingProgress({ current: 0, total: generationResults.length });
+      setCurrentFile('');
+
       console.log(`Modifying speed of ${successfulNarrations.length} narration files to ${speedValue}x`);
 
       // Use batch endpoint to process all files at once
-      // Make sure to use the correct URL format
       const apiUrl = `${SERVER_URL}/api/narration/batch-modify-audio-speed`;
-      console.log(`Sending request to: ${apiUrl}`);
 
       // Use fetch with streaming response to get real-time progress updates
       const response = await fetch(apiUrl, {
@@ -360,28 +394,14 @@ const GeminiNarrationResults = ({
           if (buffer) {
             try {
               const finalData = JSON.parse(buffer);
-              console.log('Final update:', finalData);
-
               if (finalData.success && finalData.status === 'complete') {
-                // Update progress with the final count
-                setProcessingProgress({
-                  current: finalData.processed,
-                  total: finalData.total
-                });
-
-                // Reset the aligned narration to use the new speed-modified files
+                setProcessingProgress({ current: finalData.processed, total: finalData.total });
                 if (typeof window.resetAlignedNarration === 'function') {
-                  console.log('Resetting aligned narration to use speed-modified files');
                   window.resetAlignedNarration();
-
-                  // Dispatch an event to notify that narration should be refreshed
-                  window.dispatchEvent(new CustomEvent('narration-speed-modified', {
-                    detail: {
-                      speed: speedValue,
-                      timestamp: Date.now()
-                    }
-                  }));
                 }
+                window.dispatchEvent(new CustomEvent('narration-speed-modified', {
+                  detail: { speed: speedValue, timestamp: Date.now() }
+                }));
               }
             } catch (e) {
               console.error('Error parsing final JSON chunk:', e);
@@ -398,39 +418,23 @@ const GeminiNarrationResults = ({
         let startIndex = 0;
         let endIndex;
 
-        // Find each complete JSON object in the buffer
         while ((endIndex = buffer.indexOf('}', startIndex)) !== -1) {
           try {
-            // Extract a complete JSON object
             const jsonStr = buffer.substring(startIndex, endIndex + 1);
             const data = JSON.parse(jsonStr);
-
-            // Update progress based on the data
             if (data.success && data.processed !== undefined) {
-              console.log(`Progress update: ${data.processed}/${data.total}`);
-              setProcessingProgress({
-                current: data.processed,
-                total: data.total
-              });
-
-              // Update current file being processed if available
+              setProcessingProgress({ current: data.processed, total: data.total });
               if (data.current) {
-                // Extract just the filename without the path
                 const filename = data.current.split('/').pop();
                 setCurrentFile(filename);
               }
             }
-
-            // Move past this JSON object
             startIndex = endIndex + 1;
           } catch (e) {
-            // If we can't parse it yet, it might be incomplete
-            // Just move to the next character and try again
             startIndex++;
           }
         }
 
-        // Keep any remaining incomplete data in the buffer
         buffer = buffer.substring(startIndex);
       }
 
@@ -441,6 +445,38 @@ const GeminiNarrationResults = ({
       // End processing
       setIsProcessing(false);
       setCurrentFile('');
+    }
+  };
+
+  // Modify speed for a single item; auto-apply on mouse drop
+  const modifySingleAudioSpeed = async (result, speed) => {
+    if (!result?.filename) return;
+    const id = result.subtitle_id;
+    setItemProcessing(prev => ({ ...prev, [id]: { inProgress: true } }));
+    try {
+      const apiUrl = `${SERVER_URL}/api/narration/batch-modify-audio-speed`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filenames: [result.filename], speedFactor: speed })
+      });
+      if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
+      const reader = response.body.getReader();
+      while (true) {
+        const { done } = await reader.read();
+        if (done) break;
+      }
+      if (typeof window !== 'undefined') {
+        if (typeof window.resetAlignedNarration === 'function') {
+          window.resetAlignedNarration();
+        }
+        window.dispatchEvent(new CustomEvent('narration-speed-modified', { detail: { speed, id, timestamp: Date.now() } }));
+      }
+    } catch (e) {
+      console.error('Error modifying single audio speed:', e);
+      alert(t('narration.speedModificationError', `Error modifying audio speed: ${e.message}`));
+    } finally {
+      setItemProcessing(prev => ({ ...prev, [id]: { inProgress: false } }));
     }
   };
 
@@ -927,6 +963,11 @@ const GeminiNarrationResults = ({
               playAudio,
               downloadAudio,
               subtitleSource,
+              // per-item speed control
+              itemSpeeds,
+              setItemSpeed,
+              modifySingleAudioSpeed,
+              itemProcessing,
               t
             }}
           >
