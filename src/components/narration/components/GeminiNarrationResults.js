@@ -60,7 +60,7 @@ const GeminiResultRow = ({ index, style, data }) => {
         {text}
       </div>
 
-      <div className="audio-controls">
+      <div className="result-controls">
         {item.success && (item.audioData || item.filename) ? (
           // Successful generation with audio data or filename
           <>
@@ -68,17 +68,37 @@ const GeminiResultRow = ({ index, style, data }) => {
             {item && (
               <div className="per-item-trim-controls" style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 8 }}>
                 {(() => {
-                  const totalDuration = (typeof item.audioDuration === 'number' && item.audioDuration > 0)
-                    ? item.audioDuration
-                    : (typeof item.start === 'number' && typeof item.end === 'number' && item.end > item.start)
-                      ? (item.end - item.start)
-                      : 10;
+                  const getBackupForTrimName = (fn) => {
+                    if (!fn) return null;
+                    const lastSlash = fn.lastIndexOf('/');
+                    const dir = lastSlash >= 0 ? fn.slice(0, lastSlash) : '';
+                    const base = lastSlash >= 0 ? fn.slice(lastSlash + 1) : fn;
+                    return `${dir ? dir + '/' : ''}backup_for_trim_${base}`;
+                  };
+
+                  const backupName = getBackupForTrimName(item.filename);
+                  const backupDuration = (backupName && data.itemDurations && typeof data.itemDurations[backupName] === 'number')
+                    ? data.itemDurations[backupName]
+                    : null;
+                  const currentDuration = (typeof item.filename === 'string' && data.itemDurations && typeof data.itemDurations[item.filename] === 'number')
+                    ? data.itemDurations[item.filename]
+                    : null;
+
+                  const totalDuration = (typeof backupDuration === 'number' && backupDuration > 0)
+                    ? backupDuration
+                    : (typeof currentDuration === 'number' && currentDuration > 0)
+                      ? currentDuration
+                      : (typeof item.audioDuration === 'number' && item.audioDuration > 0)
+                        ? item.audioDuration
+                        : (typeof item.start === 'number' && typeof item.end === 'number' && item.end > item.start)
+                          ? (item.end - item.start)
+                          : 10;
                   const trim = data.itemTrims[subtitle_id] ?? [0, totalDuration];
                   const [trimStart, trimEnd] = trim;
                   return (
                     <>
-                      <span style={{ minWidth: 70, maxWidth: 70, display: 'inline-block', textAlign: 'center', fontSize: '1.15em', fontFamily: 'monospace', fontWeight: 500 }}>
-                        {formatTime(trimStart, 'hms_ms')}
+                      <span style={{ minWidth: 35, maxWidth: 70, display: 'inline-block', textAlign: 'center', fontSize: '1em', fontWeight: 500 }}>
+                        {formatTime(trimStart, 's_ms')}
                       </span>
                       <StandardSlider
                         range
@@ -86,6 +106,7 @@ const GeminiResultRow = ({ index, style, data }) => {
                         min={0}
                         max={totalDuration}
                         step={0.01}
+                        minGap={0.25}
                         onChange={([start, end]) => data.setItemTrim(subtitle_id, [start, end])}
                         onDragEnd={() => data.modifySingleAudioTrim(item, [trimStart, trimEnd])}
                         orientation="Horizontal"
@@ -93,11 +114,11 @@ const GeminiResultRow = ({ index, style, data }) => {
                         width="compact"
                         showValueIndicator={false}
                         showStops={false}
-                        className="per-item-trim-slider"
+                        className="per-item-trim-slider trim-slider"
                         style={{ width: 200 }}
                       />
-                      <span style={{ minWidth: 70, maxWidth: 70, display: 'inline-block', textAlign: 'center', fontSize: '1.15em', fontFamily: 'monospace', fontWeight: 500 }}>
-                        {formatTime(trimEnd, 'hms_ms')}
+                      <span style={{ minWidth: 35, maxWidth: 70, display: 'inline-block', textAlign: 'center', fontSize: '1em', fontWeight: 500 }}>
+                        {formatTime(trimEnd, 's_ms')}
                       </span>
                     </>
                   );
@@ -120,7 +141,7 @@ const GeminiResultRow = ({ index, style, data }) => {
                 state={data.itemProcessing[subtitle_id]?.inProgress ? 'Disabled' : 'Enabled'}
                 width="compact"
                 className="standard-slider-container width-compact orientation-horizontal size-XSmall state-Enabled speed-control-slider"
-                style={{ width: '120px', marginRight: '8px' }}
+                style={{ width: '75px', marginRight: 0, gap: 0 }}
                 id={`gemini-item-speed-${subtitle_id}`}
                 ariaLabel={t('narration.speed', 'Speed')}
                 formatValue={(val) => `${Number(val).toFixed(2)}x`}
@@ -133,15 +154,9 @@ const GeminiResultRow = ({ index, style, data }) => {
               disabled={!!data.itemProcessing[subtitle_id]?.inProgress}
             >
               {currentlyPlaying === subtitle_id && isPlaying ? (
-                <>
-                  <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>pause</span>
-                  {t('narration.pause', 'Pause')}
-                </>
+                <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>pause</span>
               ) : (
-                <>
-                  <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>play_arrow</span>
-                  {t('narration.play', 'Play')}
-                </>
+                <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>play_arrow</span>
               )}
             </button>
             <button
@@ -150,10 +165,9 @@ const GeminiResultRow = ({ index, style, data }) => {
               disabled={!!data.itemProcessing[subtitle_id]?.inProgress}
             >
               <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>download</span>
-              {t('narration.download', 'Download')}
             </button>
             <button
-              className={`pill-button secondary retry-button ${retryingSubtitleId === subtitle_id ? 'retrying' : ''}`}
+              className={`pill-button secondary ${retryingSubtitleId === subtitle_id ? 'retrying' : ''}`}
               onClick={() => onRetry(subtitle_id)}
               title={!data.subtitleSource
                 ? t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)')
@@ -161,20 +175,14 @@ const GeminiResultRow = ({ index, style, data }) => {
               disabled={retryingSubtitleId === subtitle_id || !data.subtitleSource || !!data.itemProcessing[subtitle_id]?.inProgress}
             >
               {retryingSubtitleId === subtitle_id ? (
-                <>
-                  <LoadingIndicator
-                    theme="dark"
-                    showContainer={false}
-                    size={14}
-                    className="retry-loading-indicator"
-                  />
-                  {t('narration.retrying', 'Retrying...')}
-                </>
+                <LoadingIndicator
+                  theme="dark"
+                  showContainer={false}
+                  size={14}
+                  className="retry-loading-indicator"
+                />
               ) : (
-                <>
-                  <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>refresh</span>
-                  {t('narration.retry', 'Retry')}
-                </>
+                <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>refresh</span>
               )}
             </button>
           </>
@@ -193,20 +201,14 @@ const GeminiResultRow = ({ index, style, data }) => {
               disabled={retryingSubtitleId === subtitle_id || !data.subtitleSource}
             >
               {retryingSubtitleId === subtitle_id ? (
-                <>
-                  <LoadingIndicator
-                    theme="dark"
-                    showContainer={false}
-                    size={14}
-                    className="generate-loading-indicator"
-                  />
-                  {t('narration.generating', 'Generating...')}
-                </>
+                <LoadingIndicator
+                  theme="dark"
+                  showContainer={false}
+                  size={14}
+                  className="generate-loading-indicator"
+                />
               ) : (
-                <>
-                  <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>play_arrow</span>
-                  {t('narration.generate', 'Generate')}
-                </>
+                <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>play_arrow</span>
               )}
             </button>
           </>
@@ -227,20 +229,14 @@ const GeminiResultRow = ({ index, style, data }) => {
               disabled={retryingSubtitleId === subtitle_id || !data.subtitleSource}
             >
               {retryingSubtitleId === subtitle_id ? (
-                <>
-                  <LoadingIndicator
-                    theme="dark"
-                    showContainer={false}
-                    size={14}
-                    className="retry-loading-indicator"
-                  />
-                  {t('narration.retrying', 'Retrying...')}
-                </>
+                <LoadingIndicator
+                  theme="dark"
+                  showContainer={false}
+                  size={14}
+                  className="retry-loading-indicator"
+                />
               ) : (
-                <>
-                  <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>refresh</span>
-                  {t('narration.retry', 'Retry')}
-                </>
+                <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>refresh</span>
               )}
             </button>
           </>
@@ -322,6 +318,27 @@ const GeminiNarrationResults = ({
   const [itemTrims, setItemTrims] = useState({});
   const setItemTrim = (id, range) => setItemTrims(prev => ({ ...prev, [id]: range }));
 
+  // Real file durations from server for slider max
+  const [itemDurations, setItemDurations] = useState({}); // { [filename]: seconds }
+
+  const fetchDurationsBatch = async (filenames) => {
+    if (!Array.isArray(filenames) || filenames.length === 0) return;
+    try {
+      const resp = await fetch(`${SERVER_URL}/api/narration/batch-get-audio-durations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filenames })
+      });
+      if (!resp.ok) return;
+      const data = await resp.json();
+      if (data?.success && data.durations) {
+        setItemDurations(prev => ({ ...prev, ...data.durations }));
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
   // Check if there are any failed narrations
   const hasFailedNarrations = generationResults && generationResults.some(result => !result.success);
 
@@ -377,6 +394,28 @@ const GeminiNarrationResults = ({
     return generationResults || [];
   })();
 
+  // Load durations for both main files and their trim backups when the displayed list changes
+  useEffect(() => {
+    const getBackupForTrimName = (fn) => {
+      if (!fn) return null;
+      const lastSlash = fn.lastIndexOf('/');
+      const dir = lastSlash >= 0 ? fn.slice(0, lastSlash) : '';
+      const base = lastSlash >= 0 ? fn.slice(lastSlash + 1) : fn;
+      return `${dir ? dir + '/' : ''}backup_for_trim_${base}`;
+    };
+
+    const filenames = (displayedResults || [])
+      .map(r => r && r.filename)
+      .filter(Boolean);
+
+    const backupFilenames = filenames.map(getBackupForTrimName).filter(Boolean);
+    const allFilenames = [...new Set([...filenames, ...backupFilenames])];
+
+    if (allFilenames.length > 0) {
+      fetchDurationsBatch(allFilenames);
+    }
+  }, [displayedResults]);
+
   // Function to modify audio speed (global batch)
   const modifyAudioSpeed = async () => {
     if (!generationResults || generationResults.length === 0) {
@@ -400,6 +439,7 @@ const GeminiNarrationResults = ({
         successfulNarrations.forEach(r => { newSpeeds[r.subtitle_id] = Number(speedValue); });
         setItemSpeeds(prev => ({ ...prev, ...newSpeeds }));
       }
+
 
       // Start processing
       setIsProcessing(true);
@@ -927,6 +967,7 @@ const GeminiNarrationResults = ({
 
   return (
     <div className="results-section">
+      <style dangerouslySetInnerHTML={{ __html: `.trim-slider .standard-slider-active-track .track, .trim-slider .standard-slider-inactive-track .track { height: 10px; } .range-slider .standard-slider-handle { height: 24px; }` }} />
       <div className="results-header">
         <h4>{t('narration.results', 'Generated Narration')}</h4>
 
@@ -1052,6 +1093,7 @@ const GeminiNarrationResults = ({
               modifySingleAudioSpeed,
               modifySingleAudioTrim,
               itemProcessing,
+              itemDurations,
               t
             }}
           >
