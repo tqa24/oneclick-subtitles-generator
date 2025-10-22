@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import SliderWithValue from '../../common/SliderWithValue';
+import StandardSlider from '../../common/StandardSlider';
 import LoadingIndicator from '../../common/LoadingIndicator';
 import HelpIcon from '../../common/HelpIcon';
 import '../../../utils/functionalScrollbar';
 import { VariableSizeList as List } from 'react-window';
 import { SERVER_URL } from '../../../config';
 import { enhanceF5TTSNarrations } from '../../../utils/narrationEnhancer';
+import { formatTime } from '../../../utils/timeFormatter';
 
 // Constants for localStorage keys
 const CURRENT_VIDEO_ID_KEY = 'current_video_url';
@@ -116,6 +118,65 @@ const ResultRow = ({ index, style, data }) => {
           </>
         ) : result.success ? (
           <>
+            {/* Per-item trim range slider */}
+            {result && (
+              <div className="per-item-trim-controls" style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 8 }}>
+                {(() => {
+                  const getBackupForTrimName = (fn) => {
+                    if (!fn) return null;
+                    const lastSlash = fn.lastIndexOf('/');
+                    const dir = lastSlash >= 0 ? fn.slice(0, lastSlash) : '';
+                    const base = lastSlash >= 0 ? fn.slice(lastSlash + 1) : fn;
+                    return `${dir ? dir + '/' : ''}backup_for_trim_${base}`;
+                  };
+                  const backupName = getBackupForTrimName(result.filename);
+                  const backupDuration = (backupName && data.itemDurations && typeof data.itemDurations[backupName] === 'number')
+                    ? data.itemDurations[backupName]
+                    : null;
+                  const currentDuration = (typeof result.filename === 'string' && data.itemDurations && typeof data.itemDurations[result.filename] === 'number')
+                    ? data.itemDurations[result.filename]
+                    : null;
+                  const totalDuration = (typeof backupDuration === 'number' && backupDuration > 0)
+                    ? backupDuration
+                    : (typeof currentDuration === 'number' && currentDuration > 0)
+                      ? currentDuration
+                      : (typeof result.audioDuration === 'number' && result.audioDuration > 0)
+                        ? result.audioDuration
+                        : (typeof result.start === 'number' && typeof result.end === 'number' && result.end > result.start)
+                          ? (result.end - result.start)
+                          : 10;
+                  const trim = data.itemTrims[subtitle_id] ?? [0, totalDuration];
+                  const [trimStart, trimEnd] = trim;
+                  return (
+                    <>
+                      <span style={{ minWidth: 70, maxWidth: 70, display: 'inline-block', textAlign: 'center', fontSize: '1.15em', fontFamily: 'monospace', fontWeight: 500 }}>
+                        {formatTime(trimStart, 'hms_ms')}
+                      </span>
+                      <StandardSlider
+                        range
+                        value={[trimStart, trimEnd]}
+                        min={0}
+                        max={totalDuration}
+                        step={0.01}
+                        onChange={([start, end]) => data.setItemTrim(subtitle_id, [start, end])}
+                        onDragEnd={() => data.modifySingleAudioTrim(result, [trimStart, trimEnd])}
+                        orientation="Horizontal"
+                        size="XSmall"
+                        width="compact"
+                        showValueIndicator={false}
+                        showStops={false}
+                        className="per-item-trim-slider"
+                        style={{ width: 200 }}
+                      />
+                      <span style={{ minWidth: 70, maxWidth: 70, display: 'inline-block', textAlign: 'center', fontSize: '1.15em', fontFamily: 'monospace', fontWeight: 500 }}>
+                        {formatTime(trimEnd, 'hms_ms')}
+                      </span>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+
             {/* Per-item speed slider */}
             {result.filename && (
               <SliderWithValue
@@ -357,6 +418,51 @@ const NarrationResults = ({
   })();
 
   // Speed control state
+
+  // Real file durations from server for slider max
+  const [itemDurations, setItemDurations] = useState({}); // { [filename]: seconds }
+
+  const fetchDurationsBatch = async (filenames) => {
+    if (!Array.isArray(filenames) || filenames.length === 0) return;
+    try {
+      const resp = await fetch(`${SERVER_URL}/api/narration/batch-get-audio-durations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filenames })
+      });
+      if (!resp.ok) return;
+      const data = await resp.json();
+      if (data?.success && data.durations) {
+        setItemDurations(prev => ({ ...prev, ...data.durations }));
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  // Load durations for both main files and their trim backups
+  useEffect(() => {
+    const getBackupForTrimName = (fn) => {
+      if (!fn) return null;
+      const lastSlash = fn.lastIndexOf('/');
+      const dir = lastSlash >= 0 ? fn.slice(0, lastSlash) : '';
+      const base = lastSlash >= 0 ? fn.slice(lastSlash + 1) : fn;
+      return `${dir ? dir + '/' : ''}backup_for_trim_${base}`;
+    };
+
+    const filenames = (displayedResults || [])
+      .map(r => r && r.filename)
+      .filter(Boolean);
+
+    const backupFilenames = filenames.map(getBackupForTrimName).filter(Boolean);
+
+    const allFilenames = [...new Set([...filenames, ...backupFilenames])];
+
+    if (allFilenames.length > 0) {
+      fetchDurationsBatch(allFilenames);
+    }
+  }, [displayedResults]);
+
   const [speedValue, setSpeedValue] = useState(1.0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState({ current: 0, total: 0 });
@@ -374,6 +480,7 @@ const NarrationResults = ({
 
         // Use fetch to get the file as a blob
         fetch(audioUrl)
+
           .then(response => {
             if (!response.ok) {
               throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
@@ -420,8 +527,14 @@ const NarrationResults = ({
   const [itemSpeeds, setItemSpeeds] = useState({}); // { [subtitle_id]: number }
   const [itemProcessing, setItemProcessing] = useState({}); // { [subtitle_id]: { inProgress: boolean } }
 
+  // Per-item trim state: { [subtitle_id]: [startSec, endSec] }
+  const [itemTrims, setItemTrims] = useState({});
+
   const setItemSpeed = (id, val) => {
     setItemSpeeds(prev => ({ ...prev, [id]: val }));
+  };
+  const setItemTrim = (id, range) => {
+    setItemTrims(prev => ({ ...prev, [id]: range }));
   };
 
   // Modify speed for all successful items (existing global control)
@@ -525,6 +638,40 @@ const NarrationResults = ({
       setItemProcessing(prev => ({ ...prev, [id]: { inProgress: false } }));
     }
   };
+
+  // Modify trim for a single item; auto-apply on range drop
+  const modifySingleAudioTrim = async (result, [start, end]) => {
+    if (!result?.filename) return;
+    const id = result.subtitle_id;
+    setItemProcessing(prev => ({ ...prev, [id]: { inProgress: true } }));
+    try {
+      const apiUrl = `${SERVER_URL}/api/narration/modify-audio-trim`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: result.filename, start, end })
+      });
+      if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
+      // Drain
+      const reader = response.body.getReader();
+      while (true) {
+        const { done } = await reader.read();
+        if (done) break;
+      }
+      if (typeof window !== 'undefined') {
+        if (typeof window.resetAlignedNarration === 'function') {
+          window.resetAlignedNarration();
+        }
+        window.dispatchEvent(new CustomEvent('narration-trim-modified', { detail: { start, end, id, timestamp: Date.now() } }));
+      }
+    } catch (e) {
+      console.error('Error modifying single audio trim:', e);
+      alert(t('narration.trimModificationError', `Error modifying audio trim: ${e.message}`));
+    } finally {
+      setItemProcessing(prev => ({ ...prev, [id]: { inProgress: false } }));
+    }
+  };
+
 
   // Check if there are any failed narrations (exclude pending items)
   const hasFailedNarrations = generationResults && generationResults.some(result => !result.success && !result.pending);
@@ -776,11 +923,15 @@ const NarrationResults = ({
               playAudio,
               getAudioUrl,
               downloadAudio,
-              // per-item speed control
+              // per-item trim and speed control
+              itemTrims,
+              setItemTrim,
               itemSpeeds,
               setItemSpeed,
               modifySingleAudioSpeed,
+              modifySingleAudioTrim,
               itemProcessing,
+              itemDurations,
               t
             }}
           >

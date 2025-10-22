@@ -109,6 +109,19 @@ const modifyAudioSpeed = async (req, res) => {
 
     ffmpegProcess.on('close', (code) => {
       if (code === 0) {
+        // After a successful speed change, also create/refresh the "backup for trim"
+        try {
+          const dir = path.dirname(filename);
+          const base = path.basename(filename);
+          const trimBackupFilename = `${dir}/backup_for_trim_${base}`;
+          const trimBackupPath = path.join(OUTPUT_AUDIO_DIR, trimBackupFilename);
+          // Ensure directory exists (same dir as audioPath, should exist already)
+          fs.copyFileSync(audioPath, trimBackupPath);
+        } catch (e) {
+          // Non-fatal; log and continue
+          console.warn('Failed to create backup_for_trim copy after speed change:', e?.message || e);
+        }
+
         // Success
         res.json({
           success: true,
@@ -277,6 +290,17 @@ const batchModifyAudioSpeed = async (req, res) => {
 
           ffmpegProcess.on('close', (code) => {
             if (code === 0) {
+              // On success, also update the backup_for_trim to reflect after-speed output
+              try {
+                const dir = path.dirname(filename);
+                const base = path.basename(filename);
+                const trimBackupFilename = `${dir}/backup_for_trim_${base}`;
+                const trimBackupPath = path.join(OUTPUT_AUDIO_DIR, trimBackupFilename);
+                fs.copyFileSync(audioPath, trimBackupPath);
+              } catch (e) {
+                console.warn('Failed to create backup_for_trim copy in batch speed change:', e?.message || e);
+              }
+
               results.push({ filename, success: true });
               processedCount++;
 

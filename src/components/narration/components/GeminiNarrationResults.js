@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import SliderWithValue from '../../common/SliderWithValue';
+import StandardSlider from '../../common/StandardSlider';
 import LoadingIndicator from '../../common/LoadingIndicator';
 import '../../../styles/narration/speedControlSlider.css';
 import '../../../utils/functionalScrollbar';
@@ -9,6 +10,7 @@ import { VariableSizeList as List } from 'react-window';
 // Import utility functions and config
 import { getAudioUrl } from '../../../services/narrationService';
 import { SERVER_URL } from '../../../config';
+import { formatTime } from '../../../utils/timeFormatter';
 
 // Constants for localStorage keys
 const NARRATION_CACHE_KEY = 'gemini_narration_cache';
@@ -62,6 +64,47 @@ const GeminiResultRow = ({ index, style, data }) => {
         {item.success && (item.audioData || item.filename) ? (
           // Successful generation with audio data or filename
           <>
+            {/* Per-item trim range slider */}
+            {item && (
+              <div className="per-item-trim-controls" style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 8 }}>
+                {(() => {
+                  const totalDuration = (typeof item.audioDuration === 'number' && item.audioDuration > 0)
+                    ? item.audioDuration
+                    : (typeof item.start === 'number' && typeof item.end === 'number' && item.end > item.start)
+                      ? (item.end - item.start)
+                      : 10;
+                  const trim = data.itemTrims[subtitle_id] ?? [0, totalDuration];
+                  const [trimStart, trimEnd] = trim;
+                  return (
+                    <>
+                      <span style={{ minWidth: 70, maxWidth: 70, display: 'inline-block', textAlign: 'center', fontSize: '1.15em', fontFamily: 'monospace', fontWeight: 500 }}>
+                        {formatTime(trimStart, 'hms_ms')}
+                      </span>
+                      <StandardSlider
+                        range
+                        value={[trimStart, trimEnd]}
+                        min={0}
+                        max={totalDuration}
+                        step={0.01}
+                        onChange={([start, end]) => data.setItemTrim(subtitle_id, [start, end])}
+                        onDragEnd={() => data.modifySingleAudioTrim(item, [trimStart, trimEnd])}
+                        orientation="Horizontal"
+                        size="XSmall"
+                        width="compact"
+                        showValueIndicator={false}
+                        showStops={false}
+                        className="per-item-trim-slider"
+                        style={{ width: 200 }}
+                      />
+                      <span style={{ minWidth: 70, maxWidth: 70, display: 'inline-block', textAlign: 'center', fontSize: '1.15em', fontFamily: 'monospace', fontWeight: 500 }}>
+                        {formatTime(trimEnd, 'hms_ms')}
+                      </span>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+
             {/* Per-item speed slider before Play/Pause */}
             {item.filename && (
               <SliderWithValue
@@ -275,6 +318,10 @@ const GeminiNarrationResults = ({
   const [itemProcessing, setItemProcessing] = useState({}); // { [subtitle_id]: { inProgress: boolean } }
   const setItemSpeed = (id, val) => setItemSpeeds(prev => ({ ...prev, [id]: val }));
 
+  // Per-item trim state: { [subtitle_id]: [startSec, endSec] }
+  const [itemTrims, setItemTrims] = useState({});
+  const setItemTrim = (id, range) => setItemTrims(prev => ({ ...prev, [id]: range }));
+
   // Check if there are any failed narrations
   const hasFailedNarrations = generationResults && generationResults.some(result => !result.success);
 
@@ -479,6 +526,40 @@ const GeminiNarrationResults = ({
       setItemProcessing(prev => ({ ...prev, [id]: { inProgress: false } }));
     }
   };
+
+  // Modify trim for a single item; auto-apply on range drop
+  const modifySingleAudioTrim = async (result, [start, end]) => {
+    if (!result?.filename) return;
+    const id = result.subtitle_id;
+    setItemProcessing(prev => ({ ...prev, [id]: { inProgress: true } }));
+    try {
+      const apiUrl = `${SERVER_URL}/api/narration/modify-audio-trim`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: result.filename, start, end })
+      });
+      if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
+      // Drain body
+      const reader = response.body.getReader();
+      while (true) {
+        const { done } = await reader.read();
+        if (done) break;
+      }
+      if (typeof window !== 'undefined') {
+        if (typeof window.resetAlignedNarration === 'function') {
+          window.resetAlignedNarration();
+        }
+        window.dispatchEvent(new CustomEvent('narration-trim-modified', { detail: { start, end, id, timestamp: Date.now() } }));
+      }
+    } catch (e) {
+      console.error('Error modifying single audio trim:', e);
+      alert(t('narration.trimModificationError', `Error modifying audio trim: ${e.message}`));
+    } finally {
+      setItemProcessing(prev => ({ ...prev, [id]: { inProgress: false } }));
+    }
+  };
+
 
   // Function to calculate row height based on explicit line breaks only (stable like LyricsDisplay)
   const getRowHeight = (index) => {
@@ -963,10 +1044,13 @@ const GeminiNarrationResults = ({
               playAudio,
               downloadAudio,
               subtitleSource,
-              // per-item speed control
+              // per-item trim and speed control
+              itemTrims,
+              setItemTrim,
               itemSpeeds,
               setItemSpeed,
               modifySingleAudioSpeed,
+              modifySingleAudioTrim,
               itemProcessing,
               t
             }}
