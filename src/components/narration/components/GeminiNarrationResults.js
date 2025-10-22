@@ -302,6 +302,10 @@ const GeminiNarrationResults = ({
   const listRef = useRef(null);
   const rowHeights = useRef({});
   const [loadedFromCache, setLoadedFromCache] = useState(false);
+  // Track processed count during streaming speed modify to drive progress UI
+  const processedCountRef = useRef(0);
+  // Track unique items seen in progress stream to derive current count when server doesn't send 'processed'
+  const seenItemsRef = useRef(new Set());
 
   // Speed control state (global)
   const [speedValue, setSpeedValue] = useState(1.0);
@@ -443,8 +447,16 @@ const GeminiNarrationResults = ({
 
       // Start processing
       setIsProcessing(true);
-      setProcessingProgress({ current: 0, total: generationResults.length });
-      setCurrentFile('');
+      // Only count files we will actually process
+      setProcessingProgress({ current: 0, total: successfulNarrations.length });
+      // Show first filename as "preparing" hint
+      try {
+        const firstName = successfulNarrations[0]?.filename || '';
+        const base = firstName ? String(firstName).split('/').pop() : '';
+        setCurrentFile(base);
+      } catch (_) {
+        setCurrentFile('');
+      }
 
       console.log(`Modifying speed of ${successfulNarrations.length} narration files to ${speedValue}x`);
 
@@ -479,6 +491,10 @@ const GeminiNarrationResults = ({
         }
         return { filename, normalizedStart, normalizedEnd, speedFactor: speedValue };
       });
+
+      // Reset streaming progress trackers
+      processedCountRef.current = 0;
+      seenItemsRef.current = new Set();
 
       // Use fetch with streaming response to get real-time progress updates
       const response = await fetch(apiUrl, {
@@ -515,9 +531,27 @@ const GeminiNarrationResults = ({
           try {
             const obj = JSON.parse(chunk.slice(6));
             if (obj.status === 'progress') {
-              const processed = obj.processed ?? obj.current ?? 0;
               const total = obj.total ?? items.length;
-              setProcessingProgress({ current: processed, total });
+              // Determine processed count robustly
+              let processedNum = 0;
+              if (typeof obj.processed === 'number') {
+                processedNum = obj.processed;
+              } else if (typeof obj.current === 'number') {
+                processedNum = obj.current;
+              } else {
+                // Infer from current filename if provided
+                if (obj.current) {
+                  const key = String(obj.current);
+                  if (!seenItemsRef.current.has(key)) {
+                    seenItemsRef.current.add(key);
+                    processedCountRef.current += 1;
+                  }
+                }
+                processedNum = processedCountRef.current;
+              }
+
+              setProcessingProgress({ current: processedNum, total });
+
               if (obj.current) {
                 const filename = String(obj.current).split('/').pop();
                 setCurrentFile(filename || '');
@@ -1036,11 +1070,7 @@ const GeminiNarrationResults = ({
                 <div className="speed-control-spinner"></div>
                 <div className="speed-control-progress-info">
                   <span>{processingProgress.current}/{processingProgress.total}</span>
-                  {currentFile && (
-                    <span className="speed-control-filename" title={currentFile}>
-                      {currentFile}
-                    </span>
-                  )}
+
                 </div>
               </div>
             ) : (

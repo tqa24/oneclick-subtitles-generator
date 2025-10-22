@@ -443,6 +443,9 @@ const NarrationResults = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState({ current: 0, total: 0 });
   const [currentFile, setCurrentFile] = useState('');
+  // Track processed count robustly during streaming and unique items seen
+  const processedCountRef = useRef(0);
+  const seenItemsRef = useRef(new Set());
 
   // Download audio as WAV file
   const downloadAudio = (result) => {
@@ -528,7 +531,9 @@ const NarrationResults = ({
     }
 
     setIsProcessing(true);
+    // Use only the actual files we will process for total
     setProcessingProgress({ current: 0, total: successfulNarrations.length });
+    // Do not show current filename in UI (keep state but blank)
     setCurrentFile('');
 
     try {
@@ -591,13 +596,25 @@ const NarrationResults = ({
           try {
             const obj = JSON.parse(chunk.slice(6));
             if (obj.status === 'progress') {
-              const processed = obj.processed ?? 0;
               const total = obj.total ?? items.length;
-              setProcessingProgress({ current: processed, total });
-              if (obj.current) {
-                const filename = String(obj.current).split('/').pop();
-                setCurrentFile(filename || '');
+              // Robust processed computation: prefer 'processed', else numeric 'current', else infer via unique keys
+              let processedNum = 0;
+              if (typeof obj.processed === 'number') {
+                processedNum = obj.processed;
+              } else if (typeof obj.current === 'number') {
+                processedNum = obj.current;
+              } else {
+                if (obj.current) {
+                  const key = String(obj.current);
+                  if (!seenItemsRef.current.has(key)) {
+                    seenItemsRef.current.add(key);
+                    processedCountRef.current += 1;
+                  }
+                }
+                processedNum = processedCountRef.current;
               }
+              setProcessingProgress({ current: processedNum, total });
+              // Do not update currentFile for UI; omit filename display under progress
             } else if (obj.status === 'completed') {
               setProcessingProgress({ current: obj.processed ?? items.length, total: obj.total ?? items.length });
               setCurrentFile('');
@@ -921,11 +938,7 @@ const NarrationResults = ({
                 <div className="speed-control-spinner"></div>
                 <div className="speed-control-progress-info">
                   <span>{processingProgress.current}/{processingProgress.total}</span>
-                  {currentFile && (
-                    <span className="speed-control-filename" title={currentFile}>
-                      {currentFile}
-                    </span>
-                  )}
+
                 </div>
               </div>
             ) : (

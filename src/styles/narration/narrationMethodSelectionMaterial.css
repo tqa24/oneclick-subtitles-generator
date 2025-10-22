@@ -27,6 +27,7 @@
   position: relative;
   overflow: hidden; /* Ensure badge doesn't overflow pill boundaries */
   border-radius: 24px;
+  font-stretch: semi-condensed;
 }
 
 .narration-method-selection .radio-pill input[type="radio"] {
@@ -252,6 +253,7 @@
   border-color: var(--method-color);
   color: white;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-stretch: semi-expanded;
 }
 
 .narration-method-selection .radio-pill input[type="radio"]:checked + label[class*="method-"] .method-icon svg {
