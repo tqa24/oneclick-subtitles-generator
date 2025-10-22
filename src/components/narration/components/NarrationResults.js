@@ -105,7 +105,7 @@ const ResultRow = ({ index, style, data }) => {
                     className="generate-loading-indicator"
                   />
                 ) : (
-                  <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>play_arrow</span>
+                  <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>refresh</span>
                 )}
               </button>
             )}
@@ -138,7 +138,7 @@ const ResultRow = ({ index, style, data }) => {
                         ? result.audioDuration
                         : (typeof result.start === 'number' && typeof result.end === 'number' && result.end > result.start)
                           ? (result.end - result.start)
-                          : 10;
+                          : 0;
                   const trim = data.itemTrims[subtitle_id] ?? [0, totalDuration];
                   const [trimStart, trimEnd] = trim;
                   return (
@@ -152,6 +152,7 @@ const ResultRow = ({ index, style, data }) => {
                         min={0}
                         max={totalDuration}
                         step={0.01}
+                        minGap={0.25}
                         onChange={([start, end]) => data.setItemTrim(subtitle_id, [start, end])}
                         onDragEnd={() => data.modifySingleAudioTrim(result, [trimStart, trimEnd])}
                         orientation="Horizontal"
@@ -811,7 +812,7 @@ const NarrationResults = ({
             disabled={retryingSubtitleId !== null}
             title={t('narration.generateAllPendingTooltip', 'Generate all pending narrations')}
           >
-            <span className="material-symbols-rounded" style={{ fontSize: '14px' }}>play_arrow</span>
+            <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>build</span>
             {t('narration.generateAllPending', 'Generate All Pending')}
           </button>
         )}
