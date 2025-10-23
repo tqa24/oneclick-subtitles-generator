@@ -52,17 +52,37 @@ function main() {
     liveMusicHelper?.setWeightedPrompts(prompts);
   }));
 
+  pdjMidi.addEventListener('error', ((e: Event) => {
+    const customEvent = e as CustomEvent<string>;
+    const error = customEvent.detail;
+    toastMessage.show(error);
+  }));
+
   // New explicit play/pause events to avoid accidental re-toggles
   pdjMidi.addEventListener('play', () => {
-    liveMusicHelper?.play();
+    if (!liveMusicHelper) {
+      toastMessage.show('Please set your Gemini API key in the main app first.');
+      pdjMidi.playbackState = 'stopped';
+      return;
+    }
+    liveMusicHelper.play();
   });
   pdjMidi.addEventListener('pause', () => {
+    if (!liveMusicHelper) {
+      toastMessage.show('Please set your Gemini API key in the main app first.');
+      pdjMidi.playbackState = 'stopped';
+      return;
+    }
     // Use stop() to fully stop and prevent stray chunks from re-triggering
-    liveMusicHelper?.stop();
+    liveMusicHelper.stop();
   });
   // Back-compat: if any 'play-pause' is emitted, map based on current state
   pdjMidi.addEventListener('play-pause', () => {
-    if (!liveMusicHelper) return;
+    if (!liveMusicHelper) {
+      toastMessage.show('Please set your Gemini API key in the main app first.');
+      pdjMidi.playbackState = 'stopped';
+      return;
+    }
     const stateMsg = '[PDJ] back-compat play-pause used; mapping to explicit action';
     try { console.log(stateMsg); } catch {}
     // Best-effort mapping: if not playing, play; else stop
@@ -117,6 +137,7 @@ function main() {
       teeNode = liveMusicHelper.audioContext.createGain();
       teeNode.connect(audioAnalyser.node);
       liveMusicHelper.extraDestination = teeNode;
+      pdjMidi.apiKeySet = true;
       attachHelperListeners();
       attachAnalyserListener();
     } catch (e: any) {
