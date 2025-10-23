@@ -26,6 +26,9 @@ let recordedChunks: BlobPart[] = [];
 let liveMusicHelper: LiveMusicHelper | null = null;
 let audioAnalyser: AudioAnalyser | null = null;
 
+// Track current playback state
+let currentPlaybackState: PlaybackState = 'stopped';
+
 
 function main() {
   console.log('[PDJ] main() start');
@@ -73,6 +76,7 @@ function main() {
     liveMusicHelper.addEventListener('playback-state-changed', ((e: Event) => {
       const customEvent = e as CustomEvent<PlaybackState>;
       const playbackState = customEvent.detail;
+      currentPlaybackState = playbackState;
       pdjMidi.playbackState = playbackState;
       if (audioAnalyser) {
         playbackState === 'playing' ? audioAnalyser.start() : audioAnalyser.stop();
