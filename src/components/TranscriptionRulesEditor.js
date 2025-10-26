@@ -377,10 +377,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
         )}
         <div className="modal-header">
           <h2>{t('rulesEditor.title', 'Edit Transcription Rules')}</h2>
-          <CloseButton onClick={handleCancel} variant="modal" size="medium" />
-        </div>
-
-        <div className="prompt-preset-selector">
+          <div className="prompt-preset-selector">
           <div className="prompt-preset-label">
             {t('rulesEditor.currentPrompt', 'Current Prompt Preset')}:
           </div>
@@ -541,6 +538,8 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
               placeholder={t('settings.selectPreset', 'Select Preset')}
             />
           </div>
+          </div>
+          <CloseButton onClick={handleCancel} variant="modal" size="medium" />
         </div>
 
         <div className="modal-content">

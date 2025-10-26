@@ -10,6 +10,7 @@
   justify-content: center;
   z-index: 1200;
   animation: fadeIn 0.2s ease;
+  backdrop-filter: blur(3px);
 }
 
 .rules-editor-modal {
@@ -33,7 +34,6 @@
 .prompt-preset-selector {
   display: flex;
   align-items: center;
-  padding: 12px 24px;
 }
 
 .prompt-preset-label {
@@ -759,6 +759,11 @@
     transform: translate(-50%, -50%) scale(2.2);
     opacity: 0;
   }
+}
+
+/* Prevent background scrolling when modal is open */
+body.modal-open {
+  overflow: hidden;
 }
 
 /* Animations */
