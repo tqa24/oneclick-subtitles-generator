@@ -9,8 +9,12 @@
   align-items: center;
   justify-content: center;
   z-index: 1200;
-  animation: fadeIn 0.2s ease;
   backdrop-filter: blur(3px);
+  transition: opacity 0.2s var(--md-easing-emphasized-accelerate);
+}
+
+.rules-editor-overlay.closing {
+  opacity: 0;
 }
 
 .rules-editor-modal {
@@ -22,12 +26,18 @@
   display: flex;
   flex-direction: column;
   box-shadow: var(--md-elevation-level3);
-  animation: slideUp 0.3s ease;
   overflow: hidden;
+  animation: modal-appear var(--md-duration-medium3) var(--md-easing-emphasized-decelerate);
+  transition: background-color var(--transition-speed), transform var(--md-duration-medium3) var(--md-easing-emphasized-accelerate), opacity var(--md-duration-medium3) var(--md-easing-emphasized-accelerate);
+  position: relative;
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  contain: layout;
+}
 
-  /* Firefox scrollbar styling */
-  scrollbar-width: thin;
-  scrollbar-color: var(--md-outline-variant) var(--md-surface-container);
+.rules-editor-modal.closing {
+  transform: scale(0.95) translateY(20px);
+  opacity: 0;
 }
 
 /* Prompt preset selector */

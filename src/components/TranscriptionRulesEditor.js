@@ -8,6 +8,7 @@ import { PROMPT_PRESETS, getUserPromptPresets } from '../services/geminiService'
 const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCancel, onChangePrompt }) => {
   const { t } = useTranslation();
   const overlayRef = useRef(null);
+  const [isClosing, setIsClosing] = useState(false);
   const [rules, setRules] = useState(initialRules || {
     atmosphere: '',
     terminology: [],
@@ -281,16 +282,24 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
 
   // Handle save
   const handleSave = () => {
-    onSave(rules);
-    onClose('save');
+    setIsClosing(true);
+    setTimeout(() => {
+      onSave(rules);
+      onClose('save');
+      setIsClosing(false);
+    }, 200); // Match the transition duration
   };
 
   // Handle cancel
   const handleCancel = () => {
-    if (onCancel) {
-      onCancel();
-    }
-    onClose('cancel');
+    setIsClosing(true);
+    setTimeout(() => {
+      if (onCancel) {
+        onCancel();
+      }
+      onClose('cancel');
+      setIsClosing(false);
+    }, 200); // Match the transition duration
   };
 
   // Handle changing the prompt preset
@@ -355,10 +364,10 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
   return (
     <div
       ref={overlayRef}
-      className="rules-editor-overlay"
+      className={`rules-editor-overlay ${isClosing ? 'closing' : ''}`}
       onClick={handleUserInteraction}
     >
-      <div className={`rules-editor-modal ${showCountdown ? 'with-countdown' : ''}`} onClick={(e) => {
+      <div className={`rules-editor-modal ${showCountdown ? 'with-countdown' : ''} ${isClosing ? 'closing' : ''}`} onClick={(e) => {
         e.stopPropagation();
         handleUserInteraction();
       }}>
