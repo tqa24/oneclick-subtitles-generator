@@ -34,8 +34,6 @@
   display: flex;
   align-items: center;
   padding: 12px 24px;
-  background-color: var(--md-surface-container-high);
-  border-bottom: 1px solid var(--md-surface-variant);
 }
 
 .prompt-preset-label {
@@ -160,7 +158,6 @@
 /* Dark mode specific scrollbar styling */
 [data-theme="dark"] .rules-editor-modal .modal-content {
   scrollbar-color: var(--md-outline) var(--md-surface-container-highest);
-  background-color: var(--md-surface-container-highest);
 }
 
 [data-theme="dark"] .rules-editor-modal .modal-content::-webkit-scrollbar-track {
@@ -344,16 +341,6 @@
 .add-item-button:hover {
   background-color: var(--md-primary-container);
   border-color: var(--md-primary);
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 16px 24px;
-  border-top: 1px solid var(--md-surface-variant);
-  background-color: var(--md-surface-container);
-  font-family: 'Open Sans', sans-serif;
 }
 
 .cancel-button {
