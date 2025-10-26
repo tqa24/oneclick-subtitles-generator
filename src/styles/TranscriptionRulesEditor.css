@@ -766,6 +766,11 @@ body.modal-open {
   overflow: hidden;
 }
 
+/* Hide floating scrollbar when modal is open */
+body.modal-open .floating-scrollbar-container {
+  display: none !important;
+}
+
 /* Animations */
 @keyframes fadeIn {
   from { opacity: 0; }

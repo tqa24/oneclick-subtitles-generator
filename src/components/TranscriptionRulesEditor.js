@@ -7,6 +7,7 @@ import { PROMPT_PRESETS, getUserPromptPresets } from '../services/geminiService'
 
 const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCancel, onChangePrompt }) => {
   const { t } = useTranslation();
+  const overlayRef = useRef(null);
   const [rules, setRules] = useState(initialRules || {
     atmosphere: '',
     terminology: [],
@@ -16,7 +17,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
     relationships: [],
     additionalNotes: []
   });
-  
+
   // Countdown state for autoflow
   const [countdown, setCountdown] = useState(null);
   const [showCountdown, setShowCountdown] = useState(false);
@@ -188,7 +189,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
     setUserPromptPresets(getUserPromptPresets());
   }, [isOpen, initialRules]); // Re-run when modal opens or initial rules change
 
-  // Handle ESC key to close modal
+  // Handle ESC key to close modal and prevent background scrolling
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === 'Escape' && isOpen) {
@@ -196,12 +197,33 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
       }
     };
 
+    const preventScroll = (e) => {
+      // Only prevent scroll if the event target is the overlay itself
+      if (e.target === overlayRef.current) {
+        e.preventDefault();
+      }
+    };
+
     if (isOpen) {
       document.addEventListener('keydown', handleKeyDown);
+      document.body.classList.add('modal-open');
+
+      // Add non-passive scroll event listeners to overlay
+      if (overlayRef.current) {
+        overlayRef.current.addEventListener('wheel', preventScroll, { passive: false });
+        overlayRef.current.addEventListener('touchmove', preventScroll, { passive: false });
+      }
     }
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
+      document.body.classList.remove('modal-open');
+
+      // Remove scroll event listeners
+      if (overlayRef.current) {
+        overlayRef.current.removeEventListener('wheel', preventScroll);
+        overlayRef.current.removeEventListener('touchmove', preventScroll);
+      }
     };
   }, [isOpen]);
 
@@ -331,7 +353,11 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
   if (!isOpen) return null;
 
   return (
-    <div className="rules-editor-overlay" onClick={handleUserInteraction}>
+    <div
+      ref={overlayRef}
+      className="rules-editor-overlay"
+      onClick={handleUserInteraction}
+    >
       <div className={`rules-editor-modal ${showCountdown ? 'with-countdown' : ''}`} onClick={(e) => {
         e.stopPropagation();
         handleUserInteraction();
@@ -386,6 +412,7 @@ const TranscriptionRulesEditor = ({ isOpen, onClose, initialRules, onSave, onCan
               value={currentPresetId}
               onChange={(value) => handleChangePrompt({ target: { value } })}
               onClick={handleUserInteraction}
+              style={{ maxWidth: '215px' }}
               options={[
                 // Prompt from settings option with sliders/settings icon
                 { 
