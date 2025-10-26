@@ -1544,7 +1544,7 @@ const TimelineVisualization = ({
 
       {/* Subtle warning when user tries to drag while offline segments exist */}
       {warnOfflineDragVisible && (
-        <div style={{ position: 'absolute', top: 6, right: 8, zIndex: 5 }}>
+        <div style={{ position: 'absolute', top: 6, left: 8, zIndex: 5 }}>
           <span role="status" aria-live="polite" style={{ whiteSpace: 'nowrap', fontSize: 12, padding: '2px 8px', borderRadius: 10, color: 'var(--md-on-surface-variant)', backgroundColor: 'var(--md-surface-variant)', border: '1px solid var(--md-outline-variant)' }}>
             {t('timeline.clearOfflineFirst', 'Please clear offline segments to exit this mode first')}
           </span>
