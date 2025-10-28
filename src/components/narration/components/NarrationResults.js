@@ -364,7 +364,7 @@ const NarrationResults = ({
 
       // Create results for all subtitles
       const results = trueSubtitles.map((subtitle, index) => {
-        const subtitleId = subtitle.id ?? subtitle.subtitle_id ?? (index + 1);
+        const subtitleId = subtitle.id ?? subtitle.subtitle_id ?? index;
         const existingResult = generationResults?.find(r => r.subtitle_id === subtitleId);
 
         if (existingResult) {
