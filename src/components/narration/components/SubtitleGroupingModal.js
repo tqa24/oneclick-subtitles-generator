@@ -130,15 +130,15 @@ const SubtitleGroupingModal = ({ open, onClose, originalSubtitles, groupedSubtit
             <td>{row.original.text}</td>
           {shouldRenderCell(index, row.grouped) ? (
             <>
-            <td className="id-cell grouped-subtitle" rowSpan={getRowSpan(row.grouped)}>
-              {row.grouped ? (row.grouped.subtitle_id || row.grouped.id) : '-'}
+            <td className={`id-cell ${getRowSpan(row.grouped) > 1 ? 'grouped-subtitle' : ''}`} rowSpan={getRowSpan(row.grouped)}>
+            {row.grouped ? (row.grouped.subtitle_id || row.grouped.id) : '-'}
             </td>
-            <td className="time-cell grouped-subtitle" rowSpan={getRowSpan(row.grouped)}>
+            <td className={`time-cell ${getRowSpan(row.grouped) > 1 ? 'grouped-subtitle' : ''}`} rowSpan={getRowSpan(row.grouped)}>
             {row.grouped ? <>{formatTime(row.grouped.start)}<br />{formatTime(row.grouped.end)}</> : '-'}
             </td>
-          <td className="grouped-subtitle" rowSpan={getRowSpan(row.grouped)}>
-          {row.grouped ? row.grouped.text : '-'}
-          </td>
+            <td className={`${getRowSpan(row.grouped) > 1 ? 'grouped-subtitle' : ''}`} rowSpan={getRowSpan(row.grouped)}>
+            {row.grouped ? row.grouped.text : '-'}
+            </td>
           </>
           ) : null}
           </tr>
