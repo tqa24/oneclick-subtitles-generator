@@ -6,6 +6,7 @@ import RemotionVideoPreview from './RemotionVideoPreview';
 import QueueManagerPanel from './QueueManagerPanel';
 import LoadingIndicator from './common/LoadingIndicator';
 import CustomDropdown from './common/CustomDropdown';
+import PulsingElement from './common/PulsingElement';
 import { formatTime } from '../utils/timeFormatter';
 import '../styles/VideoRenderingSection.css';
 import '../styles/CollapsibleSection.css';
@@ -1814,16 +1815,13 @@ const VideoRenderingSection = ({
                         : t('videoRendering.noNarrationGenerated', 'No narration generated')
                       }
                     </span>
-                    <button
+                    <PulsingElement
+                      as="button"
                       type="button"
                       className="refresh-icon-button"
                       onClick={handleRefreshNarration}
                       disabled={isRefreshingNarration}
-                      style={{
-                        animation: (hasNarrationSegments() && !isRefreshingNarration)
-                          ? 'breathe 2s ease-in-out infinite'
-                          : 'none'
-                      }}
+                      isPulsing={hasNarrationSegments() && !isRefreshingNarration}
                       title={
                         !hasNarrationSegments()
                           ? t('videoRendering.generateNarrationFirst', 'Generate narration first')
@@ -1840,7 +1838,7 @@ const VideoRenderingSection = ({
                       ) : (
                         <span className="material-symbols-rounded">refresh</span>
                       )}
-                    </button>
+                    </PulsingElement>
                   </div>
                 )}
 
