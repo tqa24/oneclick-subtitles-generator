@@ -8,7 +8,7 @@
   flex-direction: column;
   gap: 0.75rem;
   min-width: 0; /* Allow grid items to shrink below their content size */
-  overflow: hidden; /* Prevent content from expanding the container */
+  overflow: visible; /* Allow glow effects to break through */
 }
 
 /* Headings inside compact sections */
@@ -252,6 +252,74 @@
 
 .narration-selection-compact .refresh-icon-button svg { width: 16px; height: 16px; }
 
+/* Particle system container for refresh-icon-button */
+.narration-selection-compact .refresh-icon-button::before,
+.narration-selection-compact .refresh-icon-button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 80px;
+  height: 80px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: -1;
+  border-radius: 50%;
+}
+
+/* First particle wave - shooting outward */
+.narration-selection-compact .refresh-icon-button::before {
+  background:
+    radial-gradient(circle at 45% 15%, #ff6b6b 0.5px, transparent 1px),
+    radial-gradient(circle at 85% 30%, #4ecdc4 0.5px, transparent 1px),
+    radial-gradient(circle at 25% 75%, #45b7d1 0.5px, transparent 1px),
+    radial-gradient(circle at 75% 85%, #f9ca24 0.5px, transparent 1px),
+    radial-gradient(circle at 15% 45%, #6c5ce7 0.5px, transparent 1px),
+    radial-gradient(circle at 65% 25%, #fd79a8 0.5px, transparent 1px),
+    radial-gradient(circle at 35% 65%, #00b894 0.5px, transparent 1px),
+    radial-gradient(circle at 55% 85%, #fdcb6e 0.5px, transparent 1px);
+  animation: particleShoot1 3s infinite ease-out;
+}
+
+/* Second particle wave - different timing and positions */
+.narration-selection-compact .refresh-icon-button::after {
+  background:
+    radial-gradient(circle at 70% 20%, #e17055 0.5px, transparent 1px),
+    radial-gradient(circle at 20% 40%, #00cec9 0.5px, transparent 1px),
+    radial-gradient(circle at 80% 70%, #0984e3 0.5px, transparent 1px),
+    radial-gradient(circle at 40% 90%, #e84393 0.5px, transparent 1px),
+    radial-gradient(circle at 90% 50%, #a29bfe 0.5px, transparent 1px),
+    radial-gradient(circle at 30% 10%, #fd79a8 0.5px, transparent 1px),
+    radial-gradient(circle at 60% 40%, #00b894 0.5px, transparent 1px),
+    radial-gradient(circle at 10% 80%, #fdcb6e 0.5px, transparent 1px);
+  animation: particleShoot2 3.5s infinite ease-out 1.2s;
+}
+
+/* Dark theme particles - matching glow colors */
+[data-theme="dark"] .narration-selection-compact .refresh-icon-button::before {
+  background:
+    radial-gradient(circle at 45% 15%, rgba(96, 125, 255, 0.9) 0.5px, transparent 1px),
+    radial-gradient(circle at 85% 30%, rgba(255, 107, 107, 0.8) 0.5px, transparent 1px),
+    radial-gradient(circle at 25% 75%, rgba(78, 205, 196, 0.9) 0.5px, transparent 1px),
+    radial-gradient(circle at 75% 85%, rgba(69, 183, 209, 0.8) 0.5px, transparent 1px),
+    radial-gradient(circle at 15% 45%, rgba(249, 202, 36, 0.7) 0.5px, transparent 1px),
+    radial-gradient(circle at 65% 25%, rgba(108, 92, 231, 0.8) 0.5px, transparent 1px),
+    radial-gradient(circle at 35% 65%, rgba(253, 121, 168, 0.9) 0.5px, transparent 1px),
+    radial-gradient(circle at 55% 85%, rgba(0, 184, 148, 0.8) 0.5px, transparent 1px);
+}
+
+[data-theme="dark"] .narration-selection-compact .refresh-icon-button::after {
+  background:
+    radial-gradient(circle at 70% 20%, rgba(253, 203, 110, 0.8) 0.5px, transparent 1px),
+    radial-gradient(circle at 20% 40%, rgba(108, 92, 231, 0.7) 0.5px, transparent 1px),
+    radial-gradient(circle at 80% 70%, rgba(255, 107, 107, 0.9) 0.5px, transparent 1px),
+    radial-gradient(circle at 40% 90%, rgba(78, 205, 196, 0.8) 0.5px, transparent 1px),
+    radial-gradient(circle at 90% 50%, rgba(96, 125, 255, 0.9) 0.5px, transparent 1px),
+    radial-gradient(circle at 30% 10%, rgba(249, 202, 36, 0.8) 0.5px, transparent 1px),
+    radial-gradient(circle at 60% 40%, rgba(253, 121, 168, 0.7) 0.5px, transparent 1px),
+    radial-gradient(circle at 10% 80%, rgba(69, 183, 209, 0.8) 0.5px, transparent 1px);
+}
+
 .item-count { margin-left: 8px; font-size: 0.85rem; color: var(--text-secondary); font-weight: 400; }
 
 /* Volume controls */
@@ -270,4 +338,9 @@
 
 /* StandardSlider in volume controls should match compact layout */
 .compact-volume-control .standard-slider-container { width: 100% !important; max-width: 350px !important; flex: none; }
+
+/* Dark theme refresh icon button animation */
+[data-theme="dark"] .narration-selection-compact .refresh-icon-button {
+  animation: breathe-dark 2s ease-in-out infinite !important;
+}
 
