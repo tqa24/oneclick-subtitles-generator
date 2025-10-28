@@ -54,7 +54,7 @@
 
 /* Virtualized container */
 .translation-preview-virtualized {
-  border-radius: 6px;
+  border-radius: 16px;
   overflow: hidden;
   border: 1px solid var(--border-color);
   background-color: var(--md-surface-1);

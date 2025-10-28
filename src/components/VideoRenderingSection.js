@@ -1925,7 +1925,7 @@ const VideoRenderingSection = ({
 
             <div className="trimming-timeline-row" style={{ margin: '0 0 16px 0', width: '100%' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '0 16px' }}>
-                <span className="material-symbols-rounded" style={{ flexShrink: 0, color: '#e3e3e3' }}>content_cut</span>
+                <span className="material-symbols-rounded" style={{ flexShrink: 0}}>content_cut</span>
                 <span style={{ minWidth: 70, maxWidth: 70, display: 'inline-block', textAlign: 'center', fontSize: '1.15em', fontFamily: 'monospace', fontWeight: 500 }}>
                   {formatTime(renderSettings.trimStart || 0, 'hms_ms')}
                 </span>
