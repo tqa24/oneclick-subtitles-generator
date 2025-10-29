@@ -43,6 +43,7 @@ const AudioControls = ({
     const [duration, setDuration] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
     const [dragTime, setDragTime] = useState(0);
+  const [downloadSuccess, setDownloadSuccess] = useState(false);
     const audioRef = useRef(null);
     const wavyProgressRef = useRef(null);
     const thumbRef = useRef(null);
@@ -382,6 +383,41 @@ const AudioControls = ({
                                             ></div>
                                         </div>
 
+                                        {audioSrc && (
+                                            <button
+                                                onClick={async () => {
+                                                    try {
+                                                        const response = await fetch(audioSrc);
+                                                        const blob = await response.blob();
+                                                        const url = URL.createObjectURL(blob);
+                                                        const a = document.createElement('a');
+                                                        a.href = url;
+                                                        a.download = referenceAudio.filename || 'audio.wav';
+                                                        a.click();
+                                                        URL.revokeObjectURL(url);
+                                                        setDownloadSuccess(true);
+                                                        setTimeout(() => setDownloadSuccess(false), 500);
+                                                    } catch (e) {
+                                                        console.error('Download failed', e);
+                                                    }
+                                                }}
+                                                style={{
+                                                    marginLeft: '0px',
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    color: 'var(--md-primary)',
+                                                    fontSize: '16px',
+                                                    cursor: 'pointer',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    padding: 0
+                                                }}
+                                                title="Download audio"
+                                            >
+                                                <span className="material-symbols-rounded">{downloadSuccess ? 'done' : 'arrow_downward_alt'}</span>
+                                            </button>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="audio-status-container">

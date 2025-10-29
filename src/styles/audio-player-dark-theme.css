@@ -365,7 +365,7 @@ audio.audio-player {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 8px 8px 8px 12px;
   border-radius: 24px;
   background-color: var(--md-surface-1);
   border: 1px solid var(--md-outline-variant);
