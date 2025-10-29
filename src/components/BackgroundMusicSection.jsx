@@ -496,10 +496,10 @@ const BackgroundMusicSection = () => {
           </p>
         </div>
       ) : (
-        <div className="music-generator-content" style={{ gap: 0 }}>
+        <div className="music-generator-content">
           <div
             ref={panelRef}
-            style={{ position: 'relative', width: '100%', height: panelHeight, background: '#111', borderRadius: 6, overflow: 'hidden' }}
+            style={{ position: 'relative', width: '100%', height: panelHeight, background: '#111', overflow: 'hidden' }}
          >
             <iframe
               ref={iframeRef}
