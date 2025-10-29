@@ -115,6 +115,7 @@ const VideoRenderingSection = ({
   const [isDragging, setIsDragging] = useState(false);
   const userTrimAdjustedRef = useRef(false);
   const [isRefreshingNarration, setIsRefreshingNarration] = useState(false);
+  const [narrationUpdateTrigger, setNarrationUpdateTrigger] = useState(0);
 
   // Panel resizing states with localStorage persistence
   const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
@@ -125,6 +126,17 @@ const VideoRenderingSection = ({
   const containerRef = useRef(null);  // Collapsible state - always start collapsed by default (like BackgroundImageGenerator)
   const [isCollapsed, setIsCollapsed] = useState(true); // Always start collapsed
   const [userHasCollapsed, setUserHasCollapsed] = useState(false); // Track if user has manually collapsed
+
+  // Listen for narration updates to trigger re-renders
+  useEffect(() => {
+    const handleNarrationsUpdated = () => {
+      setNarrationUpdateTrigger(prev => prev + 1);
+    };
+
+    window.addEventListener('narrations-updated', handleNarrationsUpdated);
+
+    return () => window.removeEventListener('narrations-updated', handleNarrationsUpdated);
+  }, []);
 
   // Panel resizing functionality
   const handleMouseDown = (e) => {
@@ -658,6 +670,9 @@ const VideoRenderingSection = ({
     return subtitlesData || [];
   };
 
+  // Get current narration results from window (reactive to updates)
+  const currentNarrationResults = window.originalNarrations || window.translatedNarrations || [];
+
   // Check if aligned narration is available (same logic as refresh narration button)
   const isAlignedNarrationAvailable = () => {
     return window.isAlignedNarrationAvailable === true && window.alignedNarrationCache?.url;
@@ -665,10 +680,10 @@ const VideoRenderingSection = ({
 
   // Check if individual narration segments are available (not the aligned audio)
   const hasNarrationSegments = () => {
-    // Check props first
-    if (narrationResults && narrationResults.length > 0) {
+    // Check current narration results
+    if (currentNarrationResults && currentNarrationResults.length > 0) {
       // Check if any narration has success=true (meaning individual segments exist)
-      const hasSuccessfulNarrations = narrationResults.some(result => result.success === true);
+      const hasSuccessfulNarrations = currentNarrationResults.some(result => result.success === true);
       if (hasSuccessfulNarrations) return true;
     }
 
@@ -1820,11 +1835,13 @@ const VideoRenderingSection = ({
                       type="button"
                       className="refresh-icon-button"
                       onClick={handleRefreshNarration}
-                      disabled={isRefreshingNarration}
-                      isPulsing={hasNarrationSegments() && !isRefreshingNarration}
+                      disabled={isRefreshingNarration || !currentNarrationResults || currentNarrationResults.length === 0 || !currentNarrationResults.some(r => r.success && (r.audioData || r.filename))}
+                      isPulsing={hasNarrationSegments() && !isRefreshingNarration && currentNarrationResults && currentNarrationResults.length > 0 && currentNarrationResults.some(r => r.success && (r.audioData || r.filename))}
                       title={
                         !hasNarrationSegments()
                           ? t('videoRendering.generateNarrationFirst', 'Generate narration first')
+                          : !currentNarrationResults || currentNarrationResults.length === 0 || !currentNarrationResults.some(r => r.success && (r.audioData || r.filename))
+                          ? t('videoRendering.noValidNarrationFiles', 'No valid narration files available')
                           : t('videoRendering.refreshNarration', 'Click to align narration for video rendering')
                       }
                     >
