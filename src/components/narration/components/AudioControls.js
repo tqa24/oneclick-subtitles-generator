@@ -10,24 +10,9 @@ import { formatTime } from '../../../utils/timeFormatter';
 
 /**
  * Audio Controls component
- * @param {Object} props - Component props
- * @param {Function} props.handleFileUpload - Function to handle file upload
- * @param {React.RefObject} props.fileInputRef - Reference to file input
- * @param {boolean} props.isRecording - Whether recording is in progress
- * @param {boolean} props.isStartingRecording - Whether recording is initializing
- * @param {number|null} props.recordingStartTime - Timestamp when recording started (ms since epoch)
- * @param {Function} props.startRecording - Function to start recording
- * @param {Function} props.stopRecording - Function to stop recording
- * @param {boolean} props.isAvailable - Whether narration service is available
- * @param {Object} props.referenceAudio - Reference audio object
- * @param {Function} props.clearReferenceAudio - Function to clear reference audio
- * @param {Function} props.onExampleSelect - Function to handle example audio selection
- * @param {string} props.narrationMethod - Current narration method (f5tts, chatterbox, etc.)
- * @param {string} [props.color="var(--md-primary)"] - Color for the progress indicator
- * @param {number} [props.height=24] - Height for the progress indicator
- * @returns {JSX.Element} - Rendered component
+ * This component now handles theme detection and passes the correct colors
+ * to the WavyProgressIndicator.
  */
-
 const AudioControls = ({
   handleFileUpload,
   fileInputRef,
@@ -41,7 +26,6 @@ const AudioControls = ({
   clearReferenceAudio,
   onExampleSelect,
   narrationMethod,
-  color = "var(--md-primary)",
   height = 18
 }) => {
   const { t } = useTranslation();
@@ -55,6 +39,26 @@ const AudioControls = ({
   const wavyProgressRef = useRef(null);
   const thumbRef = useRef(null);
 
+  // --- AGGRESSIVE FIX: ADDED THEME DETECTION LOGIC ---
+  const [isSystemDark, setIsSystemDark] = useState(() => {
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleThemeChange = (e) => setIsSystemDark(e.matches);
+    mediaQuery.addEventListener('change', handleThemeChange);
+    return () => mediaQuery.removeEventListener('change', handleThemeChange);
+  }, []);
+
+  // Define colors based on the detected theme
+  const progressIndicatorColor = isSystemDark ? '#FFFFFF' : '#000000';
+  const progressTrackColor = isSystemDark ? '#333333' : '#E0E0E0';
+  // --- END FIX ---
 
   // Clamp waveform height to a smaller range for a less tall wave
   const waveformHeight = Math.max(8, Math.min(height, 18));
@@ -281,6 +285,10 @@ const AudioControls = ({
                           wavelength={18}
                           strokeWidth={5}
                           style={{ width: '100%' }}
+                          // --- AGGRESSIVE FIX: PASSING THEME COLORS AS PROPS ---
+                          color={progressIndicatorColor}
+                          trackColor={progressTrackColor}
+                          // --- END FIX ---
                         />
                       </div>
                       <div

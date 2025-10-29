@@ -3,12 +3,8 @@ import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState, us
 /**
  * Pure React Wavy Progress Indicator Component
  *
- * Complete implementation with all Material Design 3 features:
- * - High DPI rendering for crisp visuals
- * - Track receding animation
- * - Entrance/disappearance height animations
- * - Amplitude animation system
- * - Proper wavy path creation
+ * This is now a "dumb" component that renders the colors it is given via props.
+ * It defaults to a light theme if no colors are provided.
  */
 
 // Animation specifications from Android MotionTokens
@@ -324,12 +320,12 @@ const WavyProgressIndicator = forwardRef(({
     const [entranceStartTime, setEntranceStartTime] = useState(0);
     const [disappearanceStartTime, setDisappearanceStartTime] = useState(0);
 
-    // Theme detection
-    const [isSystemDark, setIsSystemDark] = useState(false);
-
-    // Effective colors based on props or system theme
-    const effectiveColor = color || (isSystemDark ? '#FFFFFF' : '#000000');
-    const effectiveTrackColor = trackColor || (isSystemDark ? '#333333' : '#E0E0E0');
+    // --- AGGRESSIVE FIX: REMOVED THEME DETECTION ---
+    // Colors are now determined by props, with a fallback to a standard light theme.
+    // The parent component is now responsible for passing theme-appropriate colors.
+    const effectiveColor = color || '#000000'; // Default to black
+    const effectiveTrackColor = trackColor || '#E0E0E0'; // Default to light gray
+    // --- END FIX ---
 
     // Constants
     const ENTRANCE_DISAPPEARANCE_DURATION = 500;
@@ -478,28 +474,6 @@ const WavyProgressIndicator = forwardRef(({
     useEffect(() => {
         setupHighDPICanvas();
     }, [setupHighDPICanvas]);
-
-    // Theme detection
-    useEffect(() => {
-        if (typeof window.matchMedia !== 'function') return;
-        const updateTheme = () => {
-            const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            setIsSystemDark(dark);
-        };
-        updateTheme();
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        const changeHandler = () => updateTheme();
-        mediaQuery.addEventListener('change', changeHandler);
-        return () => mediaQuery.removeEventListener('change', changeHandler);
-    }, []);
-
-    // Force redraw when theme changes
-    useEffect(() => {
-        const fn = drawRef.current;
-        if (typeof fn === 'function') {
-            requestAnimationFrame(fn);
-        }
-    }, [isSystemDark]);
 
     // Wave offset animation using rAF for smoothness and continuity
     useEffect(() => {
@@ -776,7 +750,7 @@ const WavyProgressIndicator = forwardRef(({
 
     // Draw when values change (no continuous loop)
     useEffect(() => {
-        requestAnimationFrame(drawProgress);
+        drawProgress();
     }, [drawProgress]);
 
     // Imperative API with all original methods
@@ -807,34 +781,6 @@ const WavyProgressIndicator = forwardRef(({
             setHasDisappeared(false);
             setEntranceStartTime(0);
             setDisappearanceStartTime(0);
-        },
-        setWaveSpeed: (speed) => {
-            // Wave speed is handled by the waveSpeed prop in React
-            console.log('Set wave speed:', speed);
-        },
-        setColors: (progressColor, trackColor) => {
-            console.log('Set colors:', progressColor, trackColor);
-        },
-        updateThemeColors: () => {
-            console.log('Update theme colors');
-        },
-        resetToDefaultColors: () => {
-            console.log('Reset to default colors');
-        },
-        setProgressAnimationDuration: (duration) => {
-            console.log('Set progress animation duration:', duration);
-        },
-        setWavelength: (length) => {
-            console.log('Set wavelength:', length);
-        },
-        setAmplitude: (amplitude) => {
-            console.log('Set amplitude:', amplitude);
-        },
-        setWaveAccelerationFactor: (factor) => {
-            console.log('Set wave acceleration factor:', factor);
-        },
-        setWaveSpeedTransitionDuration: (duration) => {
-            console.log('Set wave speed transition duration:', duration);
         },
         getElement: () => canvasRef.current
     }), [currentProgress, animateProgress]);
