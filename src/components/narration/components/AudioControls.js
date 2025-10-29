@@ -39,26 +39,31 @@ const AudioControls = ({
   const wavyProgressRef = useRef(null);
   const thumbRef = useRef(null);
 
-  // --- AGGRESSIVE FIX: ADDED THEME DETECTION LOGIC ---
-  const [isSystemDark, setIsSystemDark] = useState(() => {
-    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
+  // Theme detection based on data-theme and classes (no prefers-color-scheme)
+  const detectDarkTheme = () => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return false;
+    const root = document.documentElement;
+    const body = document.body;
+    if ((root.getAttribute('data-theme') || '').toLowerCase() === 'dark') return true;
+    if ((body?.getAttribute('data-theme') || '').toLowerCase() === 'dark') return true;
+    if (root.classList.contains('dark') || body?.classList.contains('dark')) return true;
     return false;
-  });
+  };
+
+  const [isDark, setIsDark] = useState(detectDarkTheme);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleThemeChange = (e) => setIsSystemDark(e.matches);
-    mediaQuery.addEventListener('change', handleThemeChange);
-    return () => mediaQuery.removeEventListener('change', handleThemeChange);
+    const observer = new MutationObserver(() => setIsDark(detectDarkTheme()));
+    try {
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+      if (document.body) observer.observe(document.body, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+    } catch (e) {}
+    return () => observer.disconnect();
   }, []);
 
-  // Define colors based on the detected theme
-  const progressIndicatorColor = isSystemDark ? '#FFFFFF' : '#000000';
-  const progressTrackColor = isSystemDark ? '#333333' : '#E0E0E0';
-  // --- END FIX ---
+  // Define colors based on theme
+  const progressIndicatorColor = isDark ? '#FFFFFF' : '#485E92';
+  const progressTrackColor = isDark ? 'rgba(255,255,255,0.35)' : '#D9DFF6';
 
   // Clamp waveform height to a smaller range for a less tall wave
   const waveformHeight = Math.max(8, Math.min(height, 18));

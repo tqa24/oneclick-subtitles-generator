@@ -377,7 +377,7 @@ audio.audio-player {
 /* Dark theme custom audio player */
 [data-theme="dark"] .custom-audio-player {
   background-color: var(--md-surface-3);
-  border: 1px solid var(--md-outline-variant);
+  border: 1px solid rgba(var(--md-primary-rgb), 0.2);
 }
 
 /* Hover effects for custom audio player */
