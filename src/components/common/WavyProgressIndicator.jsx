@@ -263,8 +263,8 @@ class LinearProgressDrawingCache {
 const WavyProgressIndicator = forwardRef(({
     progress = 0,
     animate = true,
-    color = WavyProgressDefaults.indicatorColor,
-    trackColor = WavyProgressDefaults.trackColor,
+    color,
+    trackColor,
     stopIndicatorColor,
     wavelength = WavyProgressDefaults.wavelength,
     waveSpeed = 1,
@@ -323,6 +323,13 @@ const WavyProgressIndicator = forwardRef(({
     const [hasDisappeared, setHasDisappeared] = useState(false);
     const [entranceStartTime, setEntranceStartTime] = useState(0);
     const [disappearanceStartTime, setDisappearanceStartTime] = useState(0);
+
+    // Theme detection
+    const [isSystemDark, setIsSystemDark] = useState(false);
+
+    // Effective colors based on props or system theme
+    const effectiveColor = color || (isSystemDark ? '#FFFFFF' : '#000000');
+    const effectiveTrackColor = trackColor || (isSystemDark ? '#333333' : '#E0E0E0');
 
     // Constants
     const ENTRANCE_DISAPPEARANCE_DURATION = 500;
@@ -462,13 +469,37 @@ const WavyProgressIndicator = forwardRef(({
             ro.disconnect();
         };
     }, [setupHighDPICanvas, hasExplicitWidth]);
+    
     useEffect(() => {
         setupHighDPICanvas();
     }, [setupHighDPICanvas]);
+    
     // Re-initialize canvas when size props change
     useEffect(() => {
         setupHighDPICanvas();
     }, [setupHighDPICanvas]);
+
+    // Theme detection
+    useEffect(() => {
+        if (typeof window.matchMedia !== 'function') return;
+        const updateTheme = () => {
+            const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            setIsSystemDark(dark);
+        };
+        updateTheme();
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const changeHandler = () => updateTheme();
+        mediaQuery.addEventListener('change', changeHandler);
+        return () => mediaQuery.removeEventListener('change', changeHandler);
+    }, []);
+
+    // Force redraw when theme changes
+    useEffect(() => {
+        const fn = drawRef.current;
+        if (typeof fn === 'function') {
+            requestAnimationFrame(fn);
+        }
+    }, [isSystemDark]);
 
     // Wave offset animation using rAF for smoothness and continuity
     useEffect(() => {
@@ -624,7 +655,7 @@ const WavyProgressIndicator = forwardRef(({
             ctx.shadowBlur = 0;
             ctx.shadowOffsetX = 0;
             ctx.shadowOffsetY = 0;
-            ctx.strokeStyle = trackColor;
+            ctx.strokeStyle = effectiveTrackColor;
             ctx.lineWidth = strokeWidth;
             ctx.lineCap = 'round';
 
@@ -654,7 +685,7 @@ const WavyProgressIndicator = forwardRef(({
                 const animatedAmplitude = amplitudeAnimatableRef.current ? amplitudeAnimatableRef.current.value : 0;
                 const waveHeight = animatedAmplitude * (effectiveHeight * 0.15);
 
-                ctx.strokeStyle = color;
+                ctx.strokeStyle = effectiveColor;
                 ctx.lineWidth = strokeWidth;
                 ctx.lineCap = 'round';
                 // Apply shadow only to the progress stroke
@@ -725,7 +756,7 @@ const WavyProgressIndicator = forwardRef(({
                     ctx.shadowOffsetX = 0;
                     ctx.shadowOffsetY = 0;
                 }
-                ctx.fillStyle = stopIndicatorColor || color;
+                ctx.fillStyle = stopIndicatorColor || effectiveColor;
                 ctx.beginPath();
                 ctx.arc(stopX, halfHeight, stopRadius, 0, 2 * Math.PI);
                 ctx.fill();
@@ -736,7 +767,7 @@ const WavyProgressIndicator = forwardRef(({
                 ctx.shadowOffsetY = 0;
             }
         }
-    }, [currentProgress, waveOffset, color, trackColor, stopIndicatorColor, wavelength, showStopIndicator, isAnimatingEntrance, isAnimatingDisappearance, hasDisappeared, entranceStartTime, disappearanceStartTime, progressShadow, progressShadowBleed, progressShadowColor, progressShadowBlur, progressShadowOffsetX, progressShadowOffsetY, forceFlat, gapSize, stopSize, strokeWidth, updateAmplitudeAnimation]);
+    }, [currentProgress, waveOffset, effectiveColor, effectiveTrackColor, stopIndicatorColor, wavelength, showStopIndicator, isAnimatingEntrance, isAnimatingDisappearance, hasDisappeared, entranceStartTime, disappearanceStartTime, progressShadow, progressShadowBleed, progressShadowColor, progressShadowBlur, progressShadowOffsetX, progressShadowOffsetY, forceFlat, gapSize, stopSize, strokeWidth, updateAmplitudeAnimation]);
 
     // Keep latest draw function in a ref to avoid TDZ issues in callbacks above
     useEffect(() => {
@@ -745,7 +776,7 @@ const WavyProgressIndicator = forwardRef(({
 
     // Draw when values change (no continuous loop)
     useEffect(() => {
-        drawProgress();
+        requestAnimationFrame(drawProgress);
     }, [drawProgress]);
 
     // Imperative API with all original methods

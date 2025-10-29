@@ -55,29 +55,6 @@ const AudioControls = ({
   const wavyProgressRef = useRef(null);
   const thumbRef = useRef(null);
 
-  // Resolve CSS variables to actual colors for canvas
-  const [resolvedColor, setResolvedColor] = useState(color);
-  const [resolvedTrackColor, setResolvedTrackColor] = useState("var(--md-outline-variant)");
-
-  useEffect(() => {
-    const resolveColor = (cssValue) => {
-      if (typeof window === 'undefined') return cssValue;
-      try {
-        const dummy = document.createElement('div');
-        dummy.style.color = cssValue;
-        dummy.style.position = 'absolute';
-        dummy.style.visibility = 'hidden';
-        document.body.appendChild(dummy);
-        const computed = getComputedStyle(dummy).color;
-        document.body.removeChild(dummy);
-        return computed;
-      } catch {
-        return cssValue;
-      }
-    };
-    setResolvedColor(resolveColor(color));
-    setResolvedTrackColor(resolveColor("color-mix(in srgb, var(--md-outline-variant), white 50%)"));
-  }, [color]);
 
   // Clamp waveform height to a smaller range for a less tall wave
   const waveformHeight = Math.max(8, Math.min(height, 18));
@@ -294,15 +271,15 @@ const AudioControls = ({
                   <div className="custom-audio-player" style={{ WebkitFlex: 1, height: `${height}px` }}>
                     <PlayPauseMorphType4 playing={playing} onToggle={togglePlayPause} size={20} color="var(--md-primary)" config={{ rotateDegrees: 0 }} />
                     <div className="audio-progress-container" style={{ flex: 1, WebkitFlex: 1, position: 'relative', height: `${height}px` }}>
-                      <div style={{ position: 'relative', zIndex: 0, width: '100%' }}>
+                      <div style={{ position: 'relative', zIndex: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center' }}>
                         <WavyProgressIndicator
                           ref={wavyProgressRef}
                           progress={duration > 0 ? currentTime / duration : 0}
                           animate={false}
                           forceFlat={!playing}
-                          height={waveformHeight}
-                          color={resolvedColor}
-                          trackColor={resolvedTrackColor}
+                          height={12}
+                          wavelength={18}
+                          strokeWidth={5}
                           style={{ width: '100%' }}
                         />
                       </div>
