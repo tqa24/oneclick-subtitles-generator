@@ -273,6 +273,9 @@ const WavyProgressIndicator = forwardRef(({
     height: heightProp,
     minWidth: minWidthProp,
     maxWidth: maxWidthProp,
+    strokeWidth = WavyProgressDefaults.strokeWidth,
+    gapSize = WavyProgressDefaults.gapSize,
+    stopSize = WavyProgressDefaults.stopSize,
     forceFlat = false, // New prop to force flat appearance (no waves)
     // Shadows: apply to progress stroke and stop indicator only (not track)
     progressShadow = false,
@@ -384,7 +387,7 @@ const WavyProgressIndicator = forwardRef(({
 
         ctxRef.current = ctx;
         drawingCacheRef.current = new LinearProgressDrawingCache();
-    }, [width, height, progressShadow, progressShadowBleed]);
+    }, [width, height, progressShadow, progressShadowBleed, hasExplicitWidth, minWidth, maxWidth, isDynamicWidth, heightProp]);
 
     // Observe this element for responsiveness only when width is not explicitly provided
     useEffect(() => {
@@ -528,6 +531,7 @@ const WavyProgressIndicator = forwardRef(({
                 setCurrentProgress(validProgress);
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [progress, animate]); // Removed animateProgress from deps to prevent loops
 
     // Amplitude animation system (matches Web Component behavior)
@@ -605,8 +609,7 @@ const WavyProgressIndicator = forwardRef(({
         }
 
         // Track/progress geometry
-        const strokeCapWidth = WavyProgressDefaults.strokeWidth / 2;
-        const gapSize = WavyProgressDefaults.gapSize;
+        const strokeCapWidth = strokeWidth / 2;
         const halfHeight = totalHeight / 2;
         const progressFrontX = strokeCapWidth + validProgress * (width - strokeCapWidth * 2);
 
@@ -622,7 +625,7 @@ const WavyProgressIndicator = forwardRef(({
             ctx.shadowOffsetX = 0;
             ctx.shadowOffsetY = 0;
             ctx.strokeStyle = trackColor;
-            ctx.lineWidth = WavyProgressDefaults.strokeWidth;
+            ctx.lineWidth = strokeWidth;
             ctx.lineCap = 'round';
 
             if (validProgress > 0) {
@@ -652,7 +655,7 @@ const WavyProgressIndicator = forwardRef(({
                 const waveHeight = animatedAmplitude * (effectiveHeight * 0.15);
 
                 ctx.strokeStyle = color;
-                ctx.lineWidth = WavyProgressDefaults.strokeWidth;
+                ctx.lineWidth = strokeWidth;
                 ctx.lineCap = 'round';
                 // Apply shadow only to the progress stroke
                 if (progressShadow) {
@@ -705,7 +708,7 @@ const WavyProgressIndicator = forwardRef(({
         // Draw stop indicator only when visible
         if (heightFactor > 0 && showStopIndicator && validProgress < 1) {
             // Make stop indicator size proportional to height for better visibility
-            const stopRadius = Math.max(2, Math.min(effectiveHeight * 0.3, WavyProgressDefaults.stopSize / 2));
+            const stopRadius = Math.max(2, Math.min(effectiveHeight * 0.3, stopSize / 2));
             const stopX = width - strokeCapWidth;
             const progressX = strokeCapWidth + validProgress * (width - strokeCapWidth * 2);
 
@@ -733,7 +736,7 @@ const WavyProgressIndicator = forwardRef(({
                 ctx.shadowOffsetY = 0;
             }
         }
-    }, [currentProgress, waveOffset, color, trackColor, stopIndicatorColor, wavelength, showStopIndicator, isAnimatingEntrance, isAnimatingDisappearance, hasDisappeared, entranceStartTime, disappearanceStartTime]);
+    }, [currentProgress, waveOffset, color, trackColor, stopIndicatorColor, wavelength, showStopIndicator, isAnimatingEntrance, isAnimatingDisappearance, hasDisappeared, entranceStartTime, disappearanceStartTime, progressShadow, progressShadowBleed, progressShadowColor, progressShadowBlur, progressShadowOffsetX, progressShadowOffsetY, forceFlat, gapSize, stopSize, strokeWidth, updateAmplitudeAnimation]);
 
     // Keep latest draw function in a ref to avoid TDZ issues in callbacks above
     useEffect(() => {
