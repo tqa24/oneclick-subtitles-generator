@@ -90,7 +90,7 @@ const Tooltip = ({
   const computeAdaptiveMinWidth = (text, linesHint) => {
     if (typeof text !== 'string') return 360; // wide fallback
     const t = text.trim();
-    if (!t) return 300;
+    if (!t) return 200;
     const words = t.split(/\s+/).filter(Boolean);
     const wc = words.length || 1;
 
@@ -105,10 +105,10 @@ const Tooltip = ({
     }
 
     const length = t.length;
-    const charsPerLine = Math.max(24, Math.min(48, Math.round(length / target)));
+    const charsPerLine = Math.max(20, Math.min(40, Math.round(length / target)));
     const charPx = 7.0; // approx px per char at 13px font
     let widthPx = Math.round(charsPerLine * charPx);
-    widthPx = Math.max(300, Math.min(560, widthPx));
+    widthPx = Math.max(150, Math.min(400, widthPx)); // Reduced min/max widths
     return widthPx;
   };
 
@@ -135,12 +135,12 @@ const Tooltip = ({
             left: position.left,
             transform: 'translate(-50%, -100%)',
             pointerEvents: 'none',
-            zIndex: 1000,
+            zIndex: 1000000,
           }}
           onMouseEnter={() => setIsVisible(true)}
           onMouseLeave={() => setIsVisible(false)}
         >
-          <div className="oc-tooltip-content balanced-text" style={{ width: 'max-content', maxWidth: resolvedWidth }}>
+          <div className="oc-tooltip-content" style={{ width: 'fit-content', maxWidth: resolvedWidth }}>
             {content}
           </div>
         </div>,

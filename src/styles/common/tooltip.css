@@ -15,6 +15,7 @@
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.15s ease;
+  z-index: 1000000 !important;
 }
 
 /* Show when visible class is present */
@@ -85,4 +86,3 @@
   --tooltip-border: color-mix(in srgb, var(--md-outline-variant), transparent 35%);
   --tooltip-shadow: var(--md-elevation-level4);
 }
-
