@@ -25,12 +25,9 @@ const ParakeetProcessingOptions = ({
             {/* Parakeet-only UI: dedicated layout */}
             <div className="option-group" style={{ gridColumn: '1 / -1' }}>
                 {parakeetStrategy === 'sentence' ? (
-                    <div className="combined-options-row" style={{ display: 'flex', gap: '10px' }}>
-                        <div style={{ flex: 1 }}>
-                            <div className="label-with-help">
-                                <label>{t('processing.parakeetSplittingMethod', 'Splitting method')}</label>
-                                <HelpIcon title={t('processing.parakeetStrategyHelp', 'Choose how to split subtitles: by approximate character count or by full sentences.')} />
-                            </div>
+                    <div className="combined-options-row">
+                        <div className="combined-option-half">
+                            <label>{t('processing.parakeetSplittingMethod', 'Splitting method')}</label>
                             <CustomDropdown
                                 value={parakeetStrategy}
                                 onChange={(value) => setParakeetStrategy(value)}
@@ -42,7 +39,7 @@ const ParakeetProcessingOptions = ({
                                 placeholder={t('processing.selectStrategy', 'Select strategy')}
                             />
                         </div>
-                        <div style={{ flex: 1 }}>
+                        <div className="combined-option-half">
                             <div className="label-with-help">
                                 <label>{t('processing.parakeetPreserveSentences', 'Preserve full sentences')}</label>
                                 <HelpIcon title={t('processing.parakeetPreserveSentencesHelp', 'When enabled, full sentences are preserved. When disabled, long sentences are split evenly by word count.')} />
@@ -55,13 +52,10 @@ const ParakeetProcessingOptions = ({
                                     ariaLabel={t('processing.parakeetPreserveSentences', 'Preserve full sentences')}
                                     icons={true}
                                 />
-                                <label htmlFor="parakeet-preserve-sentences" className="material-switch-label">
-                                    {t('processing.enablePreserveSentences', 'Preserve full sentences')}
-                                </label>
                             </div>
                         </div>
                         {!parakeetPreserveSentences && (
-                            <div style={{ flex: 1 }}>
+                            <div className="combined-option-half">
                                 <div className="label-with-help">
                                     <label>{t('processing.parakeetMaxWords', 'Max words per subtitle')}</label>
                                     <HelpIcon title={t('processing.parakeetMaxWordsHelp', 'Maximum number of words per subtitle when splitting sentences.')} />
@@ -70,7 +64,7 @@ const ParakeetProcessingOptions = ({
                                     value={parakeetMaxWords}
                                     onChange={(v) => setParakeetMaxWords(parseInt(v))}
                                     min={1}
-                                    max={50}
+                                    max={30}
                                     step={1}
                                     orientation="Horizontal"
                                     size="XSmall"
@@ -87,7 +81,7 @@ const ParakeetProcessingOptions = ({
                                 />
                             </div>
                         )}
-                        <div style={{ flex: 1 }}>
+                        <div className="combined-option-half">
                             <div className="label-with-help">
                                 <label>{t('processing.maxDurationPerRequest', 'Max duration per request')}</label>
                                 <HelpIcon title={t('processing.parakeetMaxDurationHelp', 'For Parakeet, long ranges are split client‑side and processed one by one (sequentially).')} />
@@ -121,7 +115,7 @@ const ParakeetProcessingOptions = ({
                     </div>
                 ) : (
                     <div className="combined-options-row">
-                        <div className="combined-option-half">
+                        <div className="combined-option-half" style={{ gap: '8px' }}>
                             <div className="label-with-help">
                                 <label>{t('processing.parakeetSplittingMethod', 'Splitting method')}</label>
                                 <HelpIcon title={t('processing.parakeetStrategyHelp', 'Choose how to split subtitles: by approximate character count or by full sentences.')} />
@@ -138,24 +132,24 @@ const ParakeetProcessingOptions = ({
                             />
                         </div>
                         {(parakeetStrategy === 'char' || parakeetStrategy === 'word') && (
-                            <div className="combined-option-half">
+                            <div className="combined-option-half" style={{ gap: '8px' }}>
                                 {parakeetStrategy === 'word' && (
                                     <>
                                         <div className="label-with-help">
-                                            <label>{t('processing.parakeetMaxWords', 'Max words per subtitle')}</label>
-                                            <HelpIcon title={t('processing.parakeetMaxWordsHelp', 'Maximum number of words per subtitle when splitting by word count.')} />
+                                            <label>{t('processing.parakeetMaxWordsWordStrategy', 'Words per subtitle')}</label>
+                                            <HelpIcon title={t('processing.parakeetMaxWordsHelpWordStrategy', 'Number of words in each subtitle when splitting by word count. Ignores punctuation')} />
                                         </div>
                                         <SliderWithValue
                                             value={parakeetMaxWords}
                                             onChange={(v) => setParakeetMaxWords(parseInt(v))}
                                             min={1}
-                                            max={50}
+                                            max={30}
                                             step={1}
                                             orientation="Horizontal"
                                             size="XSmall"
                                             state={'Enabled'}
                                             id="parakeet-max-words"
-                                            ariaLabel={t('processing.parakeetMaxWords', 'Max words per subtitle')}
+                                            ariaLabel={t('processing.parakeetMaxWordsWordStrategy', 'Words per subtitle')}
                                             defaultValue={7}
                                             showValueBadge={true}
                                             valueBadgeFormatter={(v) => Math.round(Number(v))}
@@ -193,7 +187,7 @@ const ParakeetProcessingOptions = ({
                             </div>
                         )}
                         {/* Parakeet: Max duration per request (sequential splitting) */}
-                        <div className="combined-option-half">
+                        <div className="combined-option-half" style={{ gap: '8px' }}>
                             <div className="label-with-help">
                                 <label>{t('processing.maxDurationPerRequest', 'Max duration per request')}</label>
                                 <HelpIcon title={t('processing.parakeetMaxDurationHelp', 'For Parakeet, long ranges are split client‑side and processed one by one (sequentially).')} />
