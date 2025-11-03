@@ -66,6 +66,19 @@
   "methodLabel": "Method",
   "methodNewOption": "New: Interact with video on Files API",
   "methodOldOption": "Old: Cut the video locally, then send to Gemini",
-  "methodNvidiaParakeet": "Nvidia Parakeet",
-  "comingSoon": "(coming soon)"
+  "methodNvidiaParakeet": "Nvidia Parakeet (local)",
+  "comingSoon": "(coming soon)",
+  "splittingMethod": "Splitting method",
+  "splittingSentence": "Sentence",
+  "splittingCharCount": "Char count",
+  "maxCharsPerSubtitle": "Max chars per subtitle",
+  "parakeetSplittingMethod": "Splitting method",
+  "parakeetStrategyHelp": "If choosing sentence splitting, you should use the subtitle splitting button (left of Save button) afterwards for shorter lengths.",
+  "parakeetStrategySentence": "Split by sentence",
+  "parakeetStrategyChar": "Split by approximate character count",
+  "selectStrategy": "Select strategy",
+  "parakeetMaxDurationHelp": "For Parakeet, if split, segments are processed one by one (sequentially) instead of in parallel like Gemini.",
+  "parakeetMaxChars": "Approximate characters per subtitle",
+  "parakeetMaxCharsHelp": "System automatically adjusts character distribution and timings to avoid breaking words.",
+  "characters": "characters"
 }

@@ -67,5 +67,18 @@
   "methodNewOption": "새로운 방식: Files API에서 비디오와 상호작용",
   "methodOldOption": "기존 방식: 비디오를 로컬에서 자른 후 Gemini로 전송",
   "methodNvidiaParakeet": "엔비디아 파라키트",
-  "comingSoon": "(곧 출시 예정)"
+  "comingSoon": "(곧 출시 예정)",
+  "splittingMethod": "분할 방법",
+  "splittingSentence": "문장",
+  "splittingCharCount": "문자 수",
+  "maxCharsPerSubtitle": "자막당 최대 문자 수",
+  "parakeetSplittingMethod": "분할 방법",
+  "parakeetStrategyHelp": "문장 분할을 선택하는 경우 더 짧은 길이를 위해 나중에 자막 분할 버튼(저장 버튼 왼쪽)을 사용해야 합니다.",
+  "parakeetStrategySentence": "문장으로 분할",
+  "parakeetStrategyChar": "대략적인 문자 수로 분할",
+  "selectStrategy": "전략 선택",
+  "parakeetMaxDurationHelp": "Parakeet의 경우 분할되면 Gemini처럼 병렬로 처리하는 대신 세그먼트를 하나씩 (순차적으로) 처리합니다.",
+  "parakeetMaxChars": "자막당 대략적인 문자 수",
+  "parakeetMaxCharsHelp": "시스템이 자동으로 문자 분배와 타이밍을 조정하여 단어 중간에 끊기지 않도록 합니다.",
+  "characters": "문자"
 }
