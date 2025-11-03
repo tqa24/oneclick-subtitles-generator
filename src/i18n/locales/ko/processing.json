@@ -90,5 +90,6 @@
   "parakeetMaxDurationHelp": "Parakeet의 경우 분할되면 Gemini처럼 병렬로 처리하는 대신 세그먼트를 하나씩 (순차적으로) 처리합니다.",
   "parakeetMaxChars": "자막당 대략적인 문자 수",
   "parakeetMaxCharsHelp": "시스템이 자동으로 문자 분배와 타이밍을 조정하여 단어 중간에 끊기지 않도록 합니다.",
-  "characters": "문자"
+  "characters": "문자",
+  "supportedLanguages": "지원되는 언어"
 }

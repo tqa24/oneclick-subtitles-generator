@@ -90,5 +90,6 @@
   "parakeetMaxDurationHelp": "For Parakeet, if split, segments are processed one by one (sequentially) instead of in parallel like Gemini.",
   "parakeetMaxChars": "Approximate characters per subtitle",
   "parakeetMaxCharsHelp": "System automatically adjusts character distribution and timings to avoid breaking words.",
-  "characters": "characters"
+  "characters": "characters",
+  "supportedLanguages": "Supported languages"
 }

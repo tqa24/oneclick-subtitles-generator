@@ -48,6 +48,65 @@ const VideoProcessingOptionsModal = ({
         return saved || 'new';
     });
 
+    // Supported languages for Parakeet with alphabetical color groups
+    const parakeetLanguages = [
+        { name: 'Bulgarian', group: 'a-f' }, { name: 'Croatian', group: 'a-f' }, { name: 'Czech', group: 'a-f' },
+        { name: 'Danish', group: 'a-f' }, { name: 'Dutch', group: 'a-f' }, { name: 'English', group: 'a-f' },
+        { name: 'Estonian', group: 'a-f' }, { name: 'Finnish', group: 'a-f' }, { name: 'French', group: 'a-f' },
+        { name: 'German', group: 'g-l' }, { name: 'Greek', group: 'g-l' }, { name: 'Hungarian', group: 'g-l' },
+        { name: 'Italian', group: 'g-l' }, { name: 'Latvian', group: 'g-l' }, { name: 'Lithuanian', group: 'g-l' },
+        { name: 'Maltese', group: 'm-r' }, { name: 'Polish', group: 'm-r' }, { name: 'Portuguese', group: 'm-r' },
+        { name: 'Romanian', group: 'm-r' }, { name: 'Russian', group: 'm-r' }, { name: 'Slovak', group: 's-z' },
+        { name: 'Slovenian', group: 's-z' }, { name: 'Spanish', group: 's-z' }, { name: 'Swedish', group: 's-z' },
+        { name: 'Ukrainian', group: 's-z' }
+    ];
+
+    // Mouse drag scrolling for languages badges - simplified and robust
+    const languagesRef = useRef(null);
+    const isDraggingRef = useRef(false);
+    const startXRef = useRef(0);
+    const startScrollLeftRef = useRef(0);
+
+    const handleMouseDown = useCallback((e) => {
+        if (!languagesRef.current || e.button !== 0) return;
+        isDraggingRef.current = true;
+        languagesRef.current.classList.add('dragging');
+        startXRef.current = e.pageX;
+        startScrollLeftRef.current = languagesRef.current.scrollLeft;
+        e.preventDefault();
+    }, []);
+
+    const handleMouseMove = useCallback((e) => {
+        if (!isDraggingRef.current || !languagesRef.current) return;
+        e.preventDefault();
+        const deltaX = e.pageX - startXRef.current;
+        languagesRef.current.scrollLeft = startScrollLeftRef.current - deltaX;
+    }, []);
+
+    const handleMouseUp = useCallback(() => {
+        isDraggingRef.current = false;
+        if (languagesRef.current) {
+            languagesRef.current.classList.remove('dragging');
+        }
+    }, []);
+
+    // Set up drag event listeners - only when Parakeet is selected
+    useEffect(() => {
+        if (method !== 'nvidia-parakeet' || !languagesRef.current) return;
+
+        const container = languagesRef.current;
+        container.addEventListener('mousedown', handleMouseDown);
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+
+        return () => {
+            container.removeEventListener('mousedown', handleMouseDown);
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [method, handleMouseDown, handleMouseMove, handleMouseUp]);
+
+
     // Back-compat flag for old/new methods
     const [inlineExtraction, setInlineExtraction] = useState(() => {
         // If opened via retry, force old method immediately to avoid any flash of the new method
@@ -1491,6 +1550,19 @@ const VideoProcessingOptionsModal = ({
                                     {t('processing.tokenCountError', 'Error counting tokens')}: {tokenCountError}
                                 </div>
                             )}
+                        </div>
+                        )}
+
+                        {/* Supported Languages for Parakeet */}
+                        {method === 'nvidia-parakeet' && (
+                        <div className="footer-languages-info">
+                            <div className="supported-languages-label">{t('processing.supportedLanguages', 'Supported languages')}</div>
+                            <div
+                                className="languages-badges"
+                                ref={languagesRef}
+                            >
+                                {parakeetLanguages.map(lang => <span key={lang.name} className={`language-badge language-badge-${lang.group}`}>{lang.name}</span>)}
+                            </div>
                         </div>
                         )}
 
