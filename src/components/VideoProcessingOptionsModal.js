@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import '../styles/VideoProcessingOptionsModal.css';
@@ -28,6 +28,76 @@ const VideoProcessingOptionsModal = ({
 }) => {
     const { t } = useTranslation();
     const modalRef = useRef(null);
+    const contentRef = useRef(null);
+    const [modalHeight, setModalHeight] = useState('auto');
+
+    // Processing method: 'new' (Files API), 'old' (inline), 'nvidia-parakeet'
+    const [method, setMethod] = useState(() => {
+        const saved = localStorage.getItem('video_processing_method');
+        return saved || 'new';
+    });
+
+    // Back-compat flag for old/new methods
+    const [inlineExtraction, setInlineExtraction] = useState(() => {
+        // If opened via retry, force old method immediately to avoid any flash of the new method
+        const retryMode = sessionStorage.getItem('processing_modal_open_reason') === 'retry-offline';
+        const saved = localStorage.getItem('video_processing_inline_extraction');
+        return retryMode ? true : (saved === 'true');
+    });
+
+    // Parakeet-specific options
+    const [parakeetStrategy, setParakeetStrategy] = useState(() => localStorage.getItem('parakeet_segment_strategy') || 'char');
+    const [parakeetMaxChars, setParakeetMaxChars] = useState(() => {
+        const saved = parseInt(localStorage.getItem('parakeet_max_chars') || '60', 10);
+        return Math.min(100, Math.max(5, isNaN(saved) ? 60 : saved));
+    });
+
+    // Calculate and set modal height for smooth transitions
+    const updateModalHeight = useCallback(() => {
+        if (modalRef.current && contentRef.current && isOpen) {
+            // Get the natural height of the content
+            const modalElement = modalRef.current;
+            const currentHeight = modalElement.offsetHeight;
+
+            // Temporarily set to auto to measure natural height
+            modalElement.style.height = 'auto';
+            const naturalHeight = modalElement.offsetHeight;
+
+            // Set back to current height immediately (no visual change)
+            modalElement.style.height = `${currentHeight}px`;
+
+            // Force a reflow by reading offsetHeight
+            // eslint-disable-next-line no-unused-expressions
+            void modalElement.offsetHeight;
+
+            // Now transition to the new height
+            modalElement.style.height = `${naturalHeight}px`;
+        }
+    }, [isOpen]);
+
+    // Update height when content changes (method switching between Parakeet/Gemini)
+    useEffect(() => {
+        if (isOpen) {
+            // Small delay to let DOM update
+            const timer = setTimeout(() => {
+                updateModalHeight();
+            }, 10);
+            return () => clearTimeout(timer);
+        }
+    }, [method, isOpen, updateModalHeight]);
+
+    // Set initial height when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setTimeout(() => {
+                if (modalRef.current) {
+                    modalRef.current.style.height = 'auto';
+                    const height = modalRef.current.offsetHeight;
+                    modalRef.current.style.height = `${height}px`;
+                }
+            }, 50);
+        }
+    }, [isOpen]);
 
     // Processing options state with localStorage persistence
     const [fps, setFps] = useState(() => {
@@ -114,21 +184,6 @@ const VideoProcessingOptionsModal = ({
     const [isCountingTokens, setIsCountingTokens] = useState(false);
     const [realTokenCount, setRealTokenCount] = useState(null);
     const [tokenCountError, setTokenCountError] = useState(null);
-
-    // Processing method: 'new' (Files API), 'old' (inline), 'nvidia-parakeet'
-    const [method, setMethod] = useState(() => {
-        const saved = localStorage.getItem('video_processing_method');
-        return saved || 'new';
-    });
-
-    // Back-compat flag for old/new methods
-    const [inlineExtraction, setInlineExtraction] = useState(() => {
-        // If opened via retry, force old method immediately to avoid any flash of the new method
-        const reason = sessionStorage.getItem('processing_modal_open_reason');
-        if (reason === 'retry-offline') return true;
-        const saved = localStorage.getItem('video_processing_inline_extraction');
-        return saved === 'true';
-    });
 
     // Compute outside-range subtitles context (limited to nearby lines)
     // When opened via retry-from-cache, lock certain controls and force old method
@@ -235,13 +290,6 @@ const VideoProcessingOptionsModal = ({
     };
 
     const fpsOptions = getFpsOptions();
-
-    // Parakeet-specific options
-    const [parakeetStrategy, setParakeetStrategy] = useState(() => localStorage.getItem('parakeet_segment_strategy') || 'char');
-    const [parakeetMaxChars, setParakeetMaxChars] = useState(() => {
-        const saved = parseInt(localStorage.getItem('parakeet_max_chars') || '60', 10);
-        return Math.min(200, Math.max(10, isNaN(saved) ? 60 : saved));
-    });
 
     const resolutionOptions = [
         { value: 'low', label: t('processing.lowRes', 'Low (64 tokens/frame)'), tokens: 64 },
@@ -921,7 +969,7 @@ const VideoProcessingOptionsModal = ({
                     <CloseButton onClick={onClose} variant="modal" size="medium" />
                 </div>
 
-                <div className="modal-content">
+                <div className="modal-content" ref={contentRef}>
 
                     {/* Two-column grid for options */}
                     <div className="modal-content-grid">
