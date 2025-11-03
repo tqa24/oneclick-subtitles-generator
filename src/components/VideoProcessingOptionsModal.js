@@ -11,6 +11,7 @@ import CustomDropdown from './common/CustomDropdown';
 import HelpIcon from './common/HelpIcon';
 import ParakeetProcessingOptions from './ParakeetProcessingOptions';
 import specialStarIcon from '../assets/specialStar.svg';
+import useParakeetAvailability from '../hooks/useParakeetAvailability';
 
 /**
  * Modal for selecting video processing options after timeline segment selection
@@ -30,6 +31,16 @@ const VideoProcessingOptionsModal = ({
     const modalRef = useRef(null);
     const contentRef = useRef(null);
     const [modalHeight, setModalHeight] = useState('auto');
+
+    // Detect if running in Full (CUDA) mode to enable Parakeet
+    const [isFullVersion, setIsFullVersion] = useState(() => {
+        try {
+            const v = localStorage.getItem('is_full_version');
+            return v === 'true';
+        } catch {
+            return false;
+        }
+    });
 
     // Processing method: 'new' (Files API), 'old' (inline), 'nvidia-parakeet'
     const [method, setMethod] = useState(() => {
@@ -98,6 +109,52 @@ const VideoProcessingOptionsModal = ({
             }, 50);
         }
     }, [isOpen]);
+
+    // Keep track of startup mode changes (from Header or first-load fallback)
+    useEffect(() => {
+        let aborted = false;
+        const onStorage = (e) => {
+            if (e.key === 'is_full_version') {
+                setIsFullVersion(e.newValue === 'true');
+            }
+        };
+        window.addEventListener('storage', onStorage);
+
+        (async () => {
+            try {
+                const exists = localStorage.getItem('is_full_version');
+                if (exists === null) {
+                    const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3031';
+                    const resp = await fetch(`${API_BASE_URL}/api/startup-mode`, {
+                        mode: 'cors',
+                        credentials: 'include',
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    if (!aborted && resp.ok) {
+                        const data = await resp.json();
+                        const isFull = !!data.isDevCuda;
+                        setIsFullVersion(isFull);
+                        try { localStorage.setItem('is_full_version', isFull ? 'true' : 'false'); } catch {}
+                    }
+                }
+            } catch {}
+        })();
+
+        return () => {
+            aborted = true;
+            window.removeEventListener('storage', onStorage);
+        };
+    }, []);
+
+    // Prevent Parakeet selection in Lite mode
+    useEffect(() => {
+        if (!isFullVersion && method === 'nvidia-parakeet') {
+            setMethod('new');
+        }
+    }, [isFullVersion]);
+
+    // Parakeet dynamic availability (health check)
+    const { available: parakeetAvailable, checking: parakeetChecking, isFullMode } = useParakeetAvailability({ retries: 6, intervalMs: 2500 });
 
     // Processing options state with localStorage persistence
     const [fps, setFps] = useState(() => {
@@ -935,6 +992,29 @@ const VideoProcessingOptionsModal = ({
 
     if (!isOpen) return null;
 
+    // Build method options, disabling Parakeet when not in Full mode
+    const parakeetDisabled = !isFullVersion || !parakeetAvailable;
+    const parakeetLabel = !isFullVersion
+        ? t('processing.methodNvidiaParakeetDisabled', 'Nvidia Parakeet (please run OSG Full)')
+        : (!parakeetAvailable
+            ? t('processing.methodNvidiaParakeetStarting', 'Nvidia Parakeet (starting up...)')
+            : t('processing.methodNvidiaParakeet', 'Nvidia Parakeet (local)'));
+    const methodOptions = [
+        {
+            value: 'new',
+            label: <span style={{ display: 'inline-flex', alignItems: 'center' }}><img src={specialStarIcon} alt="" style={{ width: '16px', height: '16px', marginRight: '6px' }} />{t('processing.methodNewOption', 'New: Interact with video on Files API')}</span>
+        },
+        {
+            value: 'old',
+            label: <span style={{ display: 'inline-flex', alignItems: 'center' }}><div dangerouslySetInnerHTML={{ __html: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 16" style="width: 16px; height: 16px; margin-right: 6px; vertical-align: middle;"><path d="M16 8.016A8.522 8.522 0 008.016 16h-.032A8.521 8.521 0 000 8.016v-.032A8.521 8.521 0 007.984 0h.032A8.522 8.522 0 0016 7.984v.032z" fill="url(#prefix__paint0_radial_980_20147)"/><defs><radialGradient id="prefix__paint0_radial_980_20147" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="matrix(16.1326 5.4553 -43.70045 129.2322 1.588 6.503)"><stop offset=".067" stop-color="#9168C0"/><stop offset=".343" stop-color="#5684D1"/><stop offset=".672" stop-color="#1BA1E3"/></radialGradient></defs></svg>` }} />{t('processing.methodOldOption', 'Old: Cut the video locally, then send to Gemini')}</span>
+        },
+        {
+            value: 'nvidia-parakeet',
+            disabled: parakeetDisabled,
+            label: <span style={{ display: 'inline-flex', alignItems: 'center' }}><div dangerouslySetInnerHTML={{ __html: `<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"currentColor\" class=\"bi bi-nvidia\" viewBox=\"0 0 16 16\" id=\"Nvidia--Streamline-Bootstrap\" height=\"16\" width=\"16\" style=\"width: 16px; height: 16px; margin-right: 6px; vertical-align: middle;\"><path d=\"M1.635 7.146S3.08 5.012 5.97 4.791v-0.774C2.77 4.273 0 6.983 0 6.983s1.57 4.536 5.97 4.952v-0.824c-3.23 -0.406 -4.335 -3.965 -4.335 -3.965M5.97 9.475v0.753c-2.44 -0.435 -3.118 -2.972 -3.118 -2.972S4.023 5.958 5.97 5.747v0.828h-0.004c-1.021 -0.123 -1.82 0.83 -1.82 0.83s0.448 1.607 1.824 2.07M6 2l-0.03 2.017A7 7 0 0 1 6.252 4c3.637 -0.123 6.007 2.983 6.007 2.983s-2.722 3.31 -5.557 3.31q-0.39 -0.002 -0.732 -0.065v0.883q0.292 0.039 0.61 0.04c2.638 0 4.546 -1.348 6.394 -2.943 0.307 0.246 1.561 0.842 1.819 1.104 -1.757 1.47 -5.852 2.657 -8.173 2.657a7 7 0 0 1 -0.65 -0.034V14H16l0.03 -12zm-0.03 3.747v-0.956a6 6 0 0 1 0.282 -0.015c2.616 -0.082 4.332 2.248 4.332 2.248S8.73 9.598 6.743 9.598c-0.286 0 -0.542 -0.046 -0.773 -0.123v-2.9c1.018 0.123 1.223 0.572 1.835 1.593L9.167 7.02s-0.994 -1.304 -2.67 -1.304a5 5 0 0 0 -0.527 0.031\" stroke-width=\"1\"></path></svg>` }} />{parakeetLabel}</span>
+        }
+    ];
+
     return ReactDOM.createPortal(
         <div className="video-processing-modal-overlay">
             <div
@@ -955,11 +1035,7 @@ const VideoProcessingOptionsModal = ({
                             <CustomDropdown
                                 value={method}
                                 onChange={(value) => setMethod(value)}
-                                options={[
-                                    { value: 'new', label: <span style={{ display: 'inline-flex', alignItems: 'center' }}><img src={specialStarIcon} alt="" style={{ width: '16px', height: '16px', marginRight: '6px' }} />{t('processing.methodNewOption', 'New: Interact with video on Files API')}</span> },
-                                    { value: 'old', label: <span style={{ display: 'inline-flex', alignItems: 'center' }}><div dangerouslySetInnerHTML={{ __html: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 16" style="width: 16px; height: 16px; margin-right: 6px; vertical-align: middle;"><path d="M16 8.016A8.522 8.522 0 008.016 16h-.032A8.521 8.521 0 000 8.016v-.032A8.521 8.521 0 007.984 0h.032A8.522 8.522 0 0016 7.984v.032z" fill="url(#prefix__paint0_radial_980_20147)"/><defs><radialGradient id="prefix__paint0_radial_980_20147" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="matrix(16.1326 5.4553 -43.70045 129.2322 1.588 6.503)"><stop offset=".067" stop-color="#9168C0"/><stop offset=".343" stop-color="#5684D1"/><stop offset=".672" stop-color="#1BA1E3"/></radialGradient></defs></svg>` }} />{t('processing.methodOldOption', 'Old: Cut the video locally, then send to Gemini')}</span> },
-                                    { value: 'nvidia-parakeet', label: <span style={{ display: 'inline-flex', alignItems: 'center' }}><div dangerouslySetInnerHTML={{ __html: `<svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"currentColor\" class=\"bi bi-nvidia\" viewBox=\"0 0 16 16\" id=\"Nvidia--Streamline-Bootstrap\" height=\"16\" width=\"16\" style=\"width: 16px; height: 16px; margin-right: 6px; vertical-align: middle;\"><path d=\"M1.635 7.146S3.08 5.012 5.97 4.791v-0.774C2.77 4.273 0 6.983 0 6.983s1.57 4.536 5.97 4.952v-0.824c-3.23 -0.406 -4.335 -3.965 -4.335 -3.965M5.97 9.475v0.753c-2.44 -0.435 -3.118 -2.972 -3.118 -2.972S4.023 5.958 5.97 5.747v0.828h-0.004c-1.021 -0.123 -1.82 0.83 -1.82 0.83s0.448 1.607 1.824 2.07M6 2l-0.03 2.017A7 7 0 0 1 6.252 4c3.637 -0.123 6.007 2.983 6.007 2.983s-2.722 3.31 -5.557 3.31q-0.39 -0.002 -0.732 -0.065v0.883q0.292 0.039 0.61 0.04c2.638 0 4.546 -1.348 6.394 -2.943 0.307 0.246 1.561 0.842 1.819 1.104 -1.757 1.47 -5.852 2.657 -8.173 2.657a7 7 0 0 1 -0.65 -0.034V14H16l0.03 -12zm-0.03 3.747v-0.956a6 6 0 0 1 0.282 -0.015c2.616 -0.082 4.332 2.248 4.332 2.248S8.73 9.598 6.743 9.598c-0.286 0 -0.542 -0.046 -0.773 -0.123v-2.9c1.018 0.123 1.223 0.572 1.835 1.593L9.167 7.02s-0.994 -1.304 -2.67 -1.304a5 5 0 0 0 -0.527 0.031\" stroke-width=\"1\"></path></svg>` }} />{t('processing.methodNvidiaParakeet', 'Nvidia Parakeet (local)')}</span> }
-                                ]}
+                                options={methodOptions}
                                 placeholder={t('processing.methodLabel', 'Method')}
                                 disabled={retryLock}
                             />

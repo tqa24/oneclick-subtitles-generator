@@ -67,6 +67,8 @@
   "methodNewOption": "Mới: Tương tác với video qua Files API",
   "methodOldOption": "Cũ: Cắt video trên máy rồi gửi Gemini sau",
   "methodNvidiaParakeet": "Nvidia Parakeet (local)",
+  "methodNvidiaParakeetDisabled": "Nvidia Parakeet (vui lòng chạy OSG Full)",
+  "methodNvidiaParakeetStarting": "Nvidia Parakeet (đang khởi động...)",
   "comingSoon": "(sắp ra mắt)",
   "splittingMethod": "Phương thức chia nhỏ",
   "splittingSentence": "Câu",

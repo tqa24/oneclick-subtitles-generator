@@ -67,6 +67,8 @@
   "methodNewOption": "New: Interact with video on Files API",
   "methodOldOption": "Old: Cut the video locally, then send to Gemini",
   "methodNvidiaParakeet": "Nvidia Parakeet (local)",
+  "methodNvidiaParakeetDisabled": "Nvidia Parakeet (please run OSG Full)",
+  "methodNvidiaParakeetStarting": "Nvidia Parakeet (starting up...)",
   "comingSoon": "(coming soon)",
   "splittingMethod": "Splitting method",
   "splittingSentence": "Sentence",
