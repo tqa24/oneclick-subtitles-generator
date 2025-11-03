@@ -87,7 +87,7 @@
   "parakeetMaxWordsHelp": "Maximum number of words per subtitle when splitting sentences.",
   "parakeetMaxWordsWordStrategy": "Words per subtitle",
   "parakeetMaxWordsHelpWordStrategy": "Number of words in each subtitle when splitting by word count. Ignores punctuation",
-  "parakeetMaxDurationHelp": "For Parakeet, if split, segments are processed one by one (sequentially) instead of in parallel like Gemini.",
+  "parakeetMaxDurationHelp": "For Parakeet, if split, segments are processed one by one (sequentially) instead of in parallel like Gemini. <strong>Long durations may cause lag on machines with weak GPUs</strong>",
   "parakeetMaxChars": "Approximate characters per subtitle",
   "parakeetMaxCharsHelp": "System automatically adjusts character distribution and timings to avoid breaking words.",
   "characters": "characters",

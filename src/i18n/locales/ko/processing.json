@@ -87,7 +87,7 @@
   "parakeetMaxWordsHelp": "문장을 분할할 때 각 자막의 최대 단어 수입니다.",
   "parakeetMaxWordsWordStrategy": "자막당 단어 수",
   "parakeetMaxWordsHelpWordStrategy": "단어 수로 분할할 때 각 자막의 단어 수입니다. 구두점을 무시합니다",
-  "parakeetMaxDurationHelp": "Parakeet의 경우 분할되면 Gemini처럼 병렬로 처리하는 대신 세그먼트를 하나씩 (순차적으로) 처리합니다.",
+  "parakeetMaxDurationHelp": "Parakeet의 경우 분할되면 Gemini처럼 병렬로 처리하는 대신 세그먼트를 하나씩 (순차적으로) 처리합니다. <strong>긴 시간은 약한 GPU를 가진 컴퓨터에서 지연을 일으킬 수 있습니다</strong>",
   "parakeetMaxChars": "자막당 대략적인 문자 수",
   "parakeetMaxCharsHelp": "시스템이 자동으로 문자 분배와 타이밍을 조정하여 단어 중간에 끊기지 않도록 합니다.",
   "characters": "문자",
