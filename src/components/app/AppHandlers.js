@@ -665,6 +665,7 @@ export const useAppHandlers = (appState) => {
           } catch {}
 
           const { extractSegmentAsWavBase64 } = await import('../../utils/audioUtils');
+          const { mergeSegmentSubtitles } = await import('../../utils/subtitle/subtitleMerger');
           const { API_BASE_URL } = await import('../../config');
 
           // Process each sub-segment sequentially
@@ -702,12 +703,12 @@ export const useAppHandlers = (appState) => {
               text: s.segment || s.text || ''
             }));
 
-            // Merge into existing subtitles, removing overlaps with this subrange only
+            // Merge into existing subtitles, clamping edge overlaps instead of deleting
             await new Promise((resolve) => {
               setSubtitlesData(current => {
                 const existing = current || [];
-                const nonOverlap = existing.filter(sub => sub.end <= part.start || sub.start >= part.end);
-                const merged = [...nonOverlap, ...newSegmentSubs].sort((a, b) => a.start - b.start);
+                const overlaps = existing.filter(s => s.start < part.end && s.end > part.start);
+                const merged = mergeSegmentSubtitles(existing, newSegmentSubs, part);
                 resolve();
                 return merged;
               });
