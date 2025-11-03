@@ -1,4 +1,6 @@
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
+const path = require('path');
+const fs = require('fs');
 const chalk = require('chalk');
 
 // Import port management for cleanup and CORS setup
@@ -10,15 +12,21 @@ const colors = {
   FRONTEND: chalk.cyan,
   SERVER: chalk.green,
   RENDERER: chalk.magenta,
-  MIDI: chalk.blue
+  MIDI: chalk.blue,
+  PARAKEET: chalk.yellow
 };
+
+// Resolve project-level .venv absolute path so uv can find it regardless of cwd
+const VENV_PATH = path.join(process.cwd(), '.venv');
 
 // Commands to run - cross-platform approach
 const commands = [
   { name: 'FRONTEND', cmd: 'npm', args: ['run', 'start'], cwd: '.' },
   { name: 'SERVER', cmd: 'npm', args: ['run', 'server:start'], cwd: '.' },
   { name: 'RENDERER', cmd: 'npm', args: ['run', 'video-renderer:start'], cwd: '.' },
-  { name: 'MIDI', cmd: 'npm', args: ['run', 'dev', '--silent'], cwd: './promptdj-midi' }
+  { name: 'MIDI', cmd: 'npm', args: ['run', 'dev', '--silent'], cwd: './promptdj-midi' },
+  // Run Parakeet from project root so --python .venv resolves; pass absolute .venv for safety
+  { name: 'PARAKEET', cmd: 'uv', args: ['run', '--python', VENV_PATH, 'python', path.join('parakeet_wrapper', 'app.py')], cwd: '.' }
 ];
 
 // Function to prefix output with colored service name (only the prefix is colored)
@@ -48,6 +56,20 @@ async function startServices() {
 
   // Wait a moment for ports to be fully released
   await new Promise(resolve => setTimeout(resolve, 1000));
+
+  // Ensure yt-dlp is installed in the shared .venv before starting services that depend on it
+  try {
+    const venvBin = process.platform === 'win32' ? 'Scripts' : 'bin';
+    const ytDlpExec = process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp';
+    const ytDlpPath = path.join(process.cwd(), '.venv', venvBin, ytDlpExec);
+    if (!fs.existsSync(ytDlpPath)) {
+      console.log(chalk.yellow('📦 Installing yt-dlp into .venv (required for downloads)...'));
+      execSync('node install-yt-dlp.js', { stdio: 'inherit' });
+      console.log(chalk.green('✅ yt-dlp installation complete'));
+    }
+  } catch (e) {
+    console.log(chalk.red('⚠️  Failed to ensure yt-dlp is installed. You can install it manually with: npm run install:yt-dlp'));
+  }
 
   // Now start all services
   commands.forEach(({ name, cmd, args, cwd }) => {
