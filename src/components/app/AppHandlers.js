@@ -683,7 +683,8 @@ export const useAppHandlers = (appState) => {
                 audio_base64: wavBase64,
                 filename: (uploadedFileData && uploadedFileData.name) || 'segment.wav',
                 segment_strategy: options.parakeetStrategy || 'char',
-                max_chars: options.parakeetMaxChars || 60
+                max_chars: options.parakeetMaxChars || 60,
+                max_words: options.parakeetMaxWords || 7
               })
             });
 
