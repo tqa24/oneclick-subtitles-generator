@@ -12,8 +12,7 @@ const colors = {
   FRONTEND: chalk.cyan,
   SERVER: chalk.green,
   RENDERER: chalk.magenta,
-  MIDI: chalk.blue,
-  PARAKEET: chalk.yellow
+  MIDI: chalk.blue
 };
 
 // Resolve project-level .venv absolute path so uv can find it regardless of cwd
@@ -24,9 +23,8 @@ const commands = [
   { name: 'FRONTEND', cmd: 'npm', args: ['run', 'start'], cwd: '.' },
   { name: 'SERVER', cmd: 'npm', args: ['run', 'server:start'], cwd: '.' },
   { name: 'RENDERER', cmd: 'npm', args: ['run', 'video-renderer:start'], cwd: '.' },
-  { name: 'MIDI', cmd: 'npm', args: ['run', 'dev', '--silent'], cwd: './promptdj-midi' },
-  // Run Parakeet from project root so --python .venv resolves; pass absolute .venv for safety
-  { name: 'PARAKEET', cmd: 'uv', args: ['run', '--python', VENV_PATH, 'python', path.join('parakeet_wrapper', 'app.py')], cwd: '.' }
+  { name: 'MIDI', cmd: 'npm', args: ['run', 'dev', '--silent'], cwd: './promptdj-midi' }
+  // PARAKEET service removed for lite version - only runs with dev:cuda
 ];
 
 // Function to prefix output with colored service name (only the prefix is colored)
