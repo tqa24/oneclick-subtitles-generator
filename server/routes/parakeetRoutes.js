@@ -18,7 +18,7 @@ router.get('/parakeet/health', async (req, res) => {
 // Transcribe a pre-sliced audio segment provided as base64 WAV/MP3/etc.
 router.post('/parakeet/transcribe', async (req, res) => {
   try {
-    const { audio_base64, filename, segment_strategy = 'char', max_chars = 60 } = req.body || {};
+    const { audio_base64, filename, segment_strategy = 'sentence', max_chars = 60, max_words = 7, pause_threshold = 0.8 } = req.body || {};
 
     if (!audio_base64 || typeof audio_base64 !== 'string') {
       return res.status(400).json({ success: false, error: 'audio_base64 is required' });
@@ -28,7 +28,9 @@ router.post('/parakeet/transcribe', async (req, res) => {
       audio_base64,
       filename: filename || 'segment.wav',
       segment_strategy,
-      max_chars: Math.max(10, Math.min(parseInt(max_chars || 60, 10), 200))
+      max_chars: Math.max(10, Math.min(parseInt(max_chars || 60, 10), 200)),
+      max_words: Math.max(-1, Math.min(parseInt(max_words || 7, 10), 50)),
+      pause_threshold: Math.max(0.1, Math.min(parseFloat(pause_threshold || 0.8), 5.0))
     };
 
     const resp = await axios.post(`${PARAKEET_BASE_URL}/transcribe_base64`, payload, {

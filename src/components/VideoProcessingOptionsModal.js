@@ -57,10 +57,17 @@ const VideoProcessingOptionsModal = ({
     });
 
     // Parakeet-specific options
-    const [parakeetStrategy, setParakeetStrategy] = useState(() => localStorage.getItem('parakeet_segment_strategy') || 'char');
+    const [parakeetStrategy, setParakeetStrategy] = useState(() => localStorage.getItem('parakeet_segment_strategy') || 'sentence');
     const [parakeetMaxChars, setParakeetMaxChars] = useState(() => {
         const saved = parseInt(localStorage.getItem('parakeet_max_chars') || '60', 10);
         return Math.min(100, Math.max(5, isNaN(saved) ? 60 : saved));
+    });
+    const [parakeetMaxWords, setParakeetMaxWords] = useState(() => {
+        const saved = parseInt(localStorage.getItem('parakeet_max_words') || '7', 10);
+        return Math.min(50, Math.max(1, isNaN(saved) ? 7 : saved));
+    });
+    const [parakeetPreserveSentences, setParakeetPreserveSentences] = useState(() => {
+        return localStorage.getItem('parakeet_preserve_sentences') === 'true';
     });
 
     // Calculate and set modal height for smooth transitions
@@ -538,6 +545,12 @@ const VideoProcessingOptionsModal = ({
     useEffect(() => {
         localStorage.setItem('parakeet_max_chars', String(parakeetMaxChars));
     }, [parakeetMaxChars]);
+    useEffect(() => {
+        localStorage.setItem('parakeet_max_words', String(parakeetMaxWords));
+    }, [parakeetMaxWords]);
+    useEffect(() => {
+        localStorage.setItem('parakeet_preserve_sentences', parakeetPreserveSentences ? 'true' : 'false');
+    }, [parakeetPreserveSentences]);
 
     useEffect(() => {
         localStorage.setItem('video_processing_custom_language', customLanguage);
@@ -959,7 +972,8 @@ const VideoProcessingOptionsModal = ({
             inlineExtraction,
             method,
             parakeetStrategy,
-            parakeetMaxChars
+            parakeetMaxChars,
+            parakeetMaxWords: parakeetStrategy === 'sentence' && parakeetPreserveSentences ? -1 : parakeetMaxWords
         };
 
         // In retry-from-cache mode, force old method and prevent further splitting
@@ -1057,6 +1071,10 @@ const VideoProcessingOptionsModal = ({
                                 setMaxDurationPerRequest={setMaxDurationPerRequest}
                                 parakeetMaxChars={parakeetMaxChars}
                                 setParakeetMaxChars={setParakeetMaxChars}
+                                parakeetMaxWords={parakeetMaxWords}
+                                setParakeetMaxWords={setParakeetMaxWords}
+                                parakeetPreserveSentences={parakeetPreserveSentences}
+                                setParakeetPreserveSentences={setParakeetPreserveSentences}
                                 selectedSegment={selectedSegment}
                             />
                         ) : (
