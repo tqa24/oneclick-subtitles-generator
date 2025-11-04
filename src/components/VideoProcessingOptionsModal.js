@@ -295,7 +295,13 @@ const VideoProcessingOptionsModal = ({
     // Maximum duration per request (in minutes) for parallel processing
     const [maxDurationPerRequest, setMaxDurationPerRequest] = useState(() => {
         const saved = localStorage.getItem('video_processing_max_duration');
-        return saved ? parseInt(saved, 10) : 10; // Default to 10 minutes
+        return saved ? parseInt(saved, 10) : 10; // Default to 10 minutes for Gemini
+    });
+
+    // Separate max duration for Parakeet (in minutes)
+    const [parakeetMaxDurationPerRequest, setParakeetMaxDurationPerRequest] = useState(() => {
+        const saved = localStorage.getItem('parakeet_max_duration_per_request');
+        return saved ? parseInt(saved, 10) : 3; // Default to 3 minutes for Parakeet
     });
 
     // Auto-split subtitles settings (synced with Settings modal)
@@ -378,6 +384,11 @@ const VideoProcessingOptionsModal = ({
     useEffect(() => {
         localStorage.setItem('video_processing_max_duration', maxDurationPerRequest.toString());
     }, [maxDurationPerRequest]);
+
+    // Persist Parakeet max duration per request
+    useEffect(() => {
+        localStorage.setItem('parakeet_max_duration_per_request', parakeetMaxDurationPerRequest.toString());
+    }, [parakeetMaxDurationPerRequest]);
 
     // Persist auto-split settings (synced with Settings modal)
     useEffect(() => {
@@ -481,7 +492,7 @@ const VideoProcessingOptionsModal = ({
         const segmentDurationSec = (typeof selectedSegment?.end === 'number' && typeof selectedSegment?.start === 'number')
             ? (selectedSegment.end - selectedSegment.start)
             : 0;
-        const requestWindowSec = Math.max(1, Number(maxDurationPerRequest || 0) * 60);
+        const requestWindowSec = Math.max(1, Number((method === 'nvidia-parakeet' ? parakeetMaxDurationPerRequest : maxDurationPerRequest) || 0) * 60);
         const numRequests = requestWindowSec > 0 ? Math.ceil(segmentDurationSec / requestWindowSec) : 1;
         const hasSplitParts = numRequests > 1;
 
@@ -709,7 +720,7 @@ const VideoProcessingOptionsModal = ({
                 clearTimeout(timeoutId);
             };
         }
-    }, [isOpen, videoFile, selectedSegment, fps, mediaResolution, selectedModel, selectedPromptPreset, customLanguage, useTranscriptionRules, maxDurationPerRequest]);
+    }, [isOpen, videoFile, selectedSegment, fps, mediaResolution, selectedModel, selectedPromptPreset, customLanguage, useTranscriptionRules, maxDurationPerRequest, parakeetMaxDurationPerRequest, method]);
 
     // Get all available prompt presets
     const getPromptPresetOptions = () => {
@@ -894,7 +905,8 @@ const VideoProcessingOptionsModal = ({
             const segmentDuration = selectedSegment.end - selectedSegment.start;
 
             // Account for parallel processing splitting
-            const numRequests = Math.ceil(segmentDuration / (maxDurationPerRequest * 60));
+            const currentMaxDuration = method === 'nvidia-parakeet' ? parakeetMaxDurationPerRequest : maxDurationPerRequest;
+            const numRequests = Math.ceil(segmentDuration / (currentMaxDuration * 60));
 
             // Try to get total duration from video file or use segment duration as fallback
             let totalDuration = segmentDuration; // Conservative fallback
@@ -982,7 +994,8 @@ const VideoProcessingOptionsModal = ({
         const totalSegmentTokens = Math.round(segmentDuration * (fps * frameTokens + audioTokens));
 
         // Account for parallel processing splitting (same logic as real token counting)
-        const numRequests = Math.ceil(segmentDuration / (maxDurationPerRequest * 60));
+        const currentMaxDuration = method === 'nvidia-parakeet' ? parakeetMaxDurationPerRequest : maxDurationPerRequest;
+        const numRequests = Math.ceil(segmentDuration / (currentMaxDuration * 60));
 
         // Return tokens per request when splitting, otherwise total
         return numRequests > 1
@@ -1032,7 +1045,7 @@ const VideoProcessingOptionsModal = ({
             promptPreset: selectedPromptPreset,
             customLanguage: selectedPromptPreset === 'translate-directly' ? customLanguage : undefined,
             useTranscriptionRules, // Include the transcription rules setting
-            maxDurationPerRequest: maxDurationPerRequest * 60, // Convert to seconds
+            maxDurationPerRequest: (method === 'nvidia-parakeet' ? parakeetMaxDurationPerRequest : maxDurationPerRequest) * 60, // Convert to seconds
             autoSplitSubtitles,
             maxWordsPerSubtitle,
             inlineExtraction,
@@ -1144,8 +1157,8 @@ const VideoProcessingOptionsModal = ({
                                     <ParakeetProcessingOptions
                                         parakeetStrategy={parakeetStrategy}
                                         setParakeetStrategy={setParakeetStrategy}
-                                        maxDurationPerRequest={maxDurationPerRequest}
-                                        setMaxDurationPerRequest={setMaxDurationPerRequest}
+                                        maxDurationPerRequest={parakeetMaxDurationPerRequest}
+                                        setMaxDurationPerRequest={setParakeetMaxDurationPerRequest}
                                         parakeetMaxChars={parakeetMaxChars}
                                         setParakeetMaxChars={setParakeetMaxChars}
                                         parakeetMaxWords={parakeetMaxWords}
