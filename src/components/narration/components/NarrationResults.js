@@ -966,7 +966,12 @@ const NarrationResults = ({
             itemCount={displayedResults.length}
             itemSize={getRowHeight} // Dynamic row heights based on content
             overscanCount={18} // Increase overscan to reduce blanking during fast scrolls
-            itemKey={(index, data) => (data.generationResults[index] && data.generationResults[index].subtitle_id) ?? index}
+            itemKey={(index, data) => {
+              const item = data.generationResults[index];
+              const id = item && item.subtitle_id;
+              // Ensure uniqueness even if upstream repeats subtitle_id
+              return (id !== undefined && id !== null) ? `${id}-${index}` : index;
+            }}
             itemData={{
               generationResults: displayedResults,
               onRetry,
