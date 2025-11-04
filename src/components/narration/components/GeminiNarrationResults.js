@@ -388,9 +388,8 @@ const GeminiNarrationResults = ({
         }
       });
 
-      // Sort by subtitle_id to maintain order
-      results.sort((a, b) => a.subtitle_id - b.subtitle_id);
-      return results;
+  // Preserve planned order to keep alignment with timeline after edits/deletes
+  return results;
     }
 
     // Fallback: show generation results if no planned subtitles
