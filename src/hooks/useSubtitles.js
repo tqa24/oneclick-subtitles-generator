@@ -4,6 +4,9 @@ import { preloadYouTubeVideo } from '../utils/videoPreloader';
 import { generateFileCacheId } from '../utils/cacheUtils';
 import { extractYoutubeVideoId } from '../utils/videoDownloader';
 import { getVideoDuration, processMediaFile } from '../utils/videoProcessor';
+import { extractSegmentAsWavBase64 } from '../utils/audioUtils';
+import { mergeSegmentSubtitles } from '../utils/subtitle/subtitleMerger';
+import { API_BASE_URL } from '../config';
 
 import { setCurrentCacheId as setRulesCacheId } from '../utils/transcriptionRulesStore';
 import { setCurrentCacheId as setSubtitlesCacheId } from '../utils/userSubtitlesStore';
@@ -190,7 +193,7 @@ export const useSubtitles = (t) => {
         // Extract options
 
         const { userProvidedSubtitles, segment, fps, mediaResolution, model } = options; // inlineExtraction supported via options.inlineExtraction
-        if (!apiKeysSet.gemini) {
+        if (options.method !== 'nvidia-parakeet' && !apiKeysSet.gemini) {
             setStatus({ message: t('errors.apiKeyRequired'), type: 'error' });
             return false;
         }
@@ -200,6 +203,175 @@ export const useSubtitles = (t) => {
 
         setIsGenerating(true);
         setStatus({ message: t('output.processingVideo'), type: 'loading' });
+
+        // Handle Parakeet processing
+        if (options.method === 'nvidia-parakeet') {
+            const seg = options.segment;
+            if (!seg || typeof seg.start !== 'number' || typeof seg.end !== 'number') {
+                setStatus({ message: 'Invalid segment selection', type: 'error' });
+                setIsGenerating(false);
+                return false;
+            }
+
+            // Before processing, checkpoint current edits to align with Gemini segment flow
+            await new Promise((resolve) => {
+                const handleSaveComplete = (event) => {
+                    if (event.detail?.source === 'segment-processing-start') {
+                        window.removeEventListener('save-complete', handleSaveComplete);
+                        resolve();
+                    }
+                };
+
+                window.addEventListener('save-complete', handleSaveComplete);
+
+                // Trigger the save
+                window.dispatchEvent(new CustomEvent('save-before-update', {
+                    detail: {
+                        source: 'segment-processing-start',
+                        segment: seg
+                    }
+                }));
+
+                // Fallback timeout in case save doesn't complete
+                setTimeout(() => {
+                    window.removeEventListener('save-complete', handleSaveComplete);
+                    resolve();
+                }, 2000);
+            });
+
+            // Determine sequential sub-segments based on maxDurationPerRequest (seconds)
+            const windowSec = Math.max(1, Math.floor(options.maxDurationPerRequest || 0));
+            let subSegments = [seg];
+            try {
+                if (windowSec && (seg.end - seg.start) > windowSec) {
+                    const { splitSegmentForParallelProcessing } = await import('../utils/parallelProcessingUtils');
+                    subSegments = splitSegmentForParallelProcessing(seg, windowSec);
+                }
+            } catch (e) {
+                // Fallback: simple slicer
+                const total = seg.end - seg.start;
+                const n = Math.ceil(total / windowSec);
+                subSegments = Array.from({ length: n }).map((_, i) => ({
+                    start: seg.start + i * (total / n),
+                    end: i === n - 1 ? seg.end : seg.start + (i + 1) * (total / n)
+                }));
+            }
+
+            // Show processing ranges overlay
+            try {
+                if (subSegments && subSegments.length > 1) {
+                    window.dispatchEvent(new CustomEvent('processing-ranges', { detail: { ranges: subSegments } }));
+                }
+            } catch {}
+
+            // Process each sub-segment sequentially
+            for (let i = 0; i < subSegments.length; i++) {
+                const part = subSegments[i];
+                setStatus({ message: `Transcribing with Parakeet ASR (${i + 1}/${subSegments.length})...`, type: 'loading' });
+
+                // Extract WAV base64 for just this sub-segment
+                const wavBase64 = await extractSegmentAsWavBase64(input, part.start, part.end);
+
+                const resp = await fetch(`${API_BASE_URL}/parakeet/transcribe`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        audio_base64: wavBase64,
+                        filename: (input && input.name) || 'segment.wav',
+                        segment_strategy: options.parakeetStrategy || 'char',
+                        max_chars: options.parakeetMaxChars || 60,
+                        max_words: options.parakeetMaxWords || 7
+                    })
+                });
+
+                if (!resp.ok) {
+                    const errText = await resp.text().catch(() => '');
+                    throw new Error(`Parakeet API error: ${resp.status} ${errText}`);
+                }
+
+                const data = await resp.json();
+                const segmentSubs = Array.isArray(data?.segments) ? data.segments : [];
+
+                // Offset timestamps by sub-segment start to map back to full timeline
+                const offset = part.start || 0;
+                const newSegmentSubs = segmentSubs.map(s => ({
+                    start: (s.start || 0) + offset,
+                    end: (s.end || 0) + offset,
+                    text: s.segment || s.text || ''
+                }));
+
+                // Merge into existing subtitles, clamping edge overlaps instead of deleting
+                await new Promise((resolve) => {
+                    setSubtitlesData(current => {
+                        const existing = current || [];
+                        const merged = mergeSegmentSubtitles(existing, newSegmentSubs, part);
+                        resolve();
+                        return merged;
+                    });
+                });
+
+                // Optional: dispatch streaming-update for UI parity/animations
+                try {
+                    window.dispatchEvent(new CustomEvent('streaming-update', {
+                        detail: {
+                            subtitles: newSegmentSubs,
+                            segment: part
+                        }
+                    }));
+                } catch {}
+            }
+
+            // Clear overlay and finish
+            try {
+                window.dispatchEvent(new CustomEvent('processing-ranges', { detail: { ranges: [] } }));
+            } catch {}
+
+            // Read final subtitles from state
+            let finalSubs = [];
+            await new Promise((resolve) => {
+                setSubtitlesData(current => {
+                    finalSubs = current || [];
+                    resolve();
+                    return current; // no-op
+                });
+            });
+
+            // Filter final subtitles to the processed segment range for event payload
+            const filteredForSeg = (finalSubs || []).filter(s => (s.start < seg.end && s.end > seg.start)).map(s => ({
+                ...s,
+                start: Math.max(s.start, seg.start),
+                end: Math.min(s.end, seg.end)
+            }));
+
+            // Dispatch streaming-complete to signal UI that processing has concluded
+            try {
+                window.dispatchEvent(new CustomEvent('streaming-complete', {
+                    detail: {
+                        subtitles: filteredForSeg,
+                        segment: seg
+                    }
+                }));
+            } catch {}
+
+            // Trigger auto-save after streaming completion (same as Gemini path)
+            try {
+                if (filteredForSeg && filteredForSeg.length > 0) {
+                    setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent('save-after-streaming', {
+                            detail: {
+                                source: 'streaming-complete',
+                                subtitles: finalSubs,
+                                segment: seg
+                            }
+                        }));
+                    }, 500);
+                }
+            } catch {}
+
+            setStatus({ message: 'Parakeet transcription complete', type: 'success' });
+            setIsGenerating(false);
+            return true;
+        }
 
         try {
             let cacheId = null;
