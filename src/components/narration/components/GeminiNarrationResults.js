@@ -366,9 +366,9 @@ const GeminiNarrationResults = ({
 
       // Create results for all subtitles
       const results = plannedSubtitles.map((subtitle, index) => {
-        const rawId = subtitle.id ?? subtitle.subtitle_id ?? (index + 1);
-        const subtitleId = isNaN(Number(rawId)) ? (index + 1) : Number(rawId);
-        const existingResult = generationResults?.find(r => Number(r.subtitle_id) === subtitleId);
+        // Align ID semantics with NarrationResults: prefer subtitle.id, then subtitle.subtitle_id, else index (0-based)
+        const subtitleId = subtitle.id ?? subtitle.subtitle_id ?? index;
+        const existingResult = generationResults?.find(r => r.subtitle_id === subtitleId);
 
         if (existingResult) {
           // Use existing result
