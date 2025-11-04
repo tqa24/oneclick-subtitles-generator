@@ -91,5 +91,12 @@
   "parakeetMaxChars": "Approximate characters per subtitle",
   "parakeetMaxCharsHelp": "System automatically adjusts character distribution and timings to avoid breaking words.",
   "characters": "characters",
-  "supportedLanguages": "Supported languages"
+  "supportedLanguages": "Supported languages",
+  "transcriptionMethodOverlayTitle": "Choose your favorite transcription method",
+  "transcriptionMethodNewName": "Gemini: New Method",
+  "transcriptionMethodOldName": "Gemini: Old Method",
+  "transcriptionMethodParakeetName": "Nvidia Parakeet",
+  "transcriptionMethodNewDescription": "Interact with video on Files API",
+  "transcriptionMethodOldDescription": "Cut the video locally, then send to Gemini",
+  "transcriptionMethodParakeetDescription": "Local processing with Nvidia Parakeet"
 }

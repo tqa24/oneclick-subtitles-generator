@@ -91,6 +91,13 @@
   "parakeetMaxChars": "Số ký tự xấp xỉ mỗi phụ đề",
   "parakeetMaxCharsHelp": "Hệ thống tự động điều chỉnh dồn/thả ký tự và timings để không bị ngắt giữa từ",
   "characters": "ký tự",
-  "supportedLanguages": "Ngôn ngữ được hỗ trợ"
+  "supportedLanguages": "Ngôn ngữ được hỗ trợ",
+  "transcriptionMethodOverlayTitle": "Chọn phương thức phiên âm yêu thích của bạn",
+  "transcriptionMethodNewName": "Gemini: Phương thức mới",
+  "transcriptionMethodOldName": "Gemini: Phương thức cũ",
+  "transcriptionMethodParakeetName": "Nvidia Parakeet",
+  "transcriptionMethodNewDescription": "Tương tác với video qua Files API",
+  "transcriptionMethodOldDescription": "Cắt video trên máy rồi gửi Gemini sau",
+  "transcriptionMethodParakeetDescription": "Xử lý cục bộ với Nvidia Parakeet"
 }
 
