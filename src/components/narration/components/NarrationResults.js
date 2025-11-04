@@ -325,9 +325,9 @@ const NarrationResults = ({
 
   // Derive a displayed list that immediately shows the full "true" list during generation (like Gemini)
   const trueSubtitles = (() => {
-    // If caller provided an explicit plan, always prefer it
-    if (Array.isArray(plannedSubtitles) && plannedSubtitles.length > 0) {
-      return plannedSubtitles;
+    // If caller provided an explicit plan prop (even empty), treat it as source of truth
+    if (typeof plannedSubtitles !== 'undefined') {
+      return Array.isArray(plannedSubtitles) ? plannedSubtitles : [];
     }
     // Prefer grouped subtitles when enabled (from global state)
     if (typeof window !== 'undefined' && window.useGroupedSubtitles && Array.isArray(window.groupedSubtitles) && window.groupedSubtitles.length > 0) {
