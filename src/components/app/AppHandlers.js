@@ -390,7 +390,7 @@ export const useAppHandlers = (appState) => {
             const currentVideoUrl = localStorage.getItem("current_video_url");
             if (currentVideoUrl) {
               const { generateUrlBasedCacheId } = await import(
-                "../../hooks/useSubtitles"
+                "../../services/subtitleCache"
               );
               const urlBasedCacheId = await generateUrlBasedCacheId(
                 currentVideoUrl
