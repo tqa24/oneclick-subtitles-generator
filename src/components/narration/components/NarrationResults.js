@@ -8,6 +8,7 @@ import PlayPauseMorphType4 from '../../common/PlayPauseMorphType4';
 import '../../../utils/functionalScrollbar';
 import { VariableSizeList as List } from 'react-window';
 import { SERVER_URL } from '../../../config';
+import { deriveSubtitleId, idsEqual } from '../../../utils/subtitle/idUtils';
 import { enhanceF5TTSNarrations } from '../../../utils/narrationEnhancer';
 import { formatTime } from '../../../utils/timeFormatter';
 
@@ -361,8 +362,8 @@ const NarrationResults = ({
 
       // Create results for all subtitles
       const results = trueSubtitles.map((subtitle, index) => {
-        const subtitleId = subtitle.id ?? subtitle.subtitle_id ?? index;
-        const existingResult = generationResults?.find(r => r.subtitle_id === subtitleId);
+        const subtitleId = deriveSubtitleId(subtitle, index);
+        const existingResult = generationResults?.find(r => idsEqual(r.subtitle_id, subtitleId));
 
         if (existingResult) {
           // Use existing result

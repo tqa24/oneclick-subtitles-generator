@@ -10,6 +10,7 @@ import { VariableSizeList as List } from 'react-window';
 // Import utility functions and config
 import { getAudioUrl } from '../../../services/narrationService';
 import { SERVER_URL } from '../../../config';
+import { deriveSubtitleId, idsEqual } from '../../../utils/subtitle/idUtils';
 import { formatTime } from '../../../utils/timeFormatter';
 import PlayPauseMorphType4 from '../../common/PlayPauseMorphType4';
 
@@ -366,9 +367,9 @@ const GeminiNarrationResults = ({
 
       // Create results for all subtitles
       const results = plannedSubtitles.map((subtitle, index) => {
-        // Align ID semantics with NarrationResults: prefer subtitle.id, then subtitle.subtitle_id, else index (0-based)
-        const subtitleId = subtitle.id ?? subtitle.subtitle_id ?? index;
-        const existingResult = generationResults?.find(r => r.subtitle_id === subtitleId);
+        // Use shared ID derivation for consistency across all methods
+        const subtitleId = deriveSubtitleId(subtitle, index);
+        const existingResult = generationResults?.find(r => idsEqual(r.subtitle_id, subtitleId));
 
         if (existingResult) {
           // Use existing result
@@ -1116,8 +1117,8 @@ const GeminiNarrationResults = ({
             itemKey={(index, data) => {
               const item = data.generationResults[index];
               const id = item && item.subtitle_id;
-              // Mirror NarrationResults behavior while guaranteeing uniqueness with index suffix
-              return (id !== undefined && id !== null) ? `${id}-${index}` : index;
+              // Unique and stable within a session
+              return (id !== undefined && id !== null) ? `${String(id)}-${index}` : index;
             }}
             itemData={{
               generationResults: displayedResults,
