@@ -14,6 +14,7 @@ import { convertTimeStringToSeconds } from '../../utils/vttUtils';
 import SubtitleSettings from '../SubtitleSettings';
 import VideoTopsideButtons from './VideoTopsideButtons';
 import VideoBottomControls from './VideoBottomControls';
+import SeekIndicator from './SeekIndicator';
 // Narration settings now integrated into the translation section
 import '../../styles/VideoPreview.css';
 import '../../styles/narration/index.css';
@@ -2316,14 +2317,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                   )}
                 </div>
 
-                {/* Seek indicator */}
-                {showSeekIndicator && (
-                  <div className={`seek-indicator ${seekDirection}`}>
-                    <span className="material-symbols-rounded" style={{ fontSize: '120px' }}>
-                      {seekDirection === 'backward' ? 'fast_rewind' : 'fast_forward'}
-                    </span>
-                  </div>
-                )}
+                <SeekIndicator showSeekIndicator={showSeekIndicator} seekDirection={seekDirection} />
 
                 {/* Loading/Buffering Spinner */}
                 {(isVideoLoading || isBuffering) && (
@@ -2483,32 +2477,6 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                     word-wrap: break-word;
                   }
 
-                  .seek-indicator {
-                    position: absolute;
-                    top: 50%;
-                    z-index: 20;
-                    color: white;
-                    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-                    pointer-events: none;
-                    animation: fadeInOut 1s ease-in-out;
-                  }
-
-                  .seek-indicator.backward {
-                    left: 20%;
-                    transform: translateY(-50%);
-                  }
-
-                  .seek-indicator.forward {
-                    right: 20%;
-                    transform: translateY(-50%);
-                  }
-
-                  @keyframes fadeInOut {
-                    0% { opacity: 0; transform: translateY(-50%) scale(0.8); }
-                    10% { opacity: 1; transform: translateY(-50%) scale(1); }
-                    90% { opacity: 1; transform: translateY(-50%) scale(1); }
-                    100% { opacity: 0; transform: translateY(-50%) scale(0.8); }
-                  }
                 `}
               </style>
 
