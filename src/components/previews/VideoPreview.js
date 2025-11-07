@@ -18,6 +18,7 @@ import VideoBottomControls from './VideoBottomControls';
 import '../../styles/VideoPreview.css';
 import '../../styles/narration/index.css';
 import { SERVER_URL } from '../../config';
+import useVideoSeekControls from '../../hooks/useVideoSeekControls';
 
 const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, onSeek, translatedSubtitles, subtitlesArray, onVideoUrlReady, onReferenceAudioChange, onRenderVideo, useCookiesForDownload = true }) => {
   const { t } = useTranslation();
@@ -25,9 +26,18 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
   const videoContainerRef = useRef(null); // Ref for the main video container
   const lastBlobUrlRef = useRef(null);
 
+  const handleSeek = (direction) => {
+    setSeekDirection(direction);
+    setShowSeekIndicator(true);
+    setTimeout(() => setShowSeekIndicator(false), 1000);
+  };
+
+  useVideoSeekControls(videoRef, handleSeek);
+
   const seekLockRef = useRef(false);
   const lastTimeUpdateRef = useRef(0); // Track last time update to throttle updates
   const lastPlayStateRef = useRef(false); // Track last play state to avoid redundant updates
+  const lastTouchTimeRef = useRef(0);
   // isFullscreen state is set but not directly used in rendering - used for event handling
   const [isFullscreen, setIsFullscreen] = useState(false); // Track fullscreen state
   const [videoUrl, setVideoUrl] = useState('');
@@ -67,6 +77,8 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
   const [useOptimizedPreview, setUseOptimizedPreview] = useState(() => {
     return localStorage.getItem('use_optimized_preview') === 'true';
   });
+  const [showSeekIndicator, setShowSeekIndicator] = useState(false);
+  const [seekDirection, setSeekDirection] = useState('');
 
   // Listen for changes to the optimized preview setting from Settings modal
   useEffect(() => {
@@ -1667,18 +1679,6 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
           }
           break;
 
-        case 'ArrowLeft':
-        case 'j':
-          // Seek backward 10 seconds
-          videoElement.currentTime = Math.max(0, videoElement.currentTime - 10);
-          break;
-
-        case 'ArrowRight':
-        case 'l':
-          // Seek forward 10 seconds
-          videoElement.currentTime = Math.min(videoDuration, videoElement.currentTime + 10);
-          break;
-
         case 'ArrowUp':
           // Volume up
           videoElement.volume = Math.min(1, videoElement.volume + 0.1);
@@ -2226,11 +2226,37 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                   onTouchEnd={(e) => {
                     // Prevent double-tap zoom on mobile
                     e.preventDefault();
-                    if (videoRef.current) {
-                      if (isPlaying) {
-                        videoRef.current.pause();
-                      } else {
-                        videoRef.current.play().catch(console.error);
+                    const now = Date.now();
+                    if (now - lastTouchTimeRef.current < 300) { // double tap
+                      const rect = e.target.getBoundingClientRect();
+                      const touch = e.changedTouches[0];
+                      const x = touch.clientX - rect.left;
+                      const isLeft = x < rect.width / 2;
+                      if (videoRef.current) {
+                        if (isLeft) {
+                          videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 5);
+                        } else {
+                          if (videoRef.current.duration) {
+                            videoRef.current.currentTime = Math.min(videoRef.current.duration, videoRef.current.currentTime + 5);
+                          }
+                        }
+                      }
+                      handleSeek(isLeft ? 'backward' : 'forward');
+                    } else {
+                      lastTouchTimeRef.current = now;
+                      if (videoRef.current) {
+                        if (isPlaying) {
+                          videoRef.current.pause();
+                        } else {
+                          videoRef.current.play().catch(console.error);
+                        }
+                        // Force sync UI state after a short delay to ensure it matches video state
+                        setTimeout(() => {
+                          const actuallyPlaying = !videoRef.current.paused;
+                          if (actuallyPlaying !== isPlaying) {
+                            setIsPlaying(actuallyPlaying);
+                          }
+                        }, 50);
                       }
                     }
                   }}
@@ -2289,6 +2315,15 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                     </div>
                   )}
                 </div>
+
+                {/* Seek indicator */}
+                {showSeekIndicator && (
+                  <div className={`seek-indicator ${seekDirection}`}>
+                    <span className="material-symbols-rounded" style={{ fontSize: '120px' }}>
+                      {seekDirection === 'backward' ? 'fast_rewind' : 'fast_forward'}
+                    </span>
+                  </div>
+                )}
 
                 {/* Loading/Buffering Spinner */}
                 {(isVideoLoading || isBuffering) && (
@@ -2446,6 +2481,33 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                     text-shadow: ${subtitleSettings.textShadow === true || subtitleSettings.textShadow === 'true' ? '1px 1px 2px rgba(0, 0, 0, 0.8)' : 'none'};
                     max-width: 100%;
                     word-wrap: break-word;
+                  }
+
+                  .seek-indicator {
+                    position: absolute;
+                    top: 50%;
+                    z-index: 20;
+                    color: white;
+                    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+                    pointer-events: none;
+                    animation: fadeInOut 1s ease-in-out;
+                  }
+
+                  .seek-indicator.backward {
+                    left: 20%;
+                    transform: translateY(-50%);
+                  }
+
+                  .seek-indicator.forward {
+                    right: 20%;
+                    transform: translateY(-50%);
+                  }
+
+                  @keyframes fadeInOut {
+                    0% { opacity: 0; transform: translateY(-50%) scale(0.8); }
+                    10% { opacity: 1; transform: translateY(-50%) scale(1); }
+                    90% { opacity: 1; transform: translateY(-50%) scale(1); }
+                    100% { opacity: 0; transform: translateY(-50%) scale(0.8); }
                   }
                 `}
               </style>
