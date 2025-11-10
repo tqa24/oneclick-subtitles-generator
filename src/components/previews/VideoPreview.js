@@ -2427,7 +2427,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                     z-index: 2; /* Above video (z-index: 1) but below UI controls (z-index: 3+) */
                     /* Calculate top position based on percentage (0% = top, 100% = bottom) */
                     bottom: calc(100% - var(--subtitle-position));
-                    transform: translateY(50%);
+                    transform: translateY(16%);
                     pointer-events: none; /* Allow clicks to pass through to video and controls */
                   }
 
