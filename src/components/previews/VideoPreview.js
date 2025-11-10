@@ -79,6 +79,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
   });
   const [showSeekIndicator, setShowSeekIndicator] = useState(false);
   const [seekDirection, setSeekDirection] = useState('');
+  const [isCompactMode, setIsCompactMode] = useState(false);
 
   // Listen for changes to the optimized preview setting from Settings modal
   useEffect(() => {
@@ -142,6 +143,34 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
       window.removeEventListener('video-volume-change', handleVideoVolumeChange);
     };
   }, [isMuted]);
+
+  // Detect compact mode based on video height
+  useEffect(() => {
+    const checkCompactMode = () => {
+      if (videoRef.current) {
+        const height = videoRef.current.offsetHeight;
+        setIsCompactMode(height < 400);
+      }
+    };
+
+    // Check on video load
+    const videoElement = videoRef.current;
+    if (videoElement) {
+      videoElement.addEventListener('loadedmetadata', checkCompactMode);
+      videoElement.addEventListener('resize', checkCompactMode);
+    }
+
+    // Also check periodically in case of dynamic resizing
+    const interval = setInterval(checkCompactMode, 1000);
+
+    return () => {
+      if (videoElement) {
+        videoElement.removeEventListener('loadedmetadata', checkCompactMode);
+        videoElement.removeEventListener('resize', checkCompactMode);
+      }
+      clearInterval(interval);
+    };
+  }, []);
 
   // State for custom subtitle display
   const [currentSubtitleText, setCurrentSubtitleText] = useState('');
@@ -2365,6 +2394,7 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, o
                   setPlaybackSpeed={setPlaybackSpeed}
                   isSpeedMenuVisible={isSpeedMenuVisible}
                   setIsSpeedMenuVisible={setIsSpeedMenuVisible}
+                  isCompactMode={isCompactMode}
                   handleFullscreenExit={handleFullscreenExit}
                   setIsFullscreen={setIsFullscreen}
                   setControlsVisible={setControlsVisible}
