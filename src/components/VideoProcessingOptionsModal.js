@@ -251,22 +251,6 @@ const VideoProcessingOptionsModal = ({
     // Check if user has provided subtitles
     const hasUserProvidedSubtitles = useUserProvidedSubtitles && userProvidedSubtitles && userProvidedSubtitles.trim() !== '';
 
-    // Auto-select timing generation preset when subtitles are added
-    useEffect(() => {
-        if (isOpen && hasUserProvidedSubtitles) {
-            setSelectedPromptPreset('timing-generation');
-        }
-    }, [isOpen, hasUserProvidedSubtitles]);
-
-    // REMOVED: Complex analysis recommendation logic - just use what user selected
-
-    // If timing-generation is selected but unavailable, fall back to 'settings'
-    useEffect(() => {
-        if (isOpen && !hasUserProvidedSubtitles && selectedPromptPreset === 'timing-generation') {
-            setSelectedPromptPreset('settings');
-        }
-    }, [isOpen, hasUserProvidedSubtitles, selectedPromptPreset]);
-
     const [customLanguage, setCustomLanguage] = useState(() => {
         const saved = localStorage.getItem('video_processing_custom_language');
         return saved || '';
@@ -311,6 +295,74 @@ const VideoProcessingOptionsModal = ({
         // Default to true (enabled) if not previously saved
         return saved !== null ? saved === 'true' : true;
     });
+    
+    // Track previous auto-split setting when switching to timing generation
+    const [previousAutoSplitSetting, setPreviousAutoSplitSetting] = useState(() => {
+        const saved = localStorage.getItem('show_favorite_max_length');
+        return saved !== null ? saved === 'true' : true;
+    });
+    
+    // Track if we're currently in timing generation mode
+    const [isInTimingGenerationMode, setIsInTimingGenerationMode] = useState(false);
+    
+    // Custom setter for auto-split that handles timing generation mode
+    const handleAutoSplitToggle = useCallback((newValue) => {
+        if (isInTimingGenerationMode) {
+            // If we're in timing generation mode, we still allow manual toggling
+            // but we need to update the previous setting so when we exit timing generation,
+            // we restore to the user's manual choice
+            setPreviousAutoSplitSetting(newValue);
+            console.log('[VideoProcessingModal] Manual auto-split toggle in timing generation mode - updated saved state to:', newValue);
+        }
+        setAutoSplitSubtitles(newValue);
+    }, [isInTimingGenerationMode]);
+
+    // Complex logic for timing generation preset and auto-split interaction
+    useEffect(() => {
+        // Track when we're switching to timing generation
+        const isTimingGeneration = selectedPromptPreset === 'timing-generation';
+        const wasTimingGeneration = isInTimingGenerationMode;
+        
+        if (isTimingGeneration && !wasTimingGeneration) {
+            // Switching TO timing generation - save current auto-split state and disable it
+            setPreviousAutoSplitSetting(autoSplitSubtitles);
+            setAutoSplitSubtitles(false);
+            setIsInTimingGenerationMode(true);
+            console.log('[VideoProcessingModal] Switched to timing generation - saved auto-split state:', autoSplitSubtitles, 'and disabled it');
+        } else if (!isTimingGeneration && wasTimingGeneration) {
+            // Switching FROM timing generation - restore previous auto-split state
+            setAutoSplitSubtitles(previousAutoSplitSetting);
+            setIsInTimingGenerationMode(false);
+            console.log('[VideoProcessingModal] Switched from timing generation - restored auto-split state:', previousAutoSplitSetting);
+        }
+    }, [selectedPromptPreset, autoSplitSubtitles, isInTimingGenerationMode, previousAutoSplitSetting]);
+
+    // Auto-select timing generation preset when subtitles are added (but preserve the above logic)
+    useEffect(() => {
+        if (isOpen && hasUserProvidedSubtitles) {
+            setSelectedPromptPreset('timing-generation');
+        }
+    }, [isOpen, hasUserProvidedSubtitles]);
+
+    // If timing-generation is selected but unavailable, fall back to 'settings' and restore auto-split
+    useEffect(() => {
+        if (isOpen && !hasUserProvidedSubtitles && selectedPromptPreset === 'timing-generation') {
+            // If we're leaving timing generation due to no subtitles, restore auto-split state
+            if (isInTimingGenerationMode) {
+                setAutoSplitSubtitles(previousAutoSplitSetting);
+                setIsInTimingGenerationMode(false);
+            }
+            setSelectedPromptPreset('settings');
+        }
+    }, [isOpen, hasUserProvidedSubtitles, selectedPromptPreset, isInTimingGenerationMode, previousAutoSplitSetting]);
+
+    // Reset timing generation mode when modal closes
+    useEffect(() => {
+        if (!isOpen) {
+            setIsInTimingGenerationMode(false);
+        }
+    }, [isOpen]);
+
     const [maxWordsPerSubtitle, setMaxWordsPerSubtitle] = useState(() => {
         const saved = localStorage.getItem('video_processing_max_words');
         return saved ? parseInt(saved, 10) : 12;
@@ -1500,7 +1552,7 @@ const VideoProcessingOptionsModal = ({
                                                         <MaterialSwitch
                                                             id="auto-split-subtitles"
                                                             checked={autoSplitSubtitles}
-                                                            onChange={(e) => setAutoSplitSubtitles(e.target.checked)}
+                                                            onChange={(e) => handleAutoSplitToggle(e.target.checked)}
                                                             ariaLabel={t('processing.autoSplitSubtitles', 'Auto-split subtitles')}
                                                             icons={true}
                                                         />
