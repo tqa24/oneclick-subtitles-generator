@@ -386,6 +386,7 @@ const AppLayout = ({
               onGenerateBackground={handleGenerateBackground}
               isProcessingSegment={isProcessingSegment}
               setIsProcessingSegment={appState.setIsProcessingSegment}
+              apiKeysSet={apiKeysSet}
             />
 
             <OutputContainer

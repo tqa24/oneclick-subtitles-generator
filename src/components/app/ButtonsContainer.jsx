@@ -41,7 +41,8 @@ const ButtonsContainer = ({
   t,
   onGenerateBackground,
   isProcessingSegment = false,
-  setIsProcessingSegment = () => {}
+  setIsProcessingSegment = () => {},
+  apiKeysSet
 }) => {
   // State for auto-generation flow
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
@@ -81,6 +82,12 @@ const ButtonsContainer = ({
   // Auto-generate flow implementation
   const startAutoGenerateFlow = async () => {
     if (isAutoGenerating) return;
+
+    // Check for Gemini API key before proceeding
+    if (!apiKeysSet || !apiKeysSet.gemini) {
+      showErrorToast(t('errors.apiKeyRequired', 'Gemini API key is required'), 4000);
+      return;
+    }
 
     setIsAutoGenerating(true);
     autoFlowAbortedRef.current = false;
@@ -166,6 +173,19 @@ const ButtonsContainer = ({
 
       // Wait a moment for modal to open
       await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Check if method selection overlay appeared
+      const overlay = document.querySelector('.transcription-method-overlay');
+      if (overlay) {
+        console.log('[AutoFlow] Method selection overlay detected, auto-selecting Gemini old method...');
+        // Wait 1 second as requested
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Find the middle method (old) - second .method-column
+        const methodColumns = overlay.querySelectorAll('.method-column');
+        if (methodColumns.length >= 2) {
+          methodColumns[1].click(); // Click the second one (old method)
+        }
+      }
 
       if (autoFlowAbortedRef.current) return;
 
