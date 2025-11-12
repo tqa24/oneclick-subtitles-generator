@@ -240,20 +240,6 @@ export const useAppState = () => {
         setStatus({});
       }
     }
-    // If we don't have a Gemini API key, show the required message
-    // This will update the message when language changes or when API key is missing
-    else if (!apiKeysSet.gemini) {
-      const currentMessage = t('errors.apiKeyRequired', 'Please set your API key in the settings first.');
-
-      // Only update if the message is different (to avoid unnecessary re-renders)
-      // or if there's no current status message
-      if (!status?.message || status.message !== currentMessage || status.type !== 'info') {
-        setStatus({
-          message: currentMessage,
-          type: 'info'
-        });
-      }
-    }
   }, [apiKeysSet.gemini, status, setStatus, t]);
 
   // Apply theme to document
