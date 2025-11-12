@@ -42,7 +42,8 @@ const ButtonsContainer = ({
   onGenerateBackground,
   isProcessingSegment = false,
   setIsProcessingSegment = () => {},
-  apiKeysSet
+  apiKeysSet,
+  onSegmentSelect
 }) => {
   // State for auto-generation flow
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
@@ -158,32 +159,57 @@ const ButtonsContainer = ({
 
       if (autoFlowAbortedRef.current) return;
 
-      // Step 3: Trigger Ctrl+A to select all and open processing modal
+      // Step 3: Programmatically trigger segment selection based on subtitle existence
       setAutoFlowStep('processing');
-      console.log('[AutoFlow] Step 3: Selecting all timeline and opening processing modal...');
+      console.log('[AutoFlow] Step 3: Checking subtitle state and triggering appropriate action...');
 
-      // Dispatch Ctrl+A keyboard event
-      const ctrlAEvent = new KeyboardEvent('keydown', {
-        key: 'a',
-        code: 'KeyA',
-        ctrlKey: true,
-        bubbles: true
-      });
-      document.dispatchEvent(ctrlAEvent);
+      // Get video duration for the full range selection
+      const videoElement = document.querySelector('video');
+      const videoDuration = videoElement?.duration || uploadedFile?.duration || selectedVideo?.duration || 0;
+      console.log('[AutoFlow] Video duration:', videoDuration);
 
-      // Wait a moment for modal to open
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Check if there are subtitles in the timeline
+      const hasSubtitles = subtitlesData && subtitlesData.length > 0;
+      console.log('[AutoFlow] Has subtitles:', hasSubtitles, 'Count:', subtitlesData?.length || 0);
 
-      // Check if method selection overlay appeared
-      const overlay = document.querySelector('.transcription-method-overlay');
-      if (overlay) {
-        console.log('[AutoFlow] Method selection overlay detected, auto-selecting Gemini old method...');
-        // Wait 1 second as requested
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        // Find the middle method (old) - second .method-column
-        const methodColumns = overlay.querySelectorAll('.method-column');
-        if (methodColumns.length >= 2) {
-          methodColumns[1].click(); // Click the second one (old method)
+      if (hasSubtitles) {
+        // If subtitles exist, trigger regenerate action (same as clicking Regenerate button)
+        console.log('[AutoFlow] Subtitles exist, triggering regenerate action...');
+        sessionStorage.setItem('processing_modal_open_reason', 'action-bar-regenerate');
+        if (onSegmentSelect) {
+          onSegmentSelect({ start: 0, end: videoDuration });
+          console.log('[AutoFlow] Regenerate action triggered programmatically for full range');
+        } else {
+          console.log('[AutoFlow] onSegmentSelect not available, cannot trigger regenerate');
+        }
+      } else {
+        // If no subtitles, trigger normal segment selection (opens method overlay)
+        console.log('[AutoFlow] No subtitles, triggering normal segment selection...');
+        sessionStorage.setItem('processing_modal_open_reason', 'drag-selection');
+        if (onSegmentSelect) {
+          onSegmentSelect({ start: 0, end: videoDuration });
+          console.log('[AutoFlow] Normal segment selection triggered for full range');
+
+          // Wait for method selection overlay to appear
+          console.log('[AutoFlow] Waiting for method selection overlay...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          const overlay = document.querySelector('.transcription-method-overlay');
+          console.log('[AutoFlow] Method selection overlay detected:', !!overlay);
+          if (overlay) {
+            console.log('[AutoFlow] Auto-selecting Gemini old method...');
+            // Find the middle method (old) - second .method-column
+            const methodColumns = overlay.querySelectorAll('.method-column');
+            console.log('[AutoFlow] Found method columns:', methodColumns.length);
+            if (methodColumns.length >= 2) {
+              console.log('[AutoFlow] Clicking second method column (old method)');
+              methodColumns[1].click(); // Click the second one (old method)
+            }
+          } else {
+            console.log('[AutoFlow] Method selection overlay not found');
+          }
+        } else {
+          console.log('[AutoFlow] onSegmentSelect not available, cannot trigger segment selection');
         }
       }
 

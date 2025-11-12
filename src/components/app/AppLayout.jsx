@@ -387,6 +387,7 @@ const AppLayout = ({
               isProcessingSegment={isProcessingSegment}
               setIsProcessingSegment={appState.setIsProcessingSegment}
               apiKeysSet={apiKeysSet}
+              onSegmentSelect={handleSegmentSelect}
             />
 
             <OutputContainer
