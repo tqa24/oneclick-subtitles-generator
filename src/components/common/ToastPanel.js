@@ -22,7 +22,7 @@ const ToastPanel = () => {
           // Update existing toast and reset its timer
           const updatedToasts = [...prev];
           const existingToast = updatedToasts[existingIndex];
-          
+
           if (existingToast.timerId) {
             clearTimeout(existingToast.timerId);
           }
@@ -52,6 +52,18 @@ const ToastPanel = () => {
       });
     };
 
+    // Global function to remove a toast by key
+    window.removeToastByKey = (key) => {
+      setToasts(prev => {
+        const toRemove = prev.find(t => t.key === key);
+        if (toRemove) {
+          if (toRemove.timerId) clearTimeout(toRemove.timerId);
+          return prev.filter(t => t.key !== key);
+        }
+        return prev;
+      });
+    };
+
     const handleAlignedNarrationStatus = (event) => {
       const { status, message } = event.detail;
       if (status === 'error' && message) {
@@ -77,6 +89,7 @@ const ToastPanel = () => {
         return [];
       });
       delete window.addToast;
+      delete window.removeToastByKey;
       window.removeEventListener('aligned-narration-status', handleAlignedNarrationStatus);
       window.removeEventListener('translation-warning', handleTranslationWarning);
     };

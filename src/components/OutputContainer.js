@@ -235,6 +235,8 @@ const OutputContainer = ({
       ) : 'Processing...';
 
       window.addToast(message, status.type || 'info', 5000, 'output-status');
+    } else {
+      window.removeToastByKey && window.removeToastByKey('output-status');
     }
   }, [status?.message, status?.type, t]);
 
