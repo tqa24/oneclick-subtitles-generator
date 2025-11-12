@@ -119,7 +119,6 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [, setPendingImageCount] = useState(0); // Track how many images are pending
-  const [error, setError] = useState('');
   const [customSongName, setCustomSongName] = useState(songName || '');
   const [autoExecutionComplete, setAutoExecutionComplete] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(!isExpanded); // Use the isExpanded prop
@@ -152,20 +151,19 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
   // Generate prompt using Gemini
   const generatePrompt = async () => {
     if (!customLyrics.trim()) {
-      setError('Please provide lyrics to generate a prompt');
+      window.addToast('Please provide lyrics to generate a prompt', 'error', 5000);
       return;
     }
 
     setIsGeneratingPrompt(true);
     setIsGenerationInProgress(true); // Set generation in progress flag
-    setError('');
 
     try {
       const prompt = await generateBackgroundPrompt(customLyrics, customSongName || songName || 'Unknown Song');
       setGeneratedPrompt(prompt);
       return prompt;
     } catch (err) {
-      setError(getFriendlyErrorMessage(err?.message || String(err)));
+      window.addToast(getFriendlyErrorMessage(err?.message || String(err)), 'error', 5000);
       console.error('Error generating prompt:', err);
       return null;
     } finally {
@@ -180,18 +178,17 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
     const imagesToGenerate = count || regularImageCount;
 
     if (!currentPrompt.trim()) {
-      setError('Please generate a prompt first');
+      window.addToast('Please generate a prompt first', 'error', 5000);
       return;
     }
 
     if (!customAlbumArt) {
-      setError('Please provide album art to generate an image');
+      window.addToast('Please provide album art to generate an image', 'error', 5000);
       return;
     }
 
     setIsGeneratingImage(true);
     setIsGenerationInProgress(true); // Set generation in progress flag
-    setError('');
 
     // Prepare the grid with placeholders
     setPendingImageCount(imagesToGenerate);
@@ -250,7 +247,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
 
       return newImages.filter(img => img.url !== null);
     } catch (err) {
-      setError(getFriendlyErrorMessage(err?.message || String(err)));
+      window.addToast(getFriendlyErrorMessage(err?.message || String(err)), 'error', 5000);
       console.error('Error in image generation process:', err);
       return null;
     } finally {
@@ -311,7 +308,6 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
         // Don't reset generatedImages to preserve them across UI changes
         // setGeneratedImages([]);
         setPendingImageCount(0);
-        setError('');
         setAutoExecutionComplete(false);
         autoExecutionRef.current = false; // Reset the ref to allow auto-execution
       }
@@ -390,12 +386,12 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
   // Generate new prompt and then generate image
   const generateWithNewPrompt = async (count = null) => {
     if (!customLyrics.trim()) {
-      setError('Please provide lyrics to generate a prompt');
+      window.addToast('Please provide lyrics to generate a prompt', 'error', 5000);
       return;
     }
 
     if (!customAlbumArt) {
-      setError('Please provide album art to generate an image');
+      window.addToast('Please provide album art to generate an image', 'error', 5000);
       return;
     }
 
@@ -405,7 +401,6 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
     setIsGeneratingImage(true);
     setIsGenerationInProgress(true); // Set generation in progress flag
     setPendingImageCount(imagesToGenerate);
-    setError('');
 
     // Create placeholder array
     const placeholders = Array(imagesToGenerate).fill(null).map((_, index) => ({
@@ -479,7 +474,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
         }
       }
     } catch (err) {
-      setError(getFriendlyErrorMessage(err?.message || String(err)));
+      window.addToast(getFriendlyErrorMessage(err?.message || String(err)), 'error', 5000);
       console.error('Error in multi-prompt generation process:', err);
     } finally {
       setIsGeneratingPrompt(false);
@@ -864,12 +859,6 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
           </div>
         </div>
 
-        {error && (
-          <div className="error-message">
-            <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>error</span>
-            <span>{error}</span>
-          </div>
-        )}
         </div>
       )}
     </div>
