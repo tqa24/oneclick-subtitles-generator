@@ -438,7 +438,7 @@ export const useAppHandlers = (appState) => {
                     "output.videoReady",
                     "Video ready for segment selection..."
                   ),
-                  type: "loading",
+                  type: "info",
                 });
               }
 
@@ -465,7 +465,7 @@ export const useAppHandlers = (appState) => {
                   "output.videoReady",
                   "Video ready for segment selection..."
                 ),
-                type: "loading",
+                type: "info",
               });
             }
           } catch (error) {
@@ -482,7 +482,7 @@ export const useAppHandlers = (appState) => {
                 "output.videoReady",
                 "Video ready for segment selection..."
               ),
-              type: "loading",
+              type: "info",
             });
           }
         }
@@ -560,7 +560,7 @@ export const useAppHandlers = (appState) => {
                 "output.videoReady",
                 "Video ready for segment selection..."
               ),
-              type: "loading",
+              type: "info",
             });
           }
         } catch (error) {
@@ -577,7 +577,7 @@ export const useAppHandlers = (appState) => {
               "output.videoReady",
               "Video ready for segment selection..."
             ),
-            type: "loading",
+            type: "info",
           });
         }
       }
