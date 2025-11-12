@@ -316,7 +316,6 @@
     align-items: flex-start;
   }
 
-  /* .cache-status-message responsive rule removed — toasts are used instead */
 }
 
 @media (max-width: 480px) {
