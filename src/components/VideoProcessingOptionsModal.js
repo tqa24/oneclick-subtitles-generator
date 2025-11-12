@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import '../styles/VideoProcessingOptionsModal.css';
+import { showErrorToast, showInfoToast } from '../utils/toastUtils';
 import { getNextAvailableKey } from '../services/gemini/keyManager';
 import { PROMPT_PRESETS, getUserPromptPresets, DEFAULT_TRANSCRIPTION_PROMPT } from '../services/gemini';
 import CloseButton from './common/CloseButton';
@@ -773,6 +774,19 @@ const VideoProcessingOptionsModal = ({
             };
         }
     }, [isOpen, videoFile, selectedSegment, fps, mediaResolution, selectedModel, selectedPromptPreset, customLanguage, useTranscriptionRules, maxDurationPerRequest, parakeetMaxDurationPerRequest, method]);
+
+    // Dispatch toast notifications for token count errors and upload status
+    useEffect(() => {
+        if (tokenCountError) {
+            showErrorToast(`${t('processing.tokenCountError', 'Error counting tokens')}: ${tokenCountError}`);
+        }
+    }, [tokenCountError, t]);
+
+    useEffect(() => {
+        if (isUploading) {
+            showInfoToast(t('processing.uploading', 'Uploading video...'));
+        }
+    }, [isUploading, t]);
 
     // Get all available prompt presets
     const getPromptPresetOptions = () => {
@@ -1600,15 +1614,6 @@ const VideoProcessingOptionsModal = ({
                                 )}
 
                             </div>
-
-
-                            {/* Upload Status */}
-                            {isUploading && (
-                                <div className="upload-status">
-                                    <div className="loading-spinner"></div>
-                                    <span>{t('processing.uploading', 'Uploading video...')}</span>
-                                </div>
-                            )}
                         </div>
 
 
@@ -1631,13 +1636,6 @@ const VideoProcessingOptionsModal = ({
                                     {displayTokens.toLocaleString()} / {selectedModelData?.maxTokens.toLocaleString()} tokens
                                 </span>
                             </div>
-                            {tokenCountError && (
-
-
-                                <div className="token-error">
-                                    {t('processing.tokenCountError', 'Error counting tokens')}: {tokenCountError}
-                                </div>
-                            )}
                         </div>
                         )}
 

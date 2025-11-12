@@ -255,18 +255,6 @@ const ButtonsContainer = ({
       const checkInterval = setInterval(() => {
         checkCount++;
 
-        // Check for error toasts that might have appeared
-        const errorToast = document.querySelector('.custom-toast.error');
-        if (errorToast && !errorDetected) {
-          errorDetected = true;
-          console.log('[AutoFlow] Analysis error detected via toast, continuing with flow');
-          clearInterval(checkInterval);
-          // Continue with the flow even if analysis failed
-          setTimeout(() => {
-            resolve();
-          }, 1000);
-          return;
-        }
 
         // Check for the rules editor modal
         const rulesModal = document.querySelector('.rules-editor-modal');

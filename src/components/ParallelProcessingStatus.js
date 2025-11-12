@@ -55,17 +55,21 @@ const ParallelProcessingStatus = ({
 
   // No need for click outside handler since we don't have a dropdown anymore
 
+  // Show status as toast instead of inline
+  useEffect(() => {
+    if (overallStatus) {
+      const message = typeof overallStatus === 'string' ? (
+        overallStatus.includes('cache') ? t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!') :
+        overallStatus.includes('Video segments ready') ? t('output.segmentsReady', 'Video segments are ready for processing!') :
+        overallStatus
+      ) : 'Processing...';
+
+      window.addToast(message, statusType || 'info', 5000, 'parallel-processing-status');
+    }
+  }, [overallStatus, statusType, t]);
+
   if (!segments || segments.length === 0) {
-    return (
-      <div className={`status ${statusType}`}>
-        {/* Ensure the overall status is properly translated */}
-        {typeof overallStatus === 'string' ? (
-          overallStatus.includes('cache') ? t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!') :
-          overallStatus.includes('Video segments ready') ? t('output.segmentsReady', 'Video segments are ready for processing!') :
-          overallStatus
-        ) : 'Processing...'}
-      </div>
-    );
+    return null;
   }
 
   // Handle opening the retry modal
@@ -81,14 +85,6 @@ const ParallelProcessingStatus = ({
 
   return (
     <div className="parallel-processing-container">
-      <div className={`status ${statusType}`}>
-        {/* Ensure the overall status is properly translated */}
-        {typeof overallStatus === 'string' ? (
-          overallStatus.includes('cache') ? t('output.subtitlesLoadedFromCache', 'Subtitles loaded from cache!') :
-          overallStatus.includes('Video segments ready') ? t('output.segmentsReady', 'Video segments are ready for processing!') :
-          overallStatus
-        ) : 'Processing...'}
-      </div>
 
       {/* Segment Retry Modal */}
       {showRetryModal && selectedSegmentIndex !== null && (
