@@ -231,13 +231,15 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
           // Decrease pending count
           setPendingImageCount(prev => prev - 1);
         } catch (err) {
+          // Show error toast notification
+          window.addToast(getFriendlyErrorMessage(err?.message || String(err)), 'error', 5000);
           // Mark this image as failed
           newImages[i] = {
             url: null,
             timestamp: new Date().getTime(),
             prompt: currentPrompt,
             isLoading: false,
-            error: err.message
+            error: true // Just mark as error, don't store the message
           };
           setGeneratedImages([...newImages]);
           setPendingImageCount(prev => prev - 1);
@@ -460,13 +462,15 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
           // Decrease pending count
           setPendingImageCount(prev => prev - 1);
         } catch (err) {
+          // Show error toast notification
+          window.addToast(getFriendlyErrorMessage(err?.message || String(err)), 'error', 5000);
           // Mark this image as failed
           newImages[i] = {
             url: null,
             timestamp: new Date().getTime(),
             prompt: newImages[i].prompt || 'Failed to generate prompt',
             isLoading: false,
-            error: err.message
+            error: true // Just mark as error, don't store the message
           };
           setGeneratedImages([...newImages]);
           setPendingImageCount(prev => prev - 1);
@@ -820,9 +824,9 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
                             <p>{t('backgroundGenerator.generatingImage', 'Generating...')}</p>
                           </div>
                         ) : image.error ? (
-                          <div className="error-placeholder">
-                            <span className="material-symbols-rounded" style={{ fontSize: '36px' }}>warning</span>
-                            <p>{getFriendlyErrorMessage(image.error)}</p>
+                          <div className="preview-placeholder">
+                            <span className="material-symbols-rounded" style={{ fontSize: '36px' }}>error</span>
+                            <p>{t('backgroundGenerator.generationFailed')}</p>
                           </div>
                         ) : (
                           <div className="preview-placeholder">
