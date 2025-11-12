@@ -605,7 +605,8 @@ export const useAppHandlers = (appState) => {
           // Special notice for auto-downloaded subtitle (not green, with glow/particles)
           setStatus({
             message: t('output.autoSubtitleNotice', 'Below are subtitles provided while the video is downloading. If you don’t like them, press Ctrl+A to select all and delete/regenerate'),
-            type: 'auto-subtitle'
+            type: 'warning',
+            duration: 15000
           });
         }
       } catch (e) {

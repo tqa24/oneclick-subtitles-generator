@@ -24,7 +24,6 @@
     "success": "Success",
     "warning": "Warning",
     "info": "Info",
-    "loading": "Loading",
-    "auto-subtitle": "Auto Subtitle"
+    "loading": "Loading"
   }
 }

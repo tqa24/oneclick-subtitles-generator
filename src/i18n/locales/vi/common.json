@@ -24,7 +24,6 @@
     "success": "Thành công",
     "warning": "Cảnh báo",
     "info": "Thông tin",
-    "loading": "Đang tải",
-    "auto-subtitle": "Phụ đề tự động"
+    "loading": "Đang tải"
   }
 }

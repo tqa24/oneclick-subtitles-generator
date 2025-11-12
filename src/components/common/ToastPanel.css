@@ -46,7 +46,7 @@
 
 /* --- MODIFICATION HERE: Set width and handle text --- */
 .toast {
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(240, 240, 240, 0.95);
     color: #333;
     padding: 1rem 2.5rem 1rem 2.2rem;
     border-radius: 1.5rem;
@@ -111,12 +111,14 @@
 
 .toast.toast-help { --bg: var(--ch1); --clr: var(--ch2); }
 .toast.toast-info { --bg: var(--ch1); --clr: var(--ch2); }
+.toast.toast-loading { --bg: #424242; --clr: #757575; }
 .toast.toast-success { --bg: var(--cs1); --clr: var(--cs2); }
 .toast.toast-warning { --bg: var(--cw1); --clr: var(--cw2); }
 .toast.toast-error { --bg: var(--ce1); --clr: var(--ce2); }
 
 .icon-help, .toast-item.toast-help { --clr: #0070e0; }
 .icon-info, .toast-item.toast-info { --clr: #0070e0; }
+.icon-loading, .toast-item.toast-loading { --clr: #757575; }
 .icon-success, .toast-item.toast-success { --clr: #03a65a; }
 .icon-warning, .toast-item.toast-warning { --clr: #fc8621; }
 .icon-error, .toast-item.toast-error { --clr: #db3056; }
@@ -124,7 +126,7 @@
 
 /* Dark mode support */
 [data-theme="dark"] .toast {
-    background: rgba(45, 45, 45, 0.95);
+    background: rgba(70, 70, 70, 0.95);
     color: #e0e0e0;
     box-shadow: 0 0 1.5rem 0 rgba(0, 0, 0, 0.5);
 }
