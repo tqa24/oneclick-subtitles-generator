@@ -267,19 +267,21 @@ const OutputContainer = ({
 
   // Background Image Generator functionality moved back to AppLayout
 
+  // Determine if there's any content to show
+  const hasParallelProcessingStatus = segmentsStatus.length > 0 && (subtitlesData || !activeTab.includes('youtube'));
+  const hasMainContent = (subtitlesData || uploadedFile || isUploading || status?.message?.includes('select a segment'));
+
   // Don't render anything if there's no content to show
-  if (!status?.message && !subtitlesData) {
+  if (!hasParallelProcessingStatus && !hasMainContent) {
     return null;
   }
-
-
 
   return (
     <div className="output-container">
       {/* Add Subtitles Button removed - now only in buttons-container */}
 
       {/* Show status message or segments status - Combined logic to avoid duplicate rendering */}
-      {segmentsStatus.length > 0 && (subtitlesData || !activeTab.includes('youtube')) ? (
+      {hasParallelProcessingStatus ? (
         <ParallelProcessingStatus
           segments={segmentsStatus}
           overallStatus={
