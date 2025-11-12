@@ -177,7 +177,7 @@
 .no-results-message {
   padding: 1rem;
   background-color: var(--md-surface-2);
-  border-radius: 8px;
+  border-radius: 16px;
   text-align: center;
   color: var(--md-on-surface-variant);
   font-style: italic;
