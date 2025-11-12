@@ -1,49 +1,53 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import './ToastPanel.css'; // We'll create this
+import './ToastPanel.css';
 
 const ToastPanel = () => {
   const { t } = useTranslation();
   const [toasts, setToasts] = useState([]);
   const toastIdRef = useRef(0);
-  const recentMessagesRef = useRef(new Map()); // Track recent messages to prevent duplicates
 
+  // This effect sets up the global function and event listeners
   useEffect(() => {
-    // Global function to add toast
+    // Global function to add a toast
     window.addToast = (message, type = 'info', duration = 6000, key) => {
       setToasts(prev => {
         const existingIndex = key ? prev.findIndex(t => t.key === key) : -1;
 
         if (existingIndex >= 0) {
-          // Update existing toast
+          // Update existing toast and reset its timer
           const updatedToasts = [...prev];
+          const existingToast = updatedToasts[existingIndex];
+          
+          if (existingToast.timerId) {
+            clearTimeout(existingToast.timerId);
+          }
+
           updatedToasts[existingIndex] = {
-            ...updatedToasts[existingIndex],
+            ...existingToast,
             message,
             type,
-            duration
+            duration,
+            timerId: setTimeout(() => removeToast(existingToast.id), duration),
           };
-          // Reset auto dismiss timer
-          if (updatedToasts[existingIndex].timerId) {
-            clearTimeout(updatedToasts[existingIndex].timerId);
-          }
-          updatedToasts[existingIndex].timerId = setTimeout(() => {
-            removeToast(updatedToasts[existingIndex].id);
-          }, duration);
           return updatedToasts;
         } else {
-          // Create new toast
+          // Create a new toast
           const id = ++toastIdRef.current;
-          const toast = { id, message, type, duration, key };
-          toast.timerId = setTimeout(() => {
-            removeToast(id);
-          }, duration);
-          return [...prev, toast];
+          const newToast = {
+            id,
+            message,
+            type,
+            duration,
+            key,
+            timerId: setTimeout(() => removeToast(id), duration),
+          };
+          // Prepend new toast to show it at the bottom with flex-direction: column-reverse
+          return [newToast, ...prev];
         }
       });
     };
 
-    // Listen for aligned-narration-status events
     const handleAlignedNarrationStatus = (event) => {
       const { status, message } = event.detail;
       if (status === 'error' && message) {
@@ -51,7 +55,6 @@ const ToastPanel = () => {
       }
     };
 
-    // Listen for translation-warning events
     const handleTranslationWarning = (event) => {
       const { message } = event.detail;
       if (message) {
@@ -62,29 +65,37 @@ const ToastPanel = () => {
     window.addEventListener('aligned-narration-status', handleAlignedNarrationStatus);
     window.addEventListener('translation-warning', handleTranslationWarning);
 
+    // Cleanup function
     return () => {
+      // Clear all timers when the component unmounts
+      setToasts(prev => {
+        prev.forEach(toast => toast.timerId && clearTimeout(toast.timerId));
+        return [];
+      });
       delete window.addToast;
       window.removeEventListener('aligned-narration-status', handleAlignedNarrationStatus);
       window.removeEventListener('translation-warning', handleTranslationWarning);
     };
-  }, []);
+  }, []); // Empty dependency array ensures this runs only once
 
   const removeToast = (id) => {
-    // Add dismiss class for animation
     setToasts(prev => prev.map(t =>
       t.id === id ? { ...t, dismissing: true } : t
     ));
-    // Remove after animation completes (matches CSS transition duration)
+    
+    // Remove from state after the animation completes
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
-    }, 500);
+    }, 500); // This duration should match the hide-toast animation
   };
-
 
   return (
     <div className="toast-panel">
-      {toasts.map((toast, index) => (
-        <div key={toast.id} className={`toast-item toast-${toast.type} show ${toast.dismissing ? 'dismissing' : ''}`} style={{ '--y-offset': `-${(toasts.length - 1 - index) * 90}px` }}>
+      {toasts.map((toast) => (
+        <div
+          key={toast.id}
+          className={`toast-item toast-${toast.type} ${toast.dismissing ? 'dismissing' : 'show'}`}
+        >
           <div className={`toast toast-${toast.type}`}>
             <span className="material-symbols-rounded close-icon" onClick={() => removeToast(toast.id)}>close</span>
             <h3>{t(`common.toast.${toast.type}`)}</h3>
