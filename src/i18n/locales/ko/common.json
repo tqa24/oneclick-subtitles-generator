@@ -24,6 +24,7 @@
     "success": "성공",
     "warning": "경고",
     "info": "정보",
-    "loading": "로딩 중"
+    "loading": "로딩 중",
+    "confirm": "Confirm"
   }
 }

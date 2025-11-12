@@ -24,6 +24,7 @@
     "success": "Success",
     "warning": "Warning",
     "info": "Info",
-    "loading": "Loading"
+    "loading": "Loading",
+    "confirm": "Confirm"
   }
 }

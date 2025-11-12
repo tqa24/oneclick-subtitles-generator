@@ -15,7 +15,7 @@
     position: fixed;
     bottom: 20px;
     right: 20px;
-    z-index: 1000;
+    z-index: 100000; /* Increased to appear above modals */
     display: flex;
     flex-direction: column-reverse; /* Stacks items from bottom to top */
     align-items: flex-end; /* Aligns toasts to the right */
@@ -102,6 +102,23 @@
 }
 .toast-item:hover .close-icon {
     opacity: 1;
+}
+
+.toast-button {
+    margin-top: 12px;
+    padding: 8px 16px;
+    background-color: var(--clr);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.toast-button:hover {
+    background-color: color-mix(in srgb, var(--clr), black 15%);
 }
 
 /* Swipe feedback */

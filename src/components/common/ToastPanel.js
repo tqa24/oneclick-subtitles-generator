@@ -2,6 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import './ToastPanel.css';
 
+// Initialize window.addToast as a no-op to prevent errors before component mounts
+if (typeof window !== 'undefined' && !window.addToast) {
+  window.addToast = () => {};
+}
+
 const ToastPanel = () => {
   const { t } = useTranslation();
   const [toasts, setToasts] = useState([]);
@@ -10,11 +15,50 @@ const ToastPanel = () => {
   const [swipeOffset, setSwipeOffset] = useState(0);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
+  const [isOnboardingActive, setIsOnboardingActive] = useState(false);
+
+  // Check if onboarding is active
+  useEffect(() => {
+    const checkOnboardingStatus = () => {
+      const hasVisited = localStorage.getItem('has_visited_site') === 'true';
+      const controlsDismissed = localStorage.getItem('onboarding_controls_dismissed') === 'true';
+      setIsOnboardingActive(!(hasVisited && controlsDismissed));
+    };
+
+    // Check initially
+    checkOnboardingStatus();
+
+    // Listen for storage changes (in case onboarding completes in another tab)
+    const handleStorageChange = (e) => {
+      if (e.key === 'has_visited_site' || e.key === 'onboarding_controls_dismissed') {
+        checkOnboardingStatus();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also poll every second during onboarding to catch local changes
+    const pollInterval = setInterval(() => {
+      if (isOnboardingActive) {
+        checkOnboardingStatus();
+      }
+    }, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(pollInterval);
+    };
+  }, [isOnboardingActive]);
 
   // This effect sets up the global function and event listeners
   useEffect(() => {
     // Global function to add a toast
-    window.addToast = (message, type = 'info', duration = 6000, key) => {
+    window.addToast = (message, type = 'info', duration = 6000, key, button) => {
+      // Don't show toasts during onboarding
+      if (isOnboardingActive) {
+        return;
+      }
+
       setToasts(prev => {
         const existingIndex = key ? prev.findIndex(t => t.key === key) : -1;
 
@@ -44,6 +88,7 @@ const ToastPanel = () => {
             type,
             duration,
             key,
+            button,
             timerId: setTimeout(() => removeToast(id), duration),
           };
           // Prepend new toast to show it at the bottom with flex-direction: column-reverse
@@ -67,14 +112,28 @@ const ToastPanel = () => {
     const handleAlignedNarrationStatus = (event) => {
       const { status, message } = event.detail;
       if (status === 'error' && message) {
-        window.addToast(message, 'error', 8000);
+        // Check if onboarding is active before showing toast
+        const hasVisited = localStorage.getItem('has_visited_site') === 'true';
+        const controlsDismissed = localStorage.getItem('onboarding_controls_dismissed') === 'true';
+        const isOnboardingActive = !(hasVisited && controlsDismissed);
+
+        if (!isOnboardingActive) {
+          window.addToast(message, 'error', 8000);
+        }
       }
     };
 
     const handleTranslationWarning = (event) => {
       const { message } = event.detail;
       if (message) {
-        window.addToast(message, 'warning', 5000);
+        // Check if onboarding is active before showing toast
+        const hasVisited = localStorage.getItem('has_visited_site') === 'true';
+        const controlsDismissed = localStorage.getItem('onboarding_controls_dismissed') === 'true';
+        const isOnboardingActive = !(hasVisited && controlsDismissed);
+
+        if (!isOnboardingActive) {
+          window.addToast(message, 'warning', 5000);
+        }
       }
     };
 
@@ -93,7 +152,7 @@ const ToastPanel = () => {
       window.removeEventListener('aligned-narration-status', handleAlignedNarrationStatus);
       window.removeEventListener('translation-warning', handleTranslationWarning);
     };
-  }, []); // Empty dependency array ensures this runs only once
+  }, [isOnboardingActive]); // Re-run when onboarding status changes
 
   const removeToast = (id) => {
     setToasts(prev => prev.map(t =>
@@ -159,6 +218,19 @@ const ToastPanel = () => {
             <span className="material-symbols-rounded close-icon" onClick={() => removeToast(toast.id)}>close</span>
             <h3>{t(`common.toast.${toast.type}`)}</h3>
             <p>{toast.message}</p>
+            {toast.button && (
+              <button
+                className="toast-button"
+                onClick={() => {
+                  if (toast.button.onClick) {
+                    toast.button.onClick();
+                  }
+                  removeToast(toast.id);
+                }}
+              >
+                {toast.button.text}
+              </button>
+            )}
           </div>
         </div>
       ))}

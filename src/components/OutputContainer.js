@@ -234,7 +234,14 @@ const OutputContainer = ({
         status.message
       ) : 'Processing...';
 
-      window.addToast(message, status.type || 'info', 5000, 'output-status');
+      // Check if onboarding is active before showing toast
+      const hasVisited = localStorage.getItem('has_visited_site') === 'true';
+      const controlsDismissed = localStorage.getItem('onboarding_controls_dismissed') === 'true';
+      const isOnboardingActive = !(hasVisited && controlsDismissed);
+
+      if (!isOnboardingActive) {
+        window.addToast(message, status.type || 'info', 5000, 'output-status');
+      }
     } else {
       window.removeToastByKey && window.removeToastByKey('output-status');
     }

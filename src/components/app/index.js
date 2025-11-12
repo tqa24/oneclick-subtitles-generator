@@ -56,15 +56,15 @@ function App() {
       {/* This is rendered on top of the app, behind the onboarding overlay */}
       <OnboardingFooterReveal />
 
+      {/* Toast notifications panel - moved early to ensure it's available before other components */}
+      <ToastPanel />
+
       <AppLayout
         appState={appState}
         appHandlers={appHandlers}
         modalHandlers={modalHandlers}
         t={t}
       />
-
-      {/* Toast notifications panel */}
-      <ToastPanel />
     </>
   );
 }

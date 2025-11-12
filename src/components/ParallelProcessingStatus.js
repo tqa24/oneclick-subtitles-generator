@@ -64,7 +64,14 @@ const ParallelProcessingStatus = ({
         overallStatus
       ) : 'Processing...';
 
-      window.addToast(message, statusType || 'info', 5000, 'parallel-processing-status');
+      // Check if onboarding is active before showing toast
+      const hasVisited = localStorage.getItem('has_visited_site') === 'true';
+      const controlsDismissed = localStorage.getItem('onboarding_controls_dismissed') === 'true';
+      const isOnboardingActive = !(hasVisited && controlsDismissed);
+
+      if (!isOnboardingActive) {
+        window.addToast(message, statusType || 'info', 5000, 'parallel-processing-status');
+      }
     }
   }, [overallStatus, statusType, t]);
 

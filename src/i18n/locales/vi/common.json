@@ -24,6 +24,7 @@
     "success": "Thành công",
     "warning": "Cảnh báo",
     "info": "Thông tin",
-    "loading": "Đang tải"
+    "loading": "Đang tải",
+    "confirm": "Tôi xác nhận"
   }
 }
