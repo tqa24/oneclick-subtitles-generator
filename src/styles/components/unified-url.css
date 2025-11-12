@@ -285,22 +285,12 @@
   z-index: 1001; /* Higher than container */
   overflow: visible; /* Allow content to be visible outside */
   max-height: 200px; /* Slightly reduced max height */
-  transition: background-color var(--transition-speed), box-shadow var(--transition-speed);
-  animation: fade-in 0.2s ease-out;
+  transition: background-color var(--transition-speed), box-shadow var(--transition-speed), opacity 0.2s ease-out;
   border: 1px solid var(--primary-color);
   border-top: none;
 }
 
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+
 
 .unified-url-input .history-header {
   display: flex;
