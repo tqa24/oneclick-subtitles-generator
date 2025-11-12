@@ -414,7 +414,21 @@ const UnifiedNarrationSection = ({
   // Dispatch toast notifications for generation status
   useEffect(() => {
     if ((isGenerating || retryingSubtitleId) && generationStatus) {
-      showInfoToast(generationStatus);
+      // Set different durations based on status message type
+      let duration = 6000; // Default duration
+
+      // 15 seconds for warming up and initializing messages
+      if (generationStatus.includes('Warming up') || generationStatus.includes('initializingService') ||
+          generationStatus.includes('Waking up')) {
+        duration = 15000;
+      }
+      // 12 seconds for progress messages
+      else if (generationStatus.includes('Generating') || generationStatus.includes('Generated') ||
+               generationStatus.includes('chatterboxGeneratingProgress')) {
+        duration = 12000;
+      }
+
+      showInfoToast(generationStatus, duration);
     }
   }, [generationStatus, isGenerating, retryingSubtitleId]);
 
