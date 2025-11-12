@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { API_BASE_URL } from '../../../config';
 import CloseButton from '../../common/CloseButton';
 
-const CacheTab = () => {
+const CacheTab = ({ isActive }) => {
   const { t } = useTranslation();
   const [clearingCache, setClearingCache] = useState(false);
   const [loadingCacheInfo, setLoadingCacheInfo] = useState(false);
   const [cacheDetails, setCacheDetails] = useState(null);
 
+  // Ref to track if we've shown the cache empty toast for the current active state
+  const hasShownEmptyToastRef = useRef(false);
+
   // Function to fetch cache information
-  const fetchCacheInfo = async () => {
+  const fetchCacheInfo = async (showToast = false) => {
     setLoadingCacheInfo(true);
 
     try {
@@ -20,9 +23,10 @@ const CacheTab = () => {
       if (data.success) {
         setCacheDetails(data.details);
 
-        // If cache is empty, show a message
-        if (data.details.totalCount === 0) {
+        // If cache is empty, show a message only if showToast is true and we haven't shown it yet
+        if (data.details.totalCount === 0 && showToast && !hasShownEmptyToastRef.current) {
           window.addToast(t('settings.cacheEmpty', 'Cache is empty. No files to clear.'), 'info', 5000);
+          hasShownEmptyToastRef.current = true;
         }
       } else {
         throw new Error(data.error || 'Failed to fetch cache information');
@@ -155,11 +159,18 @@ const CacheTab = () => {
     }
   };
 
-  // Fetch cache information when component mounts
+  // Reset the toast flag when switching to cache tab
   useEffect(() => {
-    fetchCacheInfo();
+    if (isActive) {
+      hasShownEmptyToastRef.current = false;
+    }
+  }, [isActive]);
+
+  // Fetch cache information when component mounts or isActive changes
+  useEffect(() => {
+    fetchCacheInfo(isActive);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isActive]);
 
   return (
     <div className="settings-section cache-section">
@@ -188,7 +199,7 @@ const CacheTab = () => {
 
           <button
             className="refresh-cache-btn"
-            onClick={fetchCacheInfo}
+            onClick={() => fetchCacheInfo(true)}
             disabled={loadingCacheInfo}
             title={t('settings.refreshCacheTooltip', 'Refresh cache information')}
           >
@@ -211,7 +222,7 @@ const CacheTab = () => {
           <p>{t('settings.cacheEmpty', 'No cache information available.')}</p>
           <button
             className="refresh-cache-btn"
-            onClick={fetchCacheInfo}
+            onClick={() => fetchCacheInfo(true)}
             disabled={loadingCacheInfo}
           >
             {t('settings.refreshCache', 'Refresh Cache Info')}
