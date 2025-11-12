@@ -48,7 +48,7 @@
 .toast {
     background: rgba(255, 255, 255, 0.95);
     color: #333;
-    padding: 1rem 1.5rem 1rem 2.2rem;
+    padding: 1rem 2.5rem 1rem 2.2rem;
     border-radius: 1.5rem;
     position: relative;
     font-weight: 300;
@@ -94,10 +94,19 @@
     cursor: pointer;
     font-size: 20px;
     color: #595959;
-    transition: color 0.2s ease;
+    opacity: 0;
+    transition: color 0.2s ease, opacity 0.2s ease;
 }
 .close-icon:hover {
     color: var(--clr);
+}
+.toast-item:hover .close-icon {
+    opacity: 1;
+}
+
+/* Swipe feedback */
+.toast-item.swiping {
+    opacity: 0.8;
 }
 
 .toast.toast-help { --bg: var(--ch1); --clr: var(--ch2); }

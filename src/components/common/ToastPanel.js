@@ -6,6 +6,10 @@ const ToastPanel = () => {
   const { t } = useTranslation();
   const [toasts, setToasts] = useState([]);
   const toastIdRef = useRef(0);
+  const [swipingToast, setSwipingToast] = useState(null);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
 
   // This effect sets up the global function and event listeners
   useEffect(() => {
@@ -82,11 +86,46 @@ const ToastPanel = () => {
     setToasts(prev => prev.map(t =>
       t.id === id ? { ...t, dismissing: true } : t
     ));
-    
+
     // Remove from state after the animation completes
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 500); // This duration should match the hide-toast animation
+  };
+
+  const handleTouchStart = (e, toastId) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    setSwipingToast(toastId);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!swipingToast) return;
+
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const deltaX = currentX - touchStartX.current;
+    const deltaY = Math.abs(currentY - touchStartY.current);
+
+    // Only allow horizontal swipe if vertical movement is minimal
+    if (deltaY < 50) {
+      setSwipeOffset(deltaX);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!swipingToast) return;
+
+    const threshold = 100; // Minimum swipe distance to dismiss
+
+    if (Math.abs(swipeOffset) > threshold) {
+      // Swipe far enough, dismiss the toast
+      removeToast(swipingToast);
+    }
+
+    // Reset swipe state
+    setSwipingToast(null);
+    setSwipeOffset(0);
   };
 
   return (
@@ -94,7 +133,14 @@ const ToastPanel = () => {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`toast-item toast-${toast.type} ${toast.dismissing ? 'dismissing' : 'show'}`}
+          className={`toast-item toast-${toast.type} ${toast.dismissing ? 'dismissing' : 'show'} ${swipingToast === toast.id ? 'swiping' : ''}`}
+          onTouchStart={(e) => handleTouchStart(e, toast.id)}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          style={{
+            transform: swipingToast === toast.id ? `translateX(${swipeOffset}px)` : 'translateX(0)',
+            transition: swipingToast === toast.id ? 'none' : 'transform 0.3s ease'
+          }}
         >
           <div className={`toast toast-${toast.type}`}>
             <span className="material-symbols-rounded close-icon" onClick={() => removeToast(toast.id)}>close</span>
