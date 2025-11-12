@@ -46,7 +46,7 @@
 
 /* --- MODIFICATION HERE: Set width and handle text --- */
 .toast {
-    background: rgba(240, 240, 240, 0.95);
+    background: rgba(246, 249, 255, 0.9);
     color: #333;
     padding: 1rem 2.5rem 1rem 2.5rem;
     border-radius: 1.5rem;
@@ -143,7 +143,7 @@
 
 /* Dark mode support */
 [data-theme="dark"] .toast {
-    background: rgba(70, 70, 70, 0.95);
+    background: rgba(30, 30, 30, 0.9);
     color: #e0e0e0;
     box-shadow: 0 0 1.5rem 0 rgba(0, 0, 0, 0.5);
 }
