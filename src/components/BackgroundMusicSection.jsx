@@ -92,6 +92,17 @@ const BackgroundMusicSection = () => {
   const latestHeightRef = useRef(panelHeight);
   useEffect(() => { latestHeightRef.current = panelHeight; }, [panelHeight]);
 
+  const onAnyMove = useCallback((e) => {
+    if (!resizingRef.current) return;
+    const clientY = e.clientY ?? (e.touches && e.touches[0] && e.touches[0].clientY) ?? 0;
+    const dy = clientY - startYRef.current;
+    let next = startHeightRef.current + dy;
+    next = Math.max(panelMinHeight, Math.min(panelMaxHeight, next));
+    setPanelHeight(next);
+  }, []);
+
+  const onAnyTouchMove = useCallback((e) => onAnyMove(e), [onAnyMove]);
+
   const endResize = useCallback(() => {
     if (!resizingRef.current) return;
     resizingRef.current = false;
@@ -109,18 +120,7 @@ const BackgroundMusicSection = () => {
     window.removeEventListener('touchcancel', endResize);
     window.removeEventListener('blur', endResize);
     setIsResizing(false);
-  }, []);
-
-  const onAnyMove = useCallback((e) => {
-    if (!resizingRef.current) return;
-    const clientY = e.clientY ?? (e.touches && e.touches[0] && e.touches[0].clientY) ?? 0;
-    const dy = clientY - startYRef.current;
-    let next = startHeightRef.current + dy;
-    next = Math.max(panelMinHeight, Math.min(panelMaxHeight, next));
-    setPanelHeight(next);
-  }, []);
-
-  const onAnyTouchMove = useCallback((e) => onAnyMove(e), [onAnyMove]);
+  }, [onAnyMove, onAnyTouchMove]);
 
   function onResizePointerDown(e) {
     e.preventDefault();
@@ -150,6 +150,11 @@ const BackgroundMusicSection = () => {
     const lang = (typeof i18n?.language === 'string' && i18n.language) ? i18n.language : (localStorage.getItem('preferred_language') || 'en');
     iframeRef.current.contentWindow.postMessage({ type: 'pm-dj-set-api-key', apiKey, lang }, '*');
   }, [i18n]);
+
+  const postResetToIframe = useCallback(() => {
+    if (!iframeRef.current?.contentWindow) return;
+    iframeRef.current.contentWindow.postMessage({ type: 'pm-dj-reset' }, '*');
+  }, []);
 
   const startRecording = useCallback(() => {
     if (!iframeRef.current?.contentWindow) return;
@@ -270,7 +275,7 @@ const BackgroundMusicSection = () => {
 
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, []);
+  }, [recordingUrl, onAnyMove, onAnyTouchMove]);
 
   // Send API key on iframe load and when storage changes
   const onIframeLoad = useCallback(() => {
@@ -336,6 +341,7 @@ const BackgroundMusicSection = () => {
     };
   }, []);
 
+  // Watch for API key changes in localStorage (cross-window)
   useEffect(() => {
     const onStorage = (e) => {
       if (e && e.key && !e.key.toLowerCase().includes('gemini')) return;
@@ -344,6 +350,29 @@ const BackgroundMusicSection = () => {
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
   }, [postApiKeyToIframe]);
+
+  // Poll for API key changes within the same window (since storage events don't fire for same-window changes)
+  useEffect(() => {
+    let lastApiKey = getCurrentKey?.() || localStorage.getItem('gemini_api_key') || '';
+
+    const pollApiKey = () => {
+      const currentApiKey = getCurrentKey?.() || localStorage.getItem('gemini_api_key') || '';
+      if (currentApiKey !== lastApiKey) {
+        lastApiKey = currentApiKey;
+        if (currentApiKey) {
+          postApiKeyToIframe();
+        } else {
+          // Send reset message when API key is removed
+          postResetToIframe();
+        }
+      }
+    };
+
+    // Check every 5 seconds for API key changes (reduced frequency to prevent lag)
+    const intervalId = setInterval(pollApiKey, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [postApiKeyToIframe, postResetToIframe]);
 
   // Watch main app font changes and forward to iframe
   useEffect(() => {
