@@ -181,13 +181,13 @@
 .toast-history-button {
     position: fixed;
     bottom: 20px;
-    right: 20px;
+    right: 24px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 48px;
     height: 48px;
-    border-radius: 28px;
+    border-radius: 50%;
     background: rgba(var(--md-surface-rgb), 0.95) !important;
     color: var(--md-on-surface);
     border: 1px solid rgba(var(--md-outline-variant-rgb), 0.3) !important;
@@ -199,6 +199,26 @@
     padding: 12px;
     backdrop-filter: blur(12px);
     font-size: 16px !important;
+    position: relative;
+    overflow: hidden;
+}
+
+/* State layer for hover effect */
+.toast-history-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: transparent;
+    transition: background-color var(--md-duration-medium2) var(--md-easing-standard);
+    pointer-events: none;
+    border-radius: 50%;
+}
+
+.toast-history-button:hover::before {
+    background-color: color-mix(in srgb, var(--md-primary), transparent var(--md-state-hover-opacity));
 }
 
 /* Icon sizing */
