@@ -94,6 +94,13 @@
     line-height: 1.3rem;
 }
 
+.toast-time {
+    display: block;
+    font-size: 0.8rem;
+    color: #888;
+    margin-top: 4px;
+}
+
 .close-icon {
     position: absolute;
     right: 1rem;
@@ -161,6 +168,7 @@
 }
 [data-theme="dark"] .toast p { color: #b0b0b0; }
 [data-theme="dark"] .close-icon { color: #b0b0b0; }
+[data-theme="dark"] .toast-time { color: #999; }
 [data-theme="dark"] .toast-item.historical:not(:hover) .toast {
     box-shadow: 0 0 1rem 0 rgba(0, 0, 0, 0.3);
 }

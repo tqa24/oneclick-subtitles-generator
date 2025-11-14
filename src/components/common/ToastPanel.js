@@ -288,6 +288,11 @@ const ToastPanel = () => {
                     )}
                     <h3>{t(`common.toast.${toast.type}`)}</h3>
                     <p>{toast.message}</p>
+                    {isHistorical && (
+                      <small className="toast-time">
+                        {new Date(toast.timestamp).toLocaleString()}
+                      </small>
+                    )}
                     {toast.button && (
                       <button
                         className="toast-button"
