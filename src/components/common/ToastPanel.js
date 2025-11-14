@@ -252,21 +252,67 @@ const ToastPanel = () => {
 
   /* ----------------- Render ----------------- */
   return (
-    <div className="toast-panel-wrapper">
-      <div
-        className="toast-panel"
-      >
-        {showAll ? (
-          <div
-            className="toast-history-container"
-            ref={historyContainerRef}
-            onScroll={handleHistoryScroll}
-            onWheel={(e) => e.stopPropagation()}
-            role="region"
-            aria-label={t('common.toastHistory', 'Toast history')}
-          >
-            {toastsToRender.map((toast) => {
-              const isHistorical = !toasts.some(liveToast => liveToast.id === toast.id);
+    <>
+      <div className="toast-panel-wrapper">
+        <div
+          className="toast-panel"
+        >
+          {showAll ? (
+            <div
+              className="toast-history-container"
+              ref={historyContainerRef}
+              onScroll={handleHistoryScroll}
+              onWheel={(e) => e.stopPropagation()}
+              role="region"
+              aria-label={t('common.toastHistory', 'Toast history')}
+            >
+              {toastsToRender.map((toast) => {
+                const isHistorical = !toasts.some(liveToast => liveToast.id === toast.id);
+                return (
+                  <div
+                    key={toast.id}
+                    className={`toast-item ${isHistorical ? 'historical' : 'live'} ${toast.dismissing ? 'dismissing' : 'show'} ${swipingToast === toast.id ? 'swiping' : ''}`}
+                    onTouchStart={!isHistorical ? (e) => handleTouchStart(e, toast.id) : undefined}
+                    onTouchMove={!isHistorical ? handleTouchMove : undefined}
+                    onTouchEnd={!isHistorical ? handleTouchEnd : undefined}
+                    style={{
+                      transform: swipingToast === toast.id ? `translateX(${swipeOffset}px)` : 'translateX(0)',
+                      transition: swipingToast === toast.id ? 'none' : 'transform 0.3s ease',
+                      animationDelay: isHistorical ? '0s' : undefined
+                    }}
+                  >
+                    <div className={`toast toast-${toast.type}`}>
+                      {!isHistorical && (
+                        <span className="material-symbols-rounded close-icon" onClick={() => removeToast(toast.id)}>
+                          close
+                        </span>
+                      )}
+                      <h3>{t(`common.toast.${toast.type}`)}</h3>
+                      <p>{toast.message}</p>
+                      {isHistorical && (
+                        <small className="toast-time">
+                          {new Date(toast.timestamp).toLocaleString()}
+                        </small>
+                      )}
+                      {toast.button && (
+                        <button
+                          className="toast-button"
+                          onClick={() => {
+                            if (toast.button.onClick) toast.button.onClick();
+                            if (!isHistorical) removeToast(toast.id);
+                          }}
+                        >
+                          {toast.button.text}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            toastsToRender.map((toast) => {
+              const isHistorical = showAll && !toasts.some(liveToast => liveToast.id === toast.id);
               return (
                 <div
                   key={toast.id}
@@ -288,11 +334,6 @@ const ToastPanel = () => {
                     )}
                     <h3>{t(`common.toast.${toast.type}`)}</h3>
                     <p>{toast.message}</p>
-                    {isHistorical && (
-                      <small className="toast-time">
-                        {new Date(toast.timestamp).toLocaleString()}
-                      </small>
-                    )}
                     {toast.button && (
                       <button
                         className="toast-button"
@@ -307,60 +348,23 @@ const ToastPanel = () => {
                   </div>
                 </div>
               );
-            })}
-          </div>
-        ) : (
-          toastsToRender.map((toast) => {
-            const isHistorical = showAll && !toasts.some(liveToast => liveToast.id === toast.id);
-            return (
-              <div
-                key={toast.id}
-                className={`toast-item ${isHistorical ? 'historical' : 'live'} ${toast.dismissing ? 'dismissing' : 'show'} ${swipingToast === toast.id ? 'swiping' : ''}`}
-                onTouchStart={!isHistorical ? (e) => handleTouchStart(e, toast.id) : undefined}
-                onTouchMove={!isHistorical ? handleTouchMove : undefined}
-                onTouchEnd={!isHistorical ? handleTouchEnd : undefined}
-                style={{
-                  transform: swipingToast === toast.id ? `translateX(${swipeOffset}px)` : 'translateX(0)',
-                  transition: swipingToast === toast.id ? 'none' : 'transform 0.3s ease',
-                  animationDelay: isHistorical ? '0s' : undefined
-                }}
-              >
-                <div className={`toast toast-${toast.type}`}>
-                  {!isHistorical && (
-                    <span className="material-symbols-rounded close-icon" onClick={() => removeToast(toast.id)}>
-                      close
-                    </span>
-                  )}
-                  <h3>{t(`common.toast.${toast.type}`)}</h3>
-                  <p>{toast.message}</p>
-                  {toast.button && (
-                    <button
-                      className="toast-button"
-                      onClick={() => {
-                        if (toast.button.onClick) toast.button.onClick();
-                        if (!isHistorical) removeToast(toast.id);
-                      }}
-                    >
-                      {toast.button.text}
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })
-        )}
+            })
+          )}
+        </div>
       </div>
-  
-      <button
-        className={`toast-history-button ${showHistoryButton || isHistoryVisible || isHistoryPinned ? 'floating-visible' : 'floating-hidden'} ${isHistoryPinned ? 'active' : ''}`}
-        onClick={toggleHistoryPin}
-        aria-label={isHistoryPinned ? t('common.hideToastHistory') : t('common.showToastHistory')}
-        title={isHistoryPinned ? t('common.hideToastHistory') : t('common.showToastHistory')}
-        type="button"
-      >
-        <span className="material-symbols-rounded">{isHistoryPinned ? 'visibility_off' : 'history'}</span>
-      </button>
-    </div>
+
+      <div className="toast-history-button-container">
+        <button
+          className={`toast-history-button ${showHistoryButton || isHistoryVisible || isHistoryPinned ? 'floating-visible' : 'floating-hidden'} ${isHistoryPinned ? 'active' : ''}`}
+          onClick={toggleHistoryPin}
+          aria-label={isHistoryPinned ? t('common.hideToastHistory') : t('common.showToastHistory')}
+          title={isHistoryPinned ? t('common.hideToastHistory') : t('common.showToastHistory')}
+          type="button"
+        >
+          <span className="material-symbols-rounded">{isHistoryPinned ? 'visibility_off' : 'history'}</span>
+        </button>
+      </div>
+    </>
   );
 };
   

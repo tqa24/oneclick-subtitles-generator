@@ -177,30 +177,38 @@
 }
 
 
+/* --- Floating History Button Container --- */
+.toast-history-button-container {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 2147483646;
+}
+
 /* --- Floating History Button (matching floating-settings exactly) --- */
 .toast-history-button {
-    position: fixed;
-    bottom: 20px;
-    right: 24px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: rgba(var(--md-surface-rgb), 0.95) !important;
-    color: var(--md-on-surface);
-    border: 1px solid rgba(var(--md-outline-variant-rgb), 0.3) !important;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
-    cursor: pointer;
-    pointer-events: auto;
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
-    z-index: 2147483646;
-    padding: 12px;
-    backdrop-filter: blur(12px);
-    font-size: 16px !important;
-    position: relative;
-    overflow: hidden;
+  position: fixed;
+  bottom: 20px;
+  right: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(var(--md-surface-rgb), 0.95) !important;
+  color: var(--md-on-surface);
+  border: 1px solid rgba(var(--md-outline-variant-rgb), 0.3) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+  padding: 12px;
+  backdrop-filter: blur(12px);
+  font-size: 16px !important;
+  position: relative;
+  overflow: hidden;
 }
 
 /* State layer for hover effect */
