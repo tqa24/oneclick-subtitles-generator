@@ -291,3 +291,22 @@
 .toast-history-container::-webkit-scrollbar {
     display: none; /* Chrome, Safari, Opera */
 }
+
+/* ADDED: History panel exit animation */
+.toast-history-container.hiding {
+    /* Slide out to the right when closing */
+    animation: history-slide-out 0.5s ease-in-out forwards;
+    /* Prevent interaction while it's animating away */
+    pointer-events: none;
+}
+
+@keyframes history-slide-out {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}

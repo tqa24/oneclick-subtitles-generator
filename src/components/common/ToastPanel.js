@@ -148,6 +148,7 @@ const ToastPanel = () => {
     
     const [isHistoryVisible, setIsHistoryVisible] = useState(false);
     const [isHistoryPinned, setIsHistoryPinned] = useState(false);
+    const [isHistoryHiding, setIsHistoryHiding] = useState(false); // ADDED: State for closing animation
     const [showHistoryButton, setShowHistoryButton] = useState(true);
     const hideButtonTimeout = useRef(null);
     
@@ -201,12 +202,26 @@ const ToastPanel = () => {
       };
     }, [isHistoryPinned, isHistoryVisible]);
     
-    // Toggle the "pinned" state of the history view
+    // MODIFIED: Toggle the "pinned" state with exit animation
     const toggleHistoryPin = () => {
-      setIsHistoryPinned(prev => !prev);
+      // Prevent clicking while the closing animation is running
+      if (isHistoryHiding) return;
+
+      if (isHistoryPinned) {
+        // Start closing animation
+        setIsHistoryHiding(true);
+        // After animation, fully hide the panel
+        setTimeout(() => {
+          setIsHistoryPinned(false);
+          setIsHistoryHiding(false);
+        }, 500); // This duration must match the CSS animation
+      } else {
+        // Just open it, no delay needed
+        setIsHistoryPinned(true);
+      }
     };
     
-    const showAll = isHistoryVisible || isHistoryPinned;
+    const showAll = isHistoryPinned || isHistoryHiding;
     // If showing history, render up to `historyLimit` most recent items (newest at bottom).
     const toastsToRender = showAll
       ? [...toastHistory].slice(0, historyLimit).reverse()
@@ -259,7 +274,8 @@ const ToastPanel = () => {
         >
           {showAll ? (
             <div
-              className="toast-history-container"
+              // MODIFIED: Add a 'hiding' class to trigger the exit animation
+              className={`toast-history-container ${isHistoryHiding ? 'hiding' : ''}`}
               ref={historyContainerRef}
               onScroll={handleHistoryScroll}
               onWheel={(e) => e.stopPropagation()}
