@@ -13,7 +13,6 @@
   align-items: center;
   justify-content: center;
   z-index: 100000; /* Higher than video processing modal */
-  animation: modal-appear 0.3s var(--md-easing-emphasized);
 }
 
 .video-processing-modal-overlay {
@@ -29,7 +28,6 @@
   justify-content: center;
   z-index: 99999;
   isolation: isolate;
-  animation: modal-appear 0.3s var(--md-easing-emphasized);
 }
 
 .video-processing-modal {
