@@ -7,6 +7,8 @@ import oldDarkImg from '../assets/transcription-methods/old_dark.png';
 import oldLightImg from '../assets/transcription-methods/old_light.png';
 import parakeetDarkImg from '../assets/transcription-methods/parakeet_dark.png';
 import parakeetLightImg from '../assets/transcription-methods/parakeet_light.png';
+import whisperDarkImg from '../assets/transcription-methods/whisper_dark.png';
+import whisperLightImg from '../assets/transcription-methods/whisper_light.png';
 
 /**
  * Overlay for first-time transcription method selection
@@ -86,6 +88,13 @@ const TranscriptionMethodSelectionOverlay = ({ isOpen, onMethodSelect, onClose }
                 desc: t('processing.transcriptionMethodParakeetDescription'),
                 img: isDarkTheme ? parakeetDarkImg : parakeetLightImg,
                 disabled: isParakeetDisabled
+            },
+            {
+                id: 'groq-whisper',
+                name: t('processing.transcriptionMethodWhisperName'),
+                desc: t('processing.transcriptionMethodWhisperDescription'),
+                img: isDarkTheme ? whisperDarkImg : whisperLightImg,
+                disabled: true
             }
         ];
     }, [isDarkTheme, t, isFullVersion, isVercelMode]);
