@@ -1210,7 +1210,9 @@ const VideoProcessingOptionsModal = ({
     // Handle escape key and outside clicks
     useEffect(() => {
         const handleEscape = (e) => {
-            if (e.key === 'Escape') onClose();
+            if (e.key === 'Escape') {
+                onClose();
+            }
         };
 
         if (isOpen) {
@@ -1257,7 +1259,13 @@ const VideoProcessingOptionsModal = ({
         <>
             <TranscriptionMethodSelectionOverlay
                 isOpen={showMethodSelection}
-                onClose={() => setShowMethodSelection(false)}
+                onClose={() => {
+                    setShowMethodSelection(false);
+                }}
+                onCloseAndHideModal={() => {
+                    setShowMethodSelection(false);
+                    onClose();
+                }}
                 onMethodSelect={(method) => {
                     setMethod(method);
                     localStorage.setItem('has_seen_transcription_method_selection', 'true');
