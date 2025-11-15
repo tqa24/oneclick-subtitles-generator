@@ -1295,11 +1295,45 @@ const VideoProcessingOptionsModal = ({
                                 options={methodOptions}
                                 placeholder={t('processing.methodLabel', 'Method')}
                                 disabled={retryLock}
+                                style={{ maxWidth: '200px' }}
                             />
                             <HelpIcon title={isVercelMode
                                 ? t('processing.methodHelpVercel', 'Only the new method is available in Vercel version. The old method requires server-side video processing capabilities.')
                                 : t('processing.inlineExtractionHelp', 'Use the old method when the new method fails; may be slower depending on the situation')
                             } />
+                            <button
+                                onClick={() => setShowMethodSelection(true)}
+                                className="method-selection-reopen-btn"
+                                title={t('processing.changeTranscriptionMethod', 'Change transcription method')}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '40px',
+                                    height: '40px',
+                                    border: 'none',
+                                    borderRadius: '20px',
+                                    background: 'var(--md-surface-container)',
+                                    color: 'var(--md-on-surface)',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s var(--md-easing-standard)',
+                                    boxShadow: 'var(--md-elevation-level1)',
+                                    fontSize: '20px',
+                                    lineHeight: '1',
+                                    fontFamily: 'var(--ms-font-family)',
+                                    fontVarianceSettings: '"wght" var(--ms-wght), "GRAD" var(--ms-grad), "opsz" var(--ms-opsz)'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.target.style.backgroundColor = 'var(--md-surface-container-high)';
+                                    e.target.style.boxShadow = 'var(--md-elevation-level2)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.target.style.backgroundColor = 'var(--md-surface-container)';
+                                    e.target.style.boxShadow = 'var(--md-elevation-level1)';
+                                }}
+                            >
+                                <span className="material-symbols-rounded" style={{ fontSize: '20px', display: 'inline-block', verticalAlign: 'middle' }}>view_apps</span>
+                            </button>
                         </div>
                     </div>
                     <CloseButton onClick={onClose} variant="modal" size="medium" />
