@@ -538,7 +538,6 @@ try:
         print("This indicates a PyTorch/torchvision version mismatch")
         sys.exit(1)
 
-    // Validate expected versions for F5-TTS and Chatterbox compatibility
     expected_torch = "2.5.1";
     expected_torchvision = "0.20.1";
 
