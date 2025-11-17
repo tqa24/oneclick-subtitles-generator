@@ -867,19 +867,14 @@ const processStreamingResponse = async (response, onChunk, onComplete, onError, 
 /**
  * Check if streaming is supported for the current model
  * @param {string} modelId - The model ID to check
- * @returns {boolean} - Whether streaming is supported
+ * @returns {boolean} - Whether streaming is supported (defaults to true for all models)
  */
 export const isStreamingSupported = (modelId) => {
   const model = modelId || localStorage.getItem('gemini_model') || "gemini-2.5-flash";
   
-  // Most Gemini models support streaming
-  const supportedModels = [
-    'gemini-2.5-pro',
-    'gemini-2.5-flash',
-    'gemini-2.5-flash-lite',
-    'gemini-2.0-flash',
-    'gemini-2.0-flash-lite'
-  ];
-  
-  return supportedModels.some(supported => model.includes(supported));
+  // Default to supporting streaming for all models
+  // The API will reject streaming if not supported, so we don't need to maintain a hardcoded list
+  // Only very rare cases would not support streaming
+  console.log(`[StreamingService] Defaulting to streaming support for model: ${model}`);
+  return true;
 };
