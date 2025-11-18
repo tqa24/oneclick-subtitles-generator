@@ -20,9 +20,9 @@ const UV_EXECUTABLE = process.env.UV_EXECUTABLE || 'uv';
 // Determine if we're running in packaged Electron mode
 const isPackaged = process.env.ELECTRON_RUN_AS_PACKAGED === '1' || process.execPath.includes('One-Click Subtitles Generator.exe');
 const projectRoot = path.dirname(__dirname);
-// Fix: In packaged mode, bin directory is directly under resources, not under app.asar.unpacked
+// Fix: In packaged mode, python is copied to python-venv/ in the build config (see package.json extraResources)
 const wheelhousePythonVenv = isPackaged
-    ? path.join(process.resourcesPath, 'bin', 'python-wheelhouse', 'venv')
+    ? path.join(process.resourcesPath, 'python-venv', 'venv')
     : path.join(projectRoot, 'bin', 'python-wheelhouse', 'venv');
 
 // Use bundled wheelhouse in packaged mode

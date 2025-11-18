@@ -177,8 +177,8 @@ function startPythonService(serviceConfig) {
     // Use bundled Python wheelhouse in packaged mode, or system Python in dev mode
     let pythonExecutable;
     if (isPackaged) {
-      // Use bundled wheelhouse
-      const wheelhouseVenv = path.join(process.resourcesPath, 'app.asar.unpacked', 'bin', 'python-wheelhouse', 'venv');
+      // Use bundled wheelhouse (copied to python-venv/ in build config)
+      const wheelhouseVenv = path.join(process.resourcesPath, 'python-venv', 'venv');
       pythonExecutable = process.platform === 'win32'
         ? path.join(wheelhouseVenv, 'Scripts', 'python.exe')
         : path.join(wheelhouseVenv, 'bin', 'python');
