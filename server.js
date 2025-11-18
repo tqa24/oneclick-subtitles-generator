@@ -9,7 +9,7 @@ const { PORTS, PORT } = require('./server/config');
 const { NARRATION_PORT, CHATTERBOX_PORT } = require('./server/startNarrationService');
 
 // Import Express app
-const app = require('./app');
+const mainApp = require('./app');
 
 // Import narration service
 const { startNarrationService } = require('./server/startNarrationService');
@@ -55,10 +55,10 @@ if (isDevCuda) {
 
     if (narrationProcesses) {
       // Set the narration services as running in the app
-      app.set('narrationServiceRunning', true);
-      app.set('narrationActualPort', NARRATION_PORT);
-      app.set('chatterboxServiceRunning', narrationProcesses.chatterboxProcess !== null);
-      app.set('chatterboxActualPort', CHATTERBOX_PORT);
+      mainApp.set('narrationServiceRunning', true);
+      mainApp.set('narrationActualPort', NARRATION_PORT);
+      mainApp.set('chatterboxServiceRunning', narrationProcesses.chatterboxProcess !== null);
+      mainApp.set('chatterboxActualPort', CHATTERBOX_PORT);
 
       console.log('✅ Narration services startup completed');
       console.log(`📍 F5-TTS service: http://localhost:${NARRATION_PORT}`);
@@ -70,26 +70,26 @@ if (isDevCuda) {
     console.error('❌ Failed to start narration services:', error);
 
     // Set the narration services as not running in the app
-    app.set('narrationServiceRunning', false);
-    app.set('narrationActualPort', null);
-    app.set('chatterboxServiceRunning', false);
-    app.set('chatterboxActualPort', null);
+    mainApp.set('narrationServiceRunning', false);
+    mainApp.set('narrationActualPort', null);
+    mainApp.set('chatterboxServiceRunning', false);
+    mainApp.set('chatterboxActualPort', null);
   }
 } else {
   console.log('ℹ️  Running without narration services (use npm run dev:cuda for full functionality)');
 
   // Set the narration services as not running in the app
-  app.set('narrationServiceRunning', false);
-  app.set('narrationActualPort', null);
-  app.set('chatterboxServiceRunning', false);
-  app.set('chatterboxActualPort', null);
+  mainApp.set('narrationServiceRunning', false);
+  mainApp.set('narrationActualPort', null);
+  mainApp.set('chatterboxServiceRunning', false);
+  mainApp.set('chatterboxActualPort', null);
 }
 
 // Start the server with initialization
 async function startServer() {
   await initializeServer();
 
-  const server = app.listen(PORT, () => {
+  const server = mainApp.listen(PORT, () => {
     console.log(`🌐 Server running on port ${PORT}`);
 
     // Track the main server process

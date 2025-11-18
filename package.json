@@ -151,6 +151,7 @@
       "buildResources": "public"
     },
     "asarUnpack": [
+      "app.js",
       "server.js",
       "server/**",
       "chatterbox-fastapi/**",
@@ -159,6 +160,8 @@
       "promptdj-midi/**"
     ],
     "files": [
+      "app.js",
+      "server.js",
       "build/**/*",
       "server/**/*",
       "chatterbox-fastapi/**/*",

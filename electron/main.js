@@ -178,8 +178,11 @@ function startService(serviceConfig) {
       return;
     }
     
-    debugLog(`[DEBUG] Spawning service '${name}' with node executable '${process.execPath}'`);
-    const childProcess = spawn(process.execPath, [scriptPath], {
+    // CRITICAL FIX: Use 'node' executable instead of process.execPath to avoid infinite recursion
+    // process.execPath points to the Electron executable in packaged apps, causing infinite loops
+    const nodeExecutable = process.platform === 'win32' ? 'node.exe' : 'node';
+    debugLog(`[DEBUG] Spawning service '${name}' with node executable '${nodeExecutable}'`);
+    const childProcess = spawn(nodeExecutable, [scriptPath], {
       stdio: ['pipe', 'pipe', 'pipe'],
       cwd: workingDir,
       env: {
