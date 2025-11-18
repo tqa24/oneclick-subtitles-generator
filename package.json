@@ -150,6 +150,14 @@
       "output": "electron-dist",
       "buildResources": "public"
     },
+    "asarUnpack": [
+      "server.js",
+      "server/**",
+      "chatterbox-fastapi/**",
+      "parakeet_wrapper/**",
+      "video-renderer/**",
+      "promptdj-midi/**"
+    ],
     "files": [
       "build/**/*",
       "server/**/*",

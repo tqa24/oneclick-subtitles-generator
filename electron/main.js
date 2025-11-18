@@ -146,39 +146,30 @@ function startService(serviceConfig) {
     }
     
     console.log(`🚀 Starting ${name}...`);
-    
-    // Determine the correct paths for dev vs production
-    let scriptPath = script;
-    let workingDir = process.cwd();
-    
+
+    // Resolve script path correctly in both dev and packaged (asar) modes
+    // so that Node services run from their actual on-disk location.
+    let scriptPath;
+    let workingDir;
+
     if (app.isPackaged) {
-      // In packaged mode, use resources path + relative path
-      const resourcesDir = process.resourcesPath;
-      
-      // Handle different service types
-      if (script.includes('/server/')) {
-        // Server files are extracted to services/server/
-        scriptPath = path.join(resourcesDir, 'services', script.replace(path.join(__dirname, '../'), ''));
-      } else if (script.includes('/chatterbox-fastapi/')) {
-        // Chatterbox files are extracted to services/chatterbox-fastapi/
-        scriptPath = path.join(resourcesDir, 'services', script.replace(path.join(__dirname, '../'), ''));
-      } else if (script.includes('/parakeet_wrapper/')) {
-        // Parakeet files are extracted to services/parakeet_wrapper/
-        scriptPath = path.join(resourcesDir, 'services', script.replace(path.join(__dirname, '../'), ''));
-      } else if (script.includes('/video-renderer/')) {
-        // Video renderer files remain relative
-        scriptPath = path.join(resourcesDir, script.replace(path.join(__dirname, '../'), ''));
-      } else {
-        // Default fallback
-        scriptPath = path.join(resourcesDir, script.replace(path.join(__dirname, '../'), ''));
-      }
-      
-      workingDir = resourcesDir;
-      debugLog(`[DEBUG] Production script path: ${scriptPath}`);
+      // In production, files are inside app.asar. For Node to execute them,
+      // we need the asar path rewritten to the unpacked app directory.
+      // __dirname points into resources/app.asar/electron, so go up one
+      // level to the app root and then apply the same relative path that
+      // was used when constructing `script`.
+      const appRoot = path.dirname(__dirname); // resources/app.asar
+      const relativeFromAppRoot = path.relative(appRoot, script);
+      scriptPath = path.join(process.resourcesPath, 'app.asar.unpacked', relativeFromAppRoot);
+      workingDir = path.dirname(scriptPath);
+    } else {
+      // In development, use the script path as defined
+      scriptPath = script;
+      workingDir = path.dirname(scriptPath);
     }
 
-    debugLog(`[DEBUG] Final script path: ${scriptPath}`);
-    debugLog(`[DEBUG] Working directory: ${workingDir}`);
+    debugLog(`[DEBUG] Service script path: ${scriptPath}`);
+    debugLog(`[DEBUG] Service working directory: ${workingDir}`);
     
     // Check if file exists before trying to spawn
     if (!fs.existsSync(scriptPath)) {
@@ -187,7 +178,8 @@ function startService(serviceConfig) {
       return;
     }
     
-    const process = spawn('node', [scriptPath], {
+    debugLog(`[DEBUG] Spawning service '${name}' with node executable '${process.execPath}'`);
+    const childProcess = spawn(process.execPath, [scriptPath], {
       stdio: ['pipe', 'pipe', 'pipe'],
       cwd: workingDir,
       env: {
@@ -200,9 +192,9 @@ function startService(serviceConfig) {
       }
     });
 
-    process.stdout.on('data', (data) => {
+    childProcess.stdout.on('data', (data) => {
       const output = data.toString();
-      console.log(`[${name}] ${output}`);
+      debugLog(`[${name}] ${output}`.trimEnd());
       if (mainWindow) {
         mainWindow.webContents.send('service-log', {
           service: name,
@@ -213,9 +205,9 @@ function startService(serviceConfig) {
       }
     });
 
-    process.stderr.on('data', (data) => {
+    childProcess.stderr.on('data', (data) => {
       const output = data.toString();
-      console.error(`[${name} ERROR] ${output}`);
+      debugLog(`[${name} ERROR] ${output}`.trimEnd());
       if (mainWindow) {
         mainWindow.webContents.send('service-log', {
           service: name,
@@ -226,12 +218,12 @@ function startService(serviceConfig) {
       }
     });
 
-    process.on('error', (error) => {
+    childProcess.on('error', (error) => {
       console.error(`Failed to start ${name}:`, error);
       reject(error);
     });
 
-    process.on('close', (code) => {
+    childProcess.on('close', (code) => {
       console.log(`${name} exited with code ${code}`);
       if (mainWindow) {
         mainWindow.webContents.send('service-status', {
@@ -243,11 +235,11 @@ function startService(serviceConfig) {
     });
 
     setTimeout(() => {
-      if (process.exitCode === null) {
+      if (childProcess.exitCode === null) {
         console.log(`✅ ${name} started successfully`);
-        resolve(process);
+        resolve(childProcess);
       } else {
-        reject(new Error(`${name} failed to start (exit code: ${process.exitCode})`));
+        reject(new Error(`${name} failed to start (exit code: ${childProcess.exitCode})`));
       }
     }, 3000);
   });
