@@ -312,7 +312,11 @@ function startService(serviceConfig) {
         NODE_ENV: 'production',
         // Mirror dev:cuda behavior so narration + chatterbox can start
         START_PYTHON_SERVER: 'true',
-        DEV_SERVER_MANAGED: 'true'
+        DEV_SERVER_MANAGED: 'true',
+        // Explicitly signal packaged mode for Python service detection
+        ELECTRON_RUN_AS_PACKAGED: app.isPackaged ? '1' : '0',
+        // Pass resources path to Node process (process.resourcesPath not available in child processes)
+        ELECTRON_RESOURCES_PATH: app.isPackaged ? process.resourcesPath : ''
       }
     });
 

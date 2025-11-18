@@ -21,8 +21,10 @@ const UV_EXECUTABLE = process.env.UV_EXECUTABLE || 'uv';
 const isPackaged = process.env.ELECTRON_RUN_AS_PACKAGED === '1' || process.execPath.includes('One-Click Subtitles Generator.exe');
 const projectRoot = path.dirname(__dirname);
 // Fix: In packaged mode, python is copied to python-venv/ in the build config (see package.json extraResources)
+// Use ELECTRON_RESOURCES_PATH env var because process.resourcesPath is not available in child Node processes
+const resourcesPath = process.env.ELECTRON_RESOURCES_PATH || process.resourcesPath;
 const wheelhousePythonVenv = isPackaged
-    ? path.join(process.resourcesPath, 'python-venv', 'venv')
+    ? path.join(resourcesPath, 'python-venv', 'venv')
     : path.join(projectRoot, 'bin', 'python-wheelhouse', 'venv');
 
 // Use bundled wheelhouse in packaged mode
@@ -219,12 +221,16 @@ print(f'CUDA device name: {torch.cuda.get_device_name(0) if torch.cuda.is_availa
     }
 
     // Ensure critical Python runtime deps exist in the shared venv before starting services
-    try {
-      const { execSync } = require('child_process');
-      const ensureCmd = `${UV_EXECUTABLE} pip show --python .venv python-dateutil || ${UV_EXECUTABLE} pip install --python .venv python-dateutil==2.9.0.post0`;
-      execSync(ensureCmd, { stdio: 'inherit', cwd: projectRoot });
-    } catch (e) {
-      console.warn(`Warning: Failed to ensure python-dateutil in .venv: ${e.message}`);
+    // Skip this in packaged mode since dependencies are pre-bundled
+    if (!isPackaged) {
+      try {
+        const { execSync } = require('child_process');
+        const venvRelativePath = path.relative(projectRoot, VENV_PATH);
+        const ensureCmd = `${UV_EXECUTABLE} pip show --python ${venvRelativePath} python-dateutil || ${UV_EXECUTABLE} pip install --python ${venvRelativePath} python-dateutil==2.9.0.post0`;
+        execSync(ensureCmd, { stdio: 'inherit', cwd: projectRoot });
+      } catch (e) {
+        console.warn(`Warning: Failed to ensure python-dateutil in venv: ${e.message}`);
+      }
     }
 
     // Spawn the Python process using uv or direct wheelhouse Python

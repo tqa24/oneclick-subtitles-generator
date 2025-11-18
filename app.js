@@ -356,11 +356,16 @@ app.get('/api/startup-mode', (req, res) => {
   // Detect how this process was started
   const lifecycle = process.env.npm_lifecycle_event; // e.g., 'start', 'dev', 'dev:cuda'
   const isDevCuda = process.env.START_PYTHON_SERVER === 'true';
-  const isStart = lifecycle === 'start' || process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
+  const isElectron = process.env.ELECTRON_RUN_AS_PACKAGED === '1' || process.execPath.includes('One-Click Subtitles Generator.exe');
+  const isVercel = process.env.VERCEL === '1';
+  // Only consider it "start" mode if it's explicitly npm start or Vercel, not just production mode
+  const isStart = lifecycle === 'start' || isVercel;
 
   // Build a human-friendly command string
   let command;
-  if (lifecycle) {
+  if (isElectron) {
+    command = 'electron app';
+  } else if (lifecycle) {
     command = lifecycle === 'start' ? 'npm start' : `npm run ${lifecycle}`;
   } else {
     command = isDevCuda ? 'npm run dev:cuda' : 'npm run dev';
@@ -369,6 +374,7 @@ app.get('/api/startup-mode', (req, res) => {
   const startupMode = {
     isDevCuda,
     isStart,
+    isElectron,
     command
   };
 

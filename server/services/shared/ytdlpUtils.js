@@ -21,15 +21,34 @@ let cookieCache = {
  * @returns {string} - Path to yt-dlp executable
  */
 function getYtDlpPath() {
-  // Check for venv at root level
-  const venvPath = path.join(process.cwd(), '.venv');
+  // Determine if we're running in packaged Electron mode
+  const isPackaged = process.env.ELECTRON_RUN_AS_PACKAGED === '1' || process.execPath.includes('One-Click Subtitles Generator.exe');
+  
+  // Use ELECTRON_RESOURCES_PATH env var because process.resourcesPath is not available in child Node processes
+  const resourcesPath = process.env.ELECTRON_RESOURCES_PATH || process.resourcesPath;
+  
+  let venvPath;
+  if (isPackaged) {
+    // In packaged mode, use the bundled Python venv
+    venvPath = path.join(resourcesPath, 'python-venv', 'venv');
+  } else {
+    // In development, check both .venv and bin/python-wheelhouse/venv
+    const devVenvPath = path.join(process.cwd(), '.venv');
+    const wheelhouseVenvPath = path.join(process.cwd(), 'bin', 'python-wheelhouse', 'venv');
+    
+    // Prefer .venv if it exists, otherwise use wheelhouse
+    venvPath = fs.existsSync(devVenvPath) ? devVenvPath : wheelhouseVenvPath;
+  }
+  
   const venvBinDir = process.platform === 'win32' ? 'Scripts' : 'bin';
   const venvYtDlpPath = path.join(venvPath, venvBinDir, process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp');
 
   if (fs.existsSync(venvYtDlpPath)) {
+    console.log(`[getYtDlpPath] Found yt-dlp at: ${venvYtDlpPath}`);
     return venvYtDlpPath;
   }
 
+  console.warn(`[getYtDlpPath] yt-dlp not found at ${venvYtDlpPath}, falling back to PATH`);
   // If not in venv, use the one in PATH
   return 'yt-dlp';
 }
@@ -97,8 +116,22 @@ function isChromeCookieUnlockAvailable() {
   // Check possible plugin locations
   const pluginPaths = [];
 
+  // Determine if we're running in packaged Electron mode
+  const isPackaged = process.env.ELECTRON_RUN_AS_PACKAGED === '1' || process.execPath.includes('One-Click Subtitles Generator.exe');
+  
+  // Use ELECTRON_RESOURCES_PATH env var because process.resourcesPath is not available in child Node processes
+  const resourcesPath = process.env.ELECTRON_RESOURCES_PATH || process.resourcesPath;
+  
   // Check venv-relative path first (this is where our setup installs it)
-  const venvPluginsDir = path.join(process.cwd(), '.venv', 'yt-dlp-plugins', 'ChromeCookieUnlock');
+  let venvPluginsDir;
+  if (isPackaged) {
+    venvPluginsDir = path.join(resourcesPath, 'python-venv', 'venv', 'yt-dlp-plugins', 'ChromeCookieUnlock');
+  } else {
+    const devVenvPath = path.join(process.cwd(), '.venv');
+    const wheelhouseVenvPath = path.join(process.cwd(), 'bin', 'python-wheelhouse', 'venv');
+    const venvPath = fs.existsSync(devVenvPath) ? devVenvPath : wheelhouseVenvPath;
+    venvPluginsDir = path.join(venvPath, 'yt-dlp-plugins', 'ChromeCookieUnlock');
+  }
   pluginPaths.push(venvPluginsDir);
 
   // Check system-wide paths
@@ -137,8 +170,23 @@ function isChromeCookieUnlockAvailable() {
 function getCommonYtDlpArgs() {
   const args = [];
 
+  // Determine if we're running in packaged Electron mode
+  const isPackaged = process.env.ELECTRON_RUN_AS_PACKAGED === '1' || process.execPath.includes('One-Click Subtitles Generator.exe');
+  
+  // Use ELECTRON_RESOURCES_PATH env var because process.resourcesPath is not available in child Node processes
+  const resourcesPath = process.env.ELECTRON_RESOURCES_PATH || process.resourcesPath;
+  
   // Add plugin directory if it exists
-  const pluginDir = path.join(process.cwd(), '.venv', 'yt-dlp-plugins');
+  let pluginDir;
+  if (isPackaged) {
+    pluginDir = path.join(resourcesPath, 'python-venv', 'venv', 'yt-dlp-plugins');
+  } else {
+    const devVenvPath = path.join(process.cwd(), '.venv');
+    const wheelhouseVenvPath = path.join(process.cwd(), 'bin', 'python-wheelhouse', 'venv');
+    const venvPath = fs.existsSync(devVenvPath) ? devVenvPath : wheelhouseVenvPath;
+    pluginDir = path.join(venvPath, 'yt-dlp-plugins');
+  }
+  
   if (fs.existsSync(pluginDir)) {
     args.push('--plugin-dirs', pluginDir);
     console.log(`[getCommonYtDlpArgs] Using plugin directory: ${pluginDir}`);
@@ -174,7 +222,22 @@ async function extractCookiesToFile() {
   }
 
   const ytdlpPath = getYtDlpPath();
-  const pluginDir = path.join(process.cwd(), '.venv', 'yt-dlp-plugins');
+  
+  // Determine if we're running in packaged Electron mode
+  const isPackaged = process.env.ELECTRON_RUN_AS_PACKAGED === '1' || process.execPath.includes('One-Click Subtitles Generator.exe');
+  
+  // Use ELECTRON_RESOURCES_PATH env var because process.resourcesPath is not available in child Node processes
+  const resourcesPath = process.env.ELECTRON_RESOURCES_PATH || process.resourcesPath;
+  
+  let pluginDir;
+  if (isPackaged) {
+    pluginDir = path.join(resourcesPath, 'python-venv', 'venv', 'yt-dlp-plugins');
+  } else {
+    const devVenvPath = path.join(process.cwd(), '.venv');
+    const wheelhouseVenvPath = path.join(process.cwd(), 'bin', 'python-wheelhouse', 'venv');
+    const venvPath = fs.existsSync(devVenvPath) ? devVenvPath : wheelhouseVenvPath;
+    pluginDir = path.join(venvPath, 'yt-dlp-plugins');
+  }
 
   const args = [];
 
@@ -241,8 +304,23 @@ function getYtDlpArgs(useCookies = false, forceRefresh = false) {
 
   console.log(`[getYtDlpArgs] Called with useCookies:`, useCookies, typeof useCookies);
 
+  // Determine if we're running in packaged Electron mode
+  const isPackaged = process.env.ELECTRON_RUN_AS_PACKAGED === '1' || process.execPath.includes('One-Click Subtitles Generator.exe');
+  
+  // Use ELECTRON_RESOURCES_PATH env var because process.resourcesPath is not available in child Node processes
+  const resourcesPath = process.env.ELECTRON_RESOURCES_PATH || process.resourcesPath;
+  
   // Add plugin directory if it exists
-  const pluginDir = path.join(process.cwd(), '.venv', 'yt-dlp-plugins');
+  let pluginDir;
+  if (isPackaged) {
+    pluginDir = path.join(resourcesPath, 'python-venv', 'venv', 'yt-dlp-plugins');
+  } else {
+    const devVenvPath = path.join(process.cwd(), '.venv');
+    const wheelhouseVenvPath = path.join(process.cwd(), 'bin', 'python-wheelhouse', 'venv');
+    const venvPath = fs.existsSync(devVenvPath) ? devVenvPath : wheelhouseVenvPath;
+    pluginDir = path.join(venvPath, 'yt-dlp-plugins');
+  }
+  
   if (fs.existsSync(pluginDir)) {
     args.push('--plugin-dirs', pluginDir);
     console.log(`[getYtDlpArgs] Using plugin directory: ${pluginDir}`);
@@ -290,8 +368,23 @@ function getYtDlpArgs(useCookies = false, forceRefresh = false) {
 function getOptimizedYtDlpArgs(forceRefresh = false) {
   const args = [];
 
+  // Determine if we're running in packaged Electron mode
+  const isPackaged = process.env.ELECTRON_RUN_AS_PACKAGED === '1' || process.execPath.includes('One-Click Subtitles Generator.exe');
+  
+  // Use ELECTRON_RESOURCES_PATH env var because process.resourcesPath is not available in child Node processes
+  const resourcesPath = process.env.ELECTRON_RESOURCES_PATH || process.resourcesPath;
+  
   // Add plugin directory if it exists
-  const pluginDir = path.join(process.cwd(), '.venv', 'yt-dlp-plugins');
+  let pluginDir;
+  if (isPackaged) {
+    pluginDir = path.join(resourcesPath, 'python-venv', 'venv', 'yt-dlp-plugins');
+  } else {
+    const devVenvPath = path.join(process.cwd(), '.venv');
+    const wheelhouseVenvPath = path.join(process.cwd(), 'bin', 'python-wheelhouse', 'venv');
+    const venvPath = fs.existsSync(devVenvPath) ? devVenvPath : wheelhouseVenvPath;
+    pluginDir = path.join(venvPath, 'yt-dlp-plugins');
+  }
+  
   if (fs.existsSync(pluginDir)) {
     args.push('--plugin-dirs', pluginDir);
     console.log(`[getOptimizedYtDlpArgs] Using plugin directory: ${pluginDir}`);
