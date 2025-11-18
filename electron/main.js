@@ -132,6 +132,127 @@ function createWindow() {
     return { action: 'deny' };
   });
 }
+// Generic service starter for Python services that uses bundled wheelhouse
+function startPythonService(serviceConfig) {
+  return new Promise((resolve, reject) => {
+    const { script, name, port } = serviceConfig;
+    
+    if (!script) {
+      console.log(`✅ ${name} (built-in service)`);
+      resolve(null);
+      return;
+    }
+    
+    console.log(`🚀 Starting Python ${name}...`);
+
+    // Determine if we're in packaged mode
+    const isPackaged = process.execPath.includes('One-Click Subtitles Generator.exe');
+    
+    // Resolve script path correctly in both dev and packaged modes
+    let scriptPath;
+    let workingDir;
+
+    if (isPackaged) {
+      // In packaged mode, use the unpacked path
+      const appRoot = path.dirname(__dirname); // resources/app.asar
+      const relativeFromAppRoot = path.relative(appRoot, script);
+      scriptPath = path.join(process.resourcesPath, 'app.asar.unpacked', relativeFromAppRoot);
+      workingDir = path.dirname(scriptPath);
+    } else {
+      // In development, use the script path as defined
+      scriptPath = script;
+      workingDir = path.dirname(scriptPath);
+    }
+
+    debugLog(`[DEBUG] Python Service script path: ${scriptPath}`);
+    debugLog(`[DEBUG] Python Service working directory: ${workingDir}`);
+    
+    // Check if file exists
+    if (!fs.existsSync(scriptPath)) {
+      console.error(`❌ Python Service script not found: ${scriptPath}`);
+      reject(new Error(`Python Service script not found: ${scriptPath}`));
+      return;
+    }
+
+    // Use bundled Python wheelhouse in packaged mode, or system Python in dev mode
+    let pythonExecutable;
+    if (isPackaged) {
+      // Use bundled wheelhouse
+      const wheelhouseVenv = path.join(process.resourcesPath, 'app.asar.unpacked', 'bin', 'python-wheelhouse', 'venv');
+      pythonExecutable = process.platform === 'win32'
+        ? path.join(wheelhouseVenv, 'Scripts', 'python.exe')
+        : path.join(wheelhouseVenv, 'bin', 'python');
+    } else {
+      // Use system Python in dev mode
+      pythonExecutable = process.platform === 'win32' ? 'python.exe' : 'python';
+    }
+
+    debugLog(`[DEBUG] Python executable: ${pythonExecutable}`);
+
+    const childProcess = spawn(pythonExecutable, [scriptPath], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      cwd: workingDir,
+      env: {
+        ...process.env,
+        PORT: port.toString(),
+        NODE_ENV: 'production',
+        START_PYTHON_SERVER: 'true',
+        DEV_SERVER_MANAGED: 'true'
+      }
+    });
+
+    childProcess.stdout.on('data', (data) => {
+      const output = data.toString();
+      debugLog(`[${name}] ${output}`.trimEnd());
+      if (mainWindow) {
+        mainWindow.webContents.send('service-log', {
+          service: name,
+          type: 'stdout',
+          message: output,
+          timestamp: Date.now()
+        });
+      }
+    });
+
+    childProcess.stderr.on('data', (data) => {
+      const output = data.toString();
+      debugLog(`[${name} ERROR] ${output}`.trimEnd());
+      if (mainWindow) {
+        mainWindow.webContents.send('service-log', {
+          service: name,
+          type: 'stderr',
+          message: output,
+          timestamp: Date.now()
+        });
+      }
+    });
+
+    childProcess.on('error', (error) => {
+      console.error(`Failed to start ${name}:`, error);
+      reject(error);
+    });
+
+    childProcess.on('close', (code) => {
+      console.log(`${name} exited with code ${code}`);
+      if (mainWindow) {
+        mainWindow.webContents.send('service-status', {
+          service: name,
+          status: 'stopped',
+          exitCode: code
+        });
+      }
+    });
+
+    setTimeout(() => {
+      if (childProcess.exitCode === null) {
+        console.log(`✅ ${name} started successfully`);
+        resolve(childProcess);
+      } else {
+        reject(new Error(`${name} failed to start (exit code: ${childProcess.exitCode})`));
+      }
+    }, 3000);
+  });
+}
 
 // Generic service starter for Node.js services
 function startService(serviceConfig) {
@@ -280,6 +401,36 @@ async function startAllServices() {
           message: 'Backend server started successfully on port 3031'
         });
       }
+
+      // Start Python services with the same pattern as dev:cuda
+      debugLog('🚀 Starting F5-TTS Narration Service (port 3035)...');
+      try {
+        const narrationResult = await startPythonService({
+          name: 'F5-TTS Narration Service',
+          script: SERVICES.NARRATION_SERVICE.script,
+          port: SERVICES.NARRATION_SERVICE.port,
+          healthCheck: SERVICES.NARRATION_SERVICE.healthCheck
+        });
+        results.narrationService = narrationResult;
+        debugLog('✅ F5-TTS Narration Service started successfully');
+      } catch (error) {
+        debugLog('❌ F5-TTS NARRATION SERVICE FAILED: ' + error.message);
+      }
+
+      debugLog('🚀 Starting Chatterbox API Service (port 3036)...');
+      try {
+        const chatterboxResult = await startPythonService({
+          name: 'Chatterbox API Service',
+          script: SERVICES.CHATTERBOX_SERVICE.script,
+          port: SERVICES.CHATTERBOX_SERVICE.port,
+          healthCheck: SERVICES.CHATTERBOX_SERVICE.healthCheck
+        });
+        results.chatterboxService = chatterboxResult;
+        debugLog('✅ Chatterbox API Service started successfully');
+      } catch (error) {
+        debugLog('❌ CHATTERBOX SERVICE FAILED: ' + error.message);
+      }
+
     } catch (error) {
       debugLog('❌ EXPRESS.JS BACKEND SERVER FAILED: ' + error);
       debugLog('❌ Error details: ' + error.message + ' ' + error.stack);
@@ -292,8 +443,8 @@ async function startAllServices() {
       }
     }
     
-    // Add a delay to let backend start
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Add a delay to let services start
+    await new Promise(resolve => setTimeout(resolve, 3000));
     
     // For now, skip other services to focus on the main issue
     debugLog('⚠️  Skipping other services to focus on backend server');

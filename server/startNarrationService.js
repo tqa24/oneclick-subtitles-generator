@@ -17,6 +17,17 @@ const NARRATION_PORT = PORTS.NARRATION;
 const CHATTERBOX_PORT = PORTS.CHATTERBOX;
 const UV_EXECUTABLE = process.env.UV_EXECUTABLE || 'uv';
 
+// Determine if we're running in packaged Electron mode
+const isPackaged = process.env.ELECTRON_RUN_AS_PACKAGED === '1' || process.execPath.includes('One-Click Subtitles Generator.exe');
+const projectRoot = path.dirname(__dirname);
+// Fix: In packaged mode, bin directory is directly under resources, not under app.asar.unpacked
+const wheelhousePythonVenv = isPackaged
+    ? path.join(process.resourcesPath, 'bin', 'python-wheelhouse', 'venv')
+    : path.join(projectRoot, 'bin', 'python-wheelhouse', 'venv');
+
+// Use bundled wheelhouse in packaged mode
+const VENV_PATH = isPackaged ? wheelhousePythonVenv : path.join(projectRoot, '.venv');
+
 // Start the Chatterbox API service
 function startChatterboxService() {
   try {
@@ -59,16 +70,36 @@ function startChatterboxService() {
     const projectRoot = path.dirname(chatterboxDir);
     const startApiPath = path.join('chatterbox-fastapi', 'start_api.py');
 
-    const chatterboxProcess = spawn(UV_EXECUTABLE, [
-      'run',
-      '--python', '.venv',  // Explicitly use the .venv virtual environment
-      '--',
-      'python',
-      startApiPath,  // Use relative path from project root
-      '--host', '0.0.0.0',
-      '--port', CHATTERBOX_PORT.toString(),
-      '--reload'
-    ], {
+    let chatterboxSpawnCommand, chatterboxSpawnArgs;
+    if (isPackaged && fs.existsSync(VENV_PATH)) {
+      // Use bundled wheelhouse Python directly in packaged mode
+      const pythonExec = process.platform === 'win32'
+        ? path.join(VENV_PATH, 'Scripts', 'python.exe')
+        : path.join(VENV_PATH, 'bin', 'python');
+      
+      chatterboxSpawnCommand = pythonExec;
+      chatterboxSpawnArgs = [
+        startApiPath,  // Use relative path from project root
+        '--host', '0.0.0.0',
+        '--port', CHATTERBOX_PORT.toString(),
+        '--reload'
+      ];
+    } else {
+      // Use uv with .venv in development mode
+      chatterboxSpawnCommand = UV_EXECUTABLE;
+      chatterboxSpawnArgs = [
+        'run',
+        '--python', path.relative(projectRoot, VENV_PATH),
+        '--',
+        'python',
+        startApiPath,  // Use relative path from project root
+        '--host', '0.0.0.0',
+        '--port', CHATTERBOX_PORT.toString(),
+        '--reload'
+      ];
+    }
+
+    const chatterboxProcess = spawn(chatterboxSpawnCommand, chatterboxSpawnArgs, {
       env,
       stdio: 'inherit',
       cwd: projectRoot  // Run from project root where .venv is located
@@ -196,17 +227,31 @@ print(f'CUDA device name: {torch.cuda.get_device_name(0) if torch.cuda.is_availa
       console.warn(`Warning: Failed to ensure python-dateutil in .venv: ${e.message}`);
     }
 
-    // Spawn the Python process using uv
+    // Spawn the Python process using uv or direct wheelhouse Python
     const narrationAppPath = path.join(__dirname, 'narrationApp.py');
-    const projectRoot = path.dirname(__dirname);
 
-    const narrationProcess = spawn(UV_EXECUTABLE, [
-      'run',
-      '--python', '.venv',  // Explicitly use the .venv virtual environment
-      '--',
-      'python',
-      narrationAppPath
-    ], {
+    let spawnCommand, spawnArgs;
+    if (isPackaged && fs.existsSync(VENV_PATH)) {
+      // Use bundled wheelhouse Python directly in packaged mode
+      const pythonExec = process.platform === 'win32'
+        ? path.join(VENV_PATH, 'Scripts', 'python.exe')
+        : path.join(VENV_PATH, 'bin', 'python');
+      
+      spawnCommand = pythonExec;
+      spawnArgs = [narrationAppPath];
+    } else {
+      // Use uv with .venv in development mode
+      spawnCommand = UV_EXECUTABLE;
+      spawnArgs = [
+        'run',
+        '--python', path.relative(projectRoot, VENV_PATH),
+        '--',
+        'python',
+        narrationAppPath
+      ];
+    }
+
+    const narrationProcess = spawn(spawnCommand, spawnArgs, {
       env,
       stdio: 'inherit',
       cwd: projectRoot  // Run from project root where .venv is located
