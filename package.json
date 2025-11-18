@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "description": "A subtitle generator application using Gemini AI",
   "homepage": "./",
+  "main": "electron/main.js",
+  "author": "Your Name <your.email@example.com>",
   "workspaces": [
     "promptdj-midi",
     "video-renderer"
@@ -11,6 +13,14 @@
     "start": "npm run setup:react-env && npm run generate:version && node scripts/start-frontend.js",
     "start-react": "cross-env PORT=3030 react-scripts start",
     "build": "npm run generate:version && react-scripts build",
+    "electron": "electron .",
+    "electron:dev": "npm run build && electron .",
+    "electron:start": "concurrently \"npm run start\" \"npm run electron:dev\"",
+    "dist": "npm run build && electron-builder",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:linux": "npm run build && electron-builder --linux",
+    "pack": "electron-builder --dir",
     "generate:version": "node scripts/generate-version.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
@@ -51,7 +61,8 @@
     "install:all:quiet": "cross-env QUIET=true npm install --silent && cross-env QUIET=true node setup-narration.js && cross-env QUIET=true node install-yt-dlp.js",
     "install:all:verbose": "cross-env VERBOSE=true npm install && cross-env VERBOSE=true node setup-narration.js && cross-env VERBOSE=true node install-yt-dlp.js",
     "start:original": "node scripts/start-frontend.js",
-    "workspace:build": "npm run --workspace=video-renderer server:build && npm run --workspace=promptdj-midi build"
+    "workspace:build": "npm run --workspace=video-renderer server:build && npm run --workspace=promptdj-midi build",
+    "postinstall:electron": "electron-builder install-app-deps"
   },
   "dependencies": {
     "@emotion/styled": "^11.14.0",
@@ -124,7 +135,109 @@
     "chalk": "^4.1.2",
     "concurrently": "^9.2.0",
     "cross-env": "^7.0.3",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
+    "electron-devtools-installer": "^3.2.0",
     "typescript": "^4.9.5"
+  },
+  "build": {
+    "appId": "com.subtitlesgenerator.app",
+    "productName": "One-Click Subtitles Generator",
+    "extraMetadata": {
+      "main": "electron/main.js"
+    },
+    "directories": {
+      "output": "electron-dist",
+      "buildResources": "public"
+    },
+    "files": [
+      "build/**/*",
+      "server/**/*",
+      "chatterbox-fastapi/**/*",
+      "parakeet_wrapper/**/*",
+      "video-renderer/**/*",
+      "promptdj-midi/**/*",
+      "electron/**/*",
+      "node_modules/**/*",
+      "!node_modules/*/test/**/*",
+      "!node_modules/*/tests/**/*",
+      "!node_modules/*/.bin/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "bin/",
+        "to": "bin/",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "bin/python-wheelhouse/",
+        "to": "python-venv/",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "linux": {
+      "category": "Office",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "One-Click Subtitles"
+    }
   },
   "eslintConfig": {
     "extends": [

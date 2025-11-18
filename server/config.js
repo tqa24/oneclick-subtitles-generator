@@ -13,7 +13,9 @@ const PORTS = {
   VIDEO_RENDERER: parseInt(process.env.VIDEO_RENDERER_PORT) || 3033,
   VIDEO_RENDERER_FRONTEND: parseInt(process.env.VIDEO_RENDERER_FRONTEND_PORT) || 3034,
   NARRATION: parseInt(process.env.NARRATION_PORT) || 3035,
-  CHATTERBOX: parseInt(process.env.CHATTERBOX_PORT) || 3036
+  CHATTERBOX: parseInt(process.env.CHATTERBOX_PORT) || 3036,
+  PROMPTDJ_MIDI: parseInt(process.env.PROMPTDJ_MIDI_PORT) || 3037,
+  PARAKEET: parseInt(process.env.PARAKEET_PORT) || 3038
 };
 
 // Server configuration using unified ports
@@ -33,7 +35,11 @@ const CORS_ORIGIN = process.env.NODE_ENV === 'production' ? '*' : [
   `http://localhost:${PORTS.NARRATION}`,
   `http://127.0.0.1:${PORTS.NARRATION}`,
   `http://localhost:${PORTS.CHATTERBOX}`,
-  `http://127.0.0.1:${PORTS.CHATTERBOX}`
+  `http://127.0.0.1:${PORTS.CHATTERBOX}`,
+  `http://localhost:${PORTS.PROMPTDJ_MIDI}`,
+  `http://127.0.0.1:${PORTS.PROMPTDJ_MIDI}`,
+  `http://localhost:${PORTS.PARAKEET}`,
+  `http://127.0.0.1:${PORTS.PARAKEET}`
 ];
 
 // Directory paths
