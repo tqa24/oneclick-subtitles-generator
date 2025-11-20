@@ -6,6 +6,7 @@ const fs = require('fs');
 const { promisify } = require('util');
 const exec = promisify(require('child_process').exec);
 const fsPromises = fs.promises;
+const { getFfmpegPath } = require('../shared/ffmpegUtils');
 
 /**
  * Check if ffmpeg is installed and available
@@ -13,7 +14,8 @@ const fsPromises = fs.promises;
  */
 async function isFFmpegAvailable() {
   try {
-    await exec('ffmpeg -version');
+    const ffmpegPath = getFfmpegPath();
+    await exec(`"${ffmpegPath}" -version`);
     return true;
   } catch (error) {
     console.warn('FFmpeg is not available:', error.message);
@@ -36,7 +38,8 @@ async function mergeVideoAndAudio(videoPath, audioPath, outputPath) {
 
 
     // Use ffmpeg to merge the files
-    const command = `ffmpeg -i "${videoPath}" -i "${audioPath}" -c:v copy -c:a aac -strict experimental "${outputPath}" -y`;
+    const ffmpegPath = getFfmpegPath();
+    const command = `"${ffmpegPath}" -i "${videoPath}" -i "${audioPath}" -c:v copy -c:a aac -strict experimental "${outputPath}" -y`;
 
 
     const { stdout, stderr } = await exec(command);

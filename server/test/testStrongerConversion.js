@@ -6,6 +6,7 @@ const { exec } = require('child_process');
 const util = require('util');
 const execPromise = util.promisify(exec);
 const path = require('path');
+const { getFfprobePath } = require('../services/shared/ffmpegUtils');
 
 async function strongerConversion(inputPath, outputPath) {
   console.log('🔧 Applying stronger conversion for waveform compatibility...\n');
@@ -56,7 +57,8 @@ async function strongerConversion(inputPath, outputPath) {
     console.log('✅ Conversion completed!');
     
     // Analyze the output
-    const analyzeCmd = `ffprobe -v quiet -print_format json -show_streams "${outputPath}"`;
+    const ffprobePath = getFfprobePath();
+    const analyzeCmd = `"${ffprobePath}" -v quiet -print_format json -show_streams "${outputPath}"`;
     const { stdout: analysis } = await execPromise(analyzeCmd);
     const data = JSON.parse(analysis);
     

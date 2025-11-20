@@ -5,6 +5,7 @@
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
+const { getFfprobePath } = require('../../../services/shared/ffmpegUtils');
 const { OUTPUT_AUDIO_DIR } = require('../directoryManager');
 
 const runFfprobe = (filePath) => new Promise((resolve, reject) => {
@@ -14,7 +15,7 @@ const runFfprobe = (filePath) => new Promise((resolve, reject) => {
     '-of', 'default=noprint_wrappers=1:nokey=1',
     filePath
   ];
-  const proc = spawn('ffprobe', args);
+  const proc = spawn(getFfprobePath(), args);
   let out = '';
   let err = '';
   proc.stdout.on('data', d => out += d.toString());

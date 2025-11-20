@@ -5,6 +5,7 @@
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
+const { getFfmpegPath, getFfprobePath } = require('../../../services/shared/ffmpegUtils');
 
 // Import directory paths
 const { OUTPUT_AUDIO_DIR } = require('../directoryManager');
@@ -15,7 +16,7 @@ const { OUTPUT_AUDIO_DIR } = require('../directoryManager');
 const runFfprobe = (filePath) => new Promise((resolve, reject) => {
   try {
     const args = ['-v','error','-show_entries','format=duration','-of','default=noprint_wrappers=1:nokey=1', filePath];
-    const proc = spawn('ffprobe', args);
+    const proc = spawn(getFfprobePath(), args);
     let out = '';
     let err = '';
     proc.stdout.on('data', d => out += d.toString());
@@ -117,7 +118,7 @@ const batchModifyAudioTrim = async (req, res) => {
         ];
 
         await new Promise((resolve) => {
-          const ff = spawn('ffmpeg', ffmpegArgs);
+          const ff = spawn(getFfmpegPath(), ffmpegArgs);
           ff.on('close', (code) => {
             processed++;
             if (code === 0) {
@@ -212,7 +213,7 @@ const modifyAudioTrimAndSpeedCombined = async (req, res) => {
 
     const ffmpegArgs = ['-i', sourceFile, '-vn', '-af', filters.join(','), ...getCodecArgs(audioPath), '-y', audioPath];
 
-    const ff = spawn('ffmpeg', ffmpegArgs);
+    const ff = spawn(getFfmpegPath(), ffmpegArgs);
     let stderrData = '';
     ff.stderr.on('data', (d) => { stderrData += d.toString(); });
 
@@ -327,7 +328,7 @@ const batchModifyAudioTrimAndSpeedCombined = async (req, res) => {
         const ffmpegArgs = ['-i', sourceFile, '-vn', '-af', filters.join(','), ...getCodecArgs(audioPath), '-y', audioPath];
 
         await new Promise((resolve) => {
-          const ff = spawn('ffmpeg', ffmpegArgs);
+          const ff = spawn(getFfmpegPath(), ffmpegArgs);
           ff.on('close', (code) => {
             processed++;
             if (code === 0) {
