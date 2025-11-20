@@ -186,28 +186,23 @@ export const coordinateParallelStreaming = async (
                         const progress = Math.min(90, (chunk.chunkCount || 1) * 10); // Estimate progress
                         progressTracker.updateSegmentProgress(index, progress);
 
-                        // Aggregate and send combined results
-                        const segmentsWithSubtitles = segmentSubtitles
-                            .map((subs, i) => ({ segment: subSegments[i], subtitles: subs }))
-                            .filter(result => result.subtitles.length > 0);
-
-                        // Removed verbose pre-merge logging
-
-                        const aggregatedSubtitles = mergeParallelSubtitles(segmentsWithSubtitles);
-
-                        // Send aggregated chunk update
-                        onChunk({
-                            text: segmentTexts.join('\n'),
-                            accumulatedText: segmentTexts.join('\n'),
-                            subtitles: aggregatedSubtitles,
-                            chunkCount: chunk.chunkCount,
-                            isComplete: false,
-                            parallelInfo: {
-                                segmentIndex: index,
-                                totalSegments: subSegments.length,
-                                segmentProgress: progressTracker.segmentProgress
-                            }
-                        });
+                        // CRITICAL FIX: Only send THIS segment's subtitles, not all segments aggregated
+                         // This prevents all segments from being batched together in React state
+                         // Each segment updates independently at its own processing pace
+                         onChunk({
+                             text: chunk.accumulatedText || '',
+                             accumulatedText: chunk.accumulatedText || '',
+                             subtitles: adjustedSubtitles,  // Only this segment's subtitles
+                             chunkCount: chunk.chunkCount,
+                             isComplete: false,
+                             parallelInfo: {
+                                 segmentIndex: index,
+                                 totalSegments: subSegments.length,
+                                 isSegmentResult: true,  // Mark this as per-segment result, not aggregated
+                                 segmentProgress: progressTracker.segmentProgress,
+                                 actualSegment: subSegment  // Pass the actual sub-segment being processed
+                             }
+                         });
                     }
                 },
                 // onComplete for this segment
@@ -227,6 +222,31 @@ export const coordinateParallelStreaming = async (
 
                     progressTracker.markSegmentComplete(index);
                     completedSegments++;
+                    
+                    // CRITICAL FIX: Send final chunk when this segment completes
+                    // This ensures React receives results as each segment finishes
+                    // Triggers per-segment animations instead of all at the end
+                    const finalAggregated = mergeParallelSubtitles(
+                        segmentResults
+                            .filter(r => r !== undefined)
+                            .map(r => ({ segment: r.segment, subtitles: r.subtitles || [] }))
+                    );
+                    
+                    onChunk({
+                         text: segmentTexts.join('\n'),
+                         accumulatedText: segmentTexts.join('\n'),
+                         subtitles: finalAggregated,
+                         chunkCount: 999,
+                         isComplete: false,
+                         isSegmentComplete: true,
+                         completedSegmentIndex: index,
+                         parallelInfo: {
+                             segmentIndex: index,
+                             totalSegments: subSegments.length,
+                             segmentProgress: progressTracker.segmentProgress,
+                             actualSegment: subSegment  // Pass the actual sub-segment being processed
+                         }
+                     });
 
                     resolve({
                         segmentIndex: index,
@@ -641,17 +661,18 @@ export const coordinateParallelInlineStreaming = async (
                     );
 
                     onChunk({
-                        text: segmentTexts.join('\n'),
-                        accumulatedText: segmentTexts.join('\n'),
-                        subtitles: aggregated,
-                        chunkCount: chunk.chunkCount,
-                        isComplete: false,
-                        parallelInfo: {
-                            segmentIndex: index,
-                            totalSegments: subSegments.length,
-                            segmentProgress: progressTracker.segmentProgress
-                        }
-                    });
+                         text: segmentTexts.join('\n'),
+                         accumulatedText: segmentTexts.join('\n'),
+                         subtitles: aggregated,
+                         chunkCount: chunk.chunkCount,
+                         isComplete: false,
+                         parallelInfo: {
+                             segmentIndex: index,
+                             totalSegments: subSegments.length,
+                             segmentProgress: progressTracker.segmentProgress,
+                             actualSegment: subSeg  // Pass the actual sub-segment being processed
+                         }
+                     });
 
                     // Rough progress signal for this segment
                     progressTracker.updateSegmentProgress(index, Math.min(90, (chunk.chunkCount || 1) * 10));
@@ -662,6 +683,29 @@ export const coordinateParallelInlineStreaming = async (
             const handleComplete = (finalText) => {
                 segmentTexts[index] = finalText || segmentTexts[index];
                 progressTracker.markSegmentComplete(index);
+                
+                // CRITICAL FIX: Send final chunk when segment completes
+                // This ensures React receives results as each segment finishes, not just at the very end
+                // This is what triggers per-segment animations
+                const finalAggregated = mergeParallelSubtitles(
+                    subSegments.map((ss, i) => ({ segment: ss, subtitles: segmentSubtitles[i] || [] }))
+                );
+                
+                onChunk({
+                    text: segmentTexts.join('\n'),
+                    accumulatedText: segmentTexts.join('\n'),
+                    subtitles: finalAggregated,
+                    chunkCount: 999, // Use high number to indicate final chunk
+                    isComplete: false,
+                    isSegmentComplete: true, // Mark that a segment just completed
+                    completedSegmentIndex: index,
+                    parallelInfo: {
+                        segmentIndex: index,
+                        totalSegments: subSegments.length,
+                        segmentProgress: progressTracker.segmentProgress,
+                        actualSegment: subSeg  // Pass the actual sub-segment being processed
+                    }
+                });
             };
 
             // Error handler that applies retry policy

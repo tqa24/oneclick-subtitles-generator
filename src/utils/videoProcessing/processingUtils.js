@@ -166,9 +166,7 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
          maxWordsPerSubtitle: parseInt(maxWordsPerSubtitle) || 8,
          t, // Pass translation function for i18n support
          onSubtitleUpdate: (data) => {
-          // console.log('[ProcessingUtils] Subtitle update:', data.subtitles.length, 'subtitles');
-
-          // For Gemini 2.0 models: implement early stopping when subtitles exceed segment
+            // For Gemini 2.0 models: implement early stopping when subtitles exceed segment
           if (isGemini20Model && data.subtitles && data.subtitles.length > 0 && !hasStoppedEarly) {
             const segmentStart = segment.start;
             const segmentEnd = segment.end;
@@ -238,10 +236,13 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
 
           // Dispatch streaming-update event for timeline animations
           if (data.isStreaming) {
+            // Use the actual sub-segment if available (from parallel processing),
+            // otherwise use the provided segment (for single segment processing)
+            const eventSegment = data.parallelInfo?.actualSegment || segment;
             window.dispatchEvent(new CustomEvent('streaming-update', {
               detail: {
                 subtitles: filteredSubtitles,
-                segment: segment,
+                segment: eventSegment,
                 runId: options && options.runId ? options.runId : undefined
               }
             }));
