@@ -404,7 +404,8 @@ export const useSubtitles = (t) => {
                         autoSplitSubtitles: options.autoSplitSubtitles,
                         maxWordsPerSubtitle: options.maxWordsPerSubtitle,
                         forceInline: options.inlineExtraction === true,
-                        runId
+                        runId,
+                        t
                     },
                     {
                         onStatus: setStatus,
@@ -469,13 +470,8 @@ export const useSubtitles = (t) => {
                                         return mergedStreamingSubtitles;
                                     });
 
-                                    // Update status to show streaming progress
-                                    if (isStreaming) {
-                                        setStatus({
-                                            message: `Streaming... ${streamingSubtitles.length} subtitles generated for segment`,
-                                            type: 'loading'
-                                        });
-                                    }
+                                    // Status updates are handled by realtimeProcessor
+                                    // Only show completion message when streaming ends (handled elsewhere)
                                 } else {
                                     // Schedule the update for later
                                     const delay = MERGE_THROTTLE_MS - timeSinceMerge;
@@ -513,13 +509,8 @@ export const useSubtitles = (t) => {
                                                 return mergedStreamingSubtitles;
                                             });
 
-                                            // Update status to show streaming progress
-                                            if (pendingStreaming) {
-                                                setStatus({
-                                                    message: `Streaming... ${pending.length} subtitles generated for segment`,
-                                                    type: 'loading'
-                                                });
-                                            }
+                                            // Status updates are handled by realtimeProcessor
+                                            // Only show completion message when streaming ends (handled elsewhere)
 
                                             pendingUpdate = null;
                                         }

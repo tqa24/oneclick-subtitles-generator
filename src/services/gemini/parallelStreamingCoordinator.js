@@ -11,6 +11,7 @@ import {
 } from '../../utils/parallelProcessingUtils';
 import { autoSplitSubtitles } from '../../utils/subtitle/splitUtils';
 import { uploadFileToGemini } from './filesApi';
+import { showInfoToast, showSuccessToast } from '../../utils/toastUtils';
 
 /**
  * Coordinate parallel streaming requests for a video segment
@@ -40,7 +41,8 @@ export const coordinateParallelStreaming = async (
       videoMetadata,
       mediaResolution,
       autoSplitSubtitles: autoSplitEnabled,
-      maxWordsPerSubtitle
+      maxWordsPerSubtitle,
+      t
     } = options;
 
     console.log('[ParallelCoordinator] Received options - segmentProcessingDelay:', segmentProcessingDelay);
@@ -334,12 +336,16 @@ export const coordinateParallelStreaming = async (
        
        if (segmentProcessingDelay > 0) {
          console.log(`[ParallelCoordinator] ✓ USING SEQUENTIAL PROCESSING - Processing ${subSegments.length} segments with ${segmentProcessingDelay}s delay between each`);
+         const seqMsg = t ? t('processing.segmentProcessingSequential', `Processing ${subSegments.length} segments sequentially (${segmentProcessingDelay}s delay between each)`, { count: subSegments.length, delay: segmentProcessingDelay }) : `Processing ${subSegments.length} segments sequentially (${segmentProcessingDelay}s delay between each)`;
+         showInfoToast(seqMsg, 10000);
          results = [];
          
          for (let i = 0; i < taskCreators.length; i++) {
            // Wait for the delay before starting the next segment (except for the first one)
            if (i > 0) {
              console.log(`[ParallelCoordinator] Waiting ${segmentProcessingDelay}s before starting segment ${i + 1}/${taskCreators.length}...`);
+             const delayMsg = t ? t('processing.segmentProcessingStartWithDelay', `Starting segment ${i + 1}/${taskCreators.length} (waited ${segmentProcessingDelay}s)`, { current: i + 1, total: taskCreators.length, delay: segmentProcessingDelay }) : `Starting segment ${i + 1}/${taskCreators.length} (waited ${segmentProcessingDelay}s)`;
+             showInfoToast(delayMsg, 4000);
              await new Promise(resolve => setTimeout(resolve, segmentProcessingDelay * 1000));
              console.log(`[ParallelCoordinator] Starting segment ${i + 1}/${taskCreators.length}`);
            } else {
@@ -525,7 +531,7 @@ export const coordinateParallelInlineStreaming = async (
     onProgress
 ) => {
     try {
-        const { segmentInfo, maxDurationPerRequest, segmentProcessingDelay = 0, autoSplitSubtitles: autoSplitEnabled, maxWordsPerSubtitle } = options || {};
+        const { segmentInfo, maxDurationPerRequest, segmentProcessingDelay = 0, autoSplitSubtitles: autoSplitEnabled, maxWordsPerSubtitle, t } = options || {};
 
         if (!segmentInfo || !maxDurationPerRequest) {
             // Fallback to single inline streaming (no splitting)
@@ -724,7 +730,13 @@ export const coordinateParallelInlineStreaming = async (
         if (segmentProcessingDelay > 0) {
             // Sequential execution: process one segment at a time with delays between starts
             console.log(`[ParallelCoordinator INLINE] ✓ SEQUENTIAL MODE - Processing ${taskCreators.length} segments with ${segmentProcessingDelay}s delay between each`);
+            const seqMsg = t ? t('processing.segmentProcessingSequential', `Processing ${taskCreators.length} segments sequentially (${segmentProcessingDelay}s delay between each)`, { count: taskCreators.length, delay: segmentProcessingDelay }) : `Processing ${taskCreators.length} segments sequentially (${segmentProcessingDelay}s delay between each)`;
+            showInfoToast(seqMsg, 10000);
             for (let i = 0; i < taskCreators.length; i++) {
+                if (i > 0) {
+                    const startMsg = t ? t('processing.segmentProcessingStart', `Starting segment ${i + 1}/${taskCreators.length}...`, { current: i + 1, total: taskCreators.length }) : `Starting segment ${i + 1}/${taskCreators.length}...`;
+                    showInfoToast(startMsg, 3000);
+                }
                 await taskCreators[i]();
             }
         } else {

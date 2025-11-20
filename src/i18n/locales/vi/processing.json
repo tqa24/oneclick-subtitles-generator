@@ -107,6 +107,14 @@
   "methodHelpVercel": "Chỉ có phương thức mới khả dụng trong phiên bản Vercel. Phương thức cũ yêu cầu khả năng xử lý video phía máy chủ.",
   "maxDurationAudioVercel": "Xử lý song song không khả dụng cho tệp âm thanh trong phiên bản Vercel. Tệp âm thanh phải được xử lý dưới dạng một yêu cầu duy nhất.",
   "maxDurationAudioNewMethod": "Xử lý song song không khả dụng cho tệp âm thanh với phương thức mới. Sử dụng phương thức cũ để xử lý song song âm thanh.",
-  "audioRangeAdjusted": "Xử lý âm thanh bằng phương thức Gemini mới sẽ tự động điều chỉnh phạm vi của bạn thành toàn video"
-}
+  "audioRangeAdjusted": "Xử lý âm thanh bằng phương thức Gemini mới sẽ tự động điều chỉnh phạm vi của bạn thành toàn video",
+  "segmentProcessingSequential": "Xử lý {{count}} phân đoạn theo thứ tự (trễ {{delay}}s giữa các phân đoạn)",
+  "segmentProcessingStart": "Bắt đầu phân đoạn {{current}}/{{total}}...",
+  "segmentProcessingStartWithDelay": "Bắt đầu phân đoạn {{current}}/{{total}} (đã chờ {{delay}}s)",
+  "subtitlesGenerated": "Đã tạo {{count}} phụ đề",
+  "processingStreamingResponse": "Đang xử lý phản hồi trực tuyến...",
+  "processingProgress": "Đang xử lý... ({{chunks}} chunk, {{subtitles}} phụ đề tìm thấy)",
+  "processingComplete": "Xử lý hoàn tất! Đã tạo {{count}} phụ đề.",
+  "processingInterrupted": "Xử lý bị gián đoạn. Đã lưu {{count}} phụ đề."
+  }
 

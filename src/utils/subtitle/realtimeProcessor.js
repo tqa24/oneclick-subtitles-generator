@@ -16,6 +16,7 @@ export class RealtimeSubtitleProcessor {
     this.onStatusUpdate = options.onStatusUpdate || (() => {});
     this.onComplete = options.onComplete || (() => {});
     this.onError = options.onError || (() => {});
+    this.t = options.t || null; // Translation function for i18n
     
     // Processing state
     this.accumulatedText = '';
@@ -81,7 +82,7 @@ export class RealtimeSubtitleProcessor {
     if (!this.isProcessing) {
       this.isProcessing = true;
       this.onStatusUpdate({
-        message: 'Processing streaming response...',
+        message: this.t ? this.t('processing.processingStreamingResponse', 'Processing streaming response...') : 'Processing streaming response...',
         type: 'loading'
       });
     }
@@ -112,30 +113,30 @@ export class RealtimeSubtitleProcessor {
 
       // Update status with progress
       this.onStatusUpdate({
-        message: `Processing... (${this.chunkCount} chunks, ${this.currentSubtitles.length} subtitles found)`,
+        message: this.t ? this.t('processing.processingProgress', 'Processing... ({{chunks}} chunks, {{subtitles}} subtitles found)', { chunks: this.chunkCount, subtitles: this.currentSubtitles.length }) : `Processing... (${this.chunkCount} chunks, ${this.currentSubtitles.length} subtitles found)`,
         type: 'loading'
       });
       return;
-    }
+      }
 
-    if (this.chunkCount % 50 === 0) {
+      if (this.chunkCount % 50 === 0) {
       console.log(`[RealtimeProcessor] Processing chunk ${this.chunkCount}, text length: ${this.accumulatedText.length}`);
-    }
+      }
 
-    // Try to parse subtitles periodically or if we have enough text
-    const shouldAttemptParse = 
+      // Try to parse subtitles periodically or if we have enough text
+      const shouldAttemptParse = 
       this.chunkCount % this.parseAttemptInterval === 0 || 
       this.accumulatedText.length >= this.minTextLength;
 
-    if (shouldAttemptParse) {
+      if (shouldAttemptParse) {
       this.attemptSubtitleParsing();
-    }
+      }
 
-    // Update status with progress
-    this.onStatusUpdate({
-      message: `Processing... (${this.chunkCount} chunks, ${this.currentSubtitles.length} subtitles found)`,
+      // Update status with progress
+      this.onStatusUpdate({
+      message: this.t ? this.t('processing.processingProgress', 'Processing... ({{chunks}} chunks, {{subtitles}} subtitles found)', { chunks: this.chunkCount, subtitles: this.currentSubtitles.length }) : `Processing... (${this.chunkCount} chunks, ${this.currentSubtitles.length} subtitles found)`,
       type: 'loading'
-    });
+      });
   }
 
   /**
@@ -290,12 +291,12 @@ export class RealtimeSubtitleProcessor {
       }, true);
 
       this.onStatusUpdate({
-        message: `Processing complete! Generated ${processedSubtitles.length} subtitles.`,
+        message: this.t ? this.t('processing.processingComplete', 'Processing complete! Generated {{count}} subtitles.', { count: processedSubtitles.length }) : `Processing complete! Generated ${processedSubtitles.length} subtitles.`,
         type: 'success'
       });
 
       this.onComplete(processedSubtitles);
-    } else {
+      } else {
       // No valid subtitles found
       console.error('[RealtimeProcessor] No valid subtitles found in final response');
 
@@ -304,7 +305,7 @@ export class RealtimeSubtitleProcessor {
         console.log('[RealtimeProcessor] Using last valid subtitles as fallback');
         this.onComplete(this.lastValidSubtitles);
         this.onStatusUpdate({
-          message: `Processing complete! Generated ${this.lastValidSubtitles.length} subtitles.`,
+          message: this.t ? this.t('processing.processingComplete', 'Processing complete! Generated {{count}} subtitles.', { count: this.lastValidSubtitles.length }) : `Processing complete! Generated ${this.lastValidSubtitles.length} subtitles.`,
           type: 'success'
         });
       } else {
@@ -318,21 +319,21 @@ export class RealtimeSubtitleProcessor {
    * @param {Error} error - The error that occurred
    */
   error(error) {
-    console.error('[RealtimeProcessor] Stream error:', error);
-    this.isProcessing = false;
-    
-    // Try to salvage any subtitles we've parsed so far
-    if (this.lastValidSubtitles.length > 0) {
-      console.log('[RealtimeProcessor] Attempting to salvage partial results...');
-      this.onStatusUpdate({
-        message: `Processing interrupted. Saved ${this.lastValidSubtitles.length} subtitles.`,
-        type: 'warning'
-      });
-      this.onComplete(this.lastValidSubtitles);
-    } else {
-      this.onError(error);
-    }
-  }
+     console.error('[RealtimeProcessor] Stream error:', error);
+     this.isProcessing = false;
+     
+     // Try to salvage any subtitles we've parsed so far
+     if (this.lastValidSubtitles.length > 0) {
+       console.log('[RealtimeProcessor] Attempting to salvage partial results...');
+       this.onStatusUpdate({
+         message: this.t ? this.t('processing.processingInterrupted', 'Processing interrupted. Saved {{count}} subtitles.', { count: this.lastValidSubtitles.length }) : `Processing interrupted. Saved ${this.lastValidSubtitles.length} subtitles.`,
+         type: 'warning'
+       });
+       this.onComplete(this.lastValidSubtitles);
+     } else {
+       this.onError(error);
+     }
+   }
 
   /**
    * Reset the processor state

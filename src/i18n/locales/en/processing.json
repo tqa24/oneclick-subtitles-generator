@@ -107,5 +107,13 @@
   "methodHelpVercel": "Only the new method is available in Vercel version. The old method requires server-side video processing capabilities.",
   "maxDurationAudioVercel": "Parallel processing is not available for audio files in Vercel version. Audio files must be processed as a single request.",
   "maxDurationAudioNewMethod": "Parallel processing is not available for audio files with the new method. Use the old method for audio parallel processing.",
-  "audioRangeAdjusted": "Audio processing using Gemini new method will auto adjust your range to the whole video"
-}
+  "audioRangeAdjusted": "Audio processing using Gemini new method will auto adjust your range to the whole video",
+  "segmentProcessingSequential": "Processing {{count}} segments sequentially ({{delay}}s delay between each)",
+  "segmentProcessingStart": "Starting segment {{current}}/{{total}}...",
+  "segmentProcessingStartWithDelay": "Starting segment {{current}}/{{total}} (waited {{delay}}s)",
+  "subtitlesGenerated": "Generated {{count}} subtitles",
+  "processingStreamingResponse": "Processing streaming response...",
+  "processingProgress": "Processing... ({{chunks}} chunks, {{subtitles}} subtitles found)",
+  "processingComplete": "Processing complete! Generated {{count}} subtitles.",
+  "processingInterrupted": "Processing interrupted. Saved {{count}} subtitles."
+  }

@@ -1,3 +1,5 @@
+import { showSuccessToast } from '../toastUtils';
+
 /**
  * Legacy processing utilities for video/audio processing
  * @deprecated These functions are deprecated. Use simplifiedProcessing.js instead.
@@ -156,13 +158,14 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
     let earlyStopController = null;
 
     // Import streaming processor
-    import('../../utils/subtitle/realtimeProcessor').then(({ createRealtimeProcessor }) => {
-      // Create realtime processor with auto-split options from the modal
-      // Convert to boolean properly - the value comes as a boolean from the modal
-      const processor = createRealtimeProcessor({
-        autoSplitEnabled: Boolean(autoSplitSubtitles),
-        maxWordsPerSubtitle: parseInt(maxWordsPerSubtitle) || 8,
-        onSubtitleUpdate: (data) => {
+     import('../../utils/subtitle/realtimeProcessor').then(({ createRealtimeProcessor }) => {
+       // Create realtime processor with auto-split options from the modal
+       // Convert to boolean properly - the value comes as a boolean from the modal
+       const processor = createRealtimeProcessor({
+         autoSplitEnabled: Boolean(autoSplitSubtitles),
+         maxWordsPerSubtitle: parseInt(maxWordsPerSubtitle) || 8,
+         t, // Pass translation function for i18n support
+         onSubtitleUpdate: (data) => {
           // console.log('[ProcessingUtils] Subtitle update:', data.subtitles.length, 'subtitles');
 
           // For Gemini 2.0 models: implement early stopping when subtitles exceed segment
@@ -292,18 +295,24 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
               }));
 
             dbg(`[ProcessingUtils] Final filter: ${finalSubtitles.length} subtitles to ${filteredFinal.length} for segment ${segmentStart}-${segmentEnd}`);
-          }
-
-          // Dispatch streaming-complete event for timeline animations
-          window.dispatchEvent(new CustomEvent('streaming-complete', {
-            detail: {
-              subtitles: filteredFinal,
-              segment: segment,
-              runId: options && options.runId ? options.runId : undefined
             }
-          }));
 
-          resolve(filteredFinal);
+             // Show success toast with result count
+             const toastMessage = t && typeof t === 'function'
+               ? t('processing.subtitlesGenerated', 'Generated {{count}} subtitles', { count: filteredFinal.length })
+               : `Generated ${filteredFinal.length} subtitles`;
+             showSuccessToast(toastMessage, 5000);
+
+            // Dispatch streaming-complete event for timeline animations
+            window.dispatchEvent(new CustomEvent('streaming-complete', {
+              detail: {
+                subtitles: filteredFinal,
+                segment: segment,
+                runId: options && options.runId ? options.runId : undefined
+              }
+            }));
+
+            resolve(filteredFinal);
         },
         onError: (error) => {
           console.error('[ProcessingUtils] Streaming error:', error);
@@ -332,7 +341,8 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
         segmentProcessingDelay: options.segmentProcessingDelay,
         autoSplitSubtitles: autoSplitSubtitles,
         maxWordsPerSubtitle: maxWordsPerSubtitle,
-        // propagate optional correlation id for downstream services
+        // propagate translation function and optional correlation id for downstream services
+        ...(t ? { t } : {}),
         ...(options && options.runId ? { runId: options.runId } : {})
       };
       
