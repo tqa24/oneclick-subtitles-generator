@@ -400,6 +400,7 @@ export const useSubtitles = (t) => {
                         model,
                         userProvidedSubtitles,
                         maxDurationPerRequest: options.maxDurationPerRequest,
+                        segmentProcessingDelay: options.segmentProcessingDelay,
                         autoSplitSubtitles: options.autoSplitSubtitles,
                         maxWordsPerSubtitle: options.maxWordsPerSubtitle,
                         forceInline: options.inlineExtraction === true,

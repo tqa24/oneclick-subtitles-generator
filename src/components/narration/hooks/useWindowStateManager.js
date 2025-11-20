@@ -160,7 +160,6 @@ const useWindowStateManager = ({
     try {
       const userDisabledGrouping = localStorage.getItem(USER_DISABLED_GROUPING_KEY);
       if (userDisabledGrouping === 'true') {
-        console.log('User has explicitly disabled grouping, not loading from cache');
         return;
       }
     } catch (error) {

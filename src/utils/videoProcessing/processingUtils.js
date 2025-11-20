@@ -329,11 +329,14 @@ export const processSegmentWithStreaming = async (file, segment, options, setSta
         modelId: model,
         mediaResolution: mappedMediaResolution,
         maxDurationPerRequest: options.maxDurationPerRequest,
+        segmentProcessingDelay: options.segmentProcessingDelay,
         autoSplitSubtitles: autoSplitSubtitles,
         maxWordsPerSubtitle: maxWordsPerSubtitle,
         // propagate optional correlation id for downstream services
         ...(options && options.runId ? { runId: options.runId } : {})
       };
+      
+      console.log('[ProcessSegmentWithStreaming] Built API options with segmentProcessingDelay:', baseApiOptionsBase.segmentProcessingDelay, 's');
 
       // All-in on Files API by default; only use INLINE when explicitly forced
       const useInline = options.forceInline === true;
