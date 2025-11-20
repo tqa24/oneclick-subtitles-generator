@@ -175,3 +175,4 @@ server/example-audio/vocab.txt
 =0.0.6
 =0.24.0
 =0.104.0
+electron-dist/win-unpacked/resources/app.asar
