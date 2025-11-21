@@ -578,6 +578,27 @@
   max-width: 200px;
 }
 
+/* Slider value display min-widths for specific controls */
+.video-processing-modal .slider-with-value:has(#fps-slider) .slider-value-display {
+  min-width: 60px !important;
+}
+
+.video-processing-modal .slider-with-value:has(#max-duration-slider) .slider-value-display {
+  min-width: 95px !important;
+}
+
+.video-processing-modal .slider-with-value:has(#segment-processing-delay-slider) .slider-value-display {
+  min-width: 75px !important;
+}
+
+.video-processing-modal .slider-with-value:has(#max-words-slider) .slider-value-display {
+  min-width: 40px !important;
+}
+
+.video-processing-modal .slider-with-value:has(#outside-context-range) .slider-value-display {
+  min-width: 60px !important;
+}
+
 /* Helper icon styles */
 .help-icon-container {
   display: inline-flex;
