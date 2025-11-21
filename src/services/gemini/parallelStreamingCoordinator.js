@@ -350,32 +350,34 @@ export const coordinateParallelStreaming = async (
      });
 
      try {
-       // If segmentProcessingDelay > 0, process segments sequentially with delays
+       // If segmentProcessingDelay > 0, start segments with delays between request start times
        // Otherwise, process all segments in parallel (original behavior)
        let results;
        
        if (segmentProcessingDelay > 0) {
-         console.log(`[ParallelCoordinator] ✓ USING SEQUENTIAL PROCESSING - Processing ${subSegments.length} segments with ${segmentProcessingDelay}s delay between each`);
-         const seqMsg = t ? t('processing.segmentProcessingSequential', `Processing ${subSegments.length} segments sequentially (${segmentProcessingDelay}s delay between each)`, { count: subSegments.length, delay: segmentProcessingDelay }) : `Processing ${subSegments.length} segments sequentially (${segmentProcessingDelay}s delay between each)`;
+         console.log(`[ParallelCoordinator] ✓ USING STAGGERED PARALLEL - Processing ${subSegments.length} segments with ${segmentProcessingDelay}s delay between request start times`);
+         const seqMsg = t ? t('processing.segmentProcessingSequential', `Processing ${subSegments.length} segments with ${segmentProcessingDelay}s delay between request starts`, { count: subSegments.length, delay: segmentProcessingDelay }) : `Processing ${subSegments.length} segments with ${segmentProcessingDelay}s delay between request starts`;
          showInfoToast(seqMsg, 10000);
-         results = [];
          
+         // Start all segment requests with delays between starts (not waiting for completion)
+         const promises = [];
          for (let i = 0; i < taskCreators.length; i++) {
            // Wait for the delay before starting the next segment (except for the first one)
            if (i > 0) {
              console.log(`[ParallelCoordinator] Waiting ${segmentProcessingDelay}s before starting segment ${i + 1}/${taskCreators.length}...`);
-             const delayMsg = t ? t('processing.segmentProcessingStartWithDelay', `Starting segment ${i + 1}/${taskCreators.length} (waited ${segmentProcessingDelay}s)`, { current: i + 1, total: taskCreators.length, delay: segmentProcessingDelay }) : `Starting segment ${i + 1}/${taskCreators.length} (waited ${segmentProcessingDelay}s)`;
+             const delayMsg = t ? t('processing.segmentProcessingStartWithDelay', `Starting segment ${i + 1}/${taskCreators.length}`, { current: i + 1, total: taskCreators.length, delay: segmentProcessingDelay }) : `Starting segment ${i + 1}/${taskCreators.length}`;
              showInfoToast(delayMsg, 4000);
              await new Promise(resolve => setTimeout(resolve, segmentProcessingDelay * 1000));
-             console.log(`[ParallelCoordinator] Starting segment ${i + 1}/${taskCreators.length}`);
-           } else {
-             console.log(`[ParallelCoordinator] Starting segment ${i + 1}/${taskCreators.length}`);
            }
            
-           // Execute this segment's request
-           const result = await Promise.allSettled([taskCreators[i]()]);
-           results.push(result[0]);
+           console.log(`[ParallelCoordinator] Starting segment ${i + 1}/${taskCreators.length}`);
+           // Start the request (don't await - let it run in parallel)
+           promises.push(Promise.allSettled([taskCreators[i]()]));
          }
+         
+         // Wait for all parallel requests to complete
+         const allResults = await Promise.all(promises);
+         results = allResults.flat();
        } else {
          // Original behavior: all segments in parallel
          console.log(`[ParallelCoordinator] ✓ USING PARALLEL PROCESSING (no delay)`);
@@ -753,12 +755,6 @@ export const coordinateParallelInlineStreaming = async (
         // For each sub-segment, create task creators (don't execute immediately)
         const taskCreators = subSegments.map((subSeg, index) => async () => {
             try {
-                // Apply delay before starting this segment (except first segment)
-                if (segmentProcessingDelay > 0 && index > 0) {
-                    console.log(`[ParallelCoordinator INLINE] Waiting ${segmentProcessingDelay}s before processing segment ${index + 1}/${subSegments.length}`);
-                    await new Promise(resolve => setTimeout(resolve, segmentProcessingDelay * 1000));
-                }
-
                 progressTracker.updateSegmentProgress(index, 5, 'cutting');
                 const { extractVideoSegmentLocally } = await import('../../utils/videoSegmenter');
                 const clipped = await extractVideoSegmentLocally(sourceFile, subSeg.start, subSeg.end, { runId: options && options.runId ? options.runId : undefined });
@@ -770,19 +766,30 @@ export const coordinateParallelInlineStreaming = async (
             }
         });
 
-        // Execute tasks: sequentially when using delays, otherwise with concurrency
+        // Execute tasks: staggered start when using delays, otherwise with concurrency
         if (segmentProcessingDelay > 0) {
-            // Sequential execution: process one segment at a time with delays between starts
-            console.log(`[ParallelCoordinator INLINE] ✓ SEQUENTIAL MODE - Processing ${taskCreators.length} segments with ${segmentProcessingDelay}s delay between each`);
-            const seqMsg = t ? t('processing.segmentProcessingSequential', `Processing ${taskCreators.length} segments sequentially (${segmentProcessingDelay}s delay between each)`, { count: taskCreators.length, delay: segmentProcessingDelay }) : `Processing ${taskCreators.length} segments sequentially (${segmentProcessingDelay}s delay between each)`;
+            // Staggered parallel execution: start requests with delays between start times
+            console.log(`[ParallelCoordinator INLINE] ✓ STAGGERED PARALLEL MODE - Processing ${taskCreators.length} segments with ${segmentProcessingDelay}s delay between request starts`);
+            const seqMsg = t ? t('processing.segmentProcessingSequential', `Processing ${taskCreators.length} segments with ${segmentProcessingDelay}s delay between request starts`, { count: taskCreators.length, delay: segmentProcessingDelay }) : `Processing ${taskCreators.length} segments with ${segmentProcessingDelay}s delay between request starts`;
             showInfoToast(seqMsg, 10000);
+            
+            const promises = [];
             for (let i = 0; i < taskCreators.length; i++) {
+                // Wait for the delay before starting the next segment (except for the first one)
                 if (i > 0) {
-                    const startMsg = t ? t('processing.segmentProcessingStart', `Starting segment ${i + 1}/${taskCreators.length}...`, { current: i + 1, total: taskCreators.length }) : `Starting segment ${i + 1}/${taskCreators.length}...`;
-                    showInfoToast(startMsg, 3000);
+                    console.log(`[ParallelCoordinator INLINE] Waiting ${segmentProcessingDelay}s before starting segment ${i + 1}/${taskCreators.length}`);
+                    await new Promise(resolve => setTimeout(resolve, segmentProcessingDelay * 1000));
                 }
-                await taskCreators[i]();
+                
+                console.log(`[ParallelCoordinator INLINE] Starting segment ${i + 1}/${taskCreators.length}`);
+                const startMsg = t ? t('processing.segmentProcessingStart', `Starting segment ${i + 1}/${taskCreators.length}...`, { current: i + 1, total: taskCreators.length }) : `Starting segment ${i + 1}/${taskCreators.length}...`;
+                showInfoToast(startMsg, 3000);
+                // Start the request (don't await - let it run in parallel with other segments)
+                promises.push(taskCreators[i]());
             }
+            
+            // Wait for all parallel requests to complete
+            await Promise.allSettled(promises);
         } else {
             // Parallel execution: process 2 at a time
             console.log(`[ParallelCoordinator INLINE] ✓ PARALLEL MODE - Processing ${taskCreators.length} segments with concurrency`);
