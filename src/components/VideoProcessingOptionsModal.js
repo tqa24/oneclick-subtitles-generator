@@ -1511,181 +1511,175 @@ const VideoProcessingOptionsModal = ({
                                             </div>
                                         </div>
 
-                                        {/* Segment Processing Delay Row */}
-                                        <div className="option-group">
-                                            <div className="combined-options-row">
-                                                {/* Full width: Segment processing delay */}
-                                                <div style={{ gridColumn: '1 / -1' }}>
-                                                    <div className="label-with-help">
-                                                        <label>{t('processing.segmentProcessingDelay', 'Segment processing delay')}</label>
-                                                        <HelpIcon title={t('processing.segmentProcessingDelayDesc', 'Delay between each segment request to Gemini. 0 = all segments at once (fastest). Set higher values to process segments sequentially (e.g., 30 seconds delay between each segment).')} />
-                                                    </div>
-                                                    <div>
-                                                        <SliderWithValue
-                                                            value={segmentProcessingDelay}
-                                                            onChange={(v) => setSegmentProcessingDelay(parseInt(v))}
-                                                            min={0}
-                                                            max={60}
-                                                            step={1}
-                                                            orientation="Horizontal"
-                                                            size="XSmall"
-                                                            id="segment-processing-delay-slider"
-                                                            ariaLabel={t('processing.segmentProcessingDelay', 'Segment processing delay')}
-                                                            defaultValue={0}
-                                                            formatValue={(v) => (
-                                                                <>
-                                                                    {v === 0
-                                                                        ? t('processing.simultaneousProcessing', 'Simultaneous (no delay)')
-                                                                        : t('processing.secondsDelay', '{{value}} seconds between segments', { value: v })
-                                                                    }
-                                                                </>
-                                                            )}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        {/* Prompt Preset and Target Language Row */}
+                                         <div className="option-group">
+                                             <div className="combined-options-row">
+                                                 {/* Left: Prompt Preset Selection */}
+                                                 <div className="combined-option-half">
+                                                     <label>{t('processing.promptPreset', 'Prompt Preset')}</label>
+                                                     <CustomDropdown
+                                                         value={selectedPromptPreset}
+                                                         onChange={(value) => setSelectedPromptPreset(value)}
+                                                         options={getPromptPresetOptions().map(option => {
+                                                             // Create SVG icon based on preset type
+                                                             let IconComponent = null;
 
-                                        {/* Prompt Preset and Settings Row */}
-                                        <div className="option-group" style={{ gridColumn: '1 / -1' }}>
-                                            <div className="prompt-settings-row">
-                                                {/* Left: Prompt Preset Selection */}
-                                                <div className="prompt-preset-section">
-                                                    <label>{t('processing.promptPreset', 'Prompt Preset')}</label>
-                                                    <CustomDropdown
-                                                        value={selectedPromptPreset}
-                                                        onChange={(value) => setSelectedPromptPreset(value)}
-                                                        options={getPromptPresetOptions().map(option => {
-                                                            // Create SVG icon based on preset type
-                                                            let IconComponent = null;
+                                                             if (option.id === 'settings') {
+                                                                 // Settings/sliders icon for "Prompt from Settings"
+                                                                 IconComponent = () => (
+                                                                     <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>settings</span>
+                                                                 );
+                                                             } else if (option.id === 'timing-generation') {
+                                                                 // Clock/timing icon for timing generation
+                                                                 IconComponent = () => (
+                                                                     <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>schedule</span>
+                                                                 );
+                                                             } else if (option.isUserPreset) {
+                                                                 // User icon for user presets
+                                                                 IconComponent = () => (
+                                                                     <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>person</span>
+                                                                 );
+                                                             } else {
+                                                                 // Built-in preset icons
+                                                                 switch (option.id) {
+                                                                     case 'general':
+                                                                         IconComponent = () => (
+                                                                             <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>grid_view</span>
+                                                                         );
+                                                                         break;
+                                                                     case 'extract-text':
+                                                                         IconComponent = () => (
+                                                                             <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>description</span>
+                                                                         );
+                                                                         break;
+                                                                     case 'focus-lyrics':
+                                                                         IconComponent = () => (
+                                                                             <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>music_note</span>
+                                                                         );
+                                                                         break;
+                                                                     case 'describe-video':
+                                                                         IconComponent = () => (
+                                                                             <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>videocam</span>
+                                                                         );
+                                                                         break;
+                                                                     case 'translate-directly':
+                                                                         IconComponent = () => (
+                                                                             <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>language</span>
+                                                                         );
+                                                                         break;
+                                                                     case 'chaptering':
+                                                                         IconComponent = () => (
+                                                                             <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>bookmark</span>
+                                                                         );
+                                                                         break;
+                                                                     case 'diarize-speakers':
+                                                                         IconComponent = () => (
+                                                                             <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>group</span>
+                                                                         );
+                                                                         break;
+                                                                     default:
+                                                                         // Default clipboard icon
+                                                                         IconComponent = () => (
+                                                                             <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>content_copy</span>
+                                                                         );
+                                                                 }
+                                                             }
 
-                                                            if (option.id === 'settings') {
-                                                                // Settings/sliders icon for "Prompt from Settings"
-                                                                IconComponent = () => (
-                                                                    <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>settings</span>
-                                                                );
-                                                            } else if (option.id === 'timing-generation') {
-                                                                // Clock/timing icon for timing generation
-                                                                IconComponent = () => (
-                                                                    <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>schedule</span>
-                                                                );
-                                                            } else if (option.isUserPreset) {
-                                                                // User icon for user presets
-                                                                IconComponent = () => (
-                                                                    <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>person</span>
-                                                                );
-                                                            } else {
-                                                                // Built-in preset icons
-                                                                switch (option.id) {
-                                                                    case 'general':
-                                                                        IconComponent = () => (
-                                                                            <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>grid_view</span>
-                                                                        );
-                                                                        break;
-                                                                    case 'extract-text':
-                                                                        IconComponent = () => (
-                                                                            <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>description</span>
-                                                                        );
-                                                                        break;
-                                                                    case 'focus-lyrics':
-                                                                        IconComponent = () => (
-                                                                            <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>music_note</span>
-                                                                        );
-                                                                        break;
-                                                                    case 'describe-video':
-                                                                        IconComponent = () => (
-                                                                            <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>videocam</span>
-                                                                        );
-                                                                        break;
-                                                                    case 'translate-directly':
-                                                                        IconComponent = () => (
-                                                                            <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>language</span>
-                                                                        );
-                                                                        break;
-                                                                    case 'chaptering':
-                                                                        IconComponent = () => (
-                                                                            <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>bookmark</span>
-                                                                        );
-                                                                        break;
-                                                                    case 'diarize-speakers':
-                                                                        IconComponent = () => (
-                                                                            <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>group</span>
-                                                                        );
-                                                                        break;
-                                                                    default:
-                                                                        // Default clipboard icon
-                                                                        IconComponent = () => (
-                                                                            <span className="material-symbols-rounded" style={{ fontSize: '16px', display: 'inline-block', verticalAlign: 'middle', marginRight: '6px' }}>content_copy</span>
-                                                                        );
-                                                                }
-                                                            }
+                                                             return {
+                                                                 value: option.id,
+                                                                 label: IconComponent ? (
+                                                                     <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                                                         <IconComponent />
+                                                                         {option.title}
+                                                                     </span>
+                                                                 ) : option.title,
+                                                                 disabled: option.disabled
+                                                             };
+                                                         })}
+                                                         placeholder={t('processing.selectPreset', 'Select Preset')}
+                                                     />
+                                                     <p className="option-description">
+                                                         {(() => {
+                                                             const selectedOption = getPromptPresetOptions().find(opt => opt.id === selectedPromptPreset);
+                                                             return selectedOption?.description || '';
+                                                         })()}
+                                                     </p>
+                                                 </div>
 
-                                                            return {
-                                                                value: option.id,
-                                                                label: IconComponent ? (
-                                                                    <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-                                                                        <IconComponent />
-                                                                        {option.title}
-                                                                    </span>
-                                                                ) : option.title,
-                                                                disabled: option.disabled
-                                                            };
-                                                        })}
-                                                        placeholder={t('processing.selectPreset', 'Select Preset')}
-                                                    />
-                                                    <p className="option-description">
-                                                        {(() => {
-                                                            const selectedOption = getPromptPresetOptions().find(opt => opt.id === selectedPromptPreset);
-                                                            return selectedOption?.description || '';
-                                                        })()}
-                                                    </p>
-                                                </div>
+                                                 {/* Right: Target Language (only when translate-directly is selected) */}
+                                                 {selectedPromptPreset === 'translate-directly' && (
+                                                     <div className="combined-option-half">
+                                                         <label>{t('processing.targetLanguage', 'Target Language')}</label>
+                                                         <input
+                                                             type="text"
+                                                             value={customLanguage}
+                                                             onChange={(e) => setCustomLanguage(e.target.value)}
+                                                             placeholder={t('processing.targetLanguagePlaceholder', 'Enter target language (e.g., Vietnamese, Spanish)')}
+                                                             className="language-input"
+                                                         />
+                                                     </div>
+                                                 )}
+                                             </div>
+                                         </div>
 
-                                                {/* Right: Target Language and Analysis Switch Group */}
-                                                <div className="settings-group">
-                                                    <div className="settings-row">
-                                                        {/* Target Language (only when translate-directly is selected) */}
-                                                        {selectedPromptPreset === 'translate-directly' && (
-                                                            <div className="setting-item">
-                                                                <label>{t('processing.targetLanguage', 'Target Language')}</label>
-                                                                <input
-                                                                    type="text"
-                                                                    value={customLanguage}
-                                                                    onChange={(e) => setCustomLanguage(e.target.value)}
-                                                                    placeholder={t('processing.targetLanguagePlaceholder', 'Enter target language (e.g., Vietnamese, Spanish)')}
-                                                                    className="language-input"
-                                                                />
-                                                            </div>
-                                                        )}
+                                         {/* Analysis Rules and Segment Processing Delay Row */}
+                                         <div className="option-group">
+                                             <div className="combined-options-row">
+                                                 {/* Left: Analysis Rules */}
+                                                 <div className="combined-option-half">
+                                                     <div className="label-with-help">
+                                                         <label>{t('processing.analysisRules', 'Analysis Rules')}</label>
+                                                         <HelpIcon title={transcriptionRulesAvailable
+                                                             ? t('processing.useTranscriptionRulesDesc', 'Include context, terminology, and formatting rules from video analysis in the prompt')
+                                                             : t('processing.noAnalysisAvailable', 'Please create analysis by pressing "Add analysis" button')
+                                                         } />
+                                                     </div>
+                                                     <div className="material-switch-container">
+                                                         <MaterialSwitch
+                                                             id="use-transcription-rules"
+                                                             checked={useTranscriptionRules && transcriptionRulesAvailable}
+                                                             onChange={(e) => setUseTranscriptionRules(e.target.checked)}
+                                                             disabled={!transcriptionRulesAvailable}
+                                                             ariaLabel={t('processing.useTranscriptionRules', 'Use transcription rules from analysis')}
+                                                             icons={true}
+                                                         />
+                                                         <label htmlFor="use-transcription-rules" className="material-switch-label">
+                                                             {t('processing.useTranscriptionRules', 'Use transcription rules from analysis')}
+                                                         </label>
+                                                     </div>
+                                                 </div>
 
-                                                        {/* Transcription Rules Toggle */}
-                                                        <div className="setting-item">
-                                                            <div className="label-with-help">
-                                                                <label>{t('processing.analysisRules', 'Analysis Rules')}</label>
-                                                                <HelpIcon title={transcriptionRulesAvailable
-                                                                    ? t('processing.useTranscriptionRulesDesc', 'Include context, terminology, and formatting rules from video analysis in the prompt')
-                                                                    : t('processing.noAnalysisAvailable', 'Please create analysis by pressing "Add analysis" button')
-                                                                } />
-                                                            </div>
-                                                            <div className="material-switch-container">
-                                                                <MaterialSwitch
-                                                                    id="use-transcription-rules"
-                                                                    checked={useTranscriptionRules && transcriptionRulesAvailable}
-                                                                    onChange={(e) => setUseTranscriptionRules(e.target.checked)}
-                                                                    disabled={!transcriptionRulesAvailable}
-                                                                    ariaLabel={t('processing.useTranscriptionRules', 'Use transcription rules from analysis')}
-                                                                    icons={true}
-                                                                />
-                                                                <label htmlFor="use-transcription-rules" className="material-switch-label">
-                                                                    {t('processing.useTranscriptionRules', 'Use transcription rules from analysis')}
-                                                                </label>
-                                                            </div>
-                                                        </div>
-
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                                 {/* Right: Segment Processing Delay */}
+                                                 <div className="combined-option-half">
+                                                     <div className="label-with-help">
+                                                         <label>{t('processing.segmentProcessingDelay', 'Segment processing delay')}</label>
+                                                         <HelpIcon title={t('processing.segmentProcessingDelayDesc', 'Delay between each segment request to Gemini. 0 = all segments at once (fastest). Set higher values to process segments sequentially (e.g., 30 seconds delay between each segment).')} />
+                                                     </div>
+                                                     <div>
+                                                         <SliderWithValue
+                                                             value={segmentProcessingDelay}
+                                                             onChange={(v) => setSegmentProcessingDelay(parseInt(v))}
+                                                             min={0}
+                                                             max={60}
+                                                             step={1}
+                                                             orientation="Horizontal"
+                                                             size="XSmall"
+                                                             id="segment-processing-delay-slider"
+                                                             ariaLabel={t('processing.segmentProcessingDelay', 'Segment processing delay')}
+                                                             defaultValue={0}
+                                                             formatValue={(v) => (
+                                                                 <>
+                                                                     {v === 0
+                                                                         ? t('processing.simultaneousProcessing', 'Simultaneous (no delay)')
+                                                                         : t('processing.secondsDelay', '{{value}} seconds between segments', { value: v })
+                                                                     }
+                                                                 </>
+                                                             )}
+                                                         />
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         </div>
 
                                         {/* Surrounding context and Context coverage in left column */}
                                         <div className="option-group">
