@@ -1632,7 +1632,7 @@ const VideoProcessingOptionsModal = ({
                                                     <div className="label-with-help">
                                                         <label>{t('processing.analysisRules', 'Analysis Rules')}</label>
                                                         <HelpIcon title={transcriptionRulesAvailable
-                                                            ? t('processing.useTranscriptionRulesDesc', 'Include context, terminology, and formatting rules from video analysis in the prompt')
+                                                            ? t('processing.useTranscriptionRulesDesc', 'Include context, terminology, and formatting rules from video analysis in the prompt. When enabled, these analysis rules derived from video content will be embedded in the prompt to improve subtitle quality and formatting consistency. Note: This may sometimes cause timing shifts for subtitles.')
                                                             : t('processing.noAnalysisAvailable', 'Please create analysis by pressing "Add analysis" button')
                                                         } />
                                                     </div>
