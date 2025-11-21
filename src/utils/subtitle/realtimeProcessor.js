@@ -37,9 +37,7 @@ export class RealtimeSubtitleProcessor {
     // Auto-split options
     this.autoSplitEnabled = options.autoSplitEnabled || false;
     this.maxWordsPerSubtitle = options.maxWordsPerSubtitle || 8;
-    
-  console.log('[RealtimeProcessor] Initialized (auto-split:', this.autoSplitEnabled, 'max words:', this.maxWordsPerSubtitle, 'throttle:', this.throttleMs, 'ms)');
-  }
+    }
 
   /**
    * Throttled emit to UI to cut down re-renders under heavy streaming
@@ -97,7 +95,6 @@ export class RealtimeSubtitleProcessor {
       // Apply auto-split if enabled
       if (this.autoSplitEnabled && this.maxWordsPerSubtitle > 0) {
         processedSubtitles = autoSplitSubtitles(processedSubtitles, this.maxWordsPerSubtitle);
-        console.log(`[RealtimeProcessor] Auto-split: ${chunk.subtitles.length} -> ${processedSubtitles.length} subtitles`);
       }
       
       this.currentSubtitles = processedSubtitles;
@@ -119,9 +116,7 @@ export class RealtimeSubtitleProcessor {
       return;
       }
 
-      if (this.chunkCount % 50 === 0) {
-      console.log(`[RealtimeProcessor] Processing chunk ${this.chunkCount}, text length: ${this.accumulatedText.length}`);
-      }
+
 
       // Try to parse subtitles periodically or if we have enough text
       const shouldAttemptParse = 
@@ -144,9 +139,6 @@ export class RealtimeSubtitleProcessor {
    */
   attemptSubtitleParsing() {
     try {
-      if (this.chunkCount % (this.parseAttemptInterval * 10) === 0) {
-        console.log('[RealtimeProcessor] Attempting to parse subtitles...');
-      }
 
       // Create a mock response object for the parser
       const mockResponse = {
@@ -165,16 +157,11 @@ export class RealtimeSubtitleProcessor {
       if (parsedSubtitles && parsedSubtitles.length > 0) {
       // Check if we have new subtitles
       if (parsedSubtitles.length > 0) {
-        console.log(`[RealtimeProcessor] Found ${parsedSubtitles.length} subtitles (was ${this.currentSubtitles.length})`);
 
         // Apply auto-split if enabled
         let processedSubtitles = parsedSubtitles;
         if (this.autoSplitEnabled && this.maxWordsPerSubtitle > 0) {
           processedSubtitles = autoSplitSubtitles(parsedSubtitles, this.maxWordsPerSubtitle);
-          // PERFORMANCE: Only log significant auto-splits
-          if (processedSubtitles.length - parsedSubtitles.length > 5) {
-            console.log(`[RealtimeProcessor] Auto-split: ${parsedSubtitles.length} -> ${processedSubtitles.length} subtitles`);
-          }
         }
 
         this.currentSubtitles = processedSubtitles;
@@ -188,8 +175,6 @@ export class RealtimeSubtitleProcessor {
           textLength: this.accumulatedText.length
         });
       }
-      } else {
-        console.log('[RealtimeProcessor] No valid subtitles parsed yet');
       }
     } catch (error) {
       // console.debug('[RealtimeProcessor] Parsing attempt failed:', error.message);
@@ -202,8 +187,6 @@ export class RealtimeSubtitleProcessor {
    * @param {string|Array} finalText - Final accumulated text or pre-filtered subtitles array (for early stopping)
    */
   complete(finalText) {
-    console.log('[RealtimeProcessor] Stream completed, final processing...');
-    
     this.isProcessing = false;
     
     // Check if we received pre-filtered subtitles (early stop scenario)
@@ -231,7 +214,6 @@ export class RealtimeSubtitleProcessor {
       // This looks like a JSON array of subtitles (early stop scenario)
       try {
         finalSubtitles = JSON.parse(finalText);
-        console.log('[RealtimeProcessor] Using pre-filtered subtitles from early stop:', finalSubtitles.length, 'subtitles');
         this.accumulatedText = 'Early stop - pre-filtered subtitles';
       } catch (e) {
         // Not JSON, treat as regular text
@@ -240,7 +222,6 @@ export class RealtimeSubtitleProcessor {
   } else if (!finalSubtitles && Array.isArray(finalText)) {
       // Direct array of subtitles
       finalSubtitles = finalText;
-      console.log('[RealtimeProcessor] Using direct subtitle array:', finalSubtitles.length, 'subtitles');
       this.accumulatedText = 'Early stop - pre-filtered subtitles';
     } else if (!finalSubtitles && typeof finalText === 'string') {
       // Regular text, need to parse
@@ -274,13 +255,9 @@ export class RealtimeSubtitleProcessor {
       let processedSubtitles = finalSubtitles;
       if (this.autoSplitEnabled && this.maxWordsPerSubtitle > 0) {
         processedSubtitles = autoSplitSubtitles(finalSubtitles, this.maxWordsPerSubtitle);
-        // Always log final auto-split since it only happens once
-        console.log(`[RealtimeProcessor] Final auto-split: ${finalSubtitles.length} -> ${processedSubtitles.length} subtitles`);
       }
       
       this.currentSubtitles = processedSubtitles;
-
-      console.log(`[RealtimeProcessor] Final result: ${processedSubtitles.length} subtitles`);
 
       this._maybeEmitUpdate({
         subtitles: processedSubtitles,
@@ -298,11 +275,8 @@ export class RealtimeSubtitleProcessor {
       this.onComplete(processedSubtitles);
       } else {
       // No valid subtitles found
-      console.error('[RealtimeProcessor] No valid subtitles found in final response');
-
       // Fall back to last valid subtitles if available
       if (this.lastValidSubtitles.length > 0) {
-        console.log('[RealtimeProcessor] Using last valid subtitles as fallback');
         this.onComplete(this.lastValidSubtitles);
         this.onStatusUpdate({
           message: this.t ? this.t('processing.processingComplete', 'Processing complete! Generated {{count}} subtitles.', { count: this.lastValidSubtitles.length }) : `Processing complete! Generated ${this.lastValidSubtitles.length} subtitles.`,
@@ -319,12 +293,10 @@ export class RealtimeSubtitleProcessor {
    * @param {Error} error - The error that occurred
    */
   error(error) {
-     console.error('[RealtimeProcessor] Stream error:', error);
      this.isProcessing = false;
      
      // Try to salvage any subtitles we've parsed so far
      if (this.lastValidSubtitles.length > 0) {
-       console.log('[RealtimeProcessor] Attempting to salvage partial results...');
        this.onStatusUpdate({
          message: this.t ? this.t('processing.processingInterrupted', 'Processing interrupted. Saved {{count}} subtitles.', { count: this.lastValidSubtitles.length }) : `Processing interrupted. Saved ${this.lastValidSubtitles.length} subtitles.`,
          type: 'warning'
@@ -344,7 +316,6 @@ export class RealtimeSubtitleProcessor {
     this.lastValidSubtitles = [];
     this.chunkCount = 0;
     this.isProcessing = false;
-    console.log('[RealtimeProcessor] Reset');
   }
 
   /**
