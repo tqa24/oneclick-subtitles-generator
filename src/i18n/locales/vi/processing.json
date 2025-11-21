@@ -64,8 +64,7 @@
   "selectResolution": "Chọn độ phân giải",
   "selectModel": "Chọn mô hình",
   "selectPreset": "Chọn mẫu có sẵn",
-  "gemini20Warning": "Họ model Gemini 2.5 có bảo mật cao hơn, thường xảy ra lỗi \"nội dung không an toàn\" khi xử lý video nhạy cảm."
-  ,
+  "gemini20Warning": "Họ model Gemini 2.5 có bảo mật cao hơn, thường xảy ra lỗi \"nội dung không an toàn\" khi xử lý video nhạy cảm.",
   "inlineExtractionHelp": "Ưu tiên dùng cách cũ cho toàn video, còn khi cần <strong>tạo lại một đoạn cụ thể<strong> nên dùng cách mới",
   "inlineExtractionLabel": "Cắt video trên máy rồi gửi Gemini sau",
   "methodLabel": "Phương thức",
@@ -120,6 +119,6 @@
   "processingStreamingResponse": "Đang xử lý phản hồi trực tuyến...",
   "processingProgress": "Đang xử lý... ({{chunks}} chunk, {{subtitles}} phụ đề tìm thấy)",
   "processingComplete": "Xử lý hoàn tất! Đã tạo {{count}} phụ đề.",
-  "processingInterrupted": "Xử lý bị gián đoạn. Đã lưu {{count}} phụ đề."
-  }
-
+  "processingInterrupted": "Xử lý bị gián đoạn. Đã lưu {{count}} phụ đề.",
+  "changeTranscriptionMethodRetryLocked": "Không thể đổi phương pháp trong chế độ thử lại của phương pháp Gemini cũ"
+}

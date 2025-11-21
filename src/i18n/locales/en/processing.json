@@ -120,5 +120,6 @@
   "processingStreamingResponse": "Processing streaming response...",
   "processingProgress": "Processing... ({{chunks}} chunks, {{subtitles}} subtitles found)",
   "processingComplete": "Processing complete! Generated {{count}} subtitles.",
-  "processingInterrupted": "Processing interrupted. Saved {{count}} subtitles."
+  "processingInterrupted": "Processing interrupted. Saved {{count}} subtitles.",
+  "changeTranscriptionMethodRetryLocked": "Cannot change method while in retry mode with old Gemini method"
   }

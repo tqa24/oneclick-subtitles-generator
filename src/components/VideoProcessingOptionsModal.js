@@ -1311,14 +1311,20 @@ const VideoProcessingOptionsModal = ({
                                         disabled={retryLock}
                                         style={{ maxWidth: '200px' }}
                                     />
-                                    <HelpIcon title={isVercelMode
-                                        ? t('processing.methodHelpVercel', 'Only the new method is available in Vercel version. The old method requires server-side video processing capabilities.')
-                                        : t('processing.inlineExtractionHelp', 'Use the old method when the new method fails; may be slower depending on the situation')
+                                    <HelpIcon title={retryLock
+                                        ? t('processing.changeTranscriptionMethodRetryLocked', 'Cannot change method while in retry mode with old Gemini method')
+                                        : isVercelMode
+                                            ? t('processing.methodHelpVercel', 'Only the new method is available in Vercel version. The old method requires server-side video processing capabilities.')
+                                            : t('processing.inlineExtractionHelp', 'Use the old method when the new method fails; may be slower depending on the situation')
                                     } />
                                     <button
                                         onClick={() => setShowMethodSelection(true)}
                                         className="method-selection-reopen-btn"
-                                        title={t('processing.changeTranscriptionMethod', 'Change transcription method')}
+                                        title={retryLock 
+                                            ? t('processing.changeTranscriptionMethodRetryLocked', 'Cannot change method while in retry mode with old Gemini method')
+                                            : t('processing.changeTranscriptionMethod', 'Change transcription method')
+                                        }
+                                        disabled={retryLock}
                                         style={{
                                             display: 'flex',
                                             alignItems: 'center',
@@ -1329,7 +1335,7 @@ const VideoProcessingOptionsModal = ({
                                             borderRadius: '20px',
                                             background: 'var(--md-surface-container)',
                                             color: 'var(--md-on-surface)',
-                                            cursor: 'pointer',
+                                            cursor: retryLock ? 'not-allowed' : 'pointer',
                                             transition: 'all 0.2s var(--md-easing-standard)',
                                             boxShadow: 'var(--md-elevation-level1)',
                                             fontSize: '20px',

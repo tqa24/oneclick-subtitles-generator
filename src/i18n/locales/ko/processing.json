@@ -115,5 +115,6 @@
   "processingStreamingResponse": "스트리밍 응답 처리 중...",
   "processingProgress": "처리 중... ({{chunks}}개 청크, {{subtitles}}개 자막 발견됨)",
   "processingComplete": "처리 완료! {{count}}개 자막이 생성되었습니다.",
-  "processingInterrupted": "처리 중단됨. {{count}}개 자막이 저장되었습니다."
+  "processingInterrupted": "처리 중단됨. {{count}}개 자막이 저장되었습니다.",
+  "changeTranscriptionMethodRetryLocked": "이전 Gemini 방법의 재시도 모드에서는 방법을 변경할 수 없습니다"
   }
