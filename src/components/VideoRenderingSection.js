@@ -126,6 +126,7 @@ const VideoRenderingSection = ({
   const containerRef = useRef(null);  // Collapsible state - always start collapsed by default (like BackgroundImageGenerator)
   const [isCollapsed, setIsCollapsed] = useState(true); // Always start collapsed
   const [userHasCollapsed, setUserHasCollapsed] = useState(false); // Track if user has manually collapsed
+  const [isClickDisabled, setIsClickDisabled] = useState(false); // Disable button for 2 seconds after click
 
   // Listen for narration updates to trigger re-renders
   useEffect(() => {
@@ -1636,8 +1637,13 @@ const VideoRenderingSection = ({
         </div>
         <button
           className="collapse-button"
+          disabled={isClickDisabled}
           onClick={() => {
-            // Toggle collapsed state - matches BackgroundImageGenerator pattern
+            // Disable button for 2 seconds to prevent rapid clicking
+            setIsClickDisabled(true);
+            setTimeout(() => setIsClickDisabled(false), 2000);
+
+            // Toggle collapsed state
             const newCollapsedState = !isCollapsed;
             setIsCollapsed(newCollapsedState);
 
