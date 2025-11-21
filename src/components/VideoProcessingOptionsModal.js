@@ -1655,7 +1655,16 @@ const VideoProcessingOptionsModal = ({
                                                 <div className="combined-option-half">
                                                     <div className="label-with-help">
                                                         <label>{t('processing.segmentProcessingDelay', 'Segment processing delay')}</label>
-                                                        <HelpIcon title={t('processing.segmentProcessingDelayDesc', 'Delay between each segment request to Gemini. 0 = all segments at once (fastest). Set higher values to process segments sequentially (e.g., 30 seconds delay between each segment).')} />
+                                                        <HelpIcon title={(() => {
+                                                            if (selectedSegment) {
+                                                                const segmentDuration = (selectedSegment.end - selectedSegment.start) / 60;
+                                                                const numRequests = Math.ceil(segmentDuration / Number(maxDurationPerRequest || 1));
+                                                                if (numRequests <= 1) {
+                                                                    return t('processing.delayOnlyWithParallel', 'Chỉ khả dụng khi có nhiều phân đoạn');
+                                                                }
+                                                            }
+                                                            return t('processing.segmentProcessingDelayDesc', '0 = all segments at once (fastest). Set higher values to process segments sequentially (e.g., 10 seconds delay between each segment). This will help ease the penalty of rate limits as well as less lags on weaker computers');
+                                                        })()} />
                                                     </div>
                                                     <div>
                                                         <SliderWithValue
@@ -1666,6 +1675,15 @@ const VideoProcessingOptionsModal = ({
                                                             step={1}
                                                             orientation="Horizontal"
                                                             size="XSmall"
+                                                            state={(() => {
+                                                                // Enable delay slider only when parallel requests are triggered
+                                                                if (selectedSegment) {
+                                                                    const segmentDuration = (selectedSegment.end - selectedSegment.start) / 60;
+                                                                    const numRequests = Math.ceil(segmentDuration / Number(maxDurationPerRequest || 1));
+                                                                    if (numRequests > 1) return 'Enabled';
+                                                                }
+                                                                return 'Disabled';
+                                                            })()}
                                                             id="segment-processing-delay-slider"
                                                             ariaLabel={t('processing.segmentProcessingDelay', 'Segment processing delay')}
                                                             defaultValue={0}
