@@ -413,8 +413,32 @@ try {
     logger.command(torchInstallCmdWithVenv);
     // Set longer timeout for large PyTorch downloads
     const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
-    execSync(torchInstallCmdWithVenv, { stdio: 'inherit', env });
-    logger.success(`PyTorch (${gpuVendor} target) installed successfully`);
+
+    // --- Try uv first, fall back to pip if needed ---
+    try {
+        execSync(torchInstallCmdWithVenv, { stdio: 'inherit', env });
+        logger.success(`PyTorch (${gpuVendor} target) installed successfully via uv`);
+    } catch (uvError) {
+        logger.warning(`⚠️ Standard uv installation failed: ${uvError.message}`);
+        logger.info("ℹ️ This is common with PyTorch indices. Attempting fallback using standard 'pip' resolver...");
+
+        // 1. Ensure pip is installed in venv (uv-created venvs sometimes lack pip)
+        try {
+            logger.progress('Ensuring pip is installed in virtual environment...');
+            execSync(`uv pip install --python ${VENV_DIR} pip`, { stdio: 'ignore' });
+        } catch (e) { /* Ignore if pip already exists */ }
+
+        // 2. Extract package arguments from original command and use pip instead
+        // Remove 'uv pip install' prefix and get the rest
+        const pipArgs = torchInstallCmd.replace('uv pip install', '').trim();
+        
+        // Run pip through uv run (respects venv)
+        const fallbackCmd = `uv run --python ${VENV_DIR} -- python -m pip install ${pipArgs}`;
+        
+        logger.command(fallbackCmd);
+        execSync(fallbackCmd, { stdio: 'inherit', env });
+        logger.success(`✅ PyTorch (${gpuVendor} target) installed successfully via pip fallback`);
+    }
 
     // --- 5b. Verify Installation ---
     logger.progress('Verifying PyTorch installation');
