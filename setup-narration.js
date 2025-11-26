@@ -190,7 +190,7 @@ async function runSetup() {
 
     // --- 1. Check for uv ---
     logger.section('OneClick Subtitles Generator - Narration Setup');
-    logger.step(1, 8, 'Checking for uv package manager');
+    logger.step(1, 9, 'Checking for uv package manager');
 
 if (!commandExists('uv')) {
     logger.error('uv is not installed or not found in PATH.');
@@ -209,7 +209,7 @@ try {
 
 
 // --- 2. Check for/Install Python 3.11 ---
-logger.step(2, 8, `Checking for Python ${PYTHON_VERSION_TARGET}`);
+logger.step(2, 9, `Checking for Python ${PYTHON_VERSION_TARGET}`);
 let pythonInterpreterIdentifier = null;
 let triedUvInstall = false;
 
@@ -297,7 +297,7 @@ if (!pythonInterpreterIdentifier) {
 
 
 // --- 3. Create or verify virtual environment with uv ---
-logger.step(3, 8, 'Setting up Python virtual environment');
+logger.step(3, 9, 'Setting up Python virtual environment');
 
 // Check if virtual environment already exists and is valid
 let venvExists = false;
@@ -357,7 +357,7 @@ if (fs.existsSync(VENV_DIR)) {
 }
 
 // --- 4. Detect GPU and Install Appropriate PyTorch Build ---
-logger.step(4, 8, 'Installing PyTorch with GPU support');
+logger.step(4, 9, 'Installing PyTorch with GPU support');
 logger.info(`The virtual environment at ./${VENV_DIR} will be used for both F5-TTS and Chatterbox installations.`);
 
 const gpuVendor = detectGpuVendor(); // Call the detection function
@@ -689,7 +689,7 @@ print('OK' if not missing else ('Missing:' + ','.join(missing)))
 }
 
 // --- 5. Install F5-TTS using uv pip ---
-logger.step(5, 8, 'Installing F5-TTS');
+logger.step(5, 9, 'Installing F5-TTS');
 logger.installing('Text-to-Speech AI engine');
 try {
     // Clone the official F5-TTS repository
@@ -852,7 +852,7 @@ print('✅ F5-TTS verification completed successfully')
 }
 
 // --- 6. Install official chatterbox using uv pip ---
-logger.step(6, 8, 'Installing chatterbox');
+logger.step(6, 9, 'Installing chatterbox');
 logger.installing('Voice cloning engine (chatterbox)');
 const CHATTERBOX_DIR = 'chatterbox-temp'; // Temporary directory for cloning
 try {
@@ -1520,21 +1520,35 @@ async function installYtDlpCookiePlugin() {
     }
 }
 
-// --- 7. Install yt-dlp ChromeCookieUnlock Plugin ---
-logger.step(7, 8, 'Installing yt-dlp ChromeCookieUnlock plugin...');
+// --- 7. Install Parakeet Dependencies ---
+logger.step(7, 9, 'Installing Parakeet ASR dependencies');
+try {
+    logger.installing('Parakeet ASR service dependencies');
+    const parakeetCmd = `uv pip install --python ${VENV_DIR} onnx-asr onnxruntime --force-reinstall`;
+    logger.command(parakeetCmd);
+    execSync(parakeetCmd, { stdio: 'inherit' });
+    logger.success('Parakeet ASR dependencies installed successfully');
+} catch (error) {
+    logger.warning(`⚠️  Parakeet ASR installation failed: ${error.message}`);
+    logger.info('   The Parakeet ASR service may not function properly');
+}
+
+// --- 7b. Install yt-dlp ChromeCookieUnlock Plugin ---
+logger.step(7, 9, 'Installing yt-dlp ChromeCookieUnlock plugin...');
 await installYtDlpCookiePlugin();
 
-// --- 8. Final Summary ---
-logger.step(8, 8, 'Setup completed successfully!');
+// --- 9. Final Summary ---
+logger.step(9, 9, 'Setup completed successfully!');
 
 const summaryItems = [
     `Target PyTorch backend: ${gpuVendor}`,
     `F5-TTS package installed from GitHub`,
     `Chatterbox package installed from GitHub`,
+    `Parakeet ASR service dependencies installed`,
     `Shared virtual environment at: ./${VENV_DIR}`,
     `Python ${PYTHON_VERSION_TARGET} confirmed/installed`,
-    `PyTorch, F5-TTS, chatterbox, and all dependencies installed`,
-    `Both F5-TTS and Chatterbox installed from official GitHub repositories`
+    `PyTorch, F5-TTS, chatterbox, Parakeet, and all dependencies installed`,
+    `All services installed from official GitHub repositories`
 ];
 
 if (installNotes) {
