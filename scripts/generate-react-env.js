@@ -14,12 +14,12 @@ const { PORTS } = require('../server/config');
  */
 function generateReactEnv() {
   console.log('🔧 Generating React environment variables...');
-  
+
   // Create React environment variables with REACT_APP_ prefix
   const reactEnvVars = Object.entries(PORTS).map(([key, port]) => {
     return `REACT_APP_${key}_PORT=${port}`;
   });
-  
+
   // Add additional React-specific environment variables
   const additionalVars = [
     '# React App Environment Variables',
@@ -32,13 +32,13 @@ function generateReactEnv() {
     'GENERATE_SOURCEMAP=false',
     'REACT_APP_NODE_ENV=development'
   ];
-  
+
   const envContent = additionalVars.join('\n') + '\n';
-  
+
   // Write to .env.local (takes precedence over .env)
   const envPath = path.join(__dirname, '..', '.env.local');
   fs.writeFileSync(envPath, envContent);
-  
+
   console.log(`✅ React environment file created: ${envPath}`);
   console.log('📋 Generated variables:');
   reactEnvVars.forEach(varLine => {
@@ -51,31 +51,31 @@ function generateReactEnv() {
  */
 function updatePackageJsonScripts() {
   const packageJsonPath = path.join(__dirname, '..', 'package.json');
-  
+
   if (!fs.existsSync(packageJsonPath)) {
     console.log('⚠️  package.json not found, skipping script update');
     return;
   }
-  
+
   try {
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-    
+
     // Add React environment setup to existing scripts
     if (!packageJson.scripts['setup:react-env']) {
       packageJson.scripts['setup:react-env'] = 'node scripts/generate-react-env.js';
-      
+
       // Update start script to include React env generation
       if (packageJson.scripts.start && !packageJson.scripts.start.includes('setup:react-env')) {
         packageJson.scripts['start:original'] = packageJson.scripts.start;
         packageJson.scripts.start = 'npm run setup:react-env && node scripts/start-frontend.js';
       }
-      
+
       // Update dev script to include React env generation
       if (packageJson.scripts.dev && !packageJson.scripts.dev.includes('setup:react-env')) {
         const originalDev = packageJson.scripts.dev;
         packageJson.scripts.dev = 'npm run setup:react-env && ' + originalDev;
       }
-      
+
       fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
       console.log('✅ Updated package.json scripts');
     }
@@ -89,7 +89,7 @@ function updatePackageJsonScripts() {
  */
 function createReactConfigFile() {
   console.log('📝 Creating React configuration file...');
-  
+
   const configContent = `/**
  * React App Configuration
  * Generated automatically from centralized server configuration
@@ -104,7 +104,8 @@ export const PORTS = {
   VIDEO_RENDERER: parseInt(process.env.REACT_APP_VIDEO_RENDERER_PORT) || 3033,
   VIDEO_RENDERER_FRONTEND: parseInt(process.env.REACT_APP_VIDEO_RENDERER_FRONTEND_PORT) || 3034,
   NARRATION: parseInt(process.env.REACT_APP_NARRATION_PORT) || 3035,
-  CHATTERBOX: parseInt(process.env.REACT_APP_CHATTERBOX_PORT) || 3036
+  CHATTERBOX: parseInt(process.env.REACT_APP_CHATTERBOX_PORT) || 3036,
+  PARAKEET: parseInt(process.env.REACT_APP_PARAKEET_PORT) || 3038
 };
 
 // API Base URLs
@@ -113,6 +114,7 @@ export const API_URLS = {
   VIDEO_RENDERER: \`http://localhost:\${PORTS.VIDEO_RENDERER}\`,
   NARRATION: \`http://localhost:\${PORTS.NARRATION}\`,
   CHATTERBOX: \`http://localhost:\${PORTS.CHATTERBOX}\`,
+  PARAKEET: \`http://localhost:\${PORTS.PARAKEET}\`,
   WEBSOCKET: \`ws://localhost:\${PORTS.WEBSOCKET}\`
 };
 
@@ -127,15 +129,15 @@ export default {
   IS_PRODUCTION
 };
 `;
-  
+
   const configPath = path.join(__dirname, '..', 'src', 'config', 'appConfig.js');
   const configDir = path.dirname(configPath);
-  
+
   // Ensure config directory exists
   if (!fs.existsSync(configDir)) {
     fs.mkdirSync(configDir, { recursive: true });
   }
-  
+
   fs.writeFileSync(configPath, configContent);
   console.log(`✅ React configuration file created: ${configPath}`);
 }
@@ -146,19 +148,19 @@ export default {
 function main() {
   console.log('🚀 Setting up React environment configuration');
   console.log('==============================================\n');
-  
+
   try {
     generateReactEnv();
     createReactConfigFile();
     updatePackageJsonScripts();
-    
+
     console.log('\n✅ React environment setup completed successfully!');
     console.log('\n📋 Next steps:');
     console.log('   1. Restart your React development server');
     console.log('   2. Update your components to use the new config:');
     console.log('      import { PORTS, API_URLS } from "../config/appConfig";');
     console.log('   3. The environment variables are automatically loaded');
-    
+
   } catch (error) {
     console.error('❌ Error setting up React environment:', error);
     process.exit(1);
