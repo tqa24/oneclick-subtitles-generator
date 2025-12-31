@@ -210,6 +210,8 @@
       ]
     },
     "win": {
+      "forceCodeSigning": false,
+      "verifyUpdateCodeSignature": false,
       "target": [
         {
           "target": "nsis",

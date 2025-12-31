@@ -136,18 +136,18 @@ function createWindow() {
 function startPythonService(serviceConfig) {
   return new Promise((resolve, reject) => {
     const { script, name, port } = serviceConfig;
-    
+
     if (!script) {
       console.log(`✅ ${name} (built-in service)`);
       resolve(null);
       return;
     }
-    
+
     console.log(`🚀 Starting Python ${name}...`);
 
     // Determine if we're in packaged mode
     const isPackaged = process.execPath.includes('One-Click Subtitles Generator.exe');
-    
+
     // Resolve script path correctly in both dev and packaged modes
     let scriptPath;
     let workingDir;
@@ -166,7 +166,7 @@ function startPythonService(serviceConfig) {
 
     debugLog(`[DEBUG] Python Service script path: ${scriptPath}`);
     debugLog(`[DEBUG] Python Service working directory: ${workingDir}`);
-    
+
     // Check if file exists
     if (!fs.existsSync(scriptPath)) {
       console.error(`❌ Python Service script not found: ${scriptPath}`);
@@ -258,14 +258,14 @@ function startPythonService(serviceConfig) {
 function startService(serviceConfig) {
   return new Promise((resolve, reject) => {
     const { script, name, port } = serviceConfig;
-    
+
     if (!script) {
       // No script means it's a built-in service (like React frontend served by Electron)
       console.log(`✅ ${name} (built-in service)`);
       resolve(null);
       return;
     }
-    
+
     console.log(`🚀 Starting ${name}...`);
 
     // Resolve script path correctly in both dev and packaged (asar) modes
@@ -291,14 +291,14 @@ function startService(serviceConfig) {
 
     debugLog(`[DEBUG] Service script path: ${scriptPath}`);
     debugLog(`[DEBUG] Service working directory: ${workingDir}`);
-    
+
     // Check if file exists before trying to spawn
     if (!fs.existsSync(scriptPath)) {
       console.error(`❌ Service script not found: ${scriptPath}`);
       reject(new Error(`Service script not found: ${scriptPath}`));
       return;
     }
-    
+
     // CRITICAL FIX: Use 'node' executable instead of process.execPath to avoid infinite recursion
     // process.execPath points to the Electron executable in packaged apps, causing infinite loops
     const nodeExecutable = process.platform === 'win32' ? 'node.exe' : 'node';
@@ -386,111 +386,137 @@ async function startAllServices() {
   debugLog('🔍 Debug: process.resourcesPath = ' + process.resourcesPath);
   debugLog('🔍 Debug: __dirname = ' + __dirname);
   debugLog('🔍 Debug: process.cwd() = ' + process.cwd());
-  
-  try {
-    // Start all Node.js services
-    console.log('🚀 Starting all services...');
-    
-    // 1. Express.js Backend Server (3031) - START WITH DETAILED DEBUGGING
-    debugLog('🔧 Starting Express.js Backend Server on port 3031...');
-    debugLog('🔍 Debug: SERVER.SCRIPT_PATH = ' + SERVICES.NODE_SERVER.script);
 
+  try {
+    // Start all services in parallel/sequence as appropriate
+    console.log('🚀 Starting all services...');
+
+    // 1. Express.js Backend Server (3031) - CRITICAL
+    debugLog('🔧 Starting Express.js Backend Server on port 3031...');
     try {
       results.nodeServer = await startNodeServer();
       debugLog('✅ Express.js Backend Server started successfully');
-      if (mainWindow) {
-        mainWindow.webContents.send('service-ready', {
-          service: 'nodeServer',
-          success: true,
-          message: 'Backend server started successfully on port 3031'
-        });
-      }
+    } catch (error) {
+      debugLog('❌ EXPRESS.JS BACKEND SERVER FAILED: ' + error.message);
+      throw error; // Critical failure
+    }
 
-      // Start Python services with the same pattern as dev:cuda
-      debugLog('🚀 Starting F5-TTS Narration Service (port 3035)...');
-      try {
-        const narrationResult = await startPythonService({
-          name: 'F5-TTS Narration Service',
-          script: SERVICES.NARRATION_SERVICE.script,
-          port: SERVICES.NARRATION_SERVICE.port,
-          healthCheck: SERVICES.NARRATION_SERVICE.healthCheck
-        });
-        results.narrationService = narrationResult;
-        debugLog('✅ F5-TTS Narration Service started successfully');
-      } catch (error) {
-        debugLog('❌ F5-TTS NARRATION SERVICE FAILED: ' + error.message);
-      }
+    // 2. WebSocket Service (3032)
+    debugLog('📡 Starting WebSocket Service...');
+    try {
+      results.websocketServer = await startService(SERVICES.WEBSOCKET_SERVER);
+      debugLog('✅ WebSocket Service started successfully');
+    } catch (error) {
+      debugLog('❌ WEBSOCKET SERVICE FAILED: ' + error.message);
+    }
 
-      debugLog('🚀 Starting Chatterbox API Service (port 3036)...');
-      try {
-        const chatterboxResult = await startPythonService({
-          name: 'Chatterbox API Service',
-          script: SERVICES.CHATTERBOX_SERVICE.script,
-          port: SERVICES.CHATTERBOX_SERVICE.port,
-          healthCheck: SERVICES.CHATTERBOX_SERVICE.healthCheck
-        });
-        results.chatterboxService = chatterboxResult;
-        debugLog('✅ Chatterbox API Service started successfully');
-      } catch (error) {
-        debugLog('❌ CHATTERBOX SERVICE FAILED: ' + error.message);
-      }
+    // 3. Video Renderer (3033) & Frontend (3034)
+    debugLog('🎞️ Starting Video Renderer Services...');
+    try {
+      results.videoRenderer = await startService(SERVICES.VIDEO_RENDERER);
+      debugLog('✅ Video Renderer Service started');
+
+      // Give renderer server a moment before starting frontend
+      await new Promise(r => setTimeout(r, 1000));
+
+      results.videoRendererFrontend = await startService(SERVICES.VIDEO_RENDERER_FRONTEND);
+      debugLog('✅ Video Renderer Frontend started');
+    } catch (error) {
+      debugLog('❌ VIDEO RENDERER SERVICES FAILED: ' + error.message);
+    }
+
+    // 4. MIDI Service (3037)
+    debugLog('🎹 Starting PromptDJ MIDI Service...');
+    try {
+      results.promptdjMidi = await startService(SERVICES.PROMPTDJ_MIDI);
+      debugLog('✅ PromptDJ MIDI Service started');
+    } catch (error) {
+      debugLog('❌ MIDI SERVICE FAILED: ' + error.message);
+    }
+
+    // 5. Python Narrator Services (F5-TTS: 3035, Chatterbox: 3036)
+    debugLog('🗣️ Starting Narration Services...');
+    try {
+      // F5-TTS
+      const narrationResult = await startPythonService({
+        name: SERVICES.NARRATION_SERVICE.name,
+        script: SERVICES.NARRATION_SERVICE.script,
+        port: SERVICES.NARRATION_SERVICE.port,
+        healthCheck: SERVICES.NARRATION_SERVICE.healthCheck
+      });
+      results.narrationService = narrationResult;
+      debugLog('✅ F5-TTS Narration Service started');
+
+      // Chatterbox
+      const chatterboxResult = await startPythonService({
+        name: SERVICES.CHATTERBOX_SERVICE.name,
+        script: SERVICES.CHATTERBOX_SERVICE.script,
+        port: SERVICES.CHATTERBOX_SERVICE.port,
+        healthCheck: SERVICES.CHATTERBOX_SERVICE.healthCheck
+      });
+      results.chatterboxService = chatterboxResult;
+      debugLog('✅ Chatterbox API Service started');
 
     } catch (error) {
-      debugLog('❌ EXPRESS.JS BACKEND SERVER FAILED: ' + error);
-      debugLog('❌ Error details: ' + error.message + ' ' + error.stack);
-      if (mainWindow) {
-        mainWindow.webContents.send('service-ready', {
-          service: 'nodeServer',
-          success: false,
-          message: `Backend server failed: ${error.message}`
-        });
-      }
+      debugLog('❌ NARRATION SERVICES FAILED: ' + error.message);
     }
-    
-    // Add a delay to let services start
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    // For now, skip other services to focus on the main issue
-    debugLog('⚠️  Skipping other services to focus on backend server');
 
-    debugLog('🔍 Debug: Final results: ' + JSON.stringify(results));
-    
+    // 6. Python Parakeet Service (3038)
+    debugLog('🦜 Starting Parakeet ASR Service...');
+    try {
+      const parakeetResult = await startPythonService({
+        name: SERVICES.PARAKEET_SERVICE.name,
+        script: SERVICES.PARAKEET_SERVICE.script,
+        port: SERVICES.PARAKEET_SERVICE.port,
+        healthCheck: SERVICES.PARAKEET_SERVICE.healthCheck
+      });
+      results.parakeetService = parakeetResult;
+      debugLog('✅ Parakeet ASR Service started');
+    } catch (error) {
+      debugLog('❌ PARAKEET SERVICE FAILED: ' + error.message);
+    }
+
+    // UPDATE GLOBAL PROCESS REFERENCES FOR CLEANUP
+    if (results.nodeServer) nodeServerProcess = results.nodeServer;
+    if (results.websocketServer) websocketServerProcess = results.websocketServer;
+    if (results.videoRenderer) videoRendererProcess = results.videoRenderer;
+    if (results.videoRendererFrontend) videoRendererFrontendProcess = results.videoRendererFrontend;
+    if (results.promptdjMidi) promptdjMidiProcess = results.promptdjMidi;
+    // Note: Python services returned as processes can be tracked here if needed for direct kill
+    // but typically they are child processes of the shell or managed differently.
+    // For now we trust the process tree cleanup, or you could add explicit globals for them too.
+
+    debugLog('🔍 Debug: Final service results: ' + JSON.stringify(Object.keys(results)));
+
+    // Notify window of success
     if (mainWindow) {
       mainWindow.webContents.send('services-ready', {
         success: true,
         services: {
           nodeServer: !!results.nodeServer,
-          websocketServer: false, // Skipped for now
-          videoRenderer: false,   // Skipped for now
-          videoRendererFrontend: false, // Skipped for now
-          promptdjMidi: false,    // Skipped for now
-          narrationService: false, // Skipped for now
-          chatterboxService: false, // Skipped for now
-          parakeetService: false   // Skipped for now
+          websocketServer: !!results.websocketServer,
+          videoRenderer: !!results.videoRenderer,
+          videoRendererFrontend: !!results.videoRendererFrontend,
+          promptdjMidi: !!results.promptdjMidi,
+          narrationService: !!results.narrationService,
+          chatterboxService: !!results.chatterboxService,
+          parakeetService: !!results.parakeetService
         },
         debug: {
           isDev: isDev,
           isPackaged: app.isPackaged,
-          resourcesPath: process.resourcesPath,
-          cwd: process.cwd()
+          resourcesPath: process.resourcesPath
         }
       });
     }
-    
+
     return results;
   } catch (error) {
     console.error('❌ Failed to start services:', error);
-    console.error('❌ Error stack:', error.stack);
     if (mainWindow) {
       mainWindow.webContents.send('services-ready', {
         success: false,
-        error: error.message,
-        debug: {
-          isDev: isDev,
-          isPackaged: app.isPackaged,
-          resourcesPath: process.resourcesPath,
-          cwd: process.cwd()
-        }
+        error: error.message
       });
     }
     throw error;
@@ -499,7 +525,7 @@ async function startAllServices() {
 
 function stopAllServices() {
   console.log('🛑 Stopping all services...');
-  
+
   // Stop Node.js services
   if (nodeServerProcess && !nodeServerProcess.killed) {
     nodeServerProcess.kill('SIGTERM');
@@ -509,8 +535,14 @@ function stopAllServices() {
       }
     }, 5000);
   }
-  
+
   // Stop other services...
+  if (websocketServerProcess) websocketServerProcess.kill();
+  if (videoRendererProcess) videoRendererProcess.kill();
+  if (videoRendererFrontendProcess) videoRendererFrontendProcess.kill();
+  if (promptdjMidiProcess) promptdjMidiProcess.kill();
+  // Python services are handled via spawning logic, but we should kill them if we have refs
+  // Note: startAllServices implementation above stores results in local scope, we need to update globals.
 }
 
 // IPC handlers
@@ -569,7 +601,7 @@ ipcMain.handle('get-service-status', () => {
     },
     narrationService: { running: false, port: PORTS.NARRATION },
     chatterboxService: { running: false, port: PORTS.CHATTERBOX },
-    parakeetService: { running: false, port: PORTS.PARAKEET }
+    parakeetService: { running: !!(pythonServiceManager && results.parakeetService), port: PORTS.PARAKEET }
   };
 });
 
@@ -577,7 +609,7 @@ ipcMain.handle('get-service-status', () => {
 app.whenReady().then(() => {
   console.log('🚀 Electron app ready, creating window...');
   createWindow();
-  
+
   if (!isDev) {
     console.log('🚀 Starting services in production mode...');
     startAllServices()
@@ -591,7 +623,7 @@ app.whenReady().then(() => {
   } else {
     console.log('🚀 Development mode - skipping service startup');
   }
-  
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
