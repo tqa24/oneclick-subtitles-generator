@@ -231,6 +231,15 @@ const LyricItem = ({
     }
   };
 
+  const handleTextKeyDown = (e) => {
+    // Prevent arrow keys from propagating to video player controls
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+      e.stopPropagation();
+    }
+    // Call the existing key press handler for Enter and Escape
+    handleKeyPress(e);
+  };
+
   // Handle insert above
   const handleInsertAbove = (e) => {
     e.stopPropagation();
@@ -418,17 +427,17 @@ const LyricItem = ({
           >
             {isEditing ? (
               <CustomScrollbarTextarea
-                ref={textInputRef}
-                className="lyric-text-input"
-                containerClassName="lyric-text-input-container compact minimal"
-                value={editText}
-                onChange={(e) => setEditText(e.target.value)}
-                onBlur={handleTextSubmit}
-                onKeyDown={handleKeyPress}
-                rows={3}
-                onClick={(e) => e.stopPropagation()}
-                placeholder={t('lyrics.editPlaceholder', 'Edit lyric text')}
-              />
+                 ref={textInputRef}
+                 className="lyric-text-input"
+                 containerClassName="lyric-text-input-container compact minimal"
+                 value={editText}
+                 onChange={(e) => setEditText(e.target.value)}
+                 onBlur={handleTextSubmit}
+                 onKeyDown={handleTextKeyDown}
+                 rows={3}
+                 onClick={(e) => e.stopPropagation()}
+                 placeholder={t('lyrics.editPlaceholder', 'Edit lyric text')}
+               />
             ) : (
               <span onClick={(e) => {
                 e.stopPropagation(); // Stop propagation to prevent double click handling

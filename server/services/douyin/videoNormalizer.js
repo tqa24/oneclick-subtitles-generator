@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const util = require('util');
 const execPromise = util.promisify(exec);
+const { getFfmpegPath } = require('../shared/ffmpegUtils');
 
 /**
  * Normalize a Douyin video to fix common format issues
@@ -26,8 +27,9 @@ async function normalizeDouyinVideo(inputPath, outputPath = null) {
   }
   
   // Build ffmpeg command to fix all issues
+  const ffmpegPath = getFfmpegPath();
   const ffmpegCmd = [
-    'ffmpeg',
+    `"${ffmpegPath}"`,
     '-i', `"${inputPath}"`,
     '-y', // Overwrite output
     
@@ -92,7 +94,9 @@ async function normalizeDouyinVideo(inputPath, outputPath = null) {
  * @returns {Promise<Object>} - Object with issues found and needsNormalization flag
  */
 async function checkVideoIssues(videoPath) {
-  const ffprobeCmd = `ffprobe -v quiet -print_format json -show_streams -show_format "${videoPath}"`;
+  const { getFfprobePath } = require('../shared/ffmpegUtils');
+  const ffprobePath = getFfprobePath();
+  const ffprobeCmd = `"${ffprobePath}" -v quiet -print_format json -show_streams -show_format "${videoPath}"`;
   
   try {
     const { stdout } = await execPromise(ffprobeCmd);
@@ -173,8 +177,9 @@ async function quickNormalizeDouyinVideo(inputPath) {
   const outputPath = path.join(dir, `${basename}_fixed.mp4`);
   
   // Simpler, faster command - just fix stream order and audio codec
+  const ffmpegPath = getFfmpegPath();
   const ffmpegCmd = [
-    'ffmpeg',
+    `"${ffmpegPath}"`,
     '-i', `"${inputPath}"`,
     '-y',
     '-map', '0:v:0', // Video first

@@ -7,6 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 const { safeMoveFileSync } = require('../../utils/fileOperations');
 const { spawn } = require('child_process');
 const fs = require('fs');
+const { getFfmpegPath } = require('../../services/shared/ffmpegUtils');
 
 // Import directory paths
 const { REFERENCE_AUDIO_DIR } = require('./directoryManager');
@@ -33,7 +34,7 @@ const addSilenceToAudio = (inputPath, outputPath) => {
       outputPath
     ];
 
-    const ffmpeg = spawn('ffmpeg', ffmpegArgs);
+    const ffmpeg = spawn(getFfmpegPath(), ffmpegArgs);
 
     let stderr = '';
 

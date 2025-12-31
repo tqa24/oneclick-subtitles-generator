@@ -7,7 +7,7 @@
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
-const { getFfmpegPath } = require('../../../services/shared/ffmpegUtils');
+const { getFfmpegPath, getFfprobePath } = require('../../../services/shared/ffmpegUtils');
 
 // Import directory paths
 const { TEMP_AUDIO_DIR } = require('../directoryManager');
@@ -21,7 +21,7 @@ const { TEMP_AUDIO_DIR } = require('../directoryManager');
  */
 function getMediaDuration(mediaPath) {
   return new Promise((resolve, reject) => {
-    const ffprobePath = getFfmpegPath().replace('ffmpeg', 'ffprobe');
+    const ffprobePath = getFfprobePath();
     const ffprobe = spawn(ffprobePath, [
       '-v', 'error',
       '-show_entries', 'format=duration',

@@ -11,6 +11,38 @@ from .narration_language import is_text_english
 
 logger = logging.getLogger(__name__)
 
+def get_ffmpeg_path():
+    """
+    Get the path to ffmpeg executable, checking common installation locations.
+    Falls back to just 'ffmpeg' if not found in common paths (relies on PATH env var).
+    """
+    import shutil
+    import platform
+    
+    # Try to use shutil.which() first (checks system PATH)
+    ffmpeg_in_path = shutil.which('ffmpeg')
+    if ffmpeg_in_path:
+        return ffmpeg_in_path
+    
+    # Check common installation paths on Windows
+    if platform.system() == 'Windows':
+        common_paths = [
+            r'C:\ffmpeg\bin\ffmpeg.exe',
+            r'C:\Program Files\ffmpeg\bin\ffmpeg.exe',
+            r'C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe',
+        ]
+        for path in common_paths:
+            if os.path.exists(path):
+                return path
+        
+        # Check Chocolatey installation
+        choco_path = r'C:\ProgramData\chocolatey\bin\ffmpeg.exe'
+        if os.path.exists(choco_path):
+            return choco_path
+    
+    # Fallback to just 'ffmpeg' (expects it to be in system PATH)
+    return 'ffmpeg'
+
 # Create blueprint for audio processing routes
 audio_bp = Blueprint('narration_audio', __name__)
 
@@ -33,7 +65,7 @@ def add_silence_to_audio(input_path, output_path):
         # -f lavfi -t 1 -i anullsrc=channel_layout=stereo:sample_rate=44100 creates 1s of silence
         # [0:a][1:a]concat=n=2:v=0:a=1 concatenates the original audio with the silence
         ffmpeg_cmd = [
-            'ffmpeg',
+            get_ffmpeg_path(),
             '-i', input_path,
             '-f', 'lavfi', '-t', '1', '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100',
             '-filter_complex', '[0:a][1:a]concat=n=2:v=0:a=1',
@@ -481,7 +513,7 @@ def extract_audio_segment():
         # -ss before -i for faster seeking on keyframes (usually good)
         # -t for duration
         cmd = [
-            'ffmpeg', '-y', # Overwrite output without asking
+            get_ffmpeg_path(), '-y', # Overwrite output without asking
             '-ss', str(start_time), # Seek to start time
             '-i', video_path,
             '-t', str(duration), # Specify duration

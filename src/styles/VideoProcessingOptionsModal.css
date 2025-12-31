@@ -12,7 +12,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100000; /* Higher than video processing modal */
+  z-index: 100000;
+  /* Higher than video processing modal */
 }
 
 .video-processing-modal-overlay {
@@ -35,8 +36,10 @@
   border-radius: 32px;
   box-shadow: var(--md-elevation-level4);
   width: 90%;
-  max-width: 1100px; /* Increased from 500px */
-  max-height: 85vh; /* Increased from 90vh to reduce height slightly */
+  max-width: 1100px;
+  /* Increased from 500px */
+  max-height: 85vh;
+  /* Increased from 90vh to reduce height slightly */
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -54,6 +57,7 @@
   padding: 16px 16px 16px 24px;
   background-color: #00000000;
 }
+
 .header-content {
   display: contents;
 }
@@ -62,7 +66,8 @@
 .video-processing-modal .header-switch-group label {
   display: inline-block;
   text-align: right;
-  min-width: 80px; /* give room for text to align to the right edge */
+  min-width: 80px;
+  /* give room for text to align to the right edge */
   margin: 0;
 }
 
@@ -137,7 +142,8 @@
   border-radius: var(--md-shape-large);
   margin-bottom: 1.5rem;
   border: 1px solid rgba(var(--md-outline-variant-rgb), 0.3);
-  grid-column: 1 / -1; /* Span full width */
+  grid-column: 1 / -1;
+  /* Span full width */
 }
 
 .segment-token-row {
@@ -237,6 +243,11 @@
   color: var(--md-on-surface-variant);
   line-height: 1.4;
   font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
 }
 
 .language-input::placeholder {
@@ -302,13 +313,8 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  align-items: stretch; /* Allow children to span full width */
-}
-
-/* Ensure inner wrappers expand to full width so sliders can fill */
-.video-processing-modal .combined-option-half > div {
-  width: 100%;
-  max-width: 250px;
+  align-items: stretch;
+  /* Allow children to span full width */
 }
 
 .combined-option-half label {
@@ -321,7 +327,8 @@
 /* Select dropdown styles with proper chevron spacing */
 .modal-content select {
   width: 100%;
-  padding: 0.75rem 2.5rem 0.75rem 1rem; /* More right padding for chevron */
+  padding: 0.75rem 2.5rem 0.75rem 1rem;
+  /* More right padding for chevron */
   border: 1px solid var(--md-outline-variant);
   border-radius: var(--md-shape-pill);
   background-color: var(--md-surface-2);
@@ -360,7 +367,8 @@
 }
 
 .combined-option-half select {
-  align-self: stretch; /* Make select fill the width */
+  align-self: stretch;
+  /* Make select fill the width */
 }
 
 /* Responsive: stack on smaller screens */
@@ -371,7 +379,7 @@
   }
 }
 
-/* Prompt settings row - horizontal layout */
+/* Prompt settings row - supports both 2-column and 4-column layouts */
 .prompt-settings-row {
   display: flex;
   gap: 24px;
@@ -458,19 +466,23 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  max-width: none; /* Allow full width in modal */
+  max-width: none;
+  /* Allow full width in modal */
 }
 
 /* Ensure the slider fills available space and children can grow */
 .video-processing-modal .slider-with-value {
   flex: 1 1 auto;
-  min-width: 0; /* allow flex child to grow/shrink within parent */
+  min-width: 0;
+  /* allow flex child to grow/shrink within parent */
 }
 
 .video-processing-modal .slider-with-value .standard-slider-container {
-  flex: 1 1 0%; /* take remaining space alongside value display */
+  flex: 1 1 0%;
+  /* take remaining space alongside value display */
   width: auto;
-  max-width: none; /* Avoid 354px cap inside modal */
+  max-width: none;
+  /* Avoid 354px cap inside modal */
 }
 
 .video-processing-modal .standard-slider-track-container {
@@ -482,18 +494,23 @@
 .video-processing-modal .standard-slider-active-track .track {
   background-color: var(--md-secondary, #2979FF);
 }
+
 .video-processing-modal .standard-slider-inactive-track .track {
   background-color: var(--md-outline-variant, #CAC4D0);
 }
+
 /* Force explicit heights and visibility for StandardSlider tracks inside modal */
 .video-processing-modal .standard-slider-track-container {
-  height: 44px !important; /* Ensure handle/tracks area height */
+  height: 44px !important;
+  /* Ensure handle/tracks area height */
 }
+
 .video-processing-modal .standard-slider-active-track,
 .video-processing-modal .standard-slider-inactive-track {
   height: 16px !important;
   min-height: 16px !important;
 }
+
 .video-processing-modal .standard-slider-active-track .track,
 .video-processing-modal .standard-slider-inactive-track .track {
   opacity: 1 !important;
@@ -505,21 +522,15 @@
   font-size: 0.875rem;
   color: var(--md-on-surface-variant);
   font-weight: 500;
-  flex: 0 0 auto; /* Don't grow or shrink */
+  flex: 0 0 auto;
+  /* Don't grow or shrink */
   white-space: nowrap;
 }
 
 
-
-/* Model dropdown in combined row - limit width */
-.video-processing-modal .combined-option-half:first-child .custom-dropdown {
-  max-width: 250px;
-}
-.video-processing-modal .header-content .custom-dropdown {
-}
 /* When a slider is disabled, also dim the value display to avoid confusion */
-.video-processing-modal .slider-with-value .standard-slider-container.disabled ~ .slider-value-display,
-.video-processing-modal .slider-with-value .standard-slider-container.state-Disabled ~ .slider-value-display {
+.video-processing-modal .slider-with-value .standard-slider-container.disabled~.slider-value-display,
+.video-processing-modal .slider-with-value .standard-slider-container.state-Disabled~.slider-value-display {
   opacity: 0.55;
 }
 
@@ -530,8 +541,10 @@
   overflow: hidden;
   background: none !important;
   filter: grayscale(50%);
-  opacity: 0.65; /* subtle global dim */
+  opacity: 0.65;
+  /* subtle global dim */
 }
+
 .video-processing-modal .slider-with-value .standard-slider-container.disabled::after,
 .video-processing-modal .slider-with-value .standard-slider-container.state-Disabled::after {
   content: '';
@@ -539,12 +552,15 @@
   inset: 0;
   background-color: rgba(var(--md-surface-rgb, 255, 255, 255), 0.05);
   z-index: 3;
-  pointer-events: none; /* do not block interactions (though disabled anyway) */
+  pointer-events: none;
+  /* do not block interactions (though disabled anyway) */
 }
+
 .video-processing-modal .slider-with-value .standard-slider-container.disabled .standard-slider-active-track,
 .video-processing-modal .slider-with-value .standard-slider-container.state-Disabled .standard-slider-active-track {
   opacity: 0.35 !important;
 }
+
 .video-processing-modal .slider-with-value .standard-slider-container.disabled .standard-slider-handle,
 .video-processing-modal .slider-with-value .standard-slider-container.state-Disabled .standard-slider-handle {
   box-shadow: none !important;
@@ -556,9 +572,31 @@
   font-size: 0.7rem;
   color: var(--md-on-surface-variant);
   opacity: 0.8;
-  white-space: normal; /* Allow wrapping for long parallel request info */
+  white-space: normal;
+  /* Allow wrapping for long parallel request info */
   text-align: right;
   max-width: 200px;
+}
+
+/* Slider value display min-widths for specific controls */
+.video-processing-modal .slider-with-value:has(#fps-slider) .slider-value-display {
+  min-width: 60px !important;
+}
+
+.video-processing-modal .slider-with-value:has(#max-duration-slider) .slider-value-display {
+  min-width: 95px !important;
+}
+
+.video-processing-modal .slider-with-value:has(#segment-processing-delay-slider) .slider-value-display {
+  min-width: 75px !important;
+}
+
+.video-processing-modal .slider-with-value:has(#max-words-slider) .slider-value-display {
+  min-width: 40px !important;
+}
+
+.video-processing-modal .slider-with-value:has(#outside-context-range) .slider-value-display {
+  min-width: 60px !important;
 }
 
 /* Helper icon styles */
@@ -667,7 +705,8 @@
   flex: 1;
   align-items: center;
   gap: 12px;
-  min-width: 0; /* Allow flex child to shrink */
+  min-width: 0;
+  /* Allow flex child to shrink */
 }
 
 .supported-languages-label {
@@ -812,6 +851,7 @@
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -822,6 +862,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }

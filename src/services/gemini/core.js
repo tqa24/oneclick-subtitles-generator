@@ -182,8 +182,10 @@ export const streamGeminiApiWithFilesApi = async (file, options = {}, onChunk, o
                     mediaResolution,
                     segmentInfo: options.segmentInfo,
                     maxDurationPerRequest,
+                    segmentProcessingDelay: options.segmentProcessingDelay,
                     autoSplitSubtitles: options.autoSplitSubtitles,
-                    maxWordsPerSubtitle: options.maxWordsPerSubtitle
+                    maxWordsPerSubtitle: options.maxWordsPerSubtitle,
+                    t: options.t
                 },
                 onChunk,
                 onComplete,
@@ -269,10 +271,16 @@ export const streamGeminiApiInline = async (file, options = {}, onChunk, onCompl
 
   try {
     if (useParallel) {
+      // Ensure t and segmentProcessingDelay are available in inlineOptions
+      const parallelInlineOptions = {
+        ...inlineOptions,
+        t: options.t,
+        segmentProcessingDelay: options.segmentProcessingDelay
+      };
       await coordinateParallelInlineStreaming(
         file,
         null,
-        inlineOptions,
+        parallelInlineOptions,
         onChunk,
         onComplete,
         onError,

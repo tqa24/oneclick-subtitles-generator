@@ -5,6 +5,7 @@
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
+const { getFfmpegPath } = require('../../../services/shared/ffmpegUtils');
 
 // Import directory paths
 const { OUTPUT_AUDIO_DIR } = require('../directoryManager');
@@ -94,7 +95,7 @@ const modifyAudioSpeed = async (req, res) => {
     ];
 
     // Execute the ffmpeg command
-    const ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
+    const ffmpegProcess = spawn(getFfmpegPath(), ffmpegArgs);
 
     let stdoutData = '';
     let stderrData = '';
@@ -273,7 +274,7 @@ const batchModifyAudioSpeed = async (req, res) => {
 
         // Execute the ffmpeg command and wait for it to complete
         await new Promise((resolve, reject) => {
-          const ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
+          const ffmpegProcess = spawn(getFfmpegPath(), ffmpegArgs);
 
           ffmpegProcess.on('close', (code) => {
             if (code === 0) {

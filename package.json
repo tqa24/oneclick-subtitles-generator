@@ -36,7 +36,7 @@
     "test:python": "uv run --python .venv test-python.py",
     "create:venv": "uv venv .venv",
     "install:f5tts": "uv pip install --python .venv -e F5-TTS",
-    "install:deps": "uv pip install --python .venv flask flask-cors soundfile numpy torch torchaudio vocos setuptools",
+    "install:deps": "uv pip install --python .venv flask flask-cors soundfile \"numpy<2.4\" torch torchaudio vocos setuptools",
     "install:yt-dlp": "node install-yt-dlp.js",
     "install:all": "npm install && node setup-narration.js && node install-yt-dlp.js",
     "postinstall": "node update-narration-packages.js && node install-yt-dlp.js && npm run workspace:build",

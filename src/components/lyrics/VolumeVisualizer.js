@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
+// Debug gate for waveform logging
+const DEBUG_WAVEFORM = false;
+const dbgWave = (...args) => { if (DEBUG_WAVEFORM) console.log(...args); };
 
 // Global cache for audio data to avoid reprocessing the same audio
 const audioDataCache = new Map();

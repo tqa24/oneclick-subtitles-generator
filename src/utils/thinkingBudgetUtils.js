@@ -10,11 +10,9 @@
 export const getThinkingBudget = (modelId) => {
   try {
     const thinkingBudgets = JSON.parse(localStorage.getItem('thinking_budgets') || '{}');
-    console.log(`[ThinkingBudget] Stored budgets:`, thinkingBudgets);
 
     // Check if the model supports thinking
     if (!isThinkingSupported(modelId)) {
-      console.log(`[ThinkingBudget] Model ${modelId} does not support thinking`);
       return null;
     }
 
@@ -22,13 +20,11 @@ export const getThinkingBudget = (modelId) => {
     const budget = thinkingBudgets[modelId];
 
     if (budget !== undefined) {
-      console.log(`[ThinkingBudget] Using stored budget for ${modelId}: ${budget} (type: ${typeof budget})`);
       return budget;
     }
 
     // Return default values if not set
     const defaultBudget = getDefaultThinkingBudget(modelId);
-    console.log(`[ThinkingBudget] Using default budget for ${modelId}: ${defaultBudget}`);
     return defaultBudget;
   } catch (error) {
     console.error('Error getting thinking budget:', error);
@@ -78,18 +74,13 @@ export const addThinkingConfig = (requestData, modelId, options = {}) => {
   const { enableThinking = true } = options;
   // Skip thinking if explicitly disabled
   if (!enableThinking) {
-    console.log(`[ThinkingBudget] Thinking disabled for this request (${modelId})`);
     return requestData;
   }
 
   const thinkingBudget = getThinkingBudget(modelId);
 
-  console.log(`[ThinkingBudget] Model: ${modelId}, Budget: ${thinkingBudget}, Supported: ${isThinkingSupported(modelId)}`);
-  console.log(`[ThinkingBudget] Raw localStorage:`, localStorage.getItem('thinking_budgets'));
-
   // If thinking is not supported or budget is null, return original request
   if (thinkingBudget === null) {
-    console.log(`[ThinkingBudget] No thinking config added for ${modelId}`);
     return requestData;
   }
 
@@ -104,7 +95,6 @@ export const addThinkingConfig = (requestData, modelId, options = {}) => {
     }
   };
 
-  console.log(`[ThinkingBudget] Added thinking config for ${modelId}:`, updatedRequest.generationConfig.thinkingConfig);
   return updatedRequest;
 };
 

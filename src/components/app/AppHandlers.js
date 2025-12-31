@@ -647,6 +647,10 @@ export const useAppHandlers = (appState) => {
       console.log(
         "[ProcessWithOptions] Started processing segment, animation should begin"
       );
+      console.log(
+        "[ProcessWithOptions] Received segmentProcessingDelay:",
+        options.segmentProcessingDelay
+      );
 
       let fileToProcess = uploadedFileData;
       if (!fileToProcess) {
@@ -667,6 +671,7 @@ export const useAppHandlers = (appState) => {
         mediaResolution: options.mediaResolution,
         model: options.model,
         maxDurationPerRequest: options.maxDurationPerRequest,
+        segmentProcessingDelay: options.segmentProcessingDelay,
         autoSplitSubtitles: options.autoSplitSubtitles,
         maxWordsPerSubtitle: options.maxWordsPerSubtitle,
         inlineExtraction: options.inlineExtraction === true,
@@ -675,6 +680,8 @@ export const useAppHandlers = (appState) => {
         parakeetMaxChars: options.parakeetMaxChars,
         parakeetMaxWords: options.parakeetMaxWords,
       };
+      
+      console.log("[ProcessWithOptions] Passing to generateSubtitles - segmentProcessingDelay:", subtitleOptions.segmentProcessingDelay);
 
       // Add custom prompt if provided
       if (options.customPrompt) {

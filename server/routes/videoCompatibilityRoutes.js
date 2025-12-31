@@ -55,6 +55,7 @@ router.post('/check-codec', async (req, res) => {
 
     // Use ffprobe to get codec information
     const { spawn } = require('child_process');
+    const { getFfprobePath } = require('../services/shared/ffmpegUtils');
     
     const ffprobeArgs = [
       '-v', 'quiet',
@@ -64,7 +65,7 @@ router.post('/check-codec', async (req, res) => {
       fullVideoPath
     ];
 
-    const ffprobe = spawn('ffprobe', ffprobeArgs);
+    const ffprobe = spawn(getFfprobePath(), ffprobeArgs);
     let stdout = '';
     let stderr = '';
 

@@ -225,10 +225,10 @@ const VideoProcessingOptionsModal = ({
                         try {
                             localStorage.setItem('is_full_version', isFull ? 'true' : 'false');
                             localStorage.setItem('is_vercel_mode', isVercel ? 'true' : 'false');
-                        } catch {}
+                        } catch { }
                     }
                 }
-            } catch {}
+            } catch { }
         })();
 
         return () => {
@@ -313,6 +313,12 @@ const VideoProcessingOptionsModal = ({
         return saved ? parseInt(saved, 10) : 3; // Default to 3 minutes for Parakeet
     });
 
+    // Delay between segment processing (in seconds) for Gemini
+    const [segmentProcessingDelay, setSegmentProcessingDelay] = useState(() => {
+        const saved = localStorage.getItem('segment_processing_delay');
+        return saved ? parseInt(saved, 10) : 0; // Default to 0 (all at once)
+    });
+
     // Auto-split subtitles settings (synced with Settings modal)
     const [autoSplitSubtitles, setAutoSplitSubtitles] = useState(() => {
         // Use the same key as Settings modal for consistency
@@ -320,16 +326,16 @@ const VideoProcessingOptionsModal = ({
         // Default to true (enabled) if not previously saved
         return saved !== null ? saved === 'true' : true;
     });
-    
+
     // Track previous auto-split setting when switching to timing generation
     const [previousAutoSplitSetting, setPreviousAutoSplitSetting] = useState(() => {
         const saved = localStorage.getItem('show_favorite_max_length');
         return saved !== null ? saved === 'true' : true;
     });
-    
+
     // Track if we're currently in timing generation mode
     const [isInTimingGenerationMode, setIsInTimingGenerationMode] = useState(false);
-    
+
     // Custom setter for auto-split that handles timing generation mode
     const handleAutoSplitToggle = useCallback((newValue) => {
         if (isInTimingGenerationMode) {
@@ -347,7 +353,7 @@ const VideoProcessingOptionsModal = ({
         // Track when we're switching to timing generation
         const isTimingGeneration = selectedPromptPreset === 'timing-generation';
         const wasTimingGeneration = isInTimingGenerationMode;
-        
+
         if (isTimingGeneration && !wasTimingGeneration) {
             // Switching TO timing generation - save current auto-split state and disable it
             setPreviousAutoSplitSetting(autoSplitSubtitles);
@@ -466,6 +472,11 @@ const VideoProcessingOptionsModal = ({
     useEffect(() => {
         localStorage.setItem('parakeet_max_duration_per_request', parakeetMaxDurationPerRequest.toString());
     }, [parakeetMaxDurationPerRequest]);
+
+    // Persist segment processing delay
+    useEffect(() => {
+        localStorage.setItem('segment_processing_delay', segmentProcessingDelay.toString());
+    }, [segmentProcessingDelay]);
 
     // Persist auto-split settings (synced with Settings modal)
     useEffect(() => {
@@ -1186,6 +1197,7 @@ const VideoProcessingOptionsModal = ({
             maxDurationPerRequest: shouldDisableParallelProcessing
                 ? 999999999 // Very large value to prevent splitting (infinite duration)
                 : (method === 'nvidia-parakeet' ? parakeetMaxDurationPerRequest : maxDurationPerRequest) * 60, // Convert to seconds
+            segmentProcessingDelay, // Delay between segment requests (in seconds)
             autoSplitSubtitles,
             maxWordsPerSubtitle,
             inlineExtraction,
@@ -1280,70 +1292,76 @@ const VideoProcessingOptionsModal = ({
                         className="video-processing-modal"
                         ref={modalRef}
                     >
-                <div className="modal-header">
-                    <div className="header-content">
-                        <h3>
-                            {t('processing.generateForRange', 'Generate/update subtitles for range:')}
-                            <span className="segment-time">
-                                {formatTime(selectedSegment?.start || 0)} - {formatTime(selectedSegment?.end || 0)}
-                                {' '}({Math.round((selectedSegment?.end || 0) - (selectedSegment?.start || 0))}s)
-                            </span>
-                        </h3>
-                        <div className={`header-switch-group ${retryLock ? 'disabled' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <label style={{ minWidth: 64 }}>{t('processing.methodLabel', 'Method')}</label>
-                            <CustomDropdown
-                                value={method}
-                                onChange={(value) => setMethod(value)}
-                                options={methodOptions}
-                                placeholder={t('processing.methodLabel', 'Method')}
-                                disabled={retryLock}
-                                style={{ maxWidth: '200px' }}
-                            />
-                            <HelpIcon title={isVercelMode
-                                ? t('processing.methodHelpVercel', 'Only the new method is available in Vercel version. The old method requires server-side video processing capabilities.')
-                                : t('processing.inlineExtractionHelp', 'Use the old method when the new method fails; may be slower depending on the situation')
-                            } />
-                            <button
-                                onClick={() => setShowMethodSelection(true)}
-                                className="method-selection-reopen-btn"
-                                title={t('processing.changeTranscriptionMethod', 'Change transcription method')}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '40px',
-                                    height: '40px',
-                                    border: 'none',
-                                    borderRadius: '20px',
-                                    background: 'var(--md-surface-container)',
-                                    color: 'var(--md-on-surface)',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s var(--md-easing-standard)',
-                                    boxShadow: 'var(--md-elevation-level1)',
-                                    fontSize: '20px',
-                                    lineHeight: '1',
-                                    fontFamily: 'var(--ms-font-family)',
-                                    fontVarianceSettings: '"wght" var(--ms-wght), "GRAD" var(--ms-grad), "opsz" var(--ms-opsz)'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.target.style.backgroundColor = 'var(--md-surface-container-high)';
-                                    e.target.style.boxShadow = 'var(--md-elevation-level2)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.target.style.backgroundColor = 'var(--md-surface-container)';
-                                    e.target.style.boxShadow = 'var(--md-elevation-level1)';
-                                }}
-                            >
-                                <span className="material-symbols-rounded" style={{ fontSize: '20px', display: 'inline-block', verticalAlign: 'middle' }}>view_apps</span>
-                            </button>
+                        <div className="modal-header">
+                            <div className="header-content">
+                                <h3>
+                                    {t('processing.generateForRange', 'Generate/update subtitles for range:')}
+                                    <span className="segment-time">
+                                        {formatTime(selectedSegment?.start || 0)} - {formatTime(selectedSegment?.end || 0)}
+                                        {' '}({Math.round((selectedSegment?.end || 0) - (selectedSegment?.start || 0))}s)
+                                    </span>
+                                </h3>
+                                <div className={`header-switch-group ${retryLock ? 'disabled' : ''}`} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <label style={{ minWidth: 64 }}>{t('processing.methodLabel', 'Method')}</label>
+                                    <CustomDropdown
+                                        value={method}
+                                        onChange={(value) => setMethod(value)}
+                                        options={methodOptions}
+                                        placeholder={t('processing.methodLabel', 'Method')}
+                                        disabled={retryLock}
+                                        style={{ maxWidth: '200px' }}
+                                    />
+                                    <HelpIcon title={retryLock
+                                        ? t('processing.changeTranscriptionMethodRetryLocked', 'Cannot change method while in retry mode with old Gemini method')
+                                        : isVercelMode
+                                            ? t('processing.methodHelpVercel', 'Only the new method is available in Vercel version. The old method requires server-side video processing capabilities.')
+                                            : t('processing.inlineExtractionHelp', 'Use the old method when the new method fails; may be slower depending on the situation')
+                                    } />
+                                    <button
+                                        onClick={() => setShowMethodSelection(true)}
+                                        className="method-selection-reopen-btn"
+                                        title={retryLock 
+                                            ? t('processing.changeTranscriptionMethodRetryLocked', 'Cannot change method while in retry mode with old Gemini method')
+                                            : t('processing.changeTranscriptionMethod', 'Change transcription method')
+                                        }
+                                        disabled={retryLock}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            width: '40px',
+                                            height: '40px',
+                                            border: 'none',
+                                            borderRadius: '20px',
+                                            background: 'var(--md-surface-container)',
+                                            color: 'var(--md-on-surface)',
+                                            cursor: retryLock ? 'not-allowed' : 'pointer',
+                                            transition: 'all 0.2s var(--md-easing-standard)',
+                                            boxShadow: 'var(--md-elevation-level1)',
+                                            fontSize: '20px',
+                                            lineHeight: '1',
+                                            fontFamily: 'var(--ms-font-family)',
+                                            fontVarianceSettings: '"wght" var(--ms-wght), "GRAD" var(--ms-grad), "opsz" var(--ms-opsz)'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.target.style.backgroundColor = 'var(--md-surface-container-high)';
+                                            e.target.style.boxShadow = 'var(--md-elevation-level2)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.target.style.backgroundColor = 'var(--md-surface-container)';
+                                            e.target.style.boxShadow = 'var(--md-elevation-level1)';
+                                        }}
+                                    >
+                                        <span className="material-symbols-rounded" style={{ fontSize: '20px', display: 'inline-block', verticalAlign: 'middle' }}>view_apps</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <CloseButton onClick={onClose} variant="modal" size="medium" />
                         </div>
-                    </div>
-                    <CloseButton onClick={onClose} variant="modal" size="medium" />
-                </div>
 
-                <div className="modal-content" ref={contentRef}>
-                    {/* Two-column grid for options */}
-                    <div className="modal-content-grid">
+                        <div className="modal-content" ref={contentRef}>
+                            {/* Two-column grid for options */}
+                            <div className="modal-content-grid">
                                 {method === 'nvidia-parakeet' ? (
                                     <ParakeetProcessingOptions
                                         parakeetStrategy={parakeetStrategy}
@@ -1418,6 +1436,7 @@ const VideoProcessingOptionsModal = ({
                                                         }))}
                                                         placeholder={t('processing.selectResolution', 'Select Resolution')}
                                                         disabled={videoFile?.type?.startsWith('audio/')}
+                                                        style={{ maxWidth: '250px' }}
                                                     />
                                                 </div>
                                             </div>
@@ -1441,6 +1460,7 @@ const VideoProcessingOptionsModal = ({
                                                             disabled: option.disabled
                                                         }))}
                                                         placeholder={t('processing.selectModel', 'Select Model')}
+                                                        style={{ maxWidth: '250px' }}
                                                     />
                                                 </div>
 
@@ -1499,11 +1519,11 @@ const VideoProcessingOptionsModal = ({
                                             </div>
                                         </div>
 
-                                        {/* Prompt Preset and Settings Row */}
-                                        <div className="option-group" style={{ gridColumn: '1 / -1' }}>
-                                            <div className="prompt-settings-row">
+                                        {/* Prompt Preset and Target Language Row */}
+                                        <div className="option-group">
+                                            <div className="combined-options-row">
                                                 {/* Left: Prompt Preset Selection */}
-                                                <div className="prompt-preset-section">
+                                                <div className="combined-option-half">
                                                     <label>{t('processing.promptPreset', 'Prompt Preset')}</label>
                                                     <CustomDropdown
                                                         value={selectedPromptPreset}
@@ -1594,47 +1614,94 @@ const VideoProcessingOptionsModal = ({
                                                     </p>
                                                 </div>
 
-                                                {/* Right: Target Language and Analysis Switch Group */}
-                                                <div className="settings-group">
-                                                    <div className="settings-row">
-                                                        {/* Target Language (only when translate-directly is selected) */}
-                                                        {selectedPromptPreset === 'translate-directly' && (
-                                                            <div className="setting-item">
-                                                                <label>{t('processing.targetLanguage', 'Target Language')}</label>
-                                                                <input
-                                                                    type="text"
-                                                                    value={customLanguage}
-                                                                    onChange={(e) => setCustomLanguage(e.target.value)}
-                                                                    placeholder={t('processing.targetLanguagePlaceholder', 'Enter target language (e.g., Vietnamese, Spanish)')}
-                                                                    className="language-input"
-                                                                />
-                                                            </div>
-                                                        )}
+                                                {/* Right: Target Language (only when translate-directly is selected) */}
+                                                {selectedPromptPreset === 'translate-directly' && (
+                                                    <div className="combined-option-half">
+                                                        <label>{t('processing.targetLanguage', 'Target Language')}</label>
+                                                        <input
+                                                            type="text"
+                                                            value={customLanguage}
+                                                            onChange={(e) => setCustomLanguage(e.target.value)}
+                                                            placeholder={t('processing.targetLanguagePlaceholder', 'Enter target language (e.g., Vietnamese, Spanish)')}
+                                                            className="language-input"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
 
-                                                        {/* Transcription Rules Toggle */}
-                                                        <div className="setting-item">
-                                                            <div className="label-with-help">
-                                                                <label>{t('processing.analysisRules', 'Analysis Rules')}</label>
-                                                                <HelpIcon title={transcriptionRulesAvailable
-                                                                    ? t('processing.useTranscriptionRulesDesc', 'Include context, terminology, and formatting rules from video analysis in the prompt')
-                                                                    : t('processing.noAnalysisAvailable', 'Please create analysis by pressing "Add analysis" button')
-                                                                } />
-                                                            </div>
-                                                            <div className="material-switch-container">
-                                                                <MaterialSwitch
-                                                                    id="use-transcription-rules"
-                                                                    checked={useTranscriptionRules && transcriptionRulesAvailable}
-                                                                    onChange={(e) => setUseTranscriptionRules(e.target.checked)}
-                                                                    disabled={!transcriptionRulesAvailable}
-                                                                    ariaLabel={t('processing.useTranscriptionRules', 'Use transcription rules from analysis')}
-                                                                    icons={true}
-                                                                />
-                                                                <label htmlFor="use-transcription-rules" className="material-switch-label">
-                                                                    {t('processing.useTranscriptionRules', 'Use transcription rules from analysis')}
-                                                                </label>
-                                                            </div>
-                                                        </div>
+                                        {/* Analysis Rules and Segment Processing Delay Row */}
+                                        <div className="option-group">
+                                            <div className="combined-options-row">
+                                                {/* Left: Analysis Rules */}
+                                                <div className="combined-option-half">
+                                                    <div className="label-with-help">
+                                                        <label>{t('processing.analysisRules', 'Analysis Rules')}</label>
+                                                        <HelpIcon title={transcriptionRulesAvailable
+                                                            ? t('processing.useTranscriptionRulesDesc', 'Include context, terminology, and formatting rules from video analysis in the prompt. When enabled, these analysis rules derived from video content will be embedded in the prompt to improve subtitle quality and formatting consistency. Note: This may sometimes cause timing shifts for subtitles.')
+                                                            : t('processing.noAnalysisAvailable', 'Please create analysis by pressing "Add analysis" button')
+                                                        } />
+                                                    </div>
+                                                    <div className="material-switch-container">
+                                                        <MaterialSwitch
+                                                            id="use-transcription-rules"
+                                                            checked={useTranscriptionRules && transcriptionRulesAvailable}
+                                                            onChange={(e) => setUseTranscriptionRules(e.target.checked)}
+                                                            disabled={!transcriptionRulesAvailable}
+                                                            ariaLabel={t('processing.useTranscriptionRules', 'Use transcription rules from analysis')}
+                                                            icons={true}
+                                                        />
+                                                        <label htmlFor="use-transcription-rules" className="material-switch-label">
+                                                            {t('processing.useTranscriptionRules', 'Use transcription rules from analysis')}
+                                                        </label>
+                                                    </div>
+                                                </div>
 
+                                                {/* Right: Segment Processing Delay */}
+                                                <div className="combined-option-half">
+                                                    <div className="label-with-help">
+                                                        <label>{t('processing.segmentProcessingDelay', 'Segment processing delay')}</label>
+                                                        <HelpIcon title={(() => {
+                                                            if (selectedSegment) {
+                                                                const segmentDuration = (selectedSegment.end - selectedSegment.start) / 60;
+                                                                const numRequests = Math.ceil(segmentDuration / Number(maxDurationPerRequest || 1));
+                                                                if (numRequests <= 1) {
+                                                                    return t('processing.delayOnlyWithParallel', 'Chỉ khả dụng khi có nhiều phân đoạn');
+                                                                }
+                                                            }
+                                                            return t('processing.segmentProcessingDelayDesc', '0 = all segments at once (fastest). Set higher values to process segments sequentially (e.g., 10 seconds delay between each segment). This will help ease the penalty of rate limits as well as less lags on weaker computers');
+                                                        })()} />
+                                                    </div>
+                                                    <div>
+                                                        <SliderWithValue
+                                                            value={segmentProcessingDelay}
+                                                            onChange={(v) => setSegmentProcessingDelay(parseInt(v))}
+                                                            min={0}
+                                                            max={60}
+                                                            step={1}
+                                                            orientation="Horizontal"
+                                                            size="XSmall"
+                                                            state={(() => {
+                                                                // Enable delay slider only when parallel requests are triggered
+                                                                if (selectedSegment) {
+                                                                    const segmentDuration = (selectedSegment.end - selectedSegment.start) / 60;
+                                                                    const numRequests = Math.ceil(segmentDuration / Number(maxDurationPerRequest || 1));
+                                                                    if (numRequests > 1) return 'Enabled';
+                                                                }
+                                                                return 'Disabled';
+                                                            })()}
+                                                            id="segment-processing-delay-slider"
+                                                            ariaLabel={t('processing.segmentProcessingDelay', 'Segment processing delay')}
+                                                            defaultValue={0}
+                                                            formatValue={(v) => (
+                                                                <>
+                                                                    {v === 0
+                                                                        ? t('processing.simultaneousProcessing', 'Simultaneous')
+                                                                        : t('processing.secondsDelay', '{{value}}s sleep', { value: v })
+                                                                    }
+                                                                </>
+                                                            )}
+                                                        />
                                                     </div>
                                                 </div>
                                             </div>
@@ -1761,56 +1828,56 @@ const VideoProcessingOptionsModal = ({
 
 
 
-                <div className="modal-footer">
-                    <div className="footer-content">
-                        {/* Token Usage Info (hide for Parakeet) */}
-                        {method !== 'nvidia-parakeet' && (
-                        <div className="footer-token-info">
-                            <div className="token-usage">
-                                <span className="token-label">
-                                    {isCountingTokens
-                                        ? t('processing.countingTokens', 'Counting Tokens...')
-                                        : realTokenCount !== null
-                                            ? t('processing.actualTokens', 'Actual Token Usage')
-                                            : t('processing.estimatedTokens', 'Estimated Token Usage')
-                                    }:
-                                </span>
-                                <span className={`token-count ${isWithinLimit ? 'within-limit' : 'exceeds-limit'}`}>
-                                    {displayTokens.toLocaleString()} / {selectedModelData?.maxTokens.toLocaleString()} tokens
-                                </span>
-                            </div>
-                        </div>
-                        )}
+                        <div className="modal-footer">
+                            <div className="footer-content">
+                                {/* Token Usage Info (hide for Parakeet) */}
+                                {method !== 'nvidia-parakeet' && (
+                                    <div className="footer-token-info">
+                                        <div className="token-usage">
+                                            <span className="token-label">
+                                                {isCountingTokens
+                                                    ? t('processing.countingTokens', 'Counting Tokens...')
+                                                    : realTokenCount !== null
+                                                        ? t('processing.actualTokens', 'Actual Token Usage')
+                                                        : t('processing.estimatedTokens', 'Estimated Token Usage')
+                                                }:
+                                            </span>
+                                            <span className={`token-count ${isWithinLimit ? 'within-limit' : 'exceeds-limit'}`}>
+                                                {displayTokens.toLocaleString()} / {selectedModelData?.maxTokens.toLocaleString()} tokens
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
 
-                        {/* Supported Languages for Parakeet */}
-                        {method === 'nvidia-parakeet' && (
-                        <div className="footer-languages-info">
-                            <div className="supported-languages-label">{t('processing.supportedLanguages', 'Supported languages')}</div>
-                            <div
-                                className="languages-badges"
-                                ref={languagesRef}
-                            >
-                                {parakeetLanguages.map(lang => <span key={lang.name} className={`language-badge language-badge-${lang.group}`}>{lang.name}</span>)}
-                            </div>
-                        </div>
-                        )}
+                                {/* Supported Languages for Parakeet */}
+                                {method === 'nvidia-parakeet' && (
+                                    <div className="footer-languages-info">
+                                        <div className="supported-languages-label">{t('processing.supportedLanguages', 'Supported languages')}</div>
+                                        <div
+                                            className="languages-badges"
+                                            ref={languagesRef}
+                                        >
+                                            {parakeetLanguages.map(lang => <span key={lang.name} className={`language-badge language-badge-${lang.group}`}>{lang.name}</span>)}
+                                        </div>
+                                    </div>
+                                )}
 
-                        <div className="footer-buttons">
-                            <button
-                                className="process-btn"
-                                onClick={handleProcess}
-                                disabled={isUploading || (method !== 'nvidia-parakeet' && !isWithinLimit) || (method === 'nvidia-parakeet' && parakeetDisabled)}
-                            >
-                                {isUploading
-                                    ? t('processing.waitingForUpload', 'Waiting for upload...')
-                                    : t('processing.startProcessing', 'Start Processing')
-                                }
-                            </button>
+                                <div className="footer-buttons">
+                                    <button
+                                        className="process-btn"
+                                        onClick={handleProcess}
+                                        disabled={isUploading || (method !== 'nvidia-parakeet' && !isWithinLimit) || (method === 'nvidia-parakeet' && parakeetDisabled)}
+                                    >
+                                        {isUploading
+                                            ? t('processing.waitingForUpload', 'Waiting for upload...')
+                                            : t('processing.startProcessing', 'Start Processing')
+                                        }
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
             )}
         </>,
         document.body

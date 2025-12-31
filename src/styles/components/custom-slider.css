@@ -223,8 +223,13 @@
 }
 
 /* Disable transitions during dragging for instant response */
+.standard-slider-container.dragging {
+  cursor: grabbing !important;
+}
+
 .standard-slider-container.dragging .standard-slider-handle {
   transition: none !important;
+  cursor: grabbing !important;
 }
 
 .standard-slider-container.dragging .standard-slider-active-track {
@@ -534,7 +539,7 @@
   height: 36px; /* Tall pill height (canonical) */
   background-color: var(--md-secondary, #2979FF); /* Use your blue secondary color */
   border-radius: 4px; /* Pill shape */
-  cursor: pointer;
+  cursor: grab;
   transition: all 0.2s cubic-bezier(0.2, 0, 0, 1); /* Material motion */
   z-index: 10;
   flex-shrink: 0; /* Don't shrink */
