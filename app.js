@@ -286,7 +286,7 @@ const staticOptions = {
     }
 
     res.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Run-Id');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Run-Id');
     res.set('Access-Control-Allow-Credentials', 'true');
   }
 };
@@ -355,8 +355,19 @@ app.get('/api/health', (req, res) => {
 app.get('/api/startup-mode', (req, res) => {
   // Detect how this process was started
   const lifecycle = process.env.npm_lifecycle_event; // e.g., 'start', 'dev', 'dev:cuda'
-  const isDevCuda = process.env.START_PYTHON_SERVER === 'true';
-  const isElectron = process.env.ELECTRON_RUN_AS_PACKAGED === '1' || process.execPath.includes('One-Click Subtitles Generator.exe');
+
+  // Check for packaged Electron environment - multiple detection methods
+  const isElectron =
+    process.env.ELECTRON_RUN_AS_PACKAGED === '1' ||
+    process.env.ELECTRON_MANAGES_PYTHON === 'true' ||
+    process.env.ELECTRON_RESOURCES_PATH ||
+    process.execPath.includes('One-Click Subtitles Generator') ||
+    process.execPath.includes('subtitles-generator');
+
+  // In packaged Electron app, we ALWAYS act as "Full Version" (dev:cuda equivalent)
+  // because we bundle the Python environment.
+  const isDevCuda = isElectron ? true : (process.env.START_PYTHON_SERVER === 'true');
+
   const isVercel = process.env.VERCEL === '1';
   // Only consider it "start" mode if it's explicitly npm start or Vercel, not just production mode
   const isStart = lifecycle === 'start' || isVercel;
@@ -364,7 +375,7 @@ app.get('/api/startup-mode', (req, res) => {
   // Build a human-friendly command string
   let command;
   if (isElectron) {
-    command = 'electron app';
+    command = 'electron app (OSG Full)';
   } else if (lifecycle) {
     command = lifecycle === 'start' ? 'npm start' : `npm run ${lifecycle}`;
   } else {

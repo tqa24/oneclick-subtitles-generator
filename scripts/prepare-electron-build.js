@@ -49,10 +49,18 @@ async function copyVenv() {
     // Copy .venv to bin/python-wheelhouse/venv
     logger.info(`Copying .venv to ${wheelhouseVenv}...`);
     try {
-        // Use a simple copy approach with progress
-        fs.cpSync(VENV_SOURCE, wheelhouseVenv, { 
+        fs.cpSync(VENV_SOURCE, wheelhouseVenv, {
             recursive: true,
             force: true,
+            filter: (src, dest) => {
+                // Return true to copy, false to skip
+                if (src.includes('__pycache__')) return false;
+                if (src.endsWith('.pyc')) return false;
+                if (src.includes('.git')) return false;
+                // Exclude pip cache if present within venv
+                if (src.includes('pip') && src.includes('cache')) return false;
+                return true;
+            }
         });
         logger.success('Python environment copied successfully');
     } catch (error) {

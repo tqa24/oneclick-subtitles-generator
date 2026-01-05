@@ -12,15 +12,15 @@
   "scripts": {
     "start": "npm run setup:react-env && npm run generate:version && node scripts/start-frontend.js",
     "start-react": "cross-env PORT=3030 react-scripts start",
-    "build": "npm run generate:version && react-scripts build",
+    "build": "npm run generate:version && npm run workspace:build && react-scripts build",
     "electron": "electron .",
     "electron:dev": "npm run build && electron .",
     "electron:start": "concurrently \"npm run start\" \"npm run electron:dev\"",
     "dist": "npm run build && node scripts/prepare-electron-build.js && electron-builder",
-    "dist:win": "npm run build && node scripts/prepare-electron-build.js && electron-builder --win",
+    "dist:win": "cross-env ELECTRON_BUILDER_CACHE=./.builder-cache CSC_LINK=null WIN_CSC_LINK=null CSC_IDENTITY_AUTO_DISCOVERY=false npm run build && node scripts/prepare-electron-build.js && electron-builder --win",
     "dist:mac": "npm run build && node scripts/prepare-electron-build.js && electron-builder --mac",
     "dist:linux": "npm run build && node scripts/prepare-electron-build.js && electron-builder --linux",
-    "pack": "electron-builder --dir",
+    "pack": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --dir",
     "generate:version": "node scripts/generate-version.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
@@ -136,7 +136,7 @@
     "concurrently": "^9.2.0",
     "cross-env": "^7.0.3",
     "electron": "^33.4.11",
-    "electron-builder": "^25.1.8",
+    "electron-builder": "^26.0.12",
     "electron-devtools-installer": "^3.2.0",
     "typescript": "^4.9.5"
   },
@@ -147,18 +147,10 @@
       "main": "electron/main.js"
     },
     "directories": {
-      "output": "electron-dist",
+      "output": "dist-new",
       "buildResources": "public"
     },
-    "asarUnpack": [
-      "app.js",
-      "server.js",
-      "server/**",
-      "chatterbox-fastapi/**",
-      "parakeet_wrapper/**",
-      "video-renderer/**",
-      "promptdj-midi/**"
-    ],
+    "asar": false,
     "files": [
       "app.js",
       "server.js",
@@ -172,7 +164,12 @@
       "node_modules/**/*",
       "!node_modules/*/test/**/*",
       "!node_modules/*/tests/**/*",
-      "!node_modules/*/.bin/**/*"
+      "!node_modules/*/.bin/**/*",
+      "!manual-dist/**/*",
+      "!manual-dist-v2/**/*",
+      "!electron-dist/**/*",
+      "!promptdj-midi/node_modules/**/*",
+      "!video-renderer/node_modules/**/*"
     ],
     "extraResources": [
       {
@@ -214,13 +211,7 @@
       "verifyUpdateCodeSignature": false,
       "target": [
         {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "portable",
+          "target": "dir",
           "arch": [
             "x64"
           ]

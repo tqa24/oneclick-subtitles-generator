@@ -25,12 +25,239 @@ function debugLog(message) {
 
 // Keep a global reference of the window object
 let mainWindow;
+let setupWindow = null;
 let nodeServerProcess = null;
 let websocketServerProcess = null;
 let videoRendererProcess = null;
 let videoRendererFrontendProcess = null;
 let promptdjMidiProcess = null;
 let pythonServiceManager = null;
+let pythonSetupProcess = null;
+
+// Check if Python environment needs to be set up (first run)
+function getPythonVenvPath() {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, 'python-venv', 'venv');
+  }
+  return path.join(__dirname, '..', '.venv');
+}
+
+function isPythonSetupRequired() {
+  const venvPath = getPythonVenvPath();
+  const pythonExe = process.platform === 'win32'
+    ? path.join(venvPath, 'Scripts', 'python.exe')
+    : path.join(venvPath, 'bin', 'python');
+
+  const exists = fs.existsSync(pythonExe);
+  debugLog(`[SETUP] Checking Python at: ${pythonExe} - exists: ${exists}`);
+  return !exists;
+}
+
+// Create setup window for first-run installation
+function createSetupWindow() {
+  setupWindow = new BrowserWindow({
+    width: 600,
+    height: 400,
+    resizable: false,
+    frame: true,
+    icon: path.join(__dirname, '../public/icon.png'),
+    title: 'One-Click Subtitles Generator - First Run Setup',
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  });
+
+  // Create a simple HTML setup page
+  const setupHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>First Run Setup</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+          color: #fff;
+          height: 100vh;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        }
+        h1 { font-size: 24px; margin-bottom: 10px; }
+        .subtitle { opacity: 0.7; margin-bottom: 30px; }
+        .progress-container {
+          width: 100%;
+          max-width: 400px;
+          background: rgba(255,255,255,0.1);
+          border-radius: 10px;
+          overflow: hidden;
+          margin-bottom: 20px;
+        }
+        .progress-bar {
+          height: 8px;
+          background: linear-gradient(90deg, #00d4ff, #7b2ff7);
+          width: 0%;
+          transition: width 0.3s;
+          animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.7; }
+        }
+        .status {
+          font-size: 14px;
+          opacity: 0.8;
+          text-align: center;
+          max-width: 400px;
+          word-wrap: break-word;
+        }
+        .log {
+          margin-top: 20px;
+          width: 100%;
+          max-width: 500px;
+          height: 120px;
+          background: rgba(0,0,0,0.3);
+          border-radius: 8px;
+          padding: 10px;
+          font-family: monospace;
+          font-size: 11px;
+          overflow-y: auto;
+          white-space: pre-wrap;
+        }
+      </style>
+    </head>
+    <body>
+      <h1>🚀 Setting Up Python Environment</h1>
+      <p class="subtitle">This only happens once. Please wait...</p>
+      <div class="progress-container">
+        <div class="progress-bar" id="progress"></div>
+      </div>
+      <p class="status" id="status">Initializing setup...</p>
+      <div class="log" id="log"></div>
+      <script>
+        let progress = 5;
+        const progressBar = document.getElementById('progress');
+        const statusEl = document.getElementById('status');
+        const logEl = document.getElementById('log');
+        
+        // Slow progress animation
+        setInterval(() => {
+          if (progress < 90) {
+            progress += Math.random() * 0.5;
+            progressBar.style.width = progress + '%';
+          }
+        }, 500);
+        
+        window.electronAPI?.onSetupProgress?.((data) => {
+          if (data.message) {
+            statusEl.textContent = data.message;
+            logEl.textContent += data.message + '\\n';
+            logEl.scrollTop = logEl.scrollHeight;
+          }
+          if (data.progress) {
+            progress = data.progress;
+            progressBar.style.width = progress + '%';
+          }
+        });
+      </script>
+    </body>
+    </html>
+  `;
+
+  setupWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(setupHtml)}`);
+
+  setupWindow.on('closed', () => {
+    setupWindow = null;
+  });
+}
+
+// Run Python setup using the bundled setup-narration.js
+async function runPythonSetup() {
+  return new Promise((resolve, reject) => {
+    debugLog('[SETUP] Starting Python environment setup...');
+
+    // Find setup script
+    let setupScriptPath;
+    let targetVenvPath;
+
+    if (app.isPackaged) {
+      setupScriptPath = path.join(process.resourcesPath, 'setup-narration.js');
+      targetVenvPath = path.join(process.resourcesPath, 'python-venv', 'venv');
+    } else {
+      setupScriptPath = path.join(__dirname, '..', 'setup-narration.js');
+      targetVenvPath = path.join(__dirname, '..', '.venv');
+    }
+
+    debugLog(`[SETUP] Setup script: ${setupScriptPath}`);
+    debugLog(`[SETUP] Target venv: ${targetVenvPath}`);
+
+    if (!fs.existsSync(setupScriptPath)) {
+      reject(new Error(`Setup script not found: ${setupScriptPath}`));
+      return;
+    }
+
+    // Ensure target directory exists
+    const venvParent = path.dirname(targetVenvPath);
+    if (!fs.existsSync(venvParent)) {
+      fs.mkdirSync(venvParent, { recursive: true });
+    }
+
+    // Run the setup script
+    const nodeExe = process.execPath;
+    const env = {
+      ...process.env,
+      ELECTRON_RUN_AS_NODE: '1',
+      VENV_PATH: targetVenvPath,
+      QUIET: 'false'
+    };
+
+    pythonSetupProcess = spawn(nodeExe, [setupScriptPath], {
+      cwd: app.isPackaged ? process.resourcesPath : path.dirname(setupScriptPath),
+      env,
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+
+    const sendProgress = (message) => {
+      debugLog(`[SETUP] ${message}`);
+      if (setupWindow && !setupWindow.isDestroyed()) {
+        setupWindow.webContents.send('setup-progress', { message });
+      }
+    };
+
+    pythonSetupProcess.stdout.on('data', (data) => {
+      const lines = data.toString().split('\n').filter(l => l.trim());
+      lines.forEach(line => sendProgress(line));
+    });
+
+    pythonSetupProcess.stderr.on('data', (data) => {
+      const lines = data.toString().split('\n').filter(l => l.trim());
+      lines.forEach(line => sendProgress(`[stderr] ${line}`));
+    });
+
+    pythonSetupProcess.on('error', (err) => {
+      debugLog(`[SETUP] Setup process error: ${err.message}`);
+      reject(err);
+    });
+
+    pythonSetupProcess.on('close', (code) => {
+      debugLog(`[SETUP] Setup process exited with code: ${code}`);
+      pythonSetupProcess = null;
+
+      if (code === 0) {
+        sendProgress('✅ Python environment setup complete!');
+        resolve();
+      } else {
+        reject(new Error(`Setup failed with exit code ${code}`));
+      }
+    });
+  });
+}
 
 // Service configuration using unified port system
 const SERVICES = {
@@ -54,16 +281,11 @@ const SERVICES = {
   },
   VIDEO_RENDERER: {
     name: 'Remotion Video Renderer',
-    script: path.join(__dirname, '../video-renderer/server/index.js'),
+    script: path.join(__dirname, '../video-renderer/server/dist/index.js'),
     port: PORTS.VIDEO_RENDERER,
     healthCheck: '/health'
   },
-  VIDEO_RENDERER_FRONTEND: {
-    name: 'Video Renderer Frontend',
-    script: path.join(__dirname, '../video-renderer/client/server.js'),
-    port: PORTS.VIDEO_RENDERER_FRONTEND,
-    healthCheck: null
-  },
+
   NARRATION_SERVICE: {
     name: 'F5-TTS Narration Service',
     script: path.join(__dirname, '../server/narrationApp.py'),
@@ -153,10 +375,15 @@ function startPythonService(serviceConfig) {
     let workingDir;
 
     if (isPackaged) {
-      // In packaged mode, use the unpacked path
-      const appRoot = path.dirname(__dirname); // resources/app.asar
-      const relativeFromAppRoot = path.relative(appRoot, script);
-      scriptPath = path.join(process.resourcesPath, 'app.asar.unpacked', relativeFromAppRoot);
+      if (script.includes('app.asar')) {
+        // In ASAR packaged mode, use the unpacked path
+        const appRoot = path.dirname(__dirname); // resources/app.asar
+        const relativeFromAppRoot = path.relative(appRoot, script);
+        scriptPath = path.join(process.resourcesPath, 'app.asar.unpacked', relativeFromAppRoot);
+      } else {
+        // In non-ASAR packaged mode, use script path directly
+        scriptPath = script;
+      }
       workingDir = path.dirname(scriptPath);
     } else {
       // In development, use the script path as defined
@@ -196,8 +423,9 @@ function startPythonService(serviceConfig) {
         ...process.env,
         PORT: port.toString(),
         NODE_ENV: 'production',
-        START_PYTHON_SERVER: 'true',
-        DEV_SERVER_MANAGED: 'true'
+        START_PYTHON_SERVER: 'false',
+        DEV_SERVER_MANAGED: 'true',
+        ELECTRON_MANAGES_PYTHON: 'true'
       }
     });
 
@@ -274,14 +502,16 @@ function startService(serviceConfig) {
     let workingDir;
 
     if (app.isPackaged) {
-      // In production, files are inside app.asar. For Node to execute them,
-      // we need the asar path rewritten to the unpacked app directory.
-      // __dirname points into resources/app.asar/electron, so go up one
-      // level to the app root and then apply the same relative path that
-      // was used when constructing `script`.
-      const appRoot = path.dirname(__dirname); // resources/app.asar
-      const relativeFromAppRoot = path.relative(appRoot, script);
-      scriptPath = path.join(process.resourcesPath, 'app.asar.unpacked', relativeFromAppRoot);
+      if (script.includes('app.asar')) {
+        // In production with ASAR, files are inside app.asar. For Node to execute them,
+        // we need the asar path rewritten to the unpacked app directory.
+        const appRoot = path.dirname(__dirname); // resources/app.asar
+        const relativeFromAppRoot = path.relative(appRoot, script);
+        scriptPath = path.join(process.resourcesPath, 'app.asar.unpacked', relativeFromAppRoot);
+      } else {
+        // In non-ASAR packaged mode, use script path directly
+        scriptPath = script;
+      }
       workingDir = path.dirname(scriptPath);
     } else {
       // In development, use the script path as defined
@@ -301,8 +531,11 @@ function startService(serviceConfig) {
 
     // CRITICAL FIX: Use 'node' executable instead of process.execPath to avoid infinite recursion
     // process.execPath points to the Electron executable in packaged apps, causing infinite loops
-    const nodeExecutable = process.platform === 'win32' ? 'node.exe' : 'node';
-    debugLog(`[DEBUG] Spawning service '${name}' with node executable '${nodeExecutable}'`);
+    // UPDATE: Use process.execPath WITH ELECTRON_RUN_AS_NODE=1 to safely use internal Node.js
+    const nodeExecutable = process.execPath;
+    debugLog(`[DEBUG] Spawning service '${name}' with executable '${nodeExecutable}' (ELECTRON_RUN_AS_NODE=1)`);
+
+    // When running as node via electron, the first argument is treated as the script
     const childProcess = spawn(nodeExecutable, [scriptPath], {
       stdio: ['pipe', 'pipe', 'pipe'],
       cwd: workingDir,
@@ -310,9 +543,11 @@ function startService(serviceConfig) {
         ...process.env,
         PORT: port.toString(),
         NODE_ENV: 'production',
+        ELECTRON_RUN_AS_NODE: '1', // FORCE: Run as Node, not Electron app
         // Mirror dev:cuda behavior so narration + chatterbox can start
-        START_PYTHON_SERVER: 'true',
+        START_PYTHON_SERVER: 'false', // Let Electron manage python services
         DEV_SERVER_MANAGED: 'true',
+        ELECTRON_MANAGES_PYTHON: 'true',
         // Explicitly signal packaged mode for Python service detection
         ELECTRON_RUN_AS_PACKAGED: app.isPackaged ? '1' : '0',
         // Pass resources path to Node process (process.resourcesPath not available in child processes)
@@ -416,11 +651,7 @@ async function startAllServices() {
       results.videoRenderer = await startService(SERVICES.VIDEO_RENDERER);
       debugLog('✅ Video Renderer Service started');
 
-      // Give renderer server a moment before starting frontend
-      await new Promise(r => setTimeout(r, 1000));
 
-      results.videoRendererFrontend = await startService(SERVICES.VIDEO_RENDERER_FRONTEND);
-      debugLog('✅ Video Renderer Frontend started');
     } catch (error) {
       debugLog('❌ VIDEO RENDERER SERVICES FAILED: ' + error.message);
     }
@@ -480,7 +711,7 @@ async function startAllServices() {
     if (results.nodeServer) nodeServerProcess = results.nodeServer;
     if (results.websocketServer) websocketServerProcess = results.websocketServer;
     if (results.videoRenderer) videoRendererProcess = results.videoRenderer;
-    if (results.videoRendererFrontend) videoRendererFrontendProcess = results.videoRendererFrontend;
+
     if (results.promptdjMidi) promptdjMidiProcess = results.promptdjMidi;
     // Note: Python services returned as processes can be tracked here if needed for direct kill
     // but typically they are child processes of the shell or managed differently.
@@ -496,7 +727,7 @@ async function startAllServices() {
           nodeServer: !!results.nodeServer,
           websocketServer: !!results.websocketServer,
           videoRenderer: !!results.videoRenderer,
-          videoRendererFrontend: !!results.videoRendererFrontend,
+
           promptdjMidi: !!results.promptdjMidi,
           narrationService: !!results.narrationService,
           chatterboxService: !!results.chatterboxService,
@@ -539,7 +770,7 @@ function stopAllServices() {
   // Stop other services...
   if (websocketServerProcess) websocketServerProcess.kill();
   if (videoRendererProcess) videoRendererProcess.kill();
-  if (videoRendererFrontendProcess) videoRendererFrontendProcess.kill();
+
   if (promptdjMidiProcess) promptdjMidiProcess.kill();
   // Python services are handled via spawning logic, but we should kill them if we have refs
   // Note: startAllServices implementation above stores results in local scope, we need to update globals.
@@ -589,11 +820,7 @@ ipcMain.handle('get-service-status', () => {
       pid: null,
       port: PORTS.VIDEO_RENDERER
     },
-    videoRendererFrontend: {
-      running: false,
-      pid: null,
-      port: PORTS.VIDEO_RENDERER_FRONTEND
-    },
+
     promptdjMidi: {
       running: false,
       pid: null,
@@ -606,7 +833,7 @@ ipcMain.handle('get-service-status', () => {
 });
 
 // App event handlers
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   console.log('🚀 Electron app ready, creating window...');
   createWindow();
 

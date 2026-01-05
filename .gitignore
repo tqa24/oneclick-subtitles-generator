@@ -177,3 +177,7 @@ server/example-audio/vocab.txt
 =0.104.0
 bin
 electron-dist
+manual-dist-v2/
+manual-dist/
+dist-new/
+.builder-cache/

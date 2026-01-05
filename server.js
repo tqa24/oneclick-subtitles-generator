@@ -47,7 +47,7 @@ let narrationProcesses;
 // Check if we're running with npm run dev:cuda by looking at the environment variable
 const isDevCuda = process.env.START_PYTHON_SERVER === 'true';
 
-if (isDevCuda) {
+if (isDevCuda && process.env.ELECTRON_MANAGES_PYTHON !== 'true') {
   console.log('🚀 Starting narration services (F5-TTS + Chatterbox)...');
 
   try {
@@ -75,6 +75,13 @@ if (isDevCuda) {
     mainApp.set('chatterboxServiceRunning', false);
     mainApp.set('chatterboxActualPort', null);
   }
+} else if (process.env.ELECTRON_MANAGES_PYTHON === 'true') {
+  console.log('ℹ️  Python services managed by Electron parent process.');
+  // Set the services as running since Electron started them
+  mainApp.set('narrationServiceRunning', true);
+  mainApp.set('narrationActualPort', NARRATION_PORT);
+  mainApp.set('chatterboxServiceRunning', true);
+  mainApp.set('chatterboxActualPort', CHATTERBOX_PORT);
 } else {
   console.log('ℹ️  Running without narration services (use npm run dev:cuda for full functionality)');
 
