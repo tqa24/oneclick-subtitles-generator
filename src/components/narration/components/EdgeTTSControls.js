@@ -44,13 +44,23 @@ const EdgeTTSControls = ({
       try {
         setLoading(true);
         const response = await fetch(`${SERVER_URL}/api/narration/edge-tts/voices`);
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
         setVoices(data.voices || []);
+
+        // Show warning if using cached or fallback voices
+        if (data.warning) {
+          console.warn('[Edge TTS] Voice list warning:', data.warning);
+          if (data.fallback) {
+            window.addToast('Using limited voice list (API unavailable)', 'warning', 5000);
+          } else if (data.cached) {
+            window.addToast('Using cached voice list', 'info', 3000);
+          }
+        }
 
         // Auto-select voice based on detected language
         if (!selectedVoice && data.voices && data.voices.length > 0) {
@@ -152,14 +162,14 @@ const EdgeTTSControls = ({
                 {(detectedLanguage?.languageCode && selectedVoiceDetails &&
                   !(selectedVoiceDetails.language === detectedLanguage.languageCode ||
                     (selectedVoiceDetails.locale || '').startsWith(detectedLanguage.languageCode + '-'))
-                 ) && (
-                  <span
-                    className="tab-badge"
-                    role="status"
-                    aria-label={t('narration.mismatchBadge', 'Selected voice language differs from detected language')}
-                    title={t('narration.mismatchBadge', 'Selected voice language differs from detected language')}
-                  />
-                )}
+                ) && (
+                    <span
+                      className="tab-badge"
+                      role="status"
+                      aria-label={t('narration.mismatchBadge', 'Selected voice language differs from detected language')}
+                      title={t('narration.mismatchBadge', 'Selected voice language differs from detected language')}
+                    />
+                  )}
                 <span className="model-dropdown-label">{t('narration.voiceLabel', 'Giọng thuyết minh')}:</span>
                 <span className="model-dropdown-selected">
                   <span className="model-name">

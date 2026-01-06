@@ -13,9 +13,77 @@ const { cleanupOldSubtitleDirectories } = require('./narration/directoryManager'
 // Check if we're in the project directory and have .venv
 const projectRoot = process.cwd();
 const venvPath = path.join(projectRoot, '.venv');
-const pythonExecutable = process.platform === 'win32' 
+const pythonExecutable = process.platform === 'win32'
   ? path.join(venvPath, 'Scripts', 'python.exe')
   : path.join(venvPath, 'bin', 'python');
+
+// Cache file for voices (to use when API fails)
+const voicesCacheFile = path.join(os.tmpdir(), 'edge_tts_voices_cache.json');
+
+// Fallback voices list (common voices for when API is unavailable)
+const FALLBACK_VOICES = [
+  { name: 'Microsoft Server Speech Text to Speech Voice (en-US, AriaNeural)', short_name: 'en-US-AriaNeural', gender: 'Female', locale: 'en-US', language: 'en', display_name: 'Aria (en-US)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (en-US, GuyNeural)', short_name: 'en-US-GuyNeural', gender: 'Male', locale: 'en-US', language: 'en', display_name: 'Guy (en-US)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (en-US, JennyNeural)', short_name: 'en-US-JennyNeural', gender: 'Female', locale: 'en-US', language: 'en', display_name: 'Jenny (en-US)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (en-GB, SoniaNeural)', short_name: 'en-GB-SoniaNeural', gender: 'Female', locale: 'en-GB', language: 'en', display_name: 'Sonia (en-GB)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (vi-VN, HoaiMyNeural)', short_name: 'vi-VN-HoaiMyNeural', gender: 'Female', locale: 'vi-VN', language: 'vi', display_name: 'Hoài My (vi-VN)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (vi-VN, NamMinhNeural)', short_name: 'vi-VN-NamMinhNeural', gender: 'Male', locale: 'vi-VN', language: 'vi', display_name: 'Nam Minh (vi-VN)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (ko-KR, SunHiNeural)', short_name: 'ko-KR-SunHiNeural', gender: 'Female', locale: 'ko-KR', language: 'ko', display_name: 'Sun-Hi (ko-KR)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (ko-KR, InJoonNeural)', short_name: 'ko-KR-InJoonNeural', gender: 'Male', locale: 'ko-KR', language: 'ko', display_name: 'InJoon (ko-KR)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (ja-JP, NanamiNeural)', short_name: 'ja-JP-NanamiNeural', gender: 'Female', locale: 'ja-JP', language: 'ja', display_name: 'Nanami (ja-JP)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (ja-JP, KeitaNeural)', short_name: 'ja-JP-KeitaNeural', gender: 'Male', locale: 'ja-JP', language: 'ja', display_name: 'Keita (ja-JP)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (zh-CN, XiaoxiaoNeural)', short_name: 'zh-CN-XiaoxiaoNeural', gender: 'Female', locale: 'zh-CN', language: 'zh', display_name: 'Xiaoxiao (zh-CN)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (zh-CN, YunxiNeural)', short_name: 'zh-CN-YunxiNeural', gender: 'Male', locale: 'zh-CN', language: 'zh', display_name: 'Yunxi (zh-CN)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (es-ES, ElviraNeural)', short_name: 'es-ES-ElviraNeural', gender: 'Female', locale: 'es-ES', language: 'es', display_name: 'Elvira (es-ES)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (es-ES, AlvaroNeural)', short_name: 'es-ES-AlvaroNeural', gender: 'Male', locale: 'es-ES', language: 'es', display_name: 'Alvaro (es-ES)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (fr-FR, DeniseNeural)', short_name: 'fr-FR-DeniseNeural', gender: 'Female', locale: 'fr-FR', language: 'fr', display_name: 'Denise (fr-FR)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (fr-FR, HenriNeural)', short_name: 'fr-FR-HenriNeural', gender: 'Male', locale: 'fr-FR', language: 'fr', display_name: 'Henri (fr-FR)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (de-DE, KatjaNeural)', short_name: 'de-DE-KatjaNeural', gender: 'Female', locale: 'de-DE', language: 'de', display_name: 'Katja (de-DE)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (de-DE, ConradNeural)', short_name: 'de-DE-ConradNeural', gender: 'Male', locale: 'de-DE', language: 'de', display_name: 'Conrad (de-DE)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (pt-BR, FranciscaNeural)', short_name: 'pt-BR-FranciscaNeural', gender: 'Female', locale: 'pt-BR', language: 'pt', display_name: 'Francisca (pt-BR)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (pt-BR, AntonioNeural)', short_name: 'pt-BR-AntonioNeural', gender: 'Male', locale: 'pt-BR', language: 'pt', display_name: 'Antonio (pt-BR)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (ru-RU, SvetlanaNeural)', short_name: 'ru-RU-SvetlanaNeural', gender: 'Female', locale: 'ru-RU', language: 'ru', display_name: 'Svetlana (ru-RU)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (ru-RU, DmitryNeural)', short_name: 'ru-RU-DmitryNeural', gender: 'Male', locale: 'ru-RU', language: 'ru', display_name: 'Dmitry (ru-RU)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (ar-SA, ZariyahNeural)', short_name: 'ar-SA-ZariyahNeural', gender: 'Female', locale: 'ar-SA', language: 'ar', display_name: 'Zariyah (ar-SA)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (ar-SA, HamedNeural)', short_name: 'ar-SA-HamedNeural', gender: 'Male', locale: 'ar-SA', language: 'ar', display_name: 'Hamed (ar-SA)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (hi-IN, SwaraNeural)', short_name: 'hi-IN-SwaraNeural', gender: 'Female', locale: 'hi-IN', language: 'hi', display_name: 'Swara (hi-IN)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (hi-IN, MadhurNeural)', short_name: 'hi-IN-MadhurNeural', gender: 'Male', locale: 'hi-IN', language: 'hi', display_name: 'Madhur (hi-IN)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (th-TH, PremwadeeNeural)', short_name: 'th-TH-PremwadeeNeural', gender: 'Female', locale: 'th-TH', language: 'th', display_name: 'Premwadee (th-TH)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (th-TH, NiwatNeural)', short_name: 'th-TH-NiwatNeural', gender: 'Male', locale: 'th-TH', language: 'th', display_name: 'Niwat (th-TH)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (id-ID, GadisNeural)', short_name: 'id-ID-GadisNeural', gender: 'Female', locale: 'id-ID', language: 'id', display_name: 'Gadis (id-ID)' },
+  { name: 'Microsoft Server Speech Text to Speech Voice (id-ID, ArdiNeural)', short_name: 'id-ID-ArdiNeural', gender: 'Male', locale: 'id-ID', language: 'id', display_name: 'Ardi (id-ID)' },
+];
+
+/**
+ * Load cached voices from file
+ */
+const loadCachedVoices = () => {
+  try {
+    if (fs.existsSync(voicesCacheFile)) {
+      const cached = JSON.parse(fs.readFileSync(voicesCacheFile, 'utf-8'));
+      if (cached.voices && cached.voices.length > 0) {
+        console.log(`[Edge TTS] Loaded ${cached.voices.length} voices from cache`);
+        return cached.voices;
+      }
+    }
+  } catch (e) {
+    console.warn('[Edge TTS] Failed to load cached voices:', e.message);
+  }
+  return null;
+};
+
+/**
+ * Save voices to cache file
+ */
+const saveCachedVoices = (voices) => {
+  try {
+    fs.writeFileSync(voicesCacheFile, JSON.stringify({ voices, timestamp: Date.now() }), 'utf-8');
+    console.log(`[Edge TTS] Saved ${voices.length} voices to cache`);
+  } catch (e) {
+    console.warn('[Edge TTS] Failed to save voices cache:', e.message);
+  }
+};
+
 
 /**
  * Get available Edge TTS voices
@@ -28,32 +96,44 @@ const getVoices = async (req, res) => {
 import asyncio
 import json
 import sys
+import ssl
+import aiohttp
 
 try:
     import edge_tts
     
     async def get_voices():
-        voices = await edge_tts.list_voices()
-        formatted_voices = []
-        for voice in voices:
-            formatted_voices.append({
-                'name': voice['Name'],
-                'short_name': voice['ShortName'],
-                'gender': voice['Gender'],
-                'locale': voice['Locale'],
-                'language': voice['Locale'].split('-')[0],
-                'display_name': f"{voice['DisplayName']} ({voice['Locale']})"
-            })
-        return formatted_voices
+        try:
+            voices = await edge_tts.list_voices()
+            formatted_voices = []
+            for voice in voices:
+                # Use .get() for safety - API structure may vary between versions
+                # FriendlyName is the new key (was DisplayName in older versions)
+                display_name = voice.get('FriendlyName') or voice.get('DisplayName') or voice.get('ShortName', 'Unknown')
+                locale = voice.get('Locale', 'en-US')
+                formatted_voices.append({
+                    'name': voice.get('Name', ''),
+                    'short_name': voice.get('ShortName', ''),
+                    'gender': voice.get('Gender', 'Unknown'),
+                    'locale': locale,
+                    'language': locale.split('-')[0] if locale else 'en',
+                    'display_name': f"{display_name} ({locale})"
+                })
+            return formatted_voices
+        except aiohttp.ClientError as e:
+            raise Exception(f"Network error fetching voices: {str(e)}")
+        except ssl.SSLError as e:
+            raise Exception(f"SSL error fetching voices: {str(e)}")
     
     voices = asyncio.run(get_voices())
     print(json.dumps({'voices': voices}))
     
-except ImportError:
-    print(json.dumps({'error': 'edge-tts library not available'}))
+except ImportError as e:
+    print(json.dumps({'error': f'edge-tts library not available: {str(e)}'}))
     sys.exit(1)
 except Exception as e:
-    print(json.dumps({'error': str(e)}))
+    import traceback
+    print(json.dumps({'error': str(e), 'traceback': traceback.format_exc()}))
     sys.exit(1)
 `;
 
@@ -85,18 +165,64 @@ except Exception as e:
 
       if (code !== 0) {
         console.error('Edge TTS voices error:', stderr);
-        return res.status(500).json({ error: 'Failed to get Edge TTS voices' });
+        console.error('Edge TTS voices stdout:', stdout);
+        console.error('Edge TTS voices exit code:', code);
+        console.error('Edge TTS Python executable:', pythonExecutable);
+        console.error('Edge TTS Python exists:', fs.existsSync(pythonExecutable));
+
+        // Try to parse error from stdout if available
+        let errorMessage = 'Failed to get Edge TTS voices';
+        try {
+          const errorData = JSON.parse(stdout);
+          if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+          if (errorData.traceback) {
+            console.error('Edge TTS Python traceback:', errorData.traceback);
+          }
+        } catch (e) {
+          // stdout was not valid JSON
+        }
+
+        // Try to use cached voices first, then fallback
+        const cachedVoices = loadCachedVoices();
+        if (cachedVoices) {
+          console.log('[Edge TTS] Using cached voices due to API failure');
+          return res.json({ voices: cachedVoices, cached: true, warning: errorMessage });
+        }
+
+        console.log('[Edge TTS] Using fallback voices due to API failure');
+        return res.json({ voices: FALLBACK_VOICES, fallback: true, warning: errorMessage });
       }
 
       try {
         const result = JSON.parse(stdout);
         if (result.error) {
-          return res.status(503).json(result);
+          // API returned an error - try cache/fallback
+          const cachedVoices = loadCachedVoices();
+          if (cachedVoices) {
+            console.log('[Edge TTS] Using cached voices due to API error:', result.error);
+            return res.json({ voices: cachedVoices, cached: true, warning: result.error });
+          }
+          console.log('[Edge TTS] Using fallback voices due to API error:', result.error);
+          return res.json({ voices: FALLBACK_VOICES, fallback: true, warning: result.error });
         }
+
+        // Success - cache the voices for future use
+        if (result.voices && result.voices.length > 0) {
+          saveCachedVoices(result.voices);
+        }
+
         res.json(result);
       } catch (parseError) {
         console.error('Failed to parse voices response:', parseError);
-        res.status(500).json({ error: 'Failed to parse voices response' });
+
+        // Try cache/fallback on parse error too
+        const cachedVoices = loadCachedVoices();
+        if (cachedVoices) {
+          return res.json({ voices: cachedVoices, cached: true, warning: 'Failed to parse API response' });
+        }
+        res.json({ voices: FALLBACK_VOICES, fallback: true, warning: 'Failed to parse API response' });
       }
     });
 
@@ -164,7 +290,7 @@ const generateNarration = async (req, res) => {
       console.log(`[Edge TTS] Text: "${subtitle.text}"`);
       console.log(`[Edge TTS] ID: ${subtitle.id || i}`);
       console.log(`[Edge TTS] Voice settings: ${voice}, Rate: ${rate}, Volume: ${volume}, Pitch: ${pitch}`);
-    console.log(`[Edge TTS] Voice type: ${typeof voice}, Voice length: ${voice.length}`);
+      console.log(`[Edge TTS] Voice type: ${typeof voice}, Voice length: ${voice.length}`);
 
       try {
         // Create temporary Python script for this subtitle
