@@ -1,0 +1,1 @@
+Get-Process | Where-Object { $_.Path -like "*subtitles*" -or $_.Name -like "*One-Click*" } | Stop-Process -Force -ErrorAction SilentlyContinue; Remove-Item dist-new -Recurse -Force -ErrorAction SilentlyContinue; npm run dist:win
