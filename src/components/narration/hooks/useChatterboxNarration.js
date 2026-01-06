@@ -1,6 +1,8 @@
 import { useState, useCallback } from 'react';
 import { generateChatterboxSpeech, checkChatterboxAvailability, isChatterboxServiceInitialized } from '../../../services/chatterboxService';
 import { SERVER_URL } from '../../../config';
+import { deriveSubtitleId } from '../../../utils/subtitle/idUtils';
+
 
 // Import cleanup function
 const cleanupOldSubtitleDirectories = async (groupedSubtitles) => {
@@ -235,6 +237,7 @@ const useChatterboxNarration = ({
       const sendAdvanced = /^en/i.test(chatterboxLanguage || '');
       const exArg = sendAdvanced ? exaggeration : undefined;
       const cfgArg = sendAdvanced ? cfgWeight : undefined;
+      const subtitleId = deriveSubtitleId(subtitle, index);
       const audioBlob = await generateChatterboxSpeech(
         subtitle.text,
         chatterboxLanguage,
@@ -245,10 +248,10 @@ const useChatterboxNarration = ({
       );
 
       // Save audio blob to server and get filename
-      const filename = await saveAudioBlobToServer(audioBlob, subtitle.id || index);
+      const filename = await saveAudioBlobToServer(audioBlob, subtitleId);
 
       return {
-        subtitle_id: subtitle.id || index,
+        subtitle_id: subtitleId,
         text: subtitle.text,
         start_time: subtitle.start,
         end_time: subtitle.end,
@@ -260,7 +263,7 @@ const useChatterboxNarration = ({
       console.error(`Error generating narration for subtitle ${index}:`, error);
 
       return {
-        subtitle_id: subtitle.id || index,
+        subtitle_id: deriveSubtitleId(subtitle, index),
         text: subtitle.text,
         start_time: subtitle.start,
         end_time: subtitle.end,
@@ -469,7 +472,7 @@ const useChatterboxNarration = ({
       }
 
       const selectedSubtitles = getSelectedSubtitles();
-      const subtitle = selectedSubtitles.find((s, idx) => (s.id ?? s.subtitle_id ?? (idx + 1)) === subtitleId);
+      const subtitle = selectedSubtitles.find((s, idx) => deriveSubtitleId(s, idx) === subtitleId);
 
       if (!subtitle) {
         throw new Error('Subtitle not found for retry');
@@ -583,7 +586,7 @@ const useChatterboxNarration = ({
 
       // Get pending subtitle IDs
       const pendingSubtitleIds = trueSubtitles
-        .map(subtitle => subtitle.id ?? subtitle.subtitle_id ?? trueSubtitles.indexOf(subtitle))
+        .map((subtitle, index) => deriveSubtitleId(subtitle, index))
         .filter(id => !completedIds.has(id));
 
       if (pendingSubtitleIds.length === 0) {

@@ -7,6 +7,8 @@ import {
 } from '../../../services/gemini/geminiNarrationService';
 import { groupSubtitlesForNarration } from '../../../services/gemini/subtitleGroupingService';
 import { retryFailedGeminiNarrations as retryFailedGeminiNarrationsUtil } from '../utils/geminiRetryUtils';
+import { deriveSubtitleId } from '../../../utils/subtitle/idUtils';
+
 
 // Cleanup function for grouped subtitles
 const cleanupOldSubtitleDirectories = async (groupedSubtitles) => {
@@ -183,7 +185,7 @@ const useGeminiNarration = ({
       // Prepare subtitles with IDs for tracking
       const subtitlesWithIds = subtitlesToUse.map((subtitle, index) => ({
         ...subtitle,
-        id: subtitle.id || index + 1
+        id: deriveSubtitleId(subtitle, index)
       }));
 
       // Initialize generationResults with placeholder objects for all subtitles
@@ -455,7 +457,7 @@ const useGeminiNarration = ({
 
     // Find the subtitle with the given ID
     const subtitleToRetry = selectedSubtitles.find((subtitle, idx) =>
-      (subtitle.id ?? subtitle.subtitle_id ?? (idx + 1)) === subtitleId
+      deriveSubtitleId(subtitle, idx) === subtitleId
     );
 
     if (!subtitleToRetry) {

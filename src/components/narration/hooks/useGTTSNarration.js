@@ -1,5 +1,7 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import { SERVER_URL } from '../../../config';
+import { deriveSubtitleId } from '../../../utils/subtitle/idUtils';
+
 
 /**
  * Custom hook for gTTS narration generation
@@ -94,7 +96,7 @@ const useGTTSNarration = ({
       setIsGenerating(true);
       setError('');
       setGenerationResults([]);
-      
+
       const controller = new AbortController();
       setAbortController(controller);
 
@@ -104,8 +106,14 @@ const useGTTSNarration = ({
         slow: slow || false
       };
 
+      // Ensure subtitles have derived IDs before sending to server
+      const processedSubtitles = subtitlesToProcess.map((sub, idx) => ({
+        ...sub,
+        id: deriveSubtitleId(sub, idx)
+      }));
+
       const requestBody = {
-        subtitles: subtitlesToProcess,
+        subtitles: processedSubtitles,
         settings: settings
       };
 
@@ -139,7 +147,7 @@ const useGTTSNarration = ({
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
-              
+
               if (data.status === 'started') {
                 setGenerationStatus(t('narration.gttsGeneratingProgress', 'Generating {{current}} of {{total}} narrations with gTTS...', {
                   current: 1,
@@ -285,8 +293,8 @@ const useGTTSNarration = ({
    */
   const retryGTTSNarration = useCallback(async (subtitleId) => {
     const subtitlesToProcess = getSubtitlesForGeneration();
-    const subtitle = subtitlesToProcess.find((sub, idx) => (sub.id ?? sub.subtitle_id ?? (idx + 1)) === subtitleId);
-    
+    const subtitle = subtitlesToProcess.find((sub, idx) => deriveSubtitleId(sub, idx) === subtitleId);
+
     if (!subtitle) {
       setError(t('narration.subtitleNotFoundError', 'Subtitle not found for retry.'));
       return;
@@ -299,7 +307,7 @@ const useGTTSNarration = ({
 
     try {
       setRetryingSubtitleId(subtitleId);
-      
+
       const settings = {
         lang: selectedLanguage,
         tld: tld || 'com',
@@ -307,7 +315,10 @@ const useGTTSNarration = ({
       };
 
       const requestBody = {
-        subtitles: [subtitle],
+        subtitles: [{
+          ...subtitle,
+          id: subtitleId // Use the ID expected by the server
+        }],
         settings: settings
       };
 
@@ -337,7 +348,7 @@ const useGTTSNarration = ({
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
-              
+
               if (data.status === 'completed' && data.results?.length > 0) {
                 const newResult = {
                   ...data.results[0],
@@ -386,14 +397,14 @@ const useGTTSNarration = ({
    */
   const retryFailedGTTSNarrations = useCallback(async () => {
     const failedResults = generationResults.filter(result => !result.success && !result.pending);
-    
+
     if (failedResults.length === 0) {
       return;
     }
 
     const subtitlesToProcess = getSubtitlesForGeneration();
     const failedSubtitles = failedResults.map(result =>
-      subtitlesToProcess.find(sub => (sub.id ?? subtitlesToProcess.indexOf(sub)) === result.subtitle_id)
+      subtitlesToProcess.find((sub, idx) => deriveSubtitleId(sub, idx) === result.subtitle_id)
     ).filter(Boolean);
 
     if (failedSubtitles.length === 0) {
@@ -412,7 +423,13 @@ const useGTTSNarration = ({
       };
 
       const requestBody = {
-        subtitles: failedSubtitles,
+        subtitles: failedSubtitles.map(sub => {
+          const originalIdx = subtitlesToProcess.indexOf(sub);
+          return {
+            ...sub,
+            id: deriveSubtitleId(sub, originalIdx)
+          };
+        }),
         settings: settings
       };
 
@@ -444,7 +461,7 @@ const useGTTSNarration = ({
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
-              
+
               if (data.status === 'progress' && data.result) {
                 // Update the specific result in the generation results
                 const processedResult = {

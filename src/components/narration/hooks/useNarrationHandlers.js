@@ -12,6 +12,8 @@ import {
 } from '../../../services/narrationService';
 import { isModelAvailable } from '../../../services/modelAvailabilityService';
 import ISO6391 from 'iso-639-1';
+import { deriveSubtitleId } from '../../../utils/subtitle/idUtils';
+
 
 /**
  * Create a React-based loading overlay with LoadingIndicator component
@@ -765,7 +767,7 @@ const useNarrationHandlers = ({
       // Prepare subtitles with IDs for tracking
       const subtitlesWithIds = selectedSubtitles.map((subtitle, index) => ({
         ...subtitle,
-        id: subtitle.id || index + 1
+        id: deriveSubtitleId(subtitle, index)
       }));
 
       // Update state immediately if we're generating grouped subtitles
@@ -1370,8 +1372,8 @@ const useNarrationHandlers = ({
     }
 
     // Find the subtitle with the given ID
-    const subtitleToRetry = selectedSubtitles.find(subtitle =>
-      (subtitle.id || subtitle.index) === subtitleId
+    const subtitleToRetry = selectedSubtitles.find((subtitle, index) =>
+      deriveSubtitleId(subtitle, index) === subtitleId
     );
 
     if (!subtitleToRetry) {
@@ -1399,7 +1401,7 @@ const useNarrationHandlers = ({
       // Prepare subtitle with ID for tracking
       const subtitleWithId = {
         ...subtitleToRetry,
-        id: subtitleToRetry.id || subtitleToRetry.index || subtitleId,
+        id: subtitleId, // Use the derived ID which is what's passed in
         // Add a flag to force regeneration of aligned narration
         forceRegenerate: true
       };
@@ -1622,8 +1624,8 @@ const useNarrationHandlers = ({
       const subtitleId = failedNarration.subtitle_id;
 
       // Find the subtitle with the given ID
-      const subtitleToRetry = selectedSubtitles.find(subtitle =>
-        (subtitle.id || subtitle.index) === subtitleId
+      const subtitleToRetry = selectedSubtitles.find((subtitle, index) =>
+        deriveSubtitleId(subtitle, index) === subtitleId
       );
 
       if (!subtitleToRetry) {
