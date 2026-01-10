@@ -619,7 +619,7 @@ except Exception as e:
             'gtts'       // Google Text-to-Speech
         ];
 
-        const depsCmd = `uv pip install --python ${VENV_DIR} ${coreDeps.join(' ')}`;
+        const depsCmd = `uv pip install --python ${VENV_DIR} ${coreDeps.map(d => `"${d}"`).join(' ')}`;
         logger.command(depsCmd);
         const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
         execSync(depsCmd, { stdio: 'inherit', env });
