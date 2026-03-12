@@ -3,6 +3,7 @@ import uuid
 import logging
 import json
 import time
+import contextlib
 import torch
 import gc
 import re
@@ -244,7 +245,11 @@ def generate_narration():
                         # Use the loaded model instance
                         # Ensure device context if needed (though F5TTS internal handling might suffice)
                         from .narration_config import device
-                        context_manager = torch.cuda.device(device) if device.startswith("cuda") and torch.cuda.is_available() else torch.device(device)
+                        context_manager = (
+                            torch.cuda.device(device)
+                            if device.startswith("cuda") and torch.cuda.is_available()
+                            else contextlib.nullcontext()
+                        )
                         with context_manager:
                              tts_model_instance.infer(**log_params)
 

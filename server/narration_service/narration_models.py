@@ -1,7 +1,7 @@
 import logging
 from flask import Blueprint, request, jsonify
 from urllib.parse import unquote
-from .narration_config import HAS_F5TTS, INIT_ERROR, device
+from .narration_config import HAS_F5TTS, INIT_ERROR, device, CUDA_RUNTIME_INFO
 from .narration_gemini import get_gemini_api_key
 from model_manager import (
     get_models, get_active_model, set_active_model, add_model, delete_model,
@@ -21,7 +21,7 @@ def get_status():
     """Check if F5-TTS is available and other system status"""
     runtime_device = device
     runtime_cuda_available = False
-    gpu_info = {'cuda_available': False}
+    gpu_info = dict(CUDA_RUNTIME_INFO)
 
     if HAS_F5TTS:
         # Perform runtime CUDA check as it might change (e.g., driver issues)
@@ -31,16 +31,17 @@ def get_status():
             if device == "cuda:0" and not runtime_cuda_available:
                 logger.warning("Runtime Check: CUDA was previously detected but is now unavailable!")
                 runtime_device = "cuda_error" # Indicate discrepancy
-            elif runtime_cuda_available and device != "cuda:0":
+            elif runtime_cuda_available and device != "cuda:0" and CUDA_RUNTIME_INFO.get('arch_compatible', False):
                  logger.warning(f"Runtime Check: CUDA is available but service is configured for {device}. Check initialization.")
                  # Don't change runtime_device here, reflect configured state unless error
 
-            if runtime_cuda_available:
+            if runtime_cuda_available and CUDA_RUNTIME_INFO.get('arch_compatible', False):
                 gpu_info['cuda_available'] = True
                 current_dev_index = torch.cuda.current_device()
                 gpu_info['device_name'] = torch.cuda.get_device_name(current_dev_index)
                 gpu_info['device_count'] = torch.cuda.device_count()
                 gpu_info['current_device_index'] = current_dev_index
+                gpu_info['device_capability'] = torch.cuda.get_device_capability(current_dev_index)
                 try:
                     # Report memory for the current device F5TTS is likely using
                     gpu_info['memory_allocated'] = f"{torch.cuda.memory_allocated(current_dev_index) / 1024**2:.2f} MB"

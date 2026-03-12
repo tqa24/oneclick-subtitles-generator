@@ -44,31 +44,91 @@ os.makedirs(OUTPUT_AUDIO_DIR, exist_ok=True)
 HAS_F5TTS = False
 INIT_ERROR = None
 device = None
+CUDA_RUNTIME_INFO = {
+    "cuda_available": False,
+    "selected_device": "cpu",
+    "device_name": None,
+    "device_capability": None,
+    "device_arch": None,
+    "supported_arches": [],
+    "arch_compatible": False,
+    "reason": None,
+}
+
+
+def _capability_to_arch(capability):
+    """Convert a CUDA capability tuple like (12, 0) to 'sm_120'."""
+    major, minor = capability
+    return f"sm_{major}{minor}"
+
+
+def _arch_list_supports_device(arch_list, device_arch):
+    return any(arch == device_arch or arch.startswith(device_arch) for arch in arch_list)
+
+
+def _detect_best_torch_device():
+    info = {
+        "cuda_available": False,
+        "selected_device": "cpu",
+        "device_name": None,
+        "device_capability": None,
+        "device_arch": None,
+        "supported_arches": [],
+        "arch_compatible": False,
+        "reason": None,
+    }
+
+    if not torch.cuda.is_available():
+        info["reason"] = "CUDA not available"
+        return "cpu", info
+
+    info["cuda_available"] = True
+
+    try:
+        if torch.cuda.device_count() > 1:
+            torch.cuda.set_device(0)
+
+        device_index = 0
+        device_name = torch.cuda.get_device_name(device_index)
+        capability = torch.cuda.get_device_capability(device_index)
+        device_arch = _capability_to_arch(capability)
+        supported_arches = list(getattr(torch.cuda, "get_arch_list", lambda: [])())
+
+        info.update({
+            "device_name": device_name,
+            "device_capability": capability,
+            "device_arch": device_arch,
+            "supported_arches": supported_arches,
+        })
+
+        if supported_arches and not _arch_list_supports_device(supported_arches, device_arch):
+            info["reason"] = (
+                f"Installed PyTorch CUDA kernels support {', '.join(supported_arches)}, "
+                f"but detected GPU '{device_name}' requires {device_arch}."
+            )
+            return "cpu", info
+
+        selected_device = "cuda:0"
+        _ = torch.tensor([1.0, 2.0], device=selected_device)
+        info["arch_compatible"] = True
+        info["selected_device"] = selected_device
+        return selected_device, info
+    except Exception as e:
+        info["reason"] = f"CUDA available but failed to initialize/use: {e}"
+        return "cpu", info
 
 # --- F5-TTS Initialization ---
 try:
-    # Check if CUDA is available
-    cuda_available = torch.cuda.is_available()
-
-
-    if cuda_available:
-        try:
-            # Explicitly set to device 0 if multiple GPUs exist
-            if torch.cuda.device_count() > 1:
-                torch.cuda.set_device(0)
-
-            device = "cuda:0"
-
-            # Small test allocation to confirm CUDA is working
-            _ = torch.tensor([1.0, 2.0]).to(device)
-
-        except Exception as e:
-            logger.error(f"CUDA available but failed to initialize/use: {e}. Falling back to CPU.", exc_info=True)
-            device = "cpu"
-            cuda_available = False # Update flag
+    device, CUDA_RUNTIME_INFO = _detect_best_torch_device()
+    if device.startswith("cuda"):
+        logger.info(
+            f"Using CUDA device {device} ({CUDA_RUNTIME_INFO['device_name']}, "
+            f"{CUDA_RUNTIME_INFO['device_arch']}) for narration."
+        )
     else:
-        logger.warning("CUDA not available, using CPU.")
-        device = "cpu"
+        logger.warning(
+            f"Using CPU for narration. {CUDA_RUNTIME_INFO['reason'] or 'CUDA is not available.'}"
+        )
 
 
 

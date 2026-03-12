@@ -27,6 +27,45 @@ const F5_TTS_REPO_URL = 'https://github.com/SWivid/F5-TTS.git';
 const F5_TTS_REF = process.env.F5_TTS_REF || '1.1.17'; // Pin to a known-good release; override explicitly if needed
 const NARRATION_CONSTRAINTS_FILE = path.join(__dirname, 'narration-constraints.txt');
 const NARRATION_COMPAT_PACKAGE_SPECS = ['protobuf>=4.25.8,<7'];
+const BLACKWELL_GPU_REGEX = /\b(BLACKWELL|RTX 5090|RTX 5080|RTX 5070|RTX 5060|RTX 5050)\b/i;
+const TORCH_PROFILES = {
+    NVIDIA_CU121: {
+        id: 'nvidia-cu121',
+        torch: '2.5.1+cu121',
+        torchvision: '0.20.1+cu121',
+        torchaudio: '2.5.1+cu121',
+        expectedTorch: '2.5.1',
+        expectedTorchvision: '0.20.1',
+        indexUrl: 'https://download.pytorch.org/whl/cu121',
+        description: 'PyTorch 2.5.1 with CUDA 12.1',
+        installNotes: 'Ensure NVIDIA drivers compatible with CUDA 12.1+ are installed. Using PyTorch 2.5.1 for current F5-TTS and Chatterbox compatibility.',
+        compatibilityPackages: [],
+    },
+    NVIDIA_BLACKWELL_CU128: {
+        id: 'nvidia-blackwell-cu128',
+        torch: '2.7.1+cu128',
+        torchvision: '0.22.1+cu128',
+        torchaudio: '2.7.1+cu128',
+        expectedTorch: '2.7.1',
+        expectedTorchvision: '0.22.1',
+        indexUrl: 'https://download.pytorch.org/whl/cu128',
+        description: 'PyTorch 2.7.1 with CUDA 12.8 for NVIDIA Blackwell GPUs',
+        installNotes: 'Detected a Blackwell-class NVIDIA GPU. Installing the CUDA 12.8 PyTorch build so kernels for sm_120 GPUs are available.',
+        compatibilityPackages: ['numpy==1.25.2', 'pillow==11.3.0'],
+    },
+    CPU_GENERIC: {
+        id: 'cpu-generic',
+        torch: '2.5.1',
+        torchvision: '0.20.1',
+        torchaudio: '2.5.1',
+        expectedTorch: '2.5.1',
+        expectedTorchvision: '0.20.1',
+        indexUrl: null,
+        description: 'PyTorch 2.5.1 CPU/MPS/XPU-compatible build',
+        installNotes: 'Installed PyTorch 2.5.1 without CUDA-specific wheels for broad compatibility.',
+        compatibilityPackages: [],
+    },
+};
 
 function getNarrationConstraintsArg() {
     return fs.existsSync(NARRATION_CONSTRAINTS_FILE)
@@ -36,6 +75,60 @@ function getNarrationConstraintsArg() {
 
 function quotePackageSpecs(specs) {
     return specs.map(spec => `"${spec}"`).join(' ');
+}
+
+function buildTorchInstallCommand(profile, includePython = false) {
+    const pythonArg = includePython ? ` --python ${VENV_DIR}` : '';
+    const indexArg = profile.indexUrl ? ` --index-url ${profile.indexUrl}` : '';
+    return `uv pip install${pythonArg} torch==${profile.torch} torchvision==${profile.torchvision} torchaudio==${profile.torchaudio}${indexArg} --force-reinstall`;
+}
+
+function buildTorchIndexArgs(profile) {
+    return profile.indexUrl
+        ? `--index-url ${profile.indexUrl} --extra-index-url https://pypi.org/simple`
+        : '';
+}
+
+function installTorchCompatibilityPackages(profile) {
+    if (!profile.compatibilityPackages || profile.compatibilityPackages.length === 0) {
+        return;
+    }
+
+    const compatibilityCmd = `uv pip install --python ${VENV_DIR} ${profile.compatibilityPackages.map(pkg => `"${pkg}"`).join(' ')}`;
+    logger.progress(`Installing compatibility packages for ${profile.description}`);
+    logger.command(compatibilityCmd);
+    execSync(compatibilityCmd, { stdio: 'inherit' });
+}
+
+function detectNvidiaTorchProfile() {
+    const forcedTorchProfile = process.env.FORCE_TORCH_PROFILE?.toUpperCase();
+    if (forcedTorchProfile === 'BLACKWELL') {
+        logger.info('User override detected: FORCE_TORCH_PROFILE=BLACKWELL');
+        return TORCH_PROFILES.NVIDIA_BLACKWELL_CU128;
+    }
+    if (forcedTorchProfile === 'DEFAULT') {
+        logger.info('User override detected: FORCE_TORCH_PROFILE=DEFAULT');
+        return TORCH_PROFILES.NVIDIA_CU121;
+    }
+
+    if (!commandExists('nvidia-smi')) {
+        return TORCH_PROFILES.NVIDIA_CU121;
+    }
+
+    try {
+        const gpuNames = execSync('nvidia-smi --query-gpu=name --format=csv,noheader', { encoding: 'utf8' })
+            .split(/\r?\n/)
+            .map(name => name.trim())
+            .filter(Boolean);
+        if (gpuNames.some(name => BLACKWELL_GPU_REGEX.test(name))) {
+            logger.info(`Detected Blackwell-class NVIDIA GPU: ${gpuNames.join(', ')}`);
+            return TORCH_PROFILES.NVIDIA_BLACKWELL_CU128;
+        }
+    } catch (error) {
+        logger.warning(`Could not inspect NVIDIA GPU model for Torch profile selection: ${error.message}`);
+    }
+
+    return TORCH_PROFILES.NVIDIA_CU121;
 }
 
 function repairNarrationCompatibility(reason) {
@@ -404,16 +497,14 @@ async function runSetup() {
     logger.info(`The virtual environment at ./${VENV_DIR} will be used for both F5-TTS and Chatterbox installations.`);
 
     const gpuVendor = detectGpuVendor(); // Call the detection function
+    let selectedTorchProfile = TORCH_PROFILES.CPU_GENERIC;
     let torchInstallCmd = '';
     let installNotes = '';
 
     switch (gpuVendor) {
         case 'NVIDIA':
-            logger.installing('PyTorch for NVIDIA GPU (CUDA)');
-            // Using CUDA 12.1 with working versions that support both F5-TTS and Chatterbox
-            // PyTorch 2.5.1 with torchvision 0.20.1 for compatibility with both packages
-            torchInstallCmd = `uv pip install torch==2.5.1+cu121 torchvision==0.20.1+cu121 torchaudio==2.5.1+cu121 --index-url https://download.pytorch.org/whl/cu121 --force-reinstall`;
-            installNotes = 'Ensure NVIDIA drivers compatible with CUDA 12.1+ are installed. Using PyTorch 2.5.1 for F5-TTS and Chatterbox compatibility.';
+            selectedTorchProfile = detectNvidiaTorchProfile();
+            logger.installing(`PyTorch for NVIDIA GPU (${selectedTorchProfile.description})`);
             break;
         case 'AMD':
             logger.installing('PyTorch for AMD GPU (ROCm)');
@@ -421,30 +512,28 @@ async function runSetup() {
                 logger.warning('PyTorch ROCm wheels are officially supported only on Linux.');
                 logger.warning('Installation may fail or runtime errors may occur on non-Linux systems.');
             }
-            // Using working versions for both F5-TTS and Chatterbox - CPU versions for ROCm compatibility
-            torchInstallCmd = `uv pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --force-reinstall`;
-            installNotes = 'Using CPU versions of PyTorch 2.5.1 for F5-TTS and Chatterbox compatibility. ROCm support may be limited.';
+            selectedTorchProfile = TORCH_PROFILES.CPU_GENERIC;
+            installNotes = 'Using CPU-compatible PyTorch wheels for broad compatibility. ROCm support may be limited on this setup.';
             break;
         case 'INTEL':
             logger.installing('PyTorch for Intel GPU (XPU)');
-            // Using working versions for both F5-TTS and Chatterbox - CPU versions for Intel compatibility
-            torchInstallCmd = `uv pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --force-reinstall`;
-            installNotes = 'Using CPU versions of PyTorch 2.5.1 for F5-TTS and Chatterbox compatibility. Intel GPU support may be limited.';
+            selectedTorchProfile = TORCH_PROFILES.CPU_GENERIC;
+            installNotes = 'Using CPU-compatible PyTorch wheels for broad compatibility. Intel GPU support may be limited.';
             break;
         case 'APPLE_SILICON':
             logger.installing('PyTorch for Apple Silicon (MPS)');
-            // Using working versions for both F5-TTS and Chatterbox with MPS support
-            torchInstallCmd = `uv pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --force-reinstall`;
+            selectedTorchProfile = TORCH_PROFILES.CPU_GENERIC;
             installNotes = 'Using PyTorch 2.5.1 with Metal Performance Shaders (MPS) support for F5-TTS and Chatterbox compatibility.';
             break;
         case 'CPU':
         default:
             logger.installing('CPU-only PyTorch');
-            // Using working versions for both F5-TTS and Chatterbox
-            torchInstallCmd = `uv pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --force-reinstall`;
+            selectedTorchProfile = TORCH_PROFILES.CPU_GENERIC;
             installNotes = 'Installed PyTorch 2.5.1 CPU-only version for F5-TTS and Chatterbox compatibility. No GPU acceleration will be used.';
             break;
     }
+    torchInstallCmd = buildTorchInstallCommand(selectedTorchProfile);
+    installNotes = installNotes || selectedTorchProfile.installNotes;
 
     try {
         console.log(`Running command: ${torchInstallCmd}`);
@@ -452,7 +541,7 @@ async function runSetup() {
             console.log(`   Notes: ${installNotes}`);
         }
         // Explicitly specify the virtual environment to ensure uv uses it
-        const torchInstallCmdWithVenv = torchInstallCmd.replace('uv pip install', `uv pip install --python ${VENV_DIR}`);
+        const torchInstallCmdWithVenv = buildTorchInstallCommand(selectedTorchProfile, true);
         logger.command(torchInstallCmdWithVenv);
         // Set longer timeout for large PyTorch downloads
         const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
@@ -482,6 +571,8 @@ async function runSetup() {
             execSync(fallbackCmd, { stdio: 'inherit', env });
             logger.success(`✅ PyTorch (${gpuVendor} target) installed successfully via pip fallback`);
         }
+
+        installTorchCompatibilityPackages(selectedTorchProfile);
 
         // --- 5b. Verify Installation ---
         logger.progress('Verifying PyTorch installation');
@@ -605,8 +696,8 @@ try:
         print("This indicates a PyTorch/torchvision version mismatch")
         sys.exit(1)
 
-    expected_torch = "2.5.1";
-    expected_torchvision = "0.20.1";
+    expected_torch = "${selectedTorchProfile.expectedTorch}";
+    expected_torchvision = "${selectedTorchProfile.expectedTorchvision}";
 
     if not torch_version.startswith(expected_torch):
         print(f"⚠️ Warning: Expected PyTorch {expected_torch}, got {torch_version}")
@@ -653,7 +744,7 @@ except Exception as e:
 
             // F5-TTS specific dependencies
             'soundfile',
-            'numpy<2.4',
+            'numpy<1.26',
             'vocos',
             'setuptools',
 
@@ -928,9 +1019,9 @@ print('OK' if not missing else ('Missing:' + ','.join(missing)))
             // Replace incompatible PyTorch versions with working ones that support both F5-TTS and Chatterbox
             // Pin to CUDA versions to prevent CPU installs - target specific packages only
             pyprojectContent = pyprojectContent
-                .replace(/torch==2\.[0-6]\.\d+/g, 'torch==2.5.1+cu121')
-                .replace(/torchaudio==2\.[0-6]\.\d+/g, 'torchaudio==2.5.1+cu121')
-                .replace(/torchvision==0\.1[5-9]\.\d+/g, 'torchvision==0.20.1+cu121')
+                .replace(/torch==2\.\d+\.\d+(\+cu\d+)?/g, `torch==${selectedTorchProfile.torch}`)
+                .replace(/torchaudio==2\.\d+\.\d+(\+cu\d+)?/g, `torchaudio==${selectedTorchProfile.torchaudio}`)
+                .replace(/torchvision==0\.\d+\.\d+(\+cu\d+)?/g, `torchvision==${selectedTorchProfile.torchvision}`)
                 .replace(/transformers==4\.4[6-9]\.\d+/g, 'transformers>=4.40.0,<4.47.0')
                 .replace(/diffusers==0\.2[9]\.\d+/g, 'diffusers>=0.25.0,<0.30.0');
 
@@ -986,7 +1077,7 @@ print('OK' if not missing else ('Missing:' + ','.join(missing)))
         // Don't use -e flag, we want it copied to site-packages
         // Root fix: install chatterbox together with python-dateutil in a single resolution to prevent pruning
         // Use CUDA index to ensure PyTorch CUDA version is used, avoid --force-reinstall to prevent PyTorch conflicts
-        const installChatterboxCmd = `uv pip install --python ${VENV_DIR} ${getNarrationConstraintsArg()} --no-build-isolation --index-url https://download.pytorch.org/whl/cu121 --extra-index-url https://pypi.org/simple ./${CHATTERBOX_DIR} python-dateutil==2.9.0.post0`;
+        const installChatterboxCmd = `uv pip install --python ${VENV_DIR} ${getNarrationConstraintsArg()} --no-build-isolation ${buildTorchIndexArgs(selectedTorchProfile)} ./${CHATTERBOX_DIR} python-dateutil==2.9.0.post0`;
         logger.command(installChatterboxCmd);
         logger.info(`Installing chatterbox with pinned python-dateutil (single resolution, site-packages)`);
 
@@ -1031,12 +1122,13 @@ print('OK' if not missing else ('Missing:' + ','.join(missing)))
         try {
             const verifyCmd = `uv run --python ${VENV_DIR} -- python -c "import torch; print(f'PyTorch version: {torch.__version__}')"`;
             const output = execSync(verifyCmd, { encoding: 'utf8' });
-            if (output.includes('2.5.1')) {
-                logger.success('PyTorch 2.5.1 verified successfully');
+            if (output.includes(selectedTorchProfile.expectedTorch)) {
+                logger.success(`PyTorch ${selectedTorchProfile.expectedTorch} verified successfully`);
             } else {
                 logger.warning('PyTorch version mismatch detected, reinstalling...');
-                execSync(torchInstallCmd, { stdio: 'inherit', env });
-                logger.success('PyTorch 2.5.1 reinstalled');
+                execSync(buildTorchInstallCommand(selectedTorchProfile, true), { stdio: 'inherit', env });
+                installTorchCompatibilityPackages(selectedTorchProfile);
+                logger.success(`PyTorch ${selectedTorchProfile.expectedTorch} reinstalled`);
             }
         } catch (error) {
             logger.warning(`PyTorch verification failed: ${error.message}`);
@@ -1152,16 +1244,17 @@ print('✅ Verification completed (with warnings if any shown above)')
         logger.success('AI model setup verified');
     } catch (error) {
         logger.warning(`PyTorch verification failed: ${error.message}`);
-        logger.info('Attempting to fix PyTorch installation...');
-        try {
-            // Only reinstall if verification failed - use working versions
-            const fixPytorchCmd = `uv pip install --python ${VENV_DIR} torch==2.5.1+cu121 torchvision==0.20.1+cu121 torchaudio==2.5.1+cu121 --index-url https://download.pytorch.org/whl/cu121 --force-reinstall`;
-            logger.command(fixPytorchCmd);
-            const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
-            execSync(fixPytorchCmd, { stdio: 'inherit', env });
-            logger.success('PyTorch installation fixed');
-        } catch (fixError) {
-            logger.warning(`Could not fix PyTorch: ${fixError.message}`);
+            logger.info('Attempting to fix PyTorch installation...');
+            try {
+                // Only reinstall if verification failed - use working versions
+                const fixPytorchCmd = buildTorchInstallCommand(selectedTorchProfile, true);
+                logger.command(fixPytorchCmd);
+                const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
+                execSync(fixPytorchCmd, { stdio: 'inherit', env });
+                installTorchCompatibilityPackages(selectedTorchProfile);
+                logger.success('PyTorch installation fixed');
+            } catch (fixError) {
+                logger.warning(`Could not fix PyTorch: ${fixError.message}`);
             logger.warning(`Voice cloning features may not work properly.`);
         }
     }
@@ -1604,7 +1697,7 @@ print('✅ All service dependencies and required files verified successfully!')
 
     logger.newLine();
     logger.success('✅ PyTorch/torchvision compatibility fix applied');
-    logger.info('   - Using PyTorch 2.5.1 with CUDA support for F5-TTS and Chatterbox compatibility');
+    logger.info(`   - Using ${selectedTorchProfile.description} for F5-TTS and Chatterbox compatibility`);
     logger.info('   - Both F5-TTS and Chatterbox installed from official GitHub repositories');
     logger.info('   - Dependencies installed with proper version management');
 

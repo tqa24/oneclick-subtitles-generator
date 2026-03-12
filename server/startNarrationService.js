@@ -194,11 +194,24 @@ import torch
 print(f'CUDA available: {torch.cuda.is_available()}')
 print(f'CUDA device count: {torch.cuda.device_count() if torch.cuda.is_available() else 0}')
 print(f'CUDA device name: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else "N/A"}')
+if torch.cuda.is_available():
+    capability = torch.cuda.get_device_capability(0)
+    device_arch = f"sm_{capability[0]}{capability[1]}"
+    supported_arches = list(getattr(torch.cuda, "get_arch_list", lambda: [])())
+    arch_compatible = any(arch == device_arch or arch.startswith(device_arch) for arch in supported_arches)
+    print(f'CUDA device capability: {device_arch}')
+    print(f'CUDA supported arch list: {" ".join(supported_arches) if supported_arches else "unknown"}')
+    print(f'CUDA arch compatible: {arch_compatible}')
 `;
 
       fs.writeFileSync(tempFile, pythonCode);
 
-      const checkCudaCmd = `${UV_EXECUTABLE} run ${tempFile}`;
+      const packagedPythonExec = process.platform === 'win32'
+        ? path.join(VENV_PATH, 'Scripts', 'python.exe')
+        : path.join(VENV_PATH, 'bin', 'python');
+      const checkCudaCmd = isPackaged && fs.existsSync(VENV_PATH)
+        ? `"${packagedPythonExec}" "${tempFile}"`
+        : `${UV_EXECUTABLE} run --python ${path.relative(projectRoot, VENV_PATH)} -- python "${tempFile}"`;
       const cudaCheck = require('child_process').execSync(checkCudaCmd, { encoding: 'utf8' });
 
 
@@ -213,6 +226,10 @@ print(f'CUDA device name: {torch.cuda.get_device_name(0) if torch.cuda.is_availa
       if (!cudaCheck.includes('CUDA available: True')) {
         console.warn('WARNING: CUDA is not available. The narration service will run on CPU, which is much slower.');
         console.warn('Make sure your NVIDIA drivers and CUDA toolkit are properly installed.');
+      } else if (cudaCheck.includes('CUDA arch compatible: False')) {
+        console.warn('WARNING: CUDA is available, but the installed PyTorch build does not support this GPU architecture.');
+        console.warn('The narration service will fall back to CPU for F5-TTS model loading and generation.');
+        console.warn('Run the narration setup again with a newer PyTorch/CUDA stack once the repo officially supports this GPU.');
       } else {
 
       }
