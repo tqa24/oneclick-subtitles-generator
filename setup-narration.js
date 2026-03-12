@@ -24,6 +24,49 @@ const VENV_DIR = '.venv'; // Define the virtual environment directory name
 const PYTHON_VERSION_TARGET = "3.11"; // Target Python version
 const F5_TTS_DIR = 'f5-tts-temp'; // Temporary directory for F5-TTS installation
 const F5_TTS_REPO_URL = 'https://github.com/SWivid/F5-TTS.git';
+const F5_TTS_REF = process.env.F5_TTS_REF || '1.1.17'; // Pin to a known-good release; override explicitly if needed
+const NARRATION_CONSTRAINTS_FILE = path.join(__dirname, 'narration-constraints.txt');
+const NARRATION_COMPAT_PACKAGE_SPECS = ['protobuf>=4.25.8,<7'];
+
+function getNarrationConstraintsArg() {
+    return fs.existsSync(NARRATION_CONSTRAINTS_FILE)
+        ? `-c "${NARRATION_CONSTRAINTS_FILE}"`
+        : '';
+}
+
+function quotePackageSpecs(specs) {
+    return specs.map(spec => `"${spec}"`).join(' ');
+}
+
+function repairNarrationCompatibility(reason) {
+    const constraintsArg = getNarrationConstraintsArg();
+    if (!constraintsArg) {
+        logger.warning('Narration constraints file not found; compatibility repair skipped');
+        return;
+    }
+
+    logger.progress(reason);
+    const repairCmd = `uv pip install --python ${VENV_DIR} ${constraintsArg} ${quotePackageSpecs(NARRATION_COMPAT_PACKAGE_SPECS)}`;
+    logger.command(repairCmd);
+    execSync(repairCmd, { stdio: 'inherit' });
+}
+
+function verifyF5TTSRuntime() {
+    const verifyF5PyCode = `
+import importlib.metadata as md
+import wandb
+from f5_tts.api import F5TTS
+
+print("protobuf:", md.version("protobuf"))
+print("wandb:", md.version("wandb"))
+print("f5-tts:", md.version("f5-tts"))
+print("✅ F5-TTS API verified")
+`;
+
+    const verifyF5Cmd = `uv run --python ${VENV_DIR} -- python -c "${verifyF5PyCode.replace(/"/g, '\\"')}"`;
+    logger.command(verifyF5Cmd);
+    execSync(verifyF5Cmd, { stdio: 'inherit', encoding: 'utf8' });
+}
 
 // --- Helper Function to Check Command Existence ---
 function commandExists(command) {
@@ -619,7 +662,7 @@ except Exception as e:
             'gtts'       // Google Text-to-Speech
         ];
 
-        const depsCmd = `uv pip install --python ${VENV_DIR} ${coreDeps.map(d => `"${d}"`).join(' ')}`;
+        const depsCmd = `uv pip install --python ${VENV_DIR} ${getNarrationConstraintsArg()} ${coreDeps.map(d => `"${d}"`).join(' ')}`;
         logger.command(depsCmd);
         const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
         execSync(depsCmd, { stdio: 'inherit', env });
@@ -654,7 +697,7 @@ except Exception as e:
         const parakeetReqPath = path.join(__dirname, 'parakeet_wrapper', 'requirements.txt');
         if (fs.existsSync(parakeetReqPath)) {
             // Use a conservative install that respects existing resolved packages
-            const parakeetCmd = `uv pip install --python ${VENV_DIR} -r "${parakeetReqPath}"`;
+            const parakeetCmd = `uv pip install --python ${VENV_DIR} ${getNarrationConstraintsArg()} -r "${parakeetReqPath}"`;
             logger.command(parakeetCmd);
             const env = { ...process.env, UV_HTTP_TIMEOUT: '600' }; // allow time for wheels
             execSync(parakeetCmd, { stdio: 'inherit', env });
@@ -726,7 +769,7 @@ print('OK' if not missing else ('Missing:' + ','.join(missing)))
         }
 
         // Clone the repository
-        const cloneCmd = `git clone ${F5_TTS_REPO_URL} ${F5_TTS_DIR}`;
+        const cloneCmd = `git clone --depth 1 --branch ${F5_TTS_REF} ${F5_TTS_REPO_URL} ${F5_TTS_DIR}`;
         logger.command(cloneCmd);
         execSync(cloneCmd, { stdio: 'inherit' });
         logger.success('F5-TTS repository cloned');
@@ -753,7 +796,7 @@ print('OK' if not missing else ('Missing:' + ','.join(missing)))
         // Install F5-TTS from the local modified directory
         logger.progress('Installing F5-TTS from local directory');
         // Don't use -e flag, we want it copied to site-packages
-        const installF5Cmd = `uv pip install --python ${VENV_DIR} --no-build-isolation ./${F5_TTS_DIR}`;
+        const installF5Cmd = `uv pip install --python ${VENV_DIR} ${getNarrationConstraintsArg()} --no-build-isolation ./${F5_TTS_DIR}`;
         logger.command(installF5Cmd);
 
         const env = { ...process.env, UV_HTTP_TIMEOUT: '600' }; // 10 minutes for installation
@@ -767,7 +810,7 @@ print('OK' if not missing else ('Missing:' + ','.join(missing)))
             const mayBePoetryBackend = /No module named 'poetry'|poetry\.core|poetry\.masonry|prepare_metadata_for_build_wheel/i.test(msg);
             if (mayBePoetryBackend) {
                 try {
-                    const poetryInstallCmd = `uv pip install --python ${VENV_DIR} poetry`;
+                    const poetryInstallCmd = `uv pip install --python ${VENV_DIR} ${getNarrationConstraintsArg()} poetry`;
                     logger.progress('Installing Poetry (full) for legacy Poetry build backends');
                     logger.command(poetryInstallCmd);
                     execSync(poetryInstallCmd, { stdio: 'inherit' });
@@ -843,31 +886,9 @@ print('OK' if not missing else ('Missing:' + ','.join(missing)))
         }
 
         logger.progress('Verifying Text-to-Speech engine');
-        const verifyF5PyCode = `
-import sys
-import traceback
-
-print("Verifying F5-TTS installation...")
-print("Python executable:", sys.executable)
-
-try:
-    from f5_tts.api import F5TTS
-    print('✅ F5-TTS API verified')
-except Exception as e:
-    print(f'❌ F5-TTS API failed: {e}')
-    traceback.print_exc()
-    sys.exit(1)
-
-print('✅ F5-TTS verification completed successfully')
-`;
-        const verifyF5Cmd = `uv run --python ${VENV_DIR} -- python -c "${verifyF5PyCode.replace(/"/g, '\\"')}"`;
-        try {
-            execSync(verifyF5Cmd, { stdio: 'inherit', encoding: 'utf8' });
-            logger.success('Text-to-Speech engine verification completed');
-        } catch (verifyError) {
-            logger.warning('Text-to-Speech engine verification had issues, but continuing installation');
-            logger.info('The application will still work, but F5-TTS features may be limited');
-        }
+        repairNarrationCompatibility('Applying shared narration compatibility constraints before F5-TTS verification');
+        verifyF5TTSRuntime();
+        logger.success('Text-to-Speech engine verification completed');
 
     } catch (error) {
         console.error(`❌ Error installing/verifying F5-TTS with uv: ${error.message}`);
@@ -944,14 +965,14 @@ print('✅ F5-TTS verification completed successfully')
 
         // First ensure numpy is installed (required for pkuseg build dependency)
         logger.progress('Installing numpy (required for chatterbox dependencies)');
-        const numpyCmd = `uv pip install --python ${VENV_DIR} numpy`;
+        const numpyCmd = `uv pip install --python ${VENV_DIR} ${getNarrationConstraintsArg()} numpy`;
         execSync(numpyCmd, { stdio: 'inherit' });
 
 
         // Ensure Poetry build backend is available for dependencies using poetry.core (e.g., russian-text-stresser)
         logger.progress('Ensuring Poetry build backend (poetry-core) is available');
         try {
-            const poetryCoreCmd = `uv pip install --python ${VENV_DIR} poetry-core`;
+            const poetryCoreCmd = `uv pip install --python ${VENV_DIR} ${getNarrationConstraintsArg()} poetry-core`;
             logger.command(poetryCoreCmd);
             execSync(poetryCoreCmd, { stdio: 'inherit' });
             logger.success('poetry-core installed into the shared virtual environment');
@@ -965,7 +986,7 @@ print('✅ F5-TTS verification completed successfully')
         // Don't use -e flag, we want it copied to site-packages
         // Root fix: install chatterbox together with python-dateutil in a single resolution to prevent pruning
         // Use CUDA index to ensure PyTorch CUDA version is used, avoid --force-reinstall to prevent PyTorch conflicts
-        const installChatterboxCmd = `uv pip install --python ${VENV_DIR} --no-build-isolation --index-url https://download.pytorch.org/whl/cu121 --extra-index-url https://pypi.org/simple ./${CHATTERBOX_DIR} python-dateutil==2.9.0.post0`;
+        const installChatterboxCmd = `uv pip install --python ${VENV_DIR} ${getNarrationConstraintsArg()} --no-build-isolation --index-url https://download.pytorch.org/whl/cu121 --extra-index-url https://pypi.org/simple ./${CHATTERBOX_DIR} python-dateutil==2.9.0.post0`;
         logger.command(installChatterboxCmd);
         logger.info(`Installing chatterbox with pinned python-dateutil (single resolution, site-packages)`);
 

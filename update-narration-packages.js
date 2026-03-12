@@ -1,6 +1,7 @@
 /**
- * Script to update F5-TTS and Chatterbox packages in the virtual environment using uv
- * Lightweight update script that only updates existing packages, doesn't do full setup
+ * Lightweight narration maintenance script for the shared virtual environment.
+ * It repairs compatibility drift and verifies installed runtimes without pulling
+ * unpinned upstream package updates into a repo-managed setup.
  */
 
 const { execSync } = require('child_process');
@@ -19,6 +20,49 @@ const logger = new Logger({
 const VENV_DIR = '.venv';
 const isWindows = os.platform() === 'win32';
 const venvBinDir = isWindows ? 'Scripts' : 'bin';
+const NARRATION_CONSTRAINTS_FILE = path.join(__dirname, 'narration-constraints.txt');
+const NARRATION_COMPAT_PACKAGE_SPECS = ['protobuf>=4.25.8,<7'];
+
+function getNarrationConstraintsArg() {
+  return fs.existsSync(NARRATION_CONSTRAINTS_FILE)
+    ? `-c "${NARRATION_CONSTRAINTS_FILE}"`
+    : '';
+}
+
+function quotePackageSpecs(specs) {
+  return specs.map(spec => `"${spec}"`).join(' ');
+}
+
+function checkPackageInstalled(packageName) {
+  const checkCommand = `uv pip list --python .venv | findstr /C:"${packageName}"`;
+  execSync(checkCommand, { stdio: 'ignore' });
+}
+
+function getPackageVersion(packageName) {
+  const versionCommand = `uv pip show --python .venv ${packageName} | findstr /C:"Version:"`;
+  const versionOutput = execSync(versionCommand, { encoding: 'utf8' }).trim();
+  return versionOutput.split(':')[1].trim();
+}
+
+function repairNarrationCompatibility(reason) {
+  const constraintsArg = getNarrationConstraintsArg();
+  if (!constraintsArg) {
+    logger.warning('Narration constraints file not found. Compatibility repair skipped.');
+    return;
+  }
+
+  logger.progress(reason);
+  executeWithRetry(
+    `uv pip install --python .venv ${constraintsArg} ${quotePackageSpecs(NARRATION_COMPAT_PACKAGE_SPECS)}`
+  );
+}
+
+function verifyPythonRuntime(label, pyCode) {
+  const command = `uv run --python .venv -- python -c "${pyCode.replace(/"/g, '\\"')}"`;
+  logger.command(command);
+  execSync(command, { stdio: 'inherit', encoding: 'utf8' });
+  logger.success(`${label} verified`);
+}
 
 // Helper function to execute commands with retries
 function executeWithRetry(command, options = {}, maxRetries = 3) {
@@ -65,111 +109,61 @@ if (!fs.existsSync(VENV_DIR)) {
   process.exit(0);
 }
 
-// Update F5-TTS if installed
+// Repair and verify F5-TTS if installed
 logger.checking('F5-TTS package');
 try {
-  // Check if f5-tts is installed using pip list
-  const checkCommand = 'uv pip list --python .venv | findstr /C:"f5-tts"';
-  execSync(checkCommand, { stdio: 'ignore' });
-  logger.found('F5-TTS is installed');
+  checkPackageInstalled('f5-tts');
+  const currentVersion = getPackageVersion('f5-tts');
+  logger.found(`F5-TTS is installed (${currentVersion})`);
 
-  // Get current version
-  const versionCommand = 'uv pip show --python .venv f5-tts | findstr /C:"Version:"';
-  const versionOutput = execSync(versionCommand, { encoding: 'utf8' }).trim();
-  const currentVersion = versionOutput.split(':')[1].trim();
-
-  // Check if f5-tts is outdated
-  const outdatedCommand = 'uv pip list --python .venv --outdated | findstr /C:"f5-tts"';
-  let isOutdated = false;
-  try {
-    execSync(outdatedCommand, { stdio: 'ignore' });
-    isOutdated = true;
-  } catch (e) {
-    // Not in outdated list, so it's up to date
-    isOutdated = false;
-  }
-
-  if (!isOutdated) {
-    logger.success(`F5-TTS is already up to date (${currentVersion})`);
-  } else {
-    // Update F5-TTS (preserve working PyTorch versions)
-    logger.progress(`Updating F5-TTS from ${currentVersion} to latest version`);
-    try {
-      executeWithRetry('uv pip install --python .venv --upgrade f5-tts');
-
-      // Get new version
-      const newVersionOutput = execSync(versionCommand, { encoding: 'utf8' }).trim();
-      const newVersion = newVersionOutput.split(':')[1].trim();
-
-      logger.success(`F5-TTS updated: ${currentVersion} → ${newVersion}`);
-    } catch (error) {
-      logger.warning(`F5-TTS update failed: ${error.message}`);
-      if (error.message.includes('Access is denied') || error.message.includes('os error 5')) {
-        logger.warning('F5-TTS update skipped - packages appear to be in use by running service');
-        logger.info('Restart the application to apply updates');
-      } else {
-        logger.warning('F5-TTS update failed with unknown error');
-      }
-    }
-  }
+  repairNarrationCompatibility('Repairing shared narration dependency constraints');
+  verifyPythonRuntime(
+    'F5-TTS runtime',
+    `
+import importlib.metadata as md
+import wandb
+from f5_tts.api import F5TTS
+print("protobuf:", md.version("protobuf"))
+print("wandb:", md.version("wandb"))
+print("f5-tts:", md.version("f5-tts"))
+`
+  );
 } catch (error) {
-  logger.info('F5-TTS not found or not installed. Skipping update.');
+  if (error.message.includes('Access is denied') || error.message.includes('os error 5')) {
+    logger.warning('F5-TTS verification skipped because packages appear to be in use');
+    logger.info('Restart the application and rerun the maintenance step to verify imports');
+  } else {
+    logger.warning(`F5-TTS maintenance failed: ${error.message}`);
+    logger.info('Run node setup-narration.js to reinstall the repo-pinned narration stack if this persists.');
+  }
 }
 
-// Update Chatterbox if installed
+// Verify Chatterbox if installed
 logger.checking('Chatterbox package');
 try {
-  // Check if chatterbox-tts is installed using pip list
-  const checkCommand = 'uv pip list --python .venv | findstr /C:"chatterbox-tts"';
-  execSync(checkCommand, { stdio: 'ignore' });
-  logger.found('Chatterbox is installed');
-
-  // Get current version
-  const versionCommand = 'uv pip show --python .venv chatterbox-tts | findstr /C:"Version:"';
-  const versionOutput = execSync(versionCommand, { encoding: 'utf8' }).trim();
-  const currentVersion = versionOutput.split(':')[1].trim();
-
-  // Check if chatterbox-tts is outdated
-  const outdatedCommand = 'uv pip list --python .venv --outdated | findstr /C:"chatterbox-tts"';
-  let isOutdated = false;
-  try {
-    execSync(outdatedCommand, { stdio: 'ignore' });
-    isOutdated = true;
-  } catch (e) {
-    // Not in outdated list, so it's up to date
-    isOutdated = false;
-  }
-
-  if (!isOutdated) {
-    logger.success(`Chatterbox is already up to date (${currentVersion})`);
-  } else {
-    // Update Chatterbox
-    logger.progress(`Updating Chatterbox from ${currentVersion} to latest version`);
-    try {
-      executeWithRetry('uv pip install --python .venv --upgrade chatterbox-tts');
-
-      // Get new version
-      const newVersionOutput = execSync(versionCommand, { encoding: 'utf8' }).trim();
-      const newVersion = newVersionOutput.split(':')[1].trim();
-
-      logger.success(`Chatterbox updated: ${currentVersion} → ${newVersion}`);
-    } catch (error) {
-      if (error.message.includes('Access is denied') || error.message.includes('os error 5')) {
-        logger.warning('Chatterbox update skipped - packages appear to be in use by running service');
-        logger.info('Restart the application to apply updates');
-      } else {
-        throw error; // Re-throw other errors
-      }
-    }
-  }
+  checkPackageInstalled('chatterbox-tts');
+  const currentVersion = getPackageVersion('chatterbox-tts');
+  logger.found(`Chatterbox is installed (${currentVersion})`);
+  verifyPythonRuntime(
+    'Chatterbox runtime',
+    `
+from chatterbox.tts import ChatterboxTTS
+print("chatterbox import ok")
+`
+  );
 } catch (error) {
-  logger.info('Chatterbox not found or not installed. Skipping update.');
+  if (error.message.includes('Access is denied') || error.message.includes('os error 5')) {
+    logger.warning('Chatterbox verification skipped because packages appear to be in use');
+    logger.info('Restart the application and rerun the maintenance step to verify imports');
+  } else {
+    logger.warning(`Chatterbox maintenance failed: ${error.message}`);
+  }
 }
 
 logger.newLine();
-logger.success('Narration packages update check completed!');
-logger.info('F5-TTS and Chatterbox packages checked for updates.');
-logger.info('If packages were in use, restart the application to apply any pending updates.');
+logger.success('Narration packages maintenance completed!');
+logger.info('F5-TTS and Chatterbox runtimes were checked without pulling unpinned upstream upgrades.');
+logger.info('If packages were in use, restart the application to apply any pending repairs.');
 logger.info('If you need to install them initially, run: npm run setup:narration:uv');
 
 // Safeguard: Ensure PyTorch versions remain compatible

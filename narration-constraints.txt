@@ -1,0 +1,6 @@
+# Keep the shared narration environment compatible across F5-TTS, wandb, and
+# the other Python services that share the same virtual environment.
+#
+# F5-TTS currently imports `wandb` even on inference code paths. The currently
+# compatible wandb builds require protobuf major versions below 7.
+protobuf>=4.25.8,<7
