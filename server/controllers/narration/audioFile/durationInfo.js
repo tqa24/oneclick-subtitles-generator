@@ -57,17 +57,20 @@ const batchGetAudioDurations = async (req, res) => {
     if (!Array.isArray(filenames) || filenames.length === 0) {
       return res.status(400).json({ success: false, error: 'Missing filenames[]' });
     }
-    const results = {};
-    for (const fn of filenames) {
-      try {
-        const p = path.join(OUTPUT_AUDIO_DIR, fn);
-        if (!fs.existsSync(p)) { results[fn] = null; continue; }
-        const d = await runFfprobe(p);
-        results[fn] = d;
-      } catch (_) {
-        results[fn] = null;
-      }
-    }
+    // Run ffprobe in parallel for all files
+    const entries = await Promise.all(
+      filenames.map(async (fn) => {
+        try {
+          const p = path.join(OUTPUT_AUDIO_DIR, fn);
+          if (!fs.existsSync(p)) return [fn, null];
+          const d = await runFfprobe(p);
+          return [fn, d];
+        } catch (_) {
+          return [fn, null];
+        }
+      })
+    );
+    const results = Object.fromEntries(entries);
     res.json({ success: true, durations: results });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

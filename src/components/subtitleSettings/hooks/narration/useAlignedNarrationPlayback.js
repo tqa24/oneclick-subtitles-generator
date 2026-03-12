@@ -1,7 +1,7 @@
 /**
  * Hook for handling aligned narration playback
  */
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 /**
  * Hook for handling aligned narration playback
@@ -11,18 +11,14 @@ import { useEffect } from 'react';
  * @param {Object} params.state - State from useAlignedNarrationState
  * @returns {Object} - Playback handlers
  */
-const useAlignedNarrationPlayback = ({
-  videoRef,
-  useAlignedMode,
-  state
-}) => {
+const useAlignedNarrationPlayback = ({ videoRef, useAlignedMode, state }) => {
   const {
     isAlignedAvailable,
     lastVideoTimeRef,
     isSeekingRef,
     lastUpdateTimeRef,
     playAlignedNarration,
-    getAlignedAudioElement
+    setAlignedNarrationPlaybackRate,
   } = state;
 
   // Sync video and audio playback
@@ -40,7 +36,10 @@ const useAlignedNarrationPlayback = ({
 
       // Skip updates that are too frequent during normal playback
       const now = Date.now();
-      if (!isSeekingRef.current && now - lastUpdateTimeRef.current < updateIntervalMs) {
+      if (
+        !isSeekingRef.current &&
+        now - lastUpdateTimeRef.current < updateIntervalMs
+      ) {
         return;
       }
 
@@ -62,7 +61,6 @@ const useAlignedNarrationPlayback = ({
       isSeekingRef.current = true;
 
       // We don't update audio position during seeking to avoid stuttering
-
     };
 
     const handleSeeked = () => {
@@ -90,7 +88,6 @@ const useAlignedNarrationPlayback = ({
       const currentTime = videoRef.current.currentTime;
       lastUpdateTimeRef.current = Date.now();
 
-
       playAlignedNarration(currentTime, true);
     };
 
@@ -107,95 +104,59 @@ const useAlignedNarrationPlayback = ({
     const handleRateChange = () => {
       if (!videoRef?.current || !useAlignedMode || !isAlignedAvailable) return;
 
-      // Get the audio element and match its playback rate to the video
-      const audio = getAlignedAudioElement();
-      if (audio) {
-        const newRate = videoRef.current.playbackRate;
-
-        // Only update if the rate has actually changed
-        if (audio.playbackRate !== newRate) {
-          const currentTime = videoRef.current.currentTime;
-          const isPlaying = !videoRef.current.paused;
-
-
-          // Update audio playback rate
-          audio.playbackRate = newRate;
-
-          // Only sync position if there's a significant difference
-          const timeDifference = Math.abs(audio.currentTime - currentTime);
-          if (timeDifference > 0.3) {
-            playAlignedNarration(currentTime, isPlaying);
-          }
-        }
-      }
+      const currentTime = videoRef.current.currentTime;
+      const newRate = videoRef.current.playbackRate;
+      setAlignedNarrationPlaybackRate(newRate, currentTime);
     };
 
     // Add event listeners to the video element
     const video = videoRef.current; // Store reference to avoid closure issues
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('seeking', handleSeeking);
-    video.addEventListener('seeked', handleSeeked);
-    video.addEventListener('play', handlePlay);
-    video.addEventListener('pause', handlePause);
-    video.addEventListener('ratechange', handleRateChange);
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    video.addEventListener("seeking", handleSeeking);
+    video.addEventListener("seeked", handleSeeked);
+    video.addEventListener("play", handlePlay);
+    video.addEventListener("pause", handlePause);
+    video.addEventListener("ratechange", handleRateChange);
 
     // Clean up event listeners
     return () => {
       // Use the same video reference from above to avoid closure issues
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('seeking', handleSeeking);
-      video.removeEventListener('seeked', handleSeeked);
-      video.removeEventListener('play', handlePlay);
-      video.removeEventListener('pause', handlePause);
-      video.removeEventListener('ratechange', handleRateChange);
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+      video.removeEventListener("seeking", handleSeeking);
+      video.removeEventListener("seeked", handleSeeked);
+      video.removeEventListener("play", handlePlay);
+      video.removeEventListener("pause", handlePause);
+      video.removeEventListener("ratechange", handleRateChange);
     };
   }, [
     videoRef,
     useAlignedMode,
     isAlignedAvailable,
     playAlignedNarration,
-    getAlignedAudioElement,
+    setAlignedNarrationPlaybackRate,
     lastVideoTimeRef,
     isSeekingRef,
-    lastUpdateTimeRef
+    lastUpdateTimeRef,
   ]);
 
   // Handle toggling aligned narration mode
   useEffect(() => {
     if (useAlignedMode) {
-
-
       // If aligned narration is available and video is playing, start playing aligned narration
       if (isAlignedAvailable && videoRef?.current && !videoRef.current.paused) {
         const currentTime = videoRef.current.currentTime;
         playAlignedNarration(currentTime, true);
       }
     } else {
-
-
       // When disabling aligned mode, completely stop the aligned narration
       if (isAlignedAvailable) {
-
-
         // First pause it
         playAlignedNarration(0, false);
 
         // Then reset the audio element to ensure it's completely stopped
-        const audio = getAlignedAudioElement();
-        if (audio) {
-          audio.pause();
-          audio.currentTime = 0;
-
-          // Remove event listeners to prevent any accidental playback
-          audio.onplay = null;
-          audio.onpause = null;
-          audio.ontimeupdate = null;
-          audio.onseeking = null;
-          audio.onseeked = null;
-        }
       }
     }
-  }, [useAlignedMode, isAlignedAvailable, videoRef, playAlignedNarration, getAlignedAudioElement]);
+  }, [useAlignedMode, isAlignedAvailable, videoRef, playAlignedNarration]);
 
   return {};
 };

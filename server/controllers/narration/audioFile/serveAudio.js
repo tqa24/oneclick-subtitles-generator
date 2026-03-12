@@ -8,6 +8,12 @@ const fs = require('fs');
 // Import directory paths
 const { REFERENCE_AUDIO_DIR, OUTPUT_AUDIO_DIR, TEMP_AUDIO_DIR } = require('../directoryManager');
 
+const debugLog = (...args) => {
+  if (process.env.DEBUG_NARRATION_AUDIO === 'true') {
+    console.log(...args);
+  }
+};
+
 // Basic content-type detection (sniff header, fallback to extension)
 const getContentType = (filePath) => {
   try {
@@ -24,6 +30,7 @@ const getContentType = (filePath) => {
   const ext = String(path.extname(filePath)).toLowerCase();
   if (ext === '.mp3') return 'audio/mpeg';
   if (ext === '.wav') return 'audio/wav';
+  if (ext === '.m4a' || ext === '.mp4') return 'audio/mp4';
   if (ext === '.ogg') return 'audio/ogg';
   return 'application/octet-stream';
 };
@@ -80,7 +87,7 @@ const serveAudioFile = (req, res) => {
     // Get the filename from the request parameters
     const { filename } = req.params;
 
-    console.log(`[DEBUG] Serving audio file: ${filename}`);
+    debugLog(`[DEBUG] Serving audio file: ${filename}`);
 
     if (!filename) {
       console.error('No filename provided');
@@ -89,14 +96,14 @@ const serveAudioFile = (req, res) => {
 
     // Check if the filename includes a path separator (new structure)
     if (filename.includes(path.sep) || filename.includes('/')) {
-      console.log(`[DEBUG] Handling path with separators: ${filename}`);
+      debugLog(`[DEBUG] Handling path with separators: ${filename}`);
 
       // Handle new directory structure (subtitle_id/number.wav)
       // Always use forward slashes for URL paths, then convert to OS-specific path
       const parts = filename.split('/');
 
       // Log the parts for debugging
-      console.log(`[DEBUG] Path parts: ${JSON.stringify(parts)}`);
+      debugLog(`[DEBUG] Path parts: ${JSON.stringify(parts)}`);
 
       // If we have exactly 2 parts (subtitle_ID/number.wav), handle it as our new structure
       if (parts.length === 2 && parts[0].startsWith('subtitle_')) {
@@ -105,13 +112,13 @@ const serveAudioFile = (req, res) => {
 
         const outputPath = path.join(OUTPUT_AUDIO_DIR, subtitleDir, audioFile);
 
-        console.log(`[DEBUG] Checking new structure path: ${outputPath}`);
+        debugLog(`[DEBUG] Checking new structure path: ${outputPath}`);
 
         if (fs.existsSync(outputPath)) {
-          console.log(`[DEBUG] Found file at new structure path: ${outputPath}`);
+          debugLog(`[DEBUG] Found file at new structure path: ${outputPath}`);
           return sendFileWithRange(req, res, outputPath);
         } else {
-          console.log(`[DEBUG] File not found at new structure path: ${outputPath}`);
+          debugLog(`[DEBUG] File not found at new structure path: ${outputPath}`);
 
           // Try alternate extension (.wav <-> .mp3)
           const base = path.parse(audioFile).name;
@@ -119,20 +126,20 @@ const serveAudioFile = (req, res) => {
           for (const ext of tryExts) {
             const alt = path.join(OUTPUT_AUDIO_DIR, subtitleDir, base + ext);
             if (fs.existsSync(alt)) {
-              console.log(`[DEBUG] Found by alternate ext: ${alt}`);
+              debugLog(`[DEBUG] Found by alternate ext: ${alt}`);
               return sendFileWithRange(req, res, alt);
             }
           }
 
           // Try with a different case (Windows is case-insensitive but URLs might be case-sensitive)
           const files = fs.readdirSync(path.join(OUTPUT_AUDIO_DIR, subtitleDir));
-          console.log(`[DEBUG] Files in ${subtitleDir}: ${JSON.stringify(files)}`);
+          debugLog(`[DEBUG] Files in ${subtitleDir}: ${JSON.stringify(files)}`);
 
           // Try to find a case-insensitive match
           const matchingFile = files.find(file => file.toLowerCase() === audioFile.toLowerCase());
           if (matchingFile) {
             const caseCorrectedPath = path.join(OUTPUT_AUDIO_DIR, subtitleDir, matchingFile);
-            console.log(`[DEBUG] Found case-insensitive match: ${caseCorrectedPath}`);
+            debugLog(`[DEBUG] Found case-insensitive match: ${caseCorrectedPath}`);
             return sendFileWithRange(req, res, caseCorrectedPath);
           }
         }
@@ -141,13 +148,13 @@ const serveAudioFile = (req, res) => {
         const normalizedPath = filename.replace(/\//g, path.sep); // Normalize path separators
         const outputPath = path.join(OUTPUT_AUDIO_DIR, normalizedPath);
 
-        console.log(`[DEBUG] Checking alternative path structure: ${outputPath}`);
+        debugLog(`[DEBUG] Checking alternative path structure: ${outputPath}`);
 
         if (fs.existsSync(outputPath)) {
-          console.log(`[DEBUG] Found file at alternative path: ${outputPath}`);
+          debugLog(`[DEBUG] Found file at alternative path: ${outputPath}`);
           return sendFileWithRange(req, res, outputPath);
         } else {
-          console.log(`[DEBUG] File not found at alternative path: ${outputPath}`);
+          debugLog(`[DEBUG] File not found at alternative path: ${outputPath}`);
         }
       }
     } else {
@@ -155,28 +162,28 @@ const serveAudioFile = (req, res) => {
 
       // Check if the file is in the output directory
       const outputPath = path.join(OUTPUT_AUDIO_DIR, filename);
-      console.log(`[DEBUG] Checking legacy output path: ${outputPath}`);
+      debugLog(`[DEBUG] Checking legacy output path: ${outputPath}`);
 
       if (fs.existsSync(outputPath)) {
-        console.log(`[DEBUG] Found file at legacy output path: ${outputPath}`);
+        debugLog(`[DEBUG] Found file at legacy output path: ${outputPath}`);
         return sendFileWithRange(req, res, outputPath);
       }
 
       // Check if the file is in the reference directory
       const referencePath = path.join(REFERENCE_AUDIO_DIR, filename);
-      console.log(`[DEBUG] Checking reference path: ${referencePath}`);
+      debugLog(`[DEBUG] Checking reference path: ${referencePath}`);
 
       if (fs.existsSync(referencePath)) {
-        console.log(`[DEBUG] Found file at reference path: ${referencePath}`);
+        debugLog(`[DEBUG] Found file at reference path: ${referencePath}`);
         return sendFileWithRange(req, res, referencePath);
       }
 
       // Check if the file is in the temp directory
       const tempPath = path.join(TEMP_AUDIO_DIR, filename);
-      console.log(`[DEBUG] Checking temp path: ${tempPath}`);
+      debugLog(`[DEBUG] Checking temp path: ${tempPath}`);
 
       if (fs.existsSync(tempPath)) {
-        console.log(`[DEBUG] Found file at temp path: ${tempPath}`);
+        debugLog(`[DEBUG] Found file at temp path: ${tempPath}`);
         return sendFileWithRange(req, res, tempPath);
       }
 
@@ -186,7 +193,7 @@ const serveAudioFile = (req, res) => {
           .filter(item => item.startsWith('subtitle_') &&
                   fs.statSync(path.join(OUTPUT_AUDIO_DIR, item)).isDirectory());
 
-        console.log(`[DEBUG] Searching in subtitle directories: ${subtitleDirs.join(', ')}`);
+        debugLog(`[DEBUG] Searching in subtitle directories: ${subtitleDirs.join(', ')}`);
 
         // Look for a file with the same name in any subtitle directory
         for (const dir of subtitleDirs) {
@@ -197,7 +204,7 @@ const serveAudioFile = (req, res) => {
           if (/^\d+\.wav$/.test(filename)) {
             if (files.includes(filename)) {
               const foundPath = path.join(dirPath, filename);
-              console.log(`[DEBUG] Found file in subtitle directory: ${foundPath}`);
+              debugLog(`[DEBUG] Found file in subtitle directory: ${foundPath}`);
               return sendFileWithRange(req, res, foundPath);
             }
           }
@@ -212,9 +219,9 @@ const serveAudioFile = (req, res) => {
 
     // Try to list the contents of the output directory to help with debugging
     try {
-      console.log(`[DEBUG] Contents of OUTPUT_AUDIO_DIR (${OUTPUT_AUDIO_DIR}):`);
+      debugLog(`[DEBUG] Contents of OUTPUT_AUDIO_DIR (${OUTPUT_AUDIO_DIR}):`);
       const outputDirContents = fs.readdirSync(OUTPUT_AUDIO_DIR);
-      console.log(outputDirContents);
+      debugLog(outputDirContents);
 
       // Check if there are any subtitle directories
       const subtitleDirs = outputDirContents.filter(item =>
@@ -223,13 +230,13 @@ const serveAudioFile = (req, res) => {
       );
 
       if (subtitleDirs.length > 0) {
-        console.log(`[DEBUG] Found subtitle directories: ${subtitleDirs.join(', ')}`);
+        debugLog(`[DEBUG] Found subtitle directories: ${subtitleDirs.join(', ')}`);
 
         // Check the contents of the first few subtitle directories
         for (let i = 0; i < Math.min(3, subtitleDirs.length); i++) {
           const dirPath = path.join(OUTPUT_AUDIO_DIR, subtitleDirs[i]);
-          console.log(`[DEBUG] Contents of ${dirPath}:`);
-          console.log(fs.readdirSync(dirPath));
+          debugLog(`[DEBUG] Contents of ${dirPath}:`);
+          debugLog(fs.readdirSync(dirPath));
         }
       }
     } catch (err) {

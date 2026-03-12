@@ -7,41 +7,39 @@
  */
 
 // Import all functions from the modularized files
-const {
-  serveAudioFile
-} = require('./audioFile/serveAudio');
+const { serveAudioFile } = require("./audioFile/serveAudio");
 
 const {
-  downloadAlignedAudio
-} = require('./audioFile/alignAudio');
+  previewAlignedAudio,
+  generateAlignedAudio,
+  downloadAlignedAudio,
+} = require("./audioFile/alignAudio");
 
-const {
-  downloadAllAudio
-} = require('./audioFile/zipAudio');
+const { downloadAllAudio } = require("./audioFile/zipAudio");
 
-const {
-  enhanceF5TTSNarrations
-} = require('./audioFile/enhancer');
+const { enhanceF5TTSNarrations } = require("./audioFile/enhancer");
 
 const {
   modifyAudioSpeed,
-  batchModifyAudioSpeed
-} = require('./audioFile/speedModifier');
+  batchModifyAudioSpeed,
+} = require("./audioFile/speedModifier");
 
 const {
   batchModifyAudioTrim,
   modifyAudioTrimAndSpeedCombined,
-  batchModifyAudioTrimAndSpeedCombined
-} = require('./audioFile/trimModifier');
+  batchModifyAudioTrimAndSpeedCombined,
+} = require("./audioFile/trimModifier");
 
 const {
   getAudioDuration,
-  batchGetAudioDurations
-} = require('./audioFile/durationInfo');
+  batchGetAudioDurations,
+} = require("./audioFile/durationInfo");
 
 // Export all functions
 module.exports = {
   serveAudioFile,
+  previewAlignedAudio,
+  generateAlignedAudio,
   downloadAlignedAudio,
   downloadAllAudio,
   enhanceF5TTSNarrations,
@@ -51,5 +49,5 @@ module.exports = {
   modifyAudioTrimAndSpeedCombined,
   batchModifyAudioTrimAndSpeedCombined,
   getAudioDuration,
-  batchGetAudioDurations
+  batchGetAudioDurations,
 };

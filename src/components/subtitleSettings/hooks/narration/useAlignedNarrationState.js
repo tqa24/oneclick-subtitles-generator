@@ -1,13 +1,14 @@
 /**
  * Hook for managing aligned narration state
  */
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from "react";
 import {
   setAlignedNarrationVolume as setAlignedNarrationVolumeService,
+  setAlignedNarrationPlaybackRate as setAlignedNarrationPlaybackRateService,
   cleanupAlignedNarration as cleanupAlignedNarrationService,
   getAlignedAudioElement as getAlignedAudioElementService,
-  playAlignedNarration as playAlignedNarrationService
-} from '../../../../services/alignedNarrationService';
+  playAlignedNarration as playAlignedNarrationService,
+} from "../../../../services/alignedNarrationService";
 
 /**
  * Hook for managing aligned narration state
@@ -23,8 +24,8 @@ const useAlignedNarrationState = () => {
   const lastVideoTimeRef = useRef(0);
   const isSeekingRef = useRef(false);
   const lastUpdateTimeRef = useRef(0);
-  const lastGenerationResultsHashRef = useRef('');
-  const lastSubtitleTimingsHashRef = useRef('');
+  const lastGenerationResultsHashRef = useRef("");
+  const lastSubtitleTimingsHashRef = useRef("");
   const regenerationTimeoutRef = useRef(null);
   const lastRegenerationTimeRef = useRef(0);
 
@@ -37,9 +38,23 @@ const useAlignedNarrationState = () => {
     setAlignedNarrationVolumeService(volume);
   }, []);
 
-  const cleanupAlignedNarration = useCallback((preserveAudioElement = true, preserveCache = true, force = false) => {
-    cleanupAlignedNarrationService(preserveAudioElement, preserveCache, force);
-  }, []);
+  const setAlignedNarrationPlaybackRate = useCallback(
+    (playbackRate, currentTime = null) => {
+      setAlignedNarrationPlaybackRateService(playbackRate, currentTime);
+    },
+    [],
+  );
+
+  const cleanupAlignedNarration = useCallback(
+    (preserveAudioElement = true, preserveCache = true, force = false) => {
+      cleanupAlignedNarrationService(
+        preserveAudioElement,
+        preserveCache,
+        force,
+      );
+    },
+    [],
+  );
 
   const getAlignedAudioElement = useCallback(() => {
     return getAlignedAudioElementService();
@@ -66,8 +81,9 @@ const useAlignedNarrationState = () => {
     // Service functions
     playAlignedNarration,
     setAlignedNarrationVolume,
+    setAlignedNarrationPlaybackRate,
     cleanupAlignedNarration,
-    getAlignedAudioElement
+    getAlignedAudioElement,
   };
 };
 

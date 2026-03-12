@@ -395,8 +395,17 @@ const GeminiNarrationResults = ({
     return generationResults || [];
   })();
 
+  // Stable key derived from filenames to avoid re-render loops
+  // (displayedResults is a new array every render, so we derive a string key instead)
+  const durationFetchKey = (displayedResults || [])
+    .map(r => r && r.filename)
+    .filter(Boolean)
+    .join(',');
+
   // Load durations for both main files and their trim backups when the displayed list changes
   useEffect(() => {
+    if (!durationFetchKey) return;
+
     const getBackupName = (fn) => {
       if (!fn) return null;
       const lastSlash = fn.lastIndexOf('/');
@@ -405,17 +414,12 @@ const GeminiNarrationResults = ({
       return `${dir ? dir + '/' : ''}backup_${base}`;
     };
 
-    const filenames = (displayedResults || [])
-      .map(r => r && r.filename)
-      .filter(Boolean);
-
+    const filenames = durationFetchKey.split(',');
     const backupFilenames = filenames.map(getBackupName).filter(Boolean);
     const allFilenames = [...new Set([...filenames, ...backupFilenames])];
 
-    if (allFilenames.length > 0) {
-      fetchDurationsBatch(allFilenames);
-    }
-  }, [displayedResults]);
+    fetchDurationsBatch(allFilenames);
+  }, [durationFetchKey]);
 
   // Function to modify audio speed (global batch)
   const modifyAudioSpeed = async () => {

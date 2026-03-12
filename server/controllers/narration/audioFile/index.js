@@ -4,14 +4,14 @@
  */
 
 // Import all modules
-const serveAudio = require('./serveAudio');
-const alignAudio = require('./alignAudio');
-const batchProcessor = require('./batchProcessor');
-const zipAudio = require('./zipAudio');
-const enhancer = require('./enhancer');
-const speedModifier = require('./speedModifier');
-const trimModifier = require('./trimModifier');
-const durationInfo = require('./durationInfo');
+const serveAudio = require("./serveAudio");
+const alignAudio = require("./alignAudio");
+const batchProcessor = require("./batchProcessor");
+const zipAudio = require("./zipAudio");
+const enhancer = require("./enhancer");
+const speedModifier = require("./speedModifier");
+const trimModifier = require("./trimModifier");
+const durationInfo = require("./durationInfo");
 
 // Export all functions
 module.exports = {
@@ -19,6 +19,8 @@ module.exports = {
   serveAudioFile: serveAudio.serveAudioFile,
 
   // Aligned audio processing
+  previewAlignedAudio: alignAudio.previewAlignedAudio,
+  generateAlignedAudio: alignAudio.generateAlignedAudio,
   downloadAlignedAudio: alignAudio.downloadAlignedAudio,
 
   // Batch processing for large numbers of segments
@@ -36,12 +38,13 @@ module.exports = {
   // Audio trim modification
   batchModifyAudioTrim: trimModifier.batchModifyAudioTrim,
   modifyAudioTrimAndSpeedCombined: trimModifier.modifyAudioTrimAndSpeedCombined,
-  batchModifyAudioTrimAndSpeedCombined: trimModifier.batchModifyAudioTrimAndSpeedCombined,
+  batchModifyAudioTrimAndSpeedCombined:
+    trimModifier.batchModifyAudioTrimAndSpeedCombined,
 
   // Duration info
   getAudioDuration: durationInfo.getAudioDuration,
   batchGetAudioDurations: durationInfo.batchGetAudioDurations,
 
   // Utility functions
-  enhanceF5TTSNarrations: enhancer.enhanceF5TTSNarrations
+  enhanceF5TTSNarrations: enhancer.enhanceF5TTSNarrations,
 };

@@ -15,6 +15,7 @@ import '../styles/components/panel-resizer.css';
 import '../styles/components/buttons.css';
 import '../styles/VideoRenderingControls.css';
 import '../styles/components/form-controls.css';
+import { hydrateNarrationResultsForAlignment } from '../utils/narrationAlignmentUtils';
 
 
 
@@ -714,34 +715,37 @@ const VideoRenderingSection = ({
         // Use the same logic as the refresh narration button
         const narrationData = narrationResults.map(result => ({
           filename: result.filename,
-          start_time: result.start_time,
-          end_time: result.end_time,
+          start: result.start ?? result.start_time ?? 0,
+          end: result.end ?? result.end_time ?? 5,
           subtitle_id: result.subtitle_id
         }));
 
         // Call the same endpoint as refresh narration button
-        const response = await fetch(`http://localhost:3031/api/narration/download-aligned`, {
+        const response = await fetch(`http://localhost:3031/api/narration/generate-aligned`, {
           method: 'POST',
           mode: 'cors',
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'audio/wav'
+            'Accept': 'application/json'
           },
-          body: JSON.stringify({ narrations: narrationData })
+          body: JSON.stringify({ narrations: narrationData, format: 'm4a' })
         });
 
         if (response.ok) {
           // Check for audio alignment notification
           const { checkAudioAlignmentFromResponse } = await import('../utils/audioAlignmentNotification.js');
           checkAudioAlignmentFromResponse(response);
-          const blob = await response.blob();
-          const url = URL.createObjectURL(blob);
+          const responseJson = await response.json();
+          const url = responseJson.filename
+            ? `http://localhost:3031/api/narration/audio/${encodeURIComponent(responseJson.filename)}`
+            : `http://localhost:3031${responseJson.url}`;
 
           // Update the cache like the refresh button does
           window.alignedNarrationCache = {
-            blob: blob,
+            blob: null,
             url: url,
+            filename: responseJson.filename,
             timestamp: Date.now(),
             subtitleTimestamps: {}
           };
@@ -835,17 +839,8 @@ const VideoRenderingSection = ({
       });
 
       // Prepare the data for the aligned narration with correct timing
-      const narrationData = narrations
-        .filter(result => {
-          if (result.success && result.filename) {
-            return true;
-          }
-          if (result.success && !result.filename && result.subtitle_id) {
-            result.filename = `subtitle_${result.subtitle_id}/1.wav`;
-            return true;
-          }
-          return false;
-        })
+      const narrationData = hydrateNarrationResultsForAlignment(narrations)
+        .filter(result => result.success && result.filename)
         .map(result => {
           const subtitle = subtitleMap[result.subtitle_id];
           if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
@@ -874,15 +869,15 @@ const VideoRenderingSection = ({
       }
 
       // Call the same endpoint as refresh narration button
-      const response = await fetch(`http://localhost:3031/api/narration/download-aligned`, {
+      const response = await fetch(`http://localhost:3031/api/narration/generate-aligned`, {
         method: 'POST',
         mode: 'cors',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'audio/wav'
+          'Accept': 'application/json'
         },
-        body: JSON.stringify({ narrations: narrationData })
+        body: JSON.stringify({ narrations: narrationData, format: 'm4a' })
       });
 
       // Check for audio alignment notification after successful response
@@ -905,14 +900,16 @@ const VideoRenderingSection = ({
         }
       }
 
-      // Get the blob from the response
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
+      const responseJson = await response.json();
+      const url = responseJson.filename
+        ? `http://localhost:3031/api/narration/audio/${encodeURIComponent(responseJson.filename)}`
+        : `http://localhost:3031${responseJson.url}`;
 
       // Update the aligned narration cache
       window.alignedNarrationCache = {
-        blob: blob,
+        blob: null,
         url: url,
+        filename: responseJson.filename,
         timestamp: Date.now(),
         subtitleTimestamps: {}
       };

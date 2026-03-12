@@ -10,6 +10,7 @@ import { VariableSizeList as List } from 'react-window';
 import { SERVER_URL } from '../../../config';
 import { deriveSubtitleId, idsEqual } from '../../../utils/subtitle/idUtils';
 import { enhanceF5TTSNarrations } from '../../../utils/narrationEnhancer';
+import { hydrateNarrationResultsForAlignment } from '../../../utils/narrationAlignmentUtils';
 import { formatTime } from '../../../utils/timeFormatter';
 
 // Constants for localStorage keys
@@ -409,8 +410,17 @@ const NarrationResults = ({
     }
   };
 
+  // Stable key derived from filenames to avoid re-render loops
+  // (displayedResults is a new array every render, so we derive a string key instead)
+  const durationFetchKey = (displayedResults || [])
+    .map(r => r && r.filename)
+    .filter(Boolean)
+    .join(',');
+
   // Load durations for both main files and their trim backups
   useEffect(() => {
+    if (!durationFetchKey) return;
+
     const getBackupName = (fn) => {
       if (!fn) return null;
       const lastSlash = fn.lastIndexOf('/');
@@ -419,18 +429,12 @@ const NarrationResults = ({
       return `${dir ? dir + '/' : ''}backup_${base}`;
     };
 
-    const filenames = (displayedResults || [])
-      .map(r => r && r.filename)
-      .filter(Boolean);
-
+    const filenames = durationFetchKey.split(',');
     const backupFilenames = filenames.map(getBackupName).filter(Boolean);
-
     const allFilenames = [...new Set([...filenames, ...backupFilenames])];
 
-    if (allFilenames.length > 0) {
-      fetchDurationsBatch(allFilenames);
-    }
-  }, [displayedResults]);
+    fetchDurationsBatch(allFilenames);
+  }, [durationFetchKey]);
 
   const [speedValue, setSpeedValue] = useState(1.0);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -821,33 +825,7 @@ const NarrationResults = ({
 
               // Enhance narrations with timing information from subtitles
               const enhancedResults = enhanceF5TTSNarrations(generationResults, subtitles);
-
-              // Make sure all narrations have the filename property set
-              // This is critical for the "Refresh Narration" button to work
-              const resultsWithFilenames = enhancedResults.map(result => {
-                // If the result already has a filename, use it
-                if (result.filename) {
-                  return result;
-                }
-
-                // If the result doesn't have a filename but has audioData, it means
-                // we're still in the process of saving it to the server
-                if (result.audioData) {
-                  console.warn(`Narration for subtitle ${result.subtitle_id} has audioData but no filename yet`);
-                  return result;
-                }
-
-                // If the result has neither filename nor audioData, it's likely a failed narration
-                if (!result.success) {
-                  return result;
-                }
-
-                // For any other case, construct a default filename based on the subtitle_id
-                return {
-                  ...result,
-                  filename: `subtitle_${result.subtitle_id}/f5tts_1.wav`
-                };
-              });
+              const resultsWithFilenames = hydrateNarrationResultsForAlignment(enhancedResults);
 
               // Update window.originalNarrations with enhanced results for alignment
               window.originalNarrations = [...resultsWithFilenames];

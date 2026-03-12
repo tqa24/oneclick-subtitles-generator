@@ -1,7 +1,7 @@
 /**
  * Hook for handling aligned narration events
  */
-import { useEffect } from 'react';
+import { useEffect } from "react";
 // These imports are used in the commented-out code but not in the active code
 // import { createHash, getAllSubtitles, createSubtitleMap, enhanceNarrationWithTiming } from './alignedNarrationUtils';
 
@@ -20,18 +20,14 @@ const useAlignedNarrationEvents = ({
   generationResults,
   useAlignedMode,
   state,
-  regenerateAlignedNarration
+  regenerateAlignedNarration,
 }) => {
   const {
-    // These variables are used in the commented-out code but not in the active code
-    // isGeneratingAligned,
-    // isAlignedAvailable,
-    // lastGenerationResultsHashRef,
-    // lastSubtitleTimingsHashRef,
+    setAlignedStatus,
+    setIsAlignedAvailable,
     regenerationTimeoutRef,
     lastRegenerationTimeRef,
-    // playAlignedNarration,
-    // getAlignedAudioElement
+    playAlignedNarration,
   } = state;
 
   // Listen for manual refresh narration button events only
@@ -43,8 +39,6 @@ const useAlignedNarrationEvents = ({
 
     // Function to handle manual refresh narration button click
     const handleManualRefreshNarration = (event) => {
-
-
       // Clear any existing timeout
       if (regenerationTimeoutRef.current) {
         clearTimeout(regenerationTimeoutRef.current);
@@ -52,42 +46,88 @@ const useAlignedNarrationEvents = ({
 
       // Force immediate regeneration without any debounce or cooldown
       try {
-
-
         // Reset the last regeneration time
         lastRegenerationTimeRef.current = 0;
 
         // Reset the aligned narration cache completely
-        if (typeof window.resetAlignedNarration === 'function') {
-
+        if (typeof window.resetAlignedNarration === "function") {
           window.resetAlignedNarration();
         }
 
         // Regenerate the aligned narration immediately
         regenerateAlignedNarration();
       } catch (error) {
-        console.error('Error during manual regeneration:', error);
+        console.error("Error during manual regeneration:", error);
+      }
+    };
+
+    const handleAlignedNarrationReady = () => {
+      setIsAlignedAvailable(true);
+      setAlignedStatus({
+        status: "complete",
+        message: "Aligned narration ready",
+      });
+
+      if (videoRef?.current && !videoRef.current.paused) {
+        playAlignedNarration(videoRef.current.currentTime, true);
+      }
+    };
+
+    const handleAlignedNarrationStatus = (event) => {
+      const detail = event?.detail || {};
+
+      if (detail.status === "error") {
+        setIsAlignedAvailable(false);
+        setAlignedStatus({
+          status: "error",
+          message: detail.message || "Failed to prepare aligned narration",
+        });
+        return;
+      }
+
+      if (detail.available === true || detail.status === "complete") {
+        handleAlignedNarrationReady();
+      }
+    };
+
+    const handleSubtitleTimingChanged = (event) => {
+      if (event.detail && event.detail.action === "manual-refresh") {
+        handleManualRefreshNarration(event);
       }
     };
 
     // Listen only for the subtitle-timing-changed event with action=manual-refresh
     // This is triggered by the "Refresh Narration" button in VideoPreview.js
-    window.addEventListener('subtitle-timing-changed', (event) => {
-      if (event.detail && event.detail.action === 'manual-refresh') {
-        handleManualRefreshNarration(event);
-      }
-    });
+    window.addEventListener(
+      "subtitle-timing-changed",
+      handleSubtitleTimingChanged,
+    );
+    window.addEventListener(
+      "aligned-narration-ready",
+      handleAlignedNarrationReady,
+    );
+    window.addEventListener(
+      "aligned-narration-status",
+      handleAlignedNarrationStatus,
+    );
 
     // Store the timeout ID in a variable to avoid closure issues
     const timeoutId = regenerationTimeoutRef.current;
 
     // Clean up event listeners
     return () => {
-      window.removeEventListener('subtitle-timing-changed', (event) => {
-        if (event.detail && event.detail.action === 'manual-refresh') {
-          handleManualRefreshNarration(event);
-        }
-      });
+      window.removeEventListener(
+        "subtitle-timing-changed",
+        handleSubtitleTimingChanged,
+      );
+      window.removeEventListener(
+        "aligned-narration-ready",
+        handleAlignedNarrationReady,
+      );
+      window.removeEventListener(
+        "aligned-narration-status",
+        handleAlignedNarrationStatus,
+      );
 
       if (timeoutId) {
         clearTimeout(timeoutId);
@@ -96,8 +136,12 @@ const useAlignedNarrationEvents = ({
   }, [
     useAlignedMode,
     regenerateAlignedNarration,
+    setAlignedStatus,
+    setIsAlignedAvailable,
+    videoRef,
+    playAlignedNarration,
     regenerationTimeoutRef,
-    lastRegenerationTimeRef
+    lastRegenerationTimeRef,
   ]);
 
   // We've removed the automatic regeneration useEffect

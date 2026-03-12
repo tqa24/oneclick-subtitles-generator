@@ -12,6 +12,14 @@ const { getFfmpegPath, getFfprobePath } = require('../../../services/shared/ffmp
 // Import directory paths
 const { TEMP_AUDIO_DIR } = require('../directoryManager');
 
+const AUDIO_SAMPLE_RATE = 44100;
+const AUDIO_CHANNEL_LAYOUT = 'stereo';
+const DURATION_PROBE_CONCURRENCY = 8;
+const MAX_VERBOSE_ADJUSTMENT_LOGS = 25;
+const MIN_GAP_DURATION = 0.005;
+
+const mediaDurationCache = new Map();
+
 // Simple media duration utility (replacement for removed durationUtils)
 
 /**
@@ -20,7 +28,20 @@ const { TEMP_AUDIO_DIR } = require('../directoryManager');
  * @returns {Promise<number>} - Duration in seconds
  */
 function getMediaDuration(mediaPath) {
-  return new Promise((resolve, reject) => {
+  const cacheKey = (() => {
+    try {
+      const stats = fs.statSync(mediaPath);
+      return `${mediaPath}:${stats.size}:${stats.mtimeMs}`;
+    } catch {
+      return mediaPath;
+    }
+  })();
+
+  if (mediaDurationCache.has(cacheKey)) {
+    return mediaDurationCache.get(cacheKey);
+  }
+
+  const durationPromise = new Promise((resolve, reject) => {
     const ffprobePath = getFfprobePath();
     const ffprobe = spawn(ffprobePath, [
       '-v', 'error',
@@ -31,6 +52,10 @@ function getMediaDuration(mediaPath) {
 
     let output = '';
     let errorOutput = '';
+    const timeoutId = setTimeout(() => {
+      ffprobe.kill();
+      reject(new Error('ffprobe timeout'));
+    }, 10000);
 
     ffprobe.stdout.on('data', (data) => {
       output += data.toString();
@@ -41,6 +66,8 @@ function getMediaDuration(mediaPath) {
     });
 
     ffprobe.on('close', (code) => {
+      clearTimeout(timeoutId);
+
       if (code !== 0) {
         console.error(`ffprobe error: ${errorOutput}`);
         return reject(new Error(`ffprobe failed with code ${code}`));
@@ -53,12 +80,107 @@ function getMediaDuration(mediaPath) {
 
       resolve(duration);
     });
+  });
 
-    // Timeout after 10 seconds
-    setTimeout(() => {
-      ffprobe.kill();
-      reject(new Error('ffprobe timeout'));
-    }, 10000);
+  durationPromise.catch(() => {
+    mediaDurationCache.delete(cacheKey);
+  });
+
+  mediaDurationCache.set(cacheKey, durationPromise);
+  return durationPromise;
+}
+
+async function mapWithConcurrency(items, concurrency, mapper) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return [];
+  }
+
+  const results = new Array(items.length);
+  let nextIndex = 0;
+
+  const worker = async () => {
+    while (true) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+
+      if (currentIndex >= items.length) {
+        return;
+      }
+
+      results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, () => worker())
+  );
+
+  return results;
+}
+
+async function enrichSegmentsWithDurations(audioSegments) {
+  return mapWithConcurrency(audioSegments, DURATION_PROBE_CONCURRENCY, async (segment) => {
+    try {
+      const actualDuration = await getMediaDuration(segment.path);
+      return {
+        ...segment,
+        actualDuration,
+        naturalEnd: segment.start + actualDuration
+      };
+    } catch (error) {
+      console.error(`Error getting duration for audio segment ${segment.path}: ${error.message}`);
+      const fallbackDuration = Math.max(0, (segment.end || 0) - (segment.start || 0)) || 5;
+      return {
+        ...segment,
+        actualDuration: fallbackDuration,
+        naturalEnd: segment.start + fallbackDuration
+      };
+    }
+  });
+}
+
+const formatFilterDuration = (durationSeconds) => {
+  const safeDuration = Math.max(0, Number(durationSeconds) || 0);
+  return safeDuration.toFixed(6).replace(/0+$/, '').replace(/\.$/, '') || '0';
+};
+
+const escapeFilterPath = (filePath) => {
+  return path.resolve(filePath)
+    .replace(/\\/g, '/')
+    .replace(/:/g, '\\:')
+    .replace(/'/g, "\\'")
+    .replace(/\[/g, '\\[')
+    .replace(/\]/g, '\\]')
+    .replace(/,/g, '\\,')
+    .replace(/;/g, '\\;');
+};
+
+function runFfmpeg(ffmpegArgs, description) {
+  return new Promise((resolve, reject) => {
+    const ffmpegPath = getFfmpegPath();
+    const ffmpegProcess = spawn(ffmpegPath, ffmpegArgs);
+
+    let stderrData = '';
+
+    ffmpegProcess.stderr.on('data', (data) => {
+      stderrData += data.toString();
+    });
+
+    ffmpegProcess.on('close', (code) => {
+      if (code !== 0) {
+        console.error(`ffmpeg ${description} exited with code ${code}`);
+        console.error(`stderr: ${stderrData.substring(0, 1000)}${stderrData.length > 1000 ? '...' : ''}`);
+        reject(new Error(`ffmpeg ${description} failed with code ${code}`));
+        return;
+      }
+
+      resolve();
+    });
+
+    ffmpegProcess.on('error', (err) => {
+      console.error(`Error spawning ffmpeg for ${description}: ${err.message}`);
+      reject(err);
+    });
   });
 }
 
@@ -209,34 +331,22 @@ const analyzeAndAdjustSegments = async (audioSegments) => {
   // Sort segments by start time (should already be sorted, but ensure it)
   audioSegments.sort((a, b) => a.start - b.start);
 
-  // First pass: Get actual durations of each audio file
-  const segmentsWithDuration = [];
-  for (const segment of audioSegments) {
-    try {
-      // Get the actual duration of the audio file
-      const actualDuration = await getMediaDuration(segment.path);
-
-      // Add the actual duration to the segment
-      segmentsWithDuration.push({
-        ...segment,
-        actualDuration,
-        // Calculate a "natural end" based on start time + actual duration
-        // This represents when the audio would naturally end if played at the start time
-        naturalEnd: segment.start + actualDuration
-      });
-    } catch (error) {
-      console.error(`Error getting duration for audio segment: ${error.message}`);
-      // If we can't get the duration, use the subtitle timing as fallback
-      segmentsWithDuration.push({
-        ...segment,
-        actualDuration: segment.end - segment.start,
-        naturalEnd: segment.end
-      });
-    }
-  }
+  // First pass: get actual durations in parallel
+  const segmentsWithDuration = await enrichSegmentsWithDurations(audioSegments);
 
   // Second pass: Detect and resolve overlaps naturally (like in Premiere Pro)
   const adjustedSegments = [];
+  let detailedLogs = 0;
+  let suppressedLogs = 0;
+
+  const logAdjustmentDetail = (...args) => {
+    if (detailedLogs < MAX_VERBOSE_ADJUSTMENT_LOGS) {
+      console.log(...args);
+      detailedLogs += 1;
+    } else {
+      suppressedLogs += 1;
+    }
+  };
 
   for (let i = 0; i < segmentsWithDuration.length; i++) {
     const segment = segmentsWithDuration[i];
@@ -262,7 +372,7 @@ const analyzeAndAdjustSegments = async (audioSegments) => {
       const prevIsGrouped = previousSegment.isGrouped ? ` (grouped with ${previousSegment.original_ids?.length || 0} original IDs)` : '';
       const currIsGrouped = segment.isGrouped ? ` (grouped with ${segment.original_ids?.length || 0} original IDs)` : '';
 
-      console.log(`Detected overlap of ${overlapAmount.toFixed(2)}s between segments:
+      logAdjustmentDetail(`Detected overlap of ${overlapAmount.toFixed(2)}s between segments:
         - Previous: ID ${previousSegment.subtitle_id}${prevIsGrouped}, Start: ${previousSegment.start.toFixed(2)}, Effective End: ${previousEffectiveEnd.toFixed(2)}
         - Current: ID ${segment.subtitle_id}${currIsGrouped}, Start: ${segment.start.toFixed(2)}, End: ${segment.end.toFixed(2)}`);
 
@@ -276,13 +386,13 @@ const analyzeAndAdjustSegments = async (audioSegments) => {
 
       // If the adjustment is significant (>0.5s), try to shift THIS segment left into blank spaces
       if (basicShiftAmount > 0.5) {
-        console.log(`Adjustment needed (${basicShiftAmount.toFixed(2)}s), looking for blank spaces to minimize duration extension...`);
+        logAdjustmentDetail(`Adjustment needed (${basicShiftAmount.toFixed(2)}s), looking for blank spaces to minimize duration extension...`);
 
         // Find all blank spaces in the current adjusted segments
         const blankSpaces = findBlankSpaces(adjustedSegments);
 
         if (blankSpaces.length > 0) {
-          console.log(`Found ${blankSpaces.length} blank spaces:`,
+          logAdjustmentDetail(`Found ${blankSpaces.length} blank spaces:`,
             blankSpaces.map(space => `${space.duration.toFixed(2)}s gap after segment ${space.afterSegmentId}`));
 
           // Calculate distributed shift for this segment across multiple blank spaces
@@ -292,23 +402,20 @@ const analyzeAndAdjustSegments = async (audioSegments) => {
             // Apply the distributed shift to reduce the rightward push
             const totalLeftShift = Math.min(distributedShiftResult.totalShiftAmount, basicShiftAmount);
 
-            console.log(`Using distributed shift across ${distributedShiftResult.distributedShifts.length} blank spaces:`);
-            distributedShiftResult.distributedShifts.forEach((shift, index) => {
-              console.log(`  Space ${index + 1}: ${shift.shiftAmount.toFixed(2)}s into gap after segment ${shift.blankSpace.afterSegmentId} (weight: ${shift.weight.toFixed(1)})`);
-            });
+            logAdjustmentDetail(`Using distributed shift across ${distributedShiftResult.distributedShifts.length} blank spaces`);
             
             // Reduce the rightward push by the amount we can shift left
             finalAdjustedStart = basicAdjustedStart - totalLeftShift;
             finalShiftAmount = finalAdjustedStart - segment.start;
             adjustmentStrategy = `hybrid-shift-${distributedShiftResult.distributedShifts.length}-spaces`;
             
-            console.log(`  Net adjustment: ${finalShiftAmount.toFixed(2)}s for segment ${segment.subtitle_id}`);
+            logAdjustmentDetail(`Net adjustment: ${finalShiftAmount.toFixed(2)}s for segment ${segment.subtitle_id}`);
           } else {
             // No usable blank spaces, accept the full rightward push
-            console.log(`No usable blank spaces. Accepting full rightward push of ${basicShiftAmount.toFixed(2)}s`);
+            logAdjustmentDetail(`No usable blank spaces. Accepting full rightward push of ${basicShiftAmount.toFixed(2)}s`);
           }
         } else {
-          console.log(`No blank spaces found. Accepting full rightward push of ${basicShiftAmount.toFixed(2)}s`);
+          logAdjustmentDetail(`No blank spaces found. Accepting full rightward push of ${basicShiftAmount.toFixed(2)}s`);
         }
       }
 
@@ -327,7 +434,7 @@ const analyzeAndAdjustSegments = async (audioSegments) => {
 
       // Log the adjustment
       const direction = finalShiftAmount > 0 ? 'right' : 'left';
-      console.log(`Adjusted segment ${segment.subtitle_id}: ${adjustmentStrategy}, shifted by ${Math.abs(finalShiftAmount).toFixed(2)}s ${direction} to start at ${finalAdjustedStart.toFixed(2)}s`);
+      logAdjustmentDetail(`Adjusted segment ${segment.subtitle_id}: ${adjustmentStrategy}, shifted by ${Math.abs(finalShiftAmount).toFixed(2)}s ${direction} to start at ${finalAdjustedStart.toFixed(2)}s`);
 
       adjustedSegments.push(adjustedSegment);
     } else {
@@ -365,6 +472,9 @@ const analyzeAndAdjustSegments = async (audioSegments) => {
     console.log(`Smart overlap resolution complete: Adjusted ${adjustedCount} of ${audioSegments.length} segments (${leftMoves} moved left, ${rightMoves} moved right) for optimized narration flow.`);
     if (maxAdjustmentSegment) {
       console.log(`Maximum adjustment: Segment ${maxAdjustmentSegment.segmentId} pushed ${maxAdjustmentSegment.adjustmentAmount.toFixed(2)}s right via ${maxAdjustmentSegment.strategy}`);
+    }
+    if (suppressedLogs > 0) {
+      console.log(`Suppressed ${suppressedLogs} verbose overlap-resolution log lines.`);
     }
     
     // Calculate total duration extension
@@ -416,6 +526,120 @@ const analyzeAndAdjustSegments = async (audioSegments) => {
       rightMoves,
       maxAdjustment: maxAdjustmentSegment
     }
+  };
+};
+
+const renderAlignedAudioTimeline = async (audioSegments, outputPath, options = {}) => {
+  const {
+    smartOverlapResolution = true,
+    format = 'm4a',
+    audioBitrate = '96k'
+  } = options;
+
+  let segmentsToProcess = audioSegments;
+  let adjustmentStats = null;
+
+  if (smartOverlapResolution && audioSegments.length > 1) {
+    const result = await analyzeAndAdjustSegments(audioSegments);
+    segmentsToProcess = result.adjustedSegments;
+    adjustmentStats = result.adjustmentStats;
+  } else if (audioSegments.length > 0) {
+    segmentsToProcess = await enrichSegmentsWithDurations(audioSegments);
+  }
+
+  const finalTimelineDuration = segmentsToProcess.length > 0
+    ? Math.max(...segmentsToProcess.map(segment => segment.naturalEnd || (segment.start + segment.actualDuration) || segment.end)) + 0.25
+    : 1;
+
+  const tempDir = path.join(TEMP_AUDIO_DIR);
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
+
+  const filterScriptPath = path.join(tempDir, `aligned_timeline_${Date.now()}.txt`);
+  const filterParts = [];
+  const concatInputs = [];
+  let currentCursor = 0;
+  let silenceIndex = 0;
+  let audioIndex = 0;
+
+  const appendGap = (gapDuration) => {
+    if (gapDuration <= MIN_GAP_DURATION) {
+      return;
+    }
+
+    const label = `s${silenceIndex++}`;
+    filterParts.push(
+      `[0:a]atrim=0:${formatFilterDuration(gapDuration)},asetpts=PTS-STARTPTS[${label}]`
+    );
+    concatInputs.push(`[${label}]`);
+  };
+
+  for (const segment of segmentsToProcess) {
+    const segmentStart = Math.max(0, Number(segment.start) || 0);
+    const segmentEnd = segment.naturalEnd || (segmentStart + (segment.actualDuration || 0));
+    appendGap(segmentStart - currentCursor);
+
+    const label = `a${audioIndex++}`;
+    filterParts.push(
+      `amovie='${escapeFilterPath(segment.path)}',aresample=${AUDIO_SAMPLE_RATE},aformat=sample_rates=${AUDIO_SAMPLE_RATE}:channel_layouts=${AUDIO_CHANNEL_LAYOUT},volume=1.5,asetpts=PTS-STARTPTS[${label}]`
+    );
+    concatInputs.push(`[${label}]`);
+
+    currentCursor = Math.max(currentCursor, segmentEnd);
+  }
+
+  appendGap(finalTimelineDuration - currentCursor);
+
+  if (concatInputs.length === 0) {
+    filterParts.push('[0:a]atrim=0:1,asetpts=PTS-STARTPTS[aout]');
+  } else if (concatInputs.length === 1) {
+    filterParts.push(`${concatInputs[0]}acopy[aout]`);
+  } else {
+    filterParts.push(`${concatInputs.join('')}concat=n=${concatInputs.length}:v=0:a=1[aout]`);
+  }
+
+  fs.writeFileSync(filterScriptPath, filterParts.join(';\n'));
+
+  const ffmpegArgs = [
+    '-f', 'lavfi',
+    '-i', `anullsrc=channel_layout=${AUDIO_CHANNEL_LAYOUT}:sample_rate=${AUDIO_SAMPLE_RATE}`,
+    '-filter_complex_script', filterScriptPath,
+    '-map', '[aout]'
+  ];
+
+  if (format === 'wav') {
+    ffmpegArgs.push(
+      '-c:a', 'pcm_s16le',
+      '-ar', String(AUDIO_SAMPLE_RATE)
+    );
+  } else {
+    ffmpegArgs.push(
+      '-c:a', 'aac',
+      '-b:a', audioBitrate,
+      '-movflags', '+faststart'
+    );
+  }
+
+  ffmpegArgs.push('-y', outputPath);
+
+  try {
+    await runFfmpeg(ffmpegArgs, 'aligned timeline render');
+  } finally {
+    try {
+      if (fs.existsSync(filterScriptPath)) {
+        fs.unlinkSync(filterScriptPath);
+      }
+    } catch (cleanupError) {
+      console.error(`Error cleaning up aligned timeline script: ${cleanupError.message}`);
+    }
+  }
+
+  return {
+    outputPath,
+    adjustmentStats,
+    adjustedSegments: segmentsToProcess,
+    totalDuration: finalTimelineDuration
   };
 };
 
@@ -684,5 +908,6 @@ module.exports = {
   processBatch,
   concatenateAudioFiles,
   analyzeAndAdjustSegments,
-  getMediaDuration
+  getMediaDuration,
+  renderAlignedAudioTimeline
 };

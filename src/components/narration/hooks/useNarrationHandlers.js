@@ -13,6 +13,7 @@ import {
 import { isModelAvailable } from '../../../services/modelAvailabilityService';
 import ISO6391 from 'iso-639-1';
 import { deriveSubtitleId } from '../../../utils/subtitle/idUtils';
+import { hydrateNarrationResultsForAlignment } from '../../../utils/narrationAlignmentUtils';
 
 
 /**
@@ -793,13 +794,14 @@ const useNarrationHandlers = ({
       );
 
       // Initialize UI with full pending list like Gemini flow
-      const initialResults = subtitlesWithIds.map(sub => ({
+      const initialResults = subtitlesWithIds.map((sub, index) => ({
         subtitle_id: sub.id,
         text: sub.text,
         success: false,
         pending: true,
         audioData: null,
         filename: null,
+        outputIndex: index + 1,
         // preserve grouping info and timing if present
         original_ids: sub.original_ids || [sub.id],
         start: sub.start,
@@ -901,10 +903,10 @@ const useNarrationHandlers = ({
         // Replace the corresponding pending item in-place to keep ordering stable
         const idx = tempResults.findIndex(item => item.subtitle_id === result.subtitle_id);
         if (idx !== -1) {
-          tempResults[idx] = { ...result, pending: false };
+          tempResults[idx] = { ...tempResults[idx], ...result, pending: false };
         } else {
           // Fallback: append if not found (shouldn't happen if we seeded correctly)
-          tempResults.push({ ...result, pending: false });
+          tempResults.push({ ...result, pending: false, outputIndex: tempResults.length + 1 });
         }
 
         // Update the UI with the current results (full list stays visible)
@@ -947,9 +949,17 @@ const useNarrationHandlers = ({
       };
 
       const handleComplete = (results) => {
+        const finalizedResults = hydrateNarrationResultsForAlignment(
+          results.map((result, index) => ({
+            ...(tempResults[index] || { outputIndex: index + 1 }),
+            ...result,
+            pending: false
+          }))
+        );
+
         setGenerationStatus(t('narration.generationComplete', 'Narration generation complete'));
         // Ensure we have the final results
-        setGenerationResults(results);
+        setGenerationResults(finalizedResults);
 
         // Cache narrations and reference audio to localStorage for F5-TTS
         try {
@@ -974,10 +984,12 @@ const useNarrationHandlers = ({
             const cacheEntry = {
               mediaId,
               timestamp: Date.now(),
-              narrations: results.map(result => ({
+              narrations: finalizedResults.map(result => ({
                 subtitle_id: result.subtitle_id,
                 filename: result.filename,
+                outputIndex: result.outputIndex,
                 success: result.success,
+                skipped: result.skipped,
                 text: result.text,
                 method: 'f5tts'
               })),
@@ -1000,17 +1012,17 @@ const useNarrationHandlers = ({
         // Update state if we generated narrations for grouped subtitles
         if (useGroupedSubtitles && groupedSubtitles && groupedSubtitles.length > 0) {
           // Store as grouped narrations in window object
-          window.groupedNarrations = [...results];
+          window.groupedNarrations = [...finalizedResults];
           window.useGroupedSubtitles = true;
           // Update the React state to reflect that we're now using grouped subtitles
           setUseGroupedSubtitles(true);
-          console.log(`Stored ${results.length} F5-TTS grouped narrations and updated state`);
+          console.log(`Stored ${finalizedResults.length} F5-TTS grouped narrations and updated state`);
         } else {
           // Store as original/translated narrations
           if (subtitleSource === 'original') {
-            window.originalNarrations = [...results];
+            window.originalNarrations = [...finalizedResults];
           } else {
-            window.translatedNarrations = [...results];
+            window.translatedNarrations = [...finalizedResults];
           }
           window.useGroupedSubtitles = false;
         }
@@ -1207,7 +1219,7 @@ const useNarrationHandlers = ({
 
 
       // Prepare the data for the aligned narration with correct timing
-      const narrationData = generationResults
+      const narrationData = hydrateNarrationResultsForAlignment(generationResults)
         .filter(result => result.success && result.filename)
         .map(result => {
           // Get the correct subtitle ID from the result

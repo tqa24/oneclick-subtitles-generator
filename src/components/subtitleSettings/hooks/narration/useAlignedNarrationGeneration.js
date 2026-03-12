@@ -16,6 +16,7 @@ import {
   createSubtitleMap,
   getAllSubtitles
 } from './alignedNarrationUtils';
+import { hydrateNarrationResultsForAlignment } from '../../../../utils/narrationAlignmentUtils';
 
 /**
  * Hook for handling aligned narration generation
@@ -109,7 +110,7 @@ const useAlignedNarrationGeneration = ({
 
       // Filter generation results to only include successful ones with audio files
       // This ensures we only process narrations that actually exist
-      const availableResults = generationResults.filter(result =>
+      const availableResults = hydrateNarrationResultsForAlignment(generationResults).filter(result =>
         result.success && (result.filename || result.audioData)
       );
 

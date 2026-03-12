@@ -2,6 +2,8 @@
  * Utility functions for enhancing narration results with additional metadata
  */
 
+import { hydrateNarrationResultsForAlignment } from './narrationAlignmentUtils';
+
 /**
  * Enhance F5-TTS narration results with timing information from subtitles
  * This ensures F5-TTS narrations have the same metadata as Gemini narrations
@@ -17,9 +19,11 @@ export const enhanceF5TTSNarrations = (narrationResults, subtitles) => {
     return narrationResults;
   }
 
+  const hydratedNarrations = hydrateNarrationResultsForAlignment(narrationResults);
+
   if (!subtitles || !Array.isArray(subtitles) || subtitles.length === 0) {
     console.warn('No subtitles available for enhancing narrations');
-    return narrationResults;
+    return hydratedNarrations;
   }
 
   // Create a map of subtitles by ID for quick lookup
@@ -32,7 +36,7 @@ export const enhanceF5TTSNarrations = (narrationResults, subtitles) => {
   });
 
   // Enhance each narration result with timing information
-  return narrationResults.map(result => {
+  return hydratedNarrations.map(result => {
     // Create a base enhanced result
     const enhancedResult = { ...result };
 
