@@ -72,6 +72,11 @@ router.post(
   narrationController.downloadAlignedAudio,
 );
 
+router.get(
+  "/aligned-progress/:jobId",
+  narrationController.getAlignedDownloadProgress,
+);
+
 // Record reference audio
 router.post(
   "/record-reference",
@@ -216,6 +221,7 @@ router.use("/", async (req, res, next) => {
     req.url === "/preview-aligned" ||
     req.url === "/generate-aligned" ||
     req.url === "/download-aligned" ||
+    req.url.startsWith("/aligned-progress/") ||
     req.url === "/generate" ||
     req.url === "/record-reference" ||
     req.url === "/upload-reference" ||

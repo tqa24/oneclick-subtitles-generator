@@ -15,12 +15,14 @@ const {
   getMediaDuration,
   renderAlignedAudioTimeline,
 } = require("./batchProcessor");
+const { removeAudioMetadata, toDurationNumber } = require("./mediaMetadata");
 
 const DEFAULT_PLAYBACK_FORMAT = "m4a";
 const DEFAULT_DOWNLOAD_FORMAT = "wav";
 const ALIGNED_FILE_PREFIX = "aligned_narration_";
 const TEMP_SEGMENT_FILE_PREFIX = "temp_aligned_";
 const STALE_ALIGNED_FILE_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+const ALIGNED_JOB_MAX_AGE_MS = 30 * 60 * 1000;
 const ALIGNED_RESPONSE_HEADERS = [
   "Content-Disposition",
   "X-Duration-Difference",
@@ -30,6 +32,8 @@ const ALIGNED_RESPONSE_HEADERS = [
   "X-Max-Adjustment-Amount",
   "X-Max-Adjustment-Strategy",
 ].join(", ");
+const AUDIO_FILE_EXTENSIONS = new Set([".wav", ".mp3", ".m4a"]);
+const alignedDownloadJobs = new Map();
 
 const getAudioContentType = (format) => {
   if (format === "wav") {
@@ -88,6 +92,7 @@ const cleanupStaleAlignedAudioFiles = () => {
 
       try {
         fs.unlinkSync(candidate.filePath);
+        removeAudioMetadata(candidate.filePath);
       } catch (error) {
         console.error(
           `Failed to remove stale aligned audio file ${candidate.filename}: ${error.message}`,
@@ -114,13 +119,26 @@ const buildAudioRoutePath = (publicFilename) => {
 };
 
 const setAlignedResponseHeaders = (res, metadata, format) => {
+  const existingExposeHeaders = String(
+    res.getHeader("Access-Control-Expose-Headers") || "",
+  )
+    .split(",")
+    .map((header) => header.trim())
+    .filter(Boolean);
+  const exposeHeaders = Array.from(
+    new Set([
+      ...existingExposeHeaders,
+      ...ALIGNED_RESPONSE_HEADERS.split(",").map((header) => header.trim()),
+    ]),
+  ).join(", ");
+
   res.setHeader(
     "X-Duration-Difference",
     metadata.durationDifference.toFixed(2),
   );
   res.setHeader("X-Expected-Duration", metadata.expectedDuration.toFixed(2));
   res.setHeader("X-Actual-Duration", metadata.actualDuration.toFixed(2));
-  res.setHeader("Access-Control-Expose-Headers", ALIGNED_RESPONSE_HEADERS);
+  res.setHeader("Access-Control-Expose-Headers", exposeHeaders);
 
   if (metadata.adjustmentStats?.maxAdjustment) {
     res.setHeader(
@@ -142,13 +160,124 @@ const setAlignedResponseHeaders = (res, metadata, format) => {
   }
 };
 
+const cleanupStaleAlignedJobs = () => {
+  const now = Date.now();
+  for (const [jobId, jobState] of alignedDownloadJobs.entries()) {
+    if (!jobState?.updatedAt || now - jobState.updatedAt > ALIGNED_JOB_MAX_AGE_MS) {
+      alignedDownloadJobs.delete(jobId);
+    }
+  }
+};
+
+const setAlignedJobProgress = (jobId, patch = {}) => {
+  if (!jobId) {
+    return null;
+  }
+
+  cleanupStaleAlignedJobs();
+  const currentState = alignedDownloadJobs.get(jobId) || {
+    jobId,
+    progress: 0,
+    status: "pending",
+    messageKey: "alignedDownloadQueued",
+    message: "Waiting to start aligned download...",
+    processedSegments: 0,
+    totalSegments: 0,
+    createdAt: Date.now(),
+    completed: false,
+    error: null,
+  };
+
+  const nextState = {
+    ...currentState,
+    ...patch,
+    updatedAt: Date.now(),
+  };
+
+  alignedDownloadJobs.set(jobId, nextState);
+  return nextState;
+};
+
+const getAlignedJobState = (jobId) => {
+  cleanupStaleAlignedJobs();
+  return alignedDownloadJobs.get(jobId) || null;
+};
+
+const listAudioFiles = (directoryPath) => {
+  try {
+    return fs
+      .readdirSync(directoryPath)
+      .filter((file) =>
+        AUDIO_FILE_EXTENSIONS.has(path.extname(file).toLowerCase()),
+      )
+      .sort();
+  } catch {
+    return [];
+  }
+};
+
+const resolveAudioFileCandidate = (filePath, publicFilename) => {
+  try {
+    if (!fs.existsSync(filePath)) {
+      const parentDir = path.dirname(filePath);
+      if (
+        !fs.existsSync(parentDir) ||
+        !path.basename(parentDir).startsWith("subtitle_")
+      ) {
+        return { filePath, publicFilename };
+      }
+
+      const audioFiles = listAudioFiles(parentDir);
+      if (audioFiles.length === 0) {
+        return { filePath, publicFilename };
+      }
+
+      return {
+        filePath: path.join(parentDir, audioFiles[0]),
+        publicFilename: `${path.basename(parentDir)}/${audioFiles[0]}`,
+      };
+    }
+
+    const stats = fs.statSync(filePath);
+    if (stats.isFile()) {
+      return { filePath, publicFilename };
+    }
+
+    if (!stats.isDirectory()) {
+      return { filePath, publicFilename };
+    }
+
+    const audioFiles = listAudioFiles(filePath);
+    if (audioFiles.length === 0) {
+      return { filePath, publicFilename };
+    }
+
+    return {
+      filePath: path.join(filePath, audioFiles[0]),
+      publicFilename: `${path.basename(filePath)}/${audioFiles[0]}`,
+    };
+  } catch (error) {
+    console.error(
+      `Error resolving audio candidate ${publicFilename || filePath}: ${error.message}`,
+    );
+    return { filePath, publicFilename };
+  }
+};
+
+const getNarrationDurationHint = (narration) =>
+  toDurationNumber(
+    narration?.actualDuration ??
+      narration?.audioDuration ??
+      narration?.duration ??
+      narration?.metadataDuration,
+  );
+
 const resolveNarrationSegments = (narrations) => {
   const audioSegments = [];
 
   for (const narration of narrations) {
     if (narration.filename) {
       let filePath = path.join(OUTPUT_AUDIO_DIR, narration.filename);
-      const subtitleDir = path.dirname(filePath);
 
       try {
         if (
@@ -168,22 +297,12 @@ const resolveNarrationSegments = (narrations) => {
             narration.filename = alternativeFilename;
           }
         }
-
-        if (!fs.existsSync(filePath) && fs.existsSync(subtitleDir)) {
-          const audioFiles = fs
-            .readdirSync(subtitleDir)
-            .filter(
-              (file) =>
-                file.endsWith(".wav") ||
-                file.endsWith(".mp3") ||
-                file.endsWith(".m4a"),
-            );
-
-          if (audioFiles.length > 0) {
-            filePath = path.join(subtitleDir, audioFiles[0]);
-            narration.filename = `${path.basename(subtitleDir)}/${audioFiles[0]}`;
-          }
-        }
+        const resolvedCandidate = resolveAudioFileCandidate(
+          filePath,
+          narration.filename,
+        );
+        filePath = resolvedCandidate.filePath;
+        narration.filename = resolvedCandidate.publicFilename;
       } catch (dirError) {
         console.error(
           `Error resolving narration file ${narration.filename}: ${dirError.message}`,
@@ -196,6 +315,10 @@ const resolveNarrationSegments = (narrations) => {
       }
 
       const stats = fs.statSync(filePath);
+      if (!stats.isFile()) {
+        console.warn(`Skipping non-file narration path: ${narration.filename}`);
+        continue;
+      }
       if (stats.size === 0) {
         throw new Error(`Audio file is empty: ${narration.filename}`);
       }
@@ -217,6 +340,7 @@ const resolveNarrationSegments = (narrations) => {
         publicFilename: narration.filename,
         type: "file",
         isGrouped: narration.original_ids && narration.original_ids.length > 1,
+        actualDuration: getNarrationDurationHint(narration),
       });
       continue;
     }
@@ -254,6 +378,7 @@ const resolveNarrationSegments = (narrations) => {
         type: "temp",
         isGrouped: narration.original_ids && narration.original_ids.length > 1,
         tempFile: tempFilePath,
+        actualDuration: getNarrationDurationHint(narration),
       });
       continue;
     }
@@ -275,6 +400,7 @@ const cleanupTemporarySegmentFiles = (audioSegments) => {
     ) {
       try {
         fs.unlinkSync(segment.tempFile);
+        removeAudioMetadata(segment.tempFile);
       } catch (error) {
         console.error(
           `Failed to clean temp narration segment ${segment.tempFile}: ${error.message}`,
@@ -316,13 +442,13 @@ const createAlignedPreviewPlan = async (narrations) => {
       : {
           adjustedSegments: await Promise.all(
             audioSegments.map(async (segment) => {
-              const actualDuration = await getMediaDuration(segment.path).catch(
-                () => {
+              const actualDuration =
+                toDurationNumber(segment.actualDuration) ??
+                (await getMediaDuration(segment.path).catch(() => {
                   return (
                     Math.max(0, (segment.end || 0) - (segment.start || 0)) || 5
                   );
-                },
-              );
+                }));
 
               return {
                 ...segment,
@@ -385,6 +511,8 @@ const createAlignedPreviewPlan = async (narrations) => {
 
 const createAlignedAudioFile = async (narrations, options = {}) => {
   const format = options.format || DEFAULT_PLAYBACK_FORMAT;
+  const jobId = options.jobId || null;
+  const updateJobProgress = (patch) => setAlignedJobProgress(jobId, patch);
 
   if (!Array.isArray(narrations) || narrations.length === 0) {
     const error = new Error("No narrations provided");
@@ -393,9 +521,25 @@ const createAlignedAudioFile = async (narrations, options = {}) => {
   }
 
   cleanupStaleAlignedAudioFiles();
+  updateJobProgress({
+    progress: 2,
+    status: "starting",
+    messageKey: "alignedDownloadPreparing",
+    message: "Preparing aligned narration job...",
+    totalSegments: narrations.length,
+    processedSegments: 0,
+  });
 
   const sortedNarrations = [...narrations].sort((a, b) => a.start - b.start);
   const audioSegments = resolveNarrationSegments(sortedNarrations);
+  updateJobProgress({
+    progress: 8,
+    status: "resolving",
+    messageKey: "alignedDownloadResolving",
+    message: `Resolved ${audioSegments.length} audio segments`,
+    totalSegments: audioSegments.length,
+    processedSegments: 0,
+  });
 
   if (audioSegments.length === 0) {
     const error = new Error(
@@ -419,8 +563,21 @@ const createAlignedAudioFile = async (narrations, options = {}) => {
     const renderResult = await renderAlignedAudioTimeline(
       audioSegments,
       outputPath,
-      { format },
+      {
+        format,
+        onProgress: (progressInfo) => {
+          updateJobProgress(progressInfo);
+        },
+      },
     );
+    updateJobProgress({
+      progress: 98,
+      status: "measuring",
+      messageKey: "alignedDownloadMeasuring",
+      message: "Measuring final aligned audio duration...",
+      processedSegments: audioSegments.length,
+      totalSegments: audioSegments.length,
+    });
     const expectedDuration = Math.max(
       ...sortedNarrations.map((narration) => narration.end || 0),
       0,
@@ -442,6 +599,7 @@ const createAlignedAudioFile = async (narrations, options = {}) => {
     if (fs.existsSync(outputPath)) {
       try {
         fs.unlinkSync(outputPath);
+        removeAudioMetadata(outputPath);
       } catch (cleanupError) {
         console.error(
           `Failed to remove partial aligned file ${outputPath}: ${cleanupError.message}`,
@@ -485,8 +643,10 @@ const generateAlignedAudio = async (req, res) => {
       "wav"
         ? "wav"
         : DEFAULT_PLAYBACK_FORMAT;
+    const jobId = String(req.body?.jobId || "").trim() || null;
     const metadata = await createAlignedAudioFile(req.body?.narrations, {
       format,
+      jobId,
     });
 
     setAlignedResponseHeaders(res, metadata, null);
@@ -511,10 +671,41 @@ const generateAlignedAudio = async (req, res) => {
 
 const downloadAlignedAudio = async (req, res) => {
   let metadata = null;
+  const jobId = String(req.body?.jobId || "").trim() || null;
 
   try {
     const format = inferDownloadFormat(req);
-    metadata = await createAlignedAudioFile(req.body?.narrations, { format });
+    if (jobId) {
+      setAlignedJobProgress(jobId, {
+        progress: 1,
+        status: "queued",
+        messageKey: "alignedDownloadQueued",
+        message: "Queued aligned audio download...",
+      });
+      res.setHeader("X-Aligned-Job-Id", jobId);
+      res.setHeader(
+        "Access-Control-Expose-Headers",
+        `${ALIGNED_RESPONSE_HEADERS}, X-Aligned-Job-Id`,
+      );
+    }
+
+    metadata = await createAlignedAudioFile(req.body?.narrations, {
+      format,
+      jobId,
+    });
+    const finalJobState = getAlignedJobState(jobId);
+    setAlignedJobProgress(jobId, {
+      progress: 100,
+      status: "completed",
+      messageKey: "alignedDownloadReady",
+      message: "Aligned audio ready. Starting download...",
+      processedSegments:
+        finalJobState?.totalSegments || finalJobState?.processedSegments || 0,
+      totalSegments: finalJobState?.totalSegments || 0,
+      completed: true,
+      error: null,
+      filename: metadata.outputFilename,
+    });
 
     setAlignedResponseHeaders(res, metadata, format);
     res.setHeader(
@@ -535,6 +726,7 @@ const downloadAlignedAudio = async (req, res) => {
       if (metadata && fs.existsSync(metadata.outputPath)) {
         try {
           fs.unlinkSync(metadata.outputPath);
+          removeAudioMetadata(metadata.outputPath);
         } catch (cleanupError) {
           console.error(
             `Failed to remove downloaded aligned audio file ${metadata.outputPath}: ${cleanupError.message}`,
@@ -544,9 +736,21 @@ const downloadAlignedAudio = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating aligned audio download:", error);
+    setAlignedJobProgress(jobId, {
+      progress: 100,
+      status: "error",
+      messageKey: "alignedDownloadFailed",
+      messageParams: {
+        error: error.message || "Failed to create aligned audio download",
+      },
+      message: error.message || "Failed to create aligned audio download",
+      completed: true,
+      error: error.message || "Failed to create aligned audio download",
+    });
     if (metadata && fs.existsSync(metadata.outputPath)) {
       try {
         fs.unlinkSync(metadata.outputPath);
+        removeAudioMetadata(metadata.outputPath);
       } catch (cleanupError) {
         console.error(
           `Failed to remove failed aligned audio file ${metadata.outputPath}: ${cleanupError.message}`,
@@ -561,8 +765,23 @@ const downloadAlignedAudio = async (req, res) => {
   }
 };
 
+const getAlignedDownloadProgress = (req, res) => {
+  const jobId = String(req.params?.jobId || "").trim();
+  if (!jobId) {
+    return res.status(400).json({ error: "Missing aligned download job ID" });
+  }
+
+  const jobState = getAlignedJobState(jobId);
+  if (!jobState) {
+    return res.status(404).json({ error: "Aligned download job not found" });
+  }
+
+  return res.json(jobState);
+};
+
 module.exports = {
   previewAlignedAudio,
   generateAlignedAudio,
   downloadAlignedAudio,
+  getAlignedDownloadProgress,
 };

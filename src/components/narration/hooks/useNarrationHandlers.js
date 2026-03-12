@@ -39,9 +39,15 @@ const createLoadingOverlay = (message) => {
 
   // Create React root
   const root = createRoot(container);
+  let isDestroyed = false;
+  let overlayState = {
+    message,
+    progress: null,
+    detail: '',
+  };
 
   // Loading component
-  const LoadingOverlay = ({ message }) => (
+  const LoadingOverlay = ({ message, progress, detail }) => (
     <div style={{
       display: 'flex',
       flexDirection: 'column',
@@ -63,11 +69,66 @@ const createLoadingOverlay = (message) => {
       }}>
         {message}
       </div>
+      {typeof progress === 'number' && (
+        <div style={{
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          <div style={{
+            width: '100%',
+            height: '8px',
+            background: 'rgba(255, 255, 255, 0.18)',
+            borderRadius: '999px',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              width: `${Math.max(0, Math.min(100, progress))}%`,
+              height: '100%',
+              background: 'linear-gradient(90deg, #7dd3fc 0%, #60a5fa 50%, #34d399 100%)',
+              borderRadius: '999px',
+              transition: 'width 180ms ease'
+            }} />
+          </div>
+          <div style={{
+            fontSize: '13px',
+            opacity: 0.9,
+            textAlign: 'center'
+          }}>
+            {Math.round(progress)}%
+          </div>
+        </div>
+      )}
+      {detail ? (
+        <div style={{
+          fontSize: '12px',
+          opacity: 0.8,
+          textAlign: 'center',
+          lineHeight: '1.4'
+        }}>
+          {detail}
+        </div>
+      ) : null}
     </div>
   );
 
+  const render = () => {
+    if (isDestroyed) {
+      return;
+    }
+
+    root.render(
+      <LoadingOverlay
+        message={overlayState.message}
+        progress={overlayState.progress}
+        detail={overlayState.detail}
+      />,
+    );
+  };
+
   // Render initial state
-  root.render(<LoadingOverlay message={message} />);
+  render();
 
   // Add to document
   document.body.appendChild(container);
@@ -76,9 +137,35 @@ const createLoadingOverlay = (message) => {
     container,
     root,
     updateMessage: (newMessage) => {
-      root.render(<LoadingOverlay message={newMessage} />);
+      if (isDestroyed) {
+        return;
+      }
+
+      overlayState = {
+        ...overlayState,
+        message: newMessage,
+      };
+      render();
+    },
+    updateProgress: ({ progress = overlayState.progress, message = overlayState.message, detail = overlayState.detail }) => {
+      if (isDestroyed) {
+        return;
+      }
+
+      overlayState = {
+        ...overlayState,
+        progress,
+        message,
+        detail,
+      };
+      render();
     },
     destroy: () => {
+      if (isDestroyed) {
+        return;
+      }
+
+      isDestroyed = true;
       root.unmount();
       if (document.body.contains(container)) {
         document.body.removeChild(container);
@@ -168,6 +255,123 @@ const useNarrationHandlers = ({
       }
     });
     window.dispatchEvent(event);
+  };
+
+  const translateAlignedDownloadMessage = (progressData = {}) => {
+    const fallbackMessages = {
+      pending: 'Preparing aligned narration download...',
+      queued: 'Queued aligned audio download...',
+      starting: 'Preparing aligned narration download...',
+      resolving: 'Resolving audio segments...',
+      'loading-durations': 'Loading audio durations...',
+      'analyzing-overlaps': 'Analyzing overlaps...',
+      rendering: 'Rendering aligned audio timeline...',
+      finalizing: 'Finalizing aligned audio file...',
+      measuring: 'Measuring final audio duration...',
+      completed: 'Aligned audio ready. Starting download...',
+    };
+
+    if (progressData.messageKey) {
+      const translationKey = progressData.messageKey.includes('.')
+        ? progressData.messageKey
+        : `narration.${progressData.messageKey}`;
+      const defaultMessage =
+        progressData.message ||
+        fallbackMessages[progressData.status] ||
+        'Downloading audio...';
+
+      return t(
+        translationKey,
+        defaultMessage,
+        progressData.messageParams || {},
+      );
+    }
+
+    switch (progressData.status) {
+      case 'queued':
+        return t(
+          'narration.alignedDownloadQueued',
+          fallbackMessages.queued,
+        );
+      case 'starting':
+      case 'pending':
+        return t(
+          'narration.alignedDownloadPreparing',
+          fallbackMessages.starting,
+        );
+      case 'resolving':
+        return t(
+          'narration.alignedDownloadResolving',
+          fallbackMessages.resolving,
+        );
+      case 'loading-durations':
+        return t(
+          'narration.alignedDownloadLoadingDurations',
+          fallbackMessages['loading-durations'],
+        );
+      case 'analyzing-overlaps':
+        return t(
+          'narration.alignedDownloadAnalyzingOverlaps',
+          fallbackMessages['analyzing-overlaps'],
+        );
+      case 'rendering':
+        return t(
+          'narration.alignedDownloadRendering',
+          fallbackMessages.rendering,
+        );
+      case 'finalizing':
+        return t(
+          'narration.alignedDownloadFinalizing',
+          fallbackMessages.finalizing,
+        );
+      case 'measuring':
+        return t(
+          'narration.alignedDownloadMeasuring',
+          fallbackMessages.measuring,
+        );
+      case 'completed':
+        return t(
+          'narration.alignedDownloadReady',
+          fallbackMessages.completed,
+        );
+      case 'error':
+        if (progressData.error) {
+          return t(
+            'narration.alignedDownloadFailed',
+            'Error downloading aligned audio: {{error}}',
+            { error: progressData.error },
+          );
+        }
+        break;
+      default:
+        break;
+    }
+
+    return progressData.message || t(
+      'narration.downloading',
+      'Downloading audio...',
+    );
+  };
+
+  const getAlignedDownloadSegmentDetail = (progressData = {}) => {
+    const totalSegments = Number(progressData.totalSegments);
+    if (!Number.isFinite(totalSegments) || totalSegments <= 0) {
+      return '';
+    }
+
+    const processedSegments = Number(progressData.processedSegments);
+    const current = Number.isFinite(processedSegments)
+      ? Math.max(0, Math.min(totalSegments, processedSegments))
+      : 0;
+
+    return t(
+      'narration.alignedDownloadSegmentProgress',
+      '{{current}}/{{total}} segments',
+      {
+        current,
+        total: totalSegments,
+      },
+    );
   };
 
   // Handle file upload
@@ -1180,7 +1384,16 @@ const useNarrationHandlers = ({
     }
 
     // Create a React-based loading overlay
-    const loadingOverlay = createLoadingOverlay(t('narration.downloading', 'Downloading audio file...'));
+    const loadingOverlay = createLoadingOverlay(
+      t(
+        'narration.alignedDownloadPreparing',
+        'Preparing aligned narration download...',
+      ),
+    );
+    const alignedJobId = `aligned_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    let progressPollInterval = null;
+    let requestTimeoutId = null;
+    let latestServerProgress = 0;
 
     try {
       // Get the server URL from the narration service
@@ -1284,29 +1497,105 @@ const useNarrationHandlers = ({
       // Sort by start time to ensure correct order
       narrationData.sort((a, b) => a.start - b.start);
 
+      if (narrationData.length === 0) {
+        alert(t('narration.noResults', 'No narration results to download'));
+        return;
+      }
 
 
       // Create a download link
       const downloadUrl = `${SERVER_URL}/api/narration/download-aligned`;
+      const progressUrl = `${SERVER_URL}/api/narration/aligned-progress/${encodeURIComponent(alignedJobId)}`;
 
-      // Use fetch API to download the file
+      const pollAlignedProgress = async () => {
+        try {
+          const progressResponse = await fetch(progressUrl, {
+            method: 'GET',
+            mode: 'cors',
+            credentials: 'include',
+          });
+
+          if (!progressResponse.ok) {
+            return;
+          }
+
+          const progressData = await progressResponse.json();
+          const rawProgressValue = typeof progressData.progress === 'number'
+            ? Math.max(0, Math.min(100, progressData.progress))
+            : null;
+          const progressValue = progressData.status === 'completed' && rawProgressValue !== null
+            ? Math.min(97, rawProgressValue)
+            : rawProgressValue;
+          latestServerProgress = progressValue ?? latestServerProgress;
+
+          loadingOverlay.updateProgress({
+            progress: progressValue,
+            message: translateAlignedDownloadMessage(progressData),
+            detail: getAlignedDownloadSegmentDetail(progressData),
+          });
+        } catch (progressError) {
+          console.warn('Aligned download progress polling error:', progressError);
+        }
+      };
+
+      loadingOverlay.updateProgress({
+        progress: 0,
+        message: t(
+          'narration.alignedDownloadPreparing',
+          'Preparing aligned narration download...',
+        ),
+        detail: t(
+          'narration.alignedDownloadSegmentProgress',
+          '{{current}}/{{total}} segments',
+          {
+            current: 0,
+            total: narrationData.length,
+          },
+        ),
+      });
+
+      await pollAlignedProgress();
+      progressPollInterval = window.setInterval(pollAlignedProgress, 800);
+
+      const abortController = new AbortController();
+      requestTimeoutId = window.setTimeout(() => {
+        abortController.abort();
+      }, 30 * 60 * 1000);
 
       const response = await fetch(downloadUrl, {
         method: 'POST',
         mode: 'cors',
         credentials: 'include',
+        signal: abortController.signal,
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'audio/wav'
         },
-        body: JSON.stringify({ narrations: narrationData })
+        body: JSON.stringify({
+          narrations: narrationData,
+          jobId: alignedJobId,
+        })
       });
+
+      if (progressPollInterval) {
+        window.clearInterval(progressPollInterval);
+        progressPollInterval = null;
+      }
 
       // Check for audio alignment notification after successful response
       if (response.ok) {
         // Import and check for duration notification
         const { checkAudioAlignmentFromResponse } = await import('../../../utils/audioAlignmentNotification.js');
         checkAudioAlignmentFromResponse(response);
+        latestServerProgress = Math.min(latestServerProgress, 97);
+        loadingOverlay.updateProgress({
+          progress: Math.max(latestServerProgress, 98),
+          message: t(
+            'narration.alignedDownloadReceiving',
+            'Downloading generated audio...',
+          ),
+          detail: '',
+        });
       }
 
 
@@ -1323,7 +1612,55 @@ const useNarrationHandlers = ({
       }
 
       // Get the blob from the response
-      const blob = await response.blob();
+      let blob;
+      const contentLength = Number(response.headers.get('Content-Length') || 0);
+      if (response.body && contentLength > 0) {
+        const reader = response.body.getReader();
+        const chunks = [];
+        let receivedBytes = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            break;
+          }
+
+          if (value) {
+            chunks.push(value);
+            receivedBytes += value.length;
+            const bodyProgress = receivedBytes / contentLength;
+            loadingOverlay.updateProgress({
+              progress: Math.max(latestServerProgress, 98 + bodyProgress * 2),
+              message: t(
+                'narration.alignedDownloadReceiving',
+                'Downloading generated audio...',
+              ),
+              detail: t(
+                'narration.alignedDownloadByteProgress',
+                '{{percent}}% downloaded',
+                {
+                  percent: Math.round(bodyProgress * 100),
+                },
+              ),
+            });
+          }
+        }
+
+        blob = new Blob(chunks, {
+          type: response.headers.get('Content-Type') || 'audio/wav',
+        });
+      } else {
+        blob = await response.blob();
+      }
+
+      loadingOverlay.updateProgress({
+        progress: 100,
+        message: t(
+          'narration.alignedDownloadStarting',
+          'Starting download...',
+        ),
+        detail: '',
+      });
 
 
       // Create a URL for the blob
@@ -1345,8 +1682,31 @@ const useNarrationHandlers = ({
       }, 100);
     } catch (error) {
       console.error('Error downloading aligned audio:', error);
-      alert(t('narration.downloadError', `Error downloading aligned audio file: ${error.message}`));
+      if (error?.name === 'AbortError') {
+        alert(
+          t(
+            'narration.alignedDownloadTimedOut',
+            'Aligned audio download timed out. Please try again.',
+          ),
+        );
+      } else {
+        alert(
+          t(
+            'narration.alignedDownloadFailed',
+            'Error downloading aligned audio: {{error}}',
+            {
+              error: error.message,
+            },
+          ),
+        );
+      }
     } finally {
+      if (progressPollInterval) {
+        window.clearInterval(progressPollInterval);
+      }
+      if (requestTimeoutId) {
+        window.clearTimeout(requestTimeoutId);
+      }
       // Remove loading overlay
       loadingOverlay.destroy();
     }

@@ -9,6 +9,10 @@ const { v4: uuidv4 } = require('uuid');
 
 // Import cleanup function
 const { cleanupOldSubtitleDirectories } = require('./narration/directoryManager');
+const {
+  removeAudioMetadata,
+  resolveDurationMetadata,
+} = require('./narration/audioFile/mediaMetadata');
 
 // Check if we're in the project directory and have .venv
 const projectRoot = process.cwd();
@@ -170,6 +174,7 @@ const generateNarration = async (req, res) => {
           if (fs.existsSync(backupPath)) {
             try {
               fs.unlinkSync(backupPath);
+              removeAudioMetadata(backupPath);
               console.log(`Cleared backup file: ${backupPath}`);
             } catch (backupError) {
               console.warn(`Failed to clear backup file ${backupPath}: ${backupError.message}`);
@@ -250,6 +255,15 @@ except Exception as e:
           });
         });
 
+        const durationMetadata = result.success
+          ? await resolveDurationMetadata(outputPath).catch((durationError) => {
+              console.warn(
+                `Failed to persist gTTS duration metadata for ${outputPath}: ${durationError.message}`,
+              );
+              return null;
+            })
+          : null;
+
         const subtitleResult = {
           subtitle_id: subtitle.id || i,
           text: subtitle.text,
@@ -258,7 +272,9 @@ except Exception as e:
           filename: result.success ? result.filename : null,
           success: result.success,
           error: result.error || null,
-          method: 'gtts'
+          method: 'gtts',
+          actualDuration: durationMetadata?.durationSeconds ?? undefined,
+          audioDuration: durationMetadata?.durationSeconds ?? undefined,
         };
 
         results.push(subtitleResult);

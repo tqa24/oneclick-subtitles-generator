@@ -8,6 +8,10 @@ const { v4: uuidv4 } = require('uuid');
 
 // Import directory paths and functions
 const { OUTPUT_AUDIO_DIR, ensureSubtitleDirectory } = require('./directoryManager');
+const {
+  removeAudioMetadata,
+  resolveDurationMetadata,
+} = require('./audioFile/mediaMetadata');
 
 /**
  * Save audio data to disk (common function for both Gemini and F5-TTS)
@@ -50,6 +54,7 @@ const saveAudioToFile = async (options) => {
     if (fs.existsSync(backupPath)) {
       try {
         fs.unlinkSync(backupPath);
+        removeAudioMetadata(backupPath);
         console.log(`Cleared backup file: ${backupPath}`);
       } catch (backupError) {
         console.warn(`Failed to clear backup file ${backupPath}: ${backupError.message}`);
@@ -145,13 +150,31 @@ const saveAudioToFile = async (options) => {
           console.warn(`[DEBUG] WARNING: Saved file is too small to be a valid WAV file: ${filepath}, size: ${stats.size} bytes`);
         }
 
-        // Return success with the filename
-        resolve({
-          success: true,
-          filename: fullFilename, // Return the path relative to OUTPUT_AUDIO_DIR
-          subtitle_id: subtitle_id,
-          sampleRate: actualSampleRate
-        });
+        Promise.resolve(resolveDurationMetadata(filepath))
+          .then((durationMetadata) => {
+            const actualDuration = durationMetadata?.durationSeconds ?? null;
+
+            resolve({
+              success: true,
+              filename: fullFilename, // Return the path relative to OUTPUT_AUDIO_DIR
+              subtitle_id: subtitle_id,
+              sampleRate: actualSampleRate,
+              actualDuration,
+              audioDuration: actualDuration,
+            });
+          })
+          .catch((durationError) => {
+            console.warn(
+              `Failed to persist duration metadata for ${filepath}: ${durationError.message}`,
+            );
+
+            resolve({
+              success: true,
+              filename: fullFilename, // Return the path relative to OUTPUT_AUDIO_DIR
+              subtitle_id: subtitle_id,
+              sampleRate: actualSampleRate,
+            });
+          });
       } catch (statError) {
         console.error(`Error verifying file: ${statError.message}`);
         reject(new Error(`Error verifying audio file: ${statError.message}`));

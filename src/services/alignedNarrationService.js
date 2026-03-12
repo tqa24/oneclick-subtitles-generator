@@ -573,6 +573,12 @@ const buildNarrationPayload = (generationResults) => {
         narration.sampleRate = result.sampleRate;
       }
 
+      if (typeof result.actualDuration === "number") {
+        narration.actualDuration = result.actualDuration;
+      } else if (typeof result.audioDuration === "number") {
+        narration.audioDuration = result.audioDuration;
+      }
+
       if (result.original_ids) {
         narration.original_ids = result.original_ids;
       }

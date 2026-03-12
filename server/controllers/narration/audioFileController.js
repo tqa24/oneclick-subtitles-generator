@@ -13,6 +13,7 @@ const {
   previewAlignedAudio,
   generateAlignedAudio,
   downloadAlignedAudio,
+  getAlignedDownloadProgress,
 } = require("./audioFile/alignAudio");
 
 const { downloadAllAudio } = require("./audioFile/zipAudio");
@@ -41,6 +42,7 @@ module.exports = {
   previewAlignedAudio,
   generateAlignedAudio,
   downloadAlignedAudio,
+  getAlignedDownloadProgress,
   downloadAllAudio,
   enhanceF5TTSNarrations,
   modifyAudioSpeed,

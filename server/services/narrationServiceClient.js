@@ -2,11 +2,19 @@
  * Client for communicating with the Python narration service
  */
 
+const path = require('path');
+
 // Import narration service configuration
 const { NARRATION_PORT } = require('../startNarrationService');
 
 // Import cleanup function
-const { cleanupOldSubtitleDirectories } = require('../controllers/narration/directoryManager');
+const {
+  cleanupOldSubtitleDirectories,
+  OUTPUT_AUDIO_DIR,
+} = require('../controllers/narration/directoryManager');
+const {
+  resolveDurationMetadata,
+} = require('../controllers/narration/audioFile/mediaMetadata');
 
 /**
  * Check if the narration service is running - DRASTICALLY SIMPLIFIED VERSION
@@ -93,6 +101,40 @@ const fetchAudioFile = async (filename) => {
  */
 // Import the enhanceF5TTSNarrations function
 const { enhanceF5TTSNarrations } = require('../controllers/narration/audioFileController');
+
+const attachDurationMetadataToResult = async (result) => {
+  if (
+    !result ||
+    typeof result !== 'object' ||
+    !result.filename ||
+    result.success === false
+  ) {
+    return result;
+  }
+
+  const audioPath = path.join(OUTPUT_AUDIO_DIR, result.filename);
+  const durationMetadata = await resolveDurationMetadata(audioPath).catch(
+    (error) => {
+      console.warn(
+        `Failed to persist F5-TTS duration metadata for ${audioPath}: ${error.message}`,
+      );
+      return null;
+    },
+  );
+
+  if (!durationMetadata?.durationSeconds) {
+    return result;
+  }
+
+  return {
+    ...result,
+    actualDuration: durationMetadata.durationSeconds,
+    audioDuration: durationMetadata.durationSeconds,
+  };
+};
+
+const attachDurationMetadataToResults = async (results = []) =>
+  Promise.all(results.map((result) => attachDurationMetadataToResult(result)));
 
 const generateNarration = async (reference_audio, reference_text, subtitles, settings, res) => {
   const narrationUrl = `http://127.0.0.1:${NARRATION_PORT}/api/narration/generate`;
@@ -216,10 +258,16 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
 
                     // If this is a result event, track the result
                     if (eventData.type === 'result' && eventData.result) {
-                      allResults.push(eventData.result);
+                      const resultWithDuration = await attachDurationMetadataToResult(
+                        eventData.result,
+                      );
+                      allResults.push(resultWithDuration);
 
                       // Enhance the result with timing information
-                      const enhancedResult = enhanceF5TTSNarrations([eventData.result], subtitles)[0];
+                      const enhancedResult = enhanceF5TTSNarrations(
+                        [resultWithDuration],
+                        subtitles,
+                      )[0];
                       eventData.result = enhancedResult;
 
                       // Removed progress logging
@@ -244,7 +292,12 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
                     // If this is a complete event, enhance all results
                     if (eventData.type === 'complete' && eventData.results) {
                       // Removed enhancement logging
-                      eventData.results = enhanceF5TTSNarrations(eventData.results, subtitles);
+                      const resultsWithDurations =
+                        await attachDurationMetadataToResults(eventData.results);
+                      eventData.results = enhanceF5TTSNarrations(
+                        resultsWithDurations,
+                        subtitles,
+                      );
                       eventData.enhanced = true;
 
                       // Replace the line with the enhanced data
@@ -323,7 +376,10 @@ const generateNarration = async (reference_audio, reference_text, subtitles, set
     // Enhance F5-TTS narration results with timing information from subtitles
     if (result.results && result.results.length > 0) {
       // Removed enhancement logging
-      result.results = enhanceF5TTSNarrations(result.results, subtitles);
+      const resultsWithDurations = await attachDurationMetadataToResults(
+        result.results,
+      );
+      result.results = enhanceF5TTSNarrations(resultsWithDurations, subtitles);
     }
 
     return result;

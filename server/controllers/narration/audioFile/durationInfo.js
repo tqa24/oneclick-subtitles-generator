@@ -1,34 +1,11 @@
 /**
- * Module for reading audio duration using ffprobe
+ * Module for reading persisted audio duration metadata.
  */
 
 const path = require('path');
 const fs = require('fs');
-const { spawn } = require('child_process');
-const { getFfprobePath } = require('../../../services/shared/ffmpegUtils');
 const { OUTPUT_AUDIO_DIR } = require('../directoryManager');
-
-const runFfprobe = (filePath) => new Promise((resolve, reject) => {
-  const args = [
-    '-v', 'error',
-    '-show_entries', 'format=duration',
-    '-of', 'default=noprint_wrappers=1:nokey=1',
-    filePath
-  ];
-  const proc = spawn(getFfprobePath(), args);
-  let out = '';
-  let err = '';
-  proc.stdout.on('data', d => out += d.toString());
-  proc.stderr.on('data', d => err += d.toString());
-  proc.on('close', (code) => {
-    if (code === 0) {
-      const val = parseFloat(out.trim());
-      if (!isNaN(val)) return resolve(val);
-      return reject(new Error('Failed to parse duration'));
-    }
-    reject(new Error(err || `ffprobe exited with code ${code}`));
-  });
-});
+const { resolveDurationMetadata } = require('./mediaMetadata');
 
 /**
  * Get duration of a single audio file in output folder
@@ -40,8 +17,13 @@ const getAudioDuration = async (req, res) => {
     if (!filename) return res.status(400).json({ success: false, error: 'Missing filename' });
     const audioPath = path.join(OUTPUT_AUDIO_DIR, filename);
     if (!fs.existsSync(audioPath)) return res.status(404).json({ success: false, error: 'File not found' });
-    const duration = await runFfprobe(audioPath);
-    res.json({ success: true, filename, duration });
+    const durationMetadata = await resolveDurationMetadata(audioPath);
+    res.json({
+      success: true,
+      filename,
+      duration: durationMetadata?.durationSeconds ?? null,
+      source: durationMetadata?.source || 'unknown',
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -63,8 +45,8 @@ const batchGetAudioDurations = async (req, res) => {
         try {
           const p = path.join(OUTPUT_AUDIO_DIR, fn);
           if (!fs.existsSync(p)) return [fn, null];
-          const d = await runFfprobe(p);
-          return [fn, d];
+          const durationMetadata = await resolveDurationMetadata(p);
+          return [fn, durationMetadata?.durationSeconds ?? null];
         } catch (_) {
           return [fn, null];
         }

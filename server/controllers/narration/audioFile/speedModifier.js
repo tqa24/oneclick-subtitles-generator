@@ -9,6 +9,11 @@ const { getFfmpegPath } = require('../../../services/shared/ffmpegUtils');
 
 // Import directory paths
 const { OUTPUT_AUDIO_DIR } = require('../directoryManager');
+const {
+  copyAudioMetadataSync,
+  resolveDurationMetadata,
+  writeAudioMetadata,
+} = require('./mediaMetadata');
 
 /**
  * Modify the speed of an audio file
@@ -45,10 +50,14 @@ const modifyAudioSpeed = async (req, res) => {
     if (!fs.existsSync(backupPath)) {
       // Copy the original file to the backup location
       fs.copyFileSync(audioPath, backupPath);
+      copyAudioMetadataSync(audioPath, backupPath);
     }
 
     // Use the backup file as the source to preserve quality
     const sourceFile = fs.existsSync(backupPath) ? backupPath : audioPath;
+    const sourceDuration = await resolveDurationMetadata(sourceFile)
+      .then((metadata) => metadata?.durationSeconds ?? null)
+      .catch(() => null);
 
     // Construct ffmpeg command to modify audio speed
     // atempo filter allows speed adjustment between 0.5 and 2.0
@@ -110,12 +119,32 @@ const modifyAudioSpeed = async (req, res) => {
 
     ffmpegProcess.on('close', (code) => {
       if (code === 0) {
-        // Success
-        res.json({
-          success: true,
-          message: `Successfully modified audio speed to ${speed}x`,
-          filename: filename
-        });
+        const durationMetadata =
+          (typeof sourceDuration === 'number' && sourceDuration > 0
+            ? writeAudioMetadata(audioPath, sourceDuration / speed, {
+                source: 'derived-speed',
+              })
+            : null) || null;
+
+        Promise.resolve(
+          durationMetadata || resolveDurationMetadata(audioPath).catch(() => null),
+        )
+          .then((durationMetadata) => {
+            res.json({
+              success: true,
+              message: `Successfully modified audio speed to ${speed}x`,
+              filename: filename,
+              actualDuration: durationMetadata?.durationSeconds ?? null,
+              audioDuration: durationMetadata?.durationSeconds ?? null,
+            });
+          })
+          .catch(() => {
+            res.json({
+              success: true,
+              message: `Successfully modified audio speed to ${speed}x`,
+              filename: filename,
+            });
+          });
       } else {
         // Error
         console.error(`Error modifying audio speed: ${stderrData}`);
@@ -205,10 +234,14 @@ const batchModifyAudioSpeed = async (req, res) => {
         if (!fs.existsSync(backupPath)) {
           // Copy the original file to the backup location
           fs.copyFileSync(audioPath, backupPath);
+          copyAudioMetadataSync(audioPath, backupPath);
         }
 
         // Use the backup file as the source to preserve quality
         const sourceFile = fs.existsSync(backupPath) ? backupPath : audioPath;
+        const sourceDuration = await resolveDurationMetadata(sourceFile)
+          .then((metadata) => metadata?.durationSeconds ?? null)
+          .catch(() => null);
 
         // Construct ffmpeg filter complex
         let filterComplex = '';
@@ -273,14 +306,26 @@ const batchModifyAudioSpeed = async (req, res) => {
         })}\n\n`);
 
         // Execute the ffmpeg command and wait for it to complete
-        await new Promise((resolve, reject) => {
+        await new Promise((resolve) => {
           const ffmpegProcess = spawn(getFfmpegPath(), ffmpegArgs);
 
-          ffmpegProcess.on('close', (code) => {
+          ffmpegProcess.on('close', async (code) => {
             if (code === 0) {
               // Success: no longer creating backup_for_trim; single backup_ is sufficient
+              const durationMetadata =
+                (typeof sourceDuration === 'number' && sourceDuration > 0
+                  ? writeAudioMetadata(audioPath, sourceDuration / speed, {
+                      source: 'derived-speed',
+                    })
+                  : null) ||
+                (await resolveDurationMetadata(audioPath).catch(() => null));
 
-              results.push({ filename, success: true });
+              results.push({
+                filename,
+                success: true,
+                actualDuration: durationMetadata?.durationSeconds ?? undefined,
+                audioDuration: durationMetadata?.durationSeconds ?? undefined,
+              });
               processedCount++;
 
               // Send progress update (SSE)

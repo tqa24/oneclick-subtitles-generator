@@ -22,6 +22,7 @@ module.exports = {
   previewAlignedAudio: alignAudio.previewAlignedAudio,
   generateAlignedAudio: alignAudio.generateAlignedAudio,
   downloadAlignedAudio: alignAudio.downloadAlignedAudio,
+  getAlignedDownloadProgress: alignAudio.getAlignedDownloadProgress,
 
   // Batch processing for large numbers of segments
   processBatch: batchProcessor.processBatch,

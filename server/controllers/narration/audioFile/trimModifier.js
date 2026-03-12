@@ -5,37 +5,23 @@
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
-const { getFfmpegPath, getFfprobePath } = require('../../../services/shared/ffmpegUtils');
+const { getFfmpegPath } = require('../../../services/shared/ffmpegUtils');
 
 // Import directory paths
 const { OUTPUT_AUDIO_DIR } = require('../directoryManager');
 
-/**
- * Minimal ffprobe helper to get duration in seconds
- */
-const runFfprobe = (filePath) => new Promise((resolve, reject) => {
-  try {
-    const args = ['-v','error','-show_entries','format=duration','-of','default=noprint_wrappers=1:nokey=1', filePath];
-    const proc = spawn(getFfprobePath(), args);
-    let out = '';
-    let err = '';
-    proc.stdout.on('data', d => out += d.toString());
-    proc.stderr.on('data', d => err += d.toString());
-    proc.on('close', (code) => {
-      if (code === 0) {
-        const val = parseFloat(out.trim());
-        if (!isNaN(val)) return resolve(val);
-        return reject(new Error('Failed to parse duration'));
-      }
-      reject(new Error(err || `ffprobe exited with code ${code}`));
-    });
-  } catch (e) {
-    reject(e);
-  }
-});
-
 // Shared codec args util
 const { getCodecArgs } = require('./audioUtils');
+const {
+  copyAudioMetadataSync,
+  resolveDurationMetadata,
+  writeAudioMetadata,
+} = require('./mediaMetadata');
+
+const getDurationSeconds = async (filePath) => {
+  const durationMetadata = await resolveDurationMetadata(filePath);
+  return durationMetadata?.durationSeconds ?? null;
+};
 
 /**
  * Ensure we have a sole immutable backup_<filename> created from the first generated audio.
@@ -54,6 +40,7 @@ const ensureBackupAndGetSource = (filename) => {
     // First-time: create the backup from the current audio file
     fs.mkdirSync(path.dirname(backupPath), { recursive: true });
     fs.copyFileSync(audioPath, backupPath);
+    copyAudioMetadataSync(audioPath, backupPath);
   }
 
   // Use backup if exists, otherwise fall back to current audio (shouldn't happen often)
@@ -119,9 +106,13 @@ const batchModifyAudioTrim = async (req, res) => {
 
         await new Promise((resolve) => {
           const ff = spawn(getFfmpegPath(), ffmpegArgs);
-          ff.on('close', (code) => {
+          ff.on('close', async (code) => {
             processed++;
             if (code === 0) {
+              const trimmedDuration = Math.max(0, end - start);
+              writeAudioMetadata(audioPath, trimmedDuration, {
+                source: 'derived-trim',
+              });
               res.write(`data: ${JSON.stringify({ success: true, status: 'processing', total, processed, filename, message: 'Trim applied' })}\n\n`);
             } else {
               res.write(`data: ${JSON.stringify({ success: true, status: 'processing', total, processed, filename, message: `ffmpeg exited ${code}` })}\n\n`);
@@ -175,7 +166,7 @@ const modifyAudioTrimAndSpeedCombined = async (req, res) => {
       return res.status(400).json({ success: false, error: 'normalizedStart and normalizedEnd are required (0..1)' });
     }
 
-    const srcDuration = await runFfprobe(sourceFile).catch(() => null);
+    const srcDuration = await getDurationSeconds(sourceFile).catch(() => null);
     if (!(typeof srcDuration === 'number' && srcDuration > 0)) {
       return res.status(500).json({ success: false, error: 'Failed to read source duration' });
     }
@@ -219,7 +210,40 @@ const modifyAudioTrimAndSpeedCombined = async (req, res) => {
 
     ff.on('close', (code) => {
       if (code === 0) {
-        res.json({ success: true, filename, start: trimStart, end: trimEnd, speedFactor, message: 'Edit applied' });
+        const effectiveSpeed =
+          typeof speedFactor === 'number' && Number.isFinite(speedFactor)
+            ? Number(speedFactor)
+            : 1;
+        const outputDuration = Math.max(0, trimEnd - trimStart) / effectiveSpeed;
+        const durationMetadata =
+          writeAudioMetadata(audioPath, outputDuration, {
+            source: 'derived-trim-speed',
+          }) || null;
+
+        Promise.resolve(
+          durationMetadata || resolveDurationMetadata(audioPath).catch(() => null),
+        ).then((resolvedDurationMetadata) => {
+            res.json({
+              success: true,
+              filename,
+              start: trimStart,
+              end: trimEnd,
+              speedFactor,
+              message: 'Edit applied',
+              actualDuration: resolvedDurationMetadata?.durationSeconds ?? null,
+              audioDuration: resolvedDurationMetadata?.durationSeconds ?? null,
+            });
+          })
+          .catch(() => {
+            res.json({
+              success: true,
+              filename,
+              start: trimStart,
+              end: trimEnd,
+              speedFactor,
+              message: 'Edit applied',
+            });
+          });
       } else {
         console.error('ffmpeg combined edit error:', stderrData);
         res.status(500).json({ success: false, error: `ffmpeg exited with code ${code}` });
@@ -279,7 +303,7 @@ const batchModifyAudioTrimAndSpeedCombined = async (req, res) => {
           continue;
         }
 
-        const srcDuration = await runFfprobe(sourceFile).catch(() => null);
+        const srcDuration = await getDurationSeconds(sourceFile).catch(() => null);
         if (!(typeof srcDuration === 'number' && srcDuration > 0)) {
           processed++;
           errors.push({ filename: current, error: 'Failed to read duration' });
@@ -329,10 +353,26 @@ const batchModifyAudioTrimAndSpeedCombined = async (req, res) => {
 
         await new Promise((resolve) => {
           const ff = spawn(getFfmpegPath(), ffmpegArgs);
-          ff.on('close', (code) => {
+          ff.on('close', async (code) => {
             processed++;
             if (code === 0) {
-              results.push({ filename: current, success: true });
+              const effectiveSpeed =
+                typeof speedFactor === 'number' && Number.isFinite(speedFactor)
+                  ? Number(speedFactor)
+                  : 1;
+              const outputDuration =
+                Math.max(0, trimEnd - trimStart) / effectiveSpeed;
+              const durationMetadata =
+                writeAudioMetadata(audioPath, outputDuration, {
+                  source: 'derived-trim-speed',
+                }) ||
+                (await resolveDurationMetadata(audioPath).catch(() => null));
+              results.push({
+                filename: current,
+                success: true,
+                actualDuration: durationMetadata?.durationSeconds ?? undefined,
+                audioDuration: durationMetadata?.durationSeconds ?? undefined,
+              });
               res.write(`data: ${JSON.stringify({ success: true, status: 'progress', total, processed, current, message: 'Edit applied' })}\n\n`);
             } else {
               errors.push({ filename: current, error: `ffmpeg exited ${code}` });
