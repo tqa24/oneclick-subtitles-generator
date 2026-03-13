@@ -974,7 +974,7 @@ export const useSubtitles = (t) => {
                         // Derive streaming options for YouTube retry
                         const fps = options.fps ?? getVideoProcessingFps();
                         const mediaResolution = options.mediaResolution ?? getMediaResolution();
-                        const model = options.model ?? (localStorage.getItem('gemini_model') || 'gemini-2.0-flash');
+                        const model = options.model ?? (localStorage.getItem('gemini_model') || 'gemini-2.5-flash');
 
                         subtitles = await processGeminiSegment(
                             ytFile,
@@ -1037,7 +1037,7 @@ export const useSubtitles = (t) => {
             }
 
             // Check if using a strong model (Gemini 2.5 Pro or Gemini 2.0 Flash Thinking)
-            const currentModel = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
+            const currentModel = localStorage.getItem('gemini_model') || 'gemini-2.5-flash';
             const strongModels = ['gemini-2.5-pro', 'gemini-2.0-flash-thinking-exp-01-21'];
             const isUsingStrongModel = strongModels.includes(currentModel);
 
@@ -1187,7 +1187,7 @@ export const useSubtitles = (t) => {
             const segment = { start, end };
             const fps = getVideoProcessingFps();
             const mediaResolution = getMediaResolution();
-            const model = localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
+            const model = localStorage.getItem('gemini_model') || 'gemini-2.5-flash';
 
             const { processGeminiSegment } = await import('../services/engines/GeminiAdapter');
             const { mergeStreamingSubtitlesProgressively } = await import('../utils/subtitle/subtitleMerger');

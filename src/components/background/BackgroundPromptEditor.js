@@ -215,7 +215,7 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
                 value={promptModel}
                 onChange={(value) => setPromptModel(value)}
                 options={[
-                  { value: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' },
+                  { value: 'gemini-3.1-flash-lite-preview', label: 'Gemini 3.1 Flash Lite' },
                   { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' }
                 ]}
                 placeholder={t('promptEditor.selectModel', 'Select Model')}

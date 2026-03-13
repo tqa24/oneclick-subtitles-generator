@@ -1,6 +1,6 @@
 // Light-weight config/localStorage wrapper with typed helpers
 
-export const getGeminiModel = () => localStorage.getItem('gemini_model') || 'gemini-2.0-flash';
+export const getGeminiModel = () => localStorage.getItem('gemini_model') || 'gemini-2.5-flash';
 export const setGeminiModel = (model) => { try { localStorage.setItem('gemini_model', model); } catch {} };
 
 export const getMediaResolution = () => localStorage.getItem('media_resolution') || 'medium';

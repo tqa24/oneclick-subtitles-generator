@@ -21,6 +21,7 @@ import ModelManagementTab from './ModelManagementTab';
 // Import icons
 import { ApiKeyIcon, ProcessingIcon, PromptIcon, CacheIcon, AboutIcon, ModelIcon } from './icons/TabIcons';
 import { getGitVersion, getLatestVersion, compareVersions } from '../../utils/gitVersion';
+import { getDefaultThinkingBudgets } from '../../config/geminiModels';
 import LoadingIndicator from '../common/LoadingIndicator';
 
 import initSettingsTabPillAnimation from '../../utils/settingsTabPillAnimation';
@@ -150,7 +151,7 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [showClientSecret, setShowClientSecret] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [segmentDuration, setSegmentDuration] = useState(5); // Default to 5 minutes
-  const [geminiModel, setGeminiModel] = useState('gemini-2.0-flash'); // Default model
+  const [geminiModel, setGeminiModel] = useState('gemini-2.5-flash'); // Default model
   const [timeFormat, setTimeFormat] = useState('hms'); // Default to HH:MM:SS format
 
   const [showWaveformLongVideos, setShowWaveformLongVideos] = useState(false); // Default to NOT showing waveform for long videos
@@ -167,12 +168,8 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
   const [useOptimizedPreview, setUseOptimizedPreview] = useState(false); // Default to original video in preview
   const [isFactoryResetting, setIsFactoryResetting] = useState(false); // State for factory reset process
 
-  // Thinking budget settings for each model
-  const [thinkingBudgets, setThinkingBudgets] = useState({
-    'gemini-2.5-pro': -1, // Dynamic thinking
-    'gemini-2.5-flash': -1, // Dynamic thinking
-    'gemini-2.5-flash-lite': -1 // Dynamic thinking
-  });
+  // Thinking budget settings for each model — defaults from central config
+  const [thinkingBudgets, setThinkingBudgets] = useState(getDefaultThinkingBudgets);
   const [transcriptionPrompt, setTranscriptionPrompt] = useState(DEFAULT_TRANSCRIPTION_PROMPT); // Custom transcription prompt
   const [useCookiesForDownload, setUseCookiesForDownload] = useState(false); // Default to not using cookies
   const [enableYoutubeSearch, setEnableYoutubeSearch] = useState(false); // Default to disabling YouTube search
@@ -286,6 +283,19 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
         localStorage.setItem('settings_version', '1.1');
       }
 
+      // Migration: replace deprecated gemini-2.0-flash with gemini-2.5-flash
+      if (!settingsVersion || settingsVersion === '1.0' || settingsVersion === '1.1') {
+        const currentModel = localStorage.getItem('gemini_model');
+        if (currentModel === 'gemini-2.0-flash' || currentModel === 'gemini-2.0-flash-lite') {
+          localStorage.setItem('gemini_model', 'gemini-2.5-flash');
+        }
+        const currentTranslationModel = localStorage.getItem('translation_model');
+        if (currentTranslationModel === 'gemini-2.0-flash' || currentTranslationModel === 'gemini-2.0-flash-lite') {
+          localStorage.setItem('translation_model', 'gemini-2.5-flash');
+        }
+        localStorage.setItem('settings_version', '1.2');
+      }
+
       // Get the current active Gemini API key from the key manager
       const savedGeminiKey = getCurrentKey() || '';
       const savedYoutubeKey = localStorage.getItem('youtube_api_key') || '';
@@ -330,17 +340,24 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
       const savedThinkingBudgets = (() => {
         try {
           const stored = localStorage.getItem('thinking_budgets');
-          return stored ? JSON.parse(stored) : {
+          const defaults = {
             'gemini-2.5-pro': 128,
             'gemini-2.5-flash': 0,
-            'gemini-2.5-flash-lite': 0
+            'gemini-2.5-flash-lite': 0,
+            'gemini-3-flash-preview': 'high',
+            'gemini-3.1-flash-lite-preview': 'minimal',
+            'gemini-3.1-pro-preview': 'high'
           };
+          return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
         } catch (error) {
           console.error('Error parsing thinking budgets from localStorage:', error);
           return {
             'gemini-2.5-pro': 128,
             'gemini-2.5-flash': 0,
-            'gemini-2.5-flash-lite': 0
+            'gemini-2.5-flash-lite': 0,
+            'gemini-3-flash-preview': 'high',
+            'gemini-3.1-flash-lite-preview': 'minimal',
+            'gemini-3.1-pro-preview': 'high'
           };
         }
       })();

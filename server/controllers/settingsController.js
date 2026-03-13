@@ -23,7 +23,7 @@ const updatePrompts = async (req, res) => {
     }
 
     // Optional: validate models if provided
-    const allowedPromptModels = ['gemini-2.0-flash-lite', 'gemini-2.5-flash-lite'];
+    const allowedPromptModels = ['gemini-2.5-flash-lite', 'gemini-3.1-flash-lite-preview'];
     const allowedImageModels = ['gemini-2.5-flash-image', 'gemini-2.0-flash-preview-image-generation'];
 
     if (promptModel && !allowedPromptModels.includes(promptModel)) {
@@ -47,7 +47,7 @@ const updatePrompts = async (req, res) => {
 
     // Replace prompt generation model if provided
     if (promptModel) {
-      const promptModelRegex = /(model:\s*')(gemini-2\.0-flash-lite|gemini-2\.5-flash-lite)(')/;
+      const promptModelRegex = /(model:\s*')(gemini-2\.5-flash-lite|gemini-3\.1-flash-lite-preview)(')/;
       content = content.replace(promptModelRegex, `$1${promptModel}$3`);
     }
 

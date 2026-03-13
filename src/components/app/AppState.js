@@ -125,7 +125,7 @@ export const useAppState = () => {
 
     // Set default model if not already set
     if (!localStorage.getItem('gemini_model')) {
-      localStorage.setItem('gemini_model', 'gemini-2.0-flash');
+      localStorage.setItem('gemini_model', 'gemini-2.5-flash');
     }
 
     // Set default transcription prompt if not already set

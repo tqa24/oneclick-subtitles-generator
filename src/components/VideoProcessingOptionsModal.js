@@ -14,6 +14,7 @@ import ParakeetProcessingOptions from './ParakeetProcessingOptions';
 import specialStarIcon from '../assets/specialStar.svg';
 import useParakeetAvailability from '../hooks/useParakeetAvailability';
 import TranscriptionMethodSelectionOverlay from './TranscriptionMethodSelectionOverlay';
+import { GEMINI_MODELS } from '../config/geminiModels';
 
 /**
  * Modal for selecting video processing options after timeline segment selection
@@ -558,11 +559,11 @@ const VideoProcessingOptionsModal = ({
     // Helper function to get all available models (built-in + custom)
     const getAllAvailableModels = () => {
         const builtInModels = [
-            { value: 'gemini-2.5-pro', label: t('settings.modelBestAccuracy', 'Gemini 2.5 Pro (Độ chính xác tốt nhất, dễ bị quá tải)'), maxTokens: 1048576 },
-            { value: 'gemini-2.5-flash', label: t('settings.modelSmartFast', 'Gemini 2.5 Flash (Độ chính xác thứ hai)'), maxTokens: 1048576 },
-            { value: 'gemini-2.5-flash-lite', label: t('settings.modelFlash25Lite', 'Gemini 2.5 Flash Lite (Mô hình 2.5 nhanh nhất, dễ lỗi khi tạo sub)'), maxTokens: 1048576 },
-            { value: 'gemini-2.0-flash', label: t('settings.modelThirdBest', 'Gemini 2.0 Flash (Độ chính xác tốt, tốc độ trung bình)'), maxTokens: 1048576 },
-            { value: 'gemini-2.0-flash-lite', label: t('settings.modelFastest', 'Gemini 2.0 Flash Lite (Nhanh nhất, độ chính xác thấp nhất - chỉ thử nghiệm)'), maxTokens: 1048576 },
+            ...GEMINI_MODELS.map(m => ({
+                value: m.id,
+                label: t(m.settingsLabelKey, m.settingsLabelDefault),
+                maxTokens: 1048576
+            })),
             { value: 'learnlm-2.0-flash-experimental', label: t('settings.learnlm20FlashExperimental', 'LearnLM 2.0 Flash Experimental (Experimental, advanced learning)'), maxTokens: 1048576 },
             { value: 'gemini-robotics-er-1.5-preview', label: t('settings.geminiRoboticsEr15Preview', 'Gemini Robotics ER 1.5 Preview (Robotics Preview)'), maxTokens: 1048576 }
         ];
@@ -591,26 +592,6 @@ const VideoProcessingOptionsModal = ({
         const shouldDisable20 = isNewMethod && (exceedsStartAllowance || hasSplitParts);
 
         const allModels = [...builtInModels, ...customModels];
-
-        if (shouldDisable20) {
-            return allModels.map(m => {
-                if (m.value === 'gemini-2.0-flash') {
-                    return {
-                        ...m,
-                        disabled: true,
-                        label: t('settings.model20FlashDisabled', 'Gemini 2.0 Flash (Không khả dụng với phương pháp mới khi có offset hoặc chia nhỏ đoạn)')
-                    };
-                }
-                if (m.value === 'gemini-2.0-flash-lite') {
-                    return {
-                        ...m,
-                        disabled: true,
-                        label: t('settings.model20FlashLiteDisabled', 'Gemini 2.0 Flash Lite (Không khả dụng với phương pháp mới khi có offset hoặc chia nhỏ đoạn)')
-                    };
-                }
-                return m;
-            });
-        }
 
         return allModels;
     };

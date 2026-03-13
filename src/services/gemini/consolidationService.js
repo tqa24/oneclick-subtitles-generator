@@ -22,7 +22,7 @@ const t = (key, fallback) => i18n.t(key, fallback);
  * @param {number} splitDuration - Duration in minutes for each chunk (0 = no split)
  * @returns {Promise<string>} - Completed document text
  */
-export const completeDocument = async (subtitlesText, model = 'gemini-2.0-flash', customPrompt = null, splitDuration = 0) => {
+export const completeDocument = async (subtitlesText, model = 'gemini-2.5-flash', customPrompt = null, splitDuration = 0) => {
     if (!subtitlesText || subtitlesText.trim() === '') {
         throw new Error('No text to process');
     }

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/ModelDropdown.css';
+import { GEMINI_MODELS } from '../config/geminiModels';
 
 /**
  * Reusable component for model selection dropdown
@@ -40,58 +41,23 @@ const ModelDropdown = ({
 
   // Model options with their icons and colors
   const getModelOptions = () => {
-    const builtInModels = [
-      {
-        id: 'gemini-2.5-pro',
-        name: t('models.gemini25Pro', 'Gemini 2.5 Pro'),
-        description: isTranslationSection
-          ? t('translation.modelGemini25Pro', 'output length 65536 tokens (usually no splitting needed)')
-          : t('models.bestAccuracy', 'Best accuracy'),
-        icon: <span className="material-symbols-rounded model-icon star-icon">star</span>,
-        color: 'var(--md-tertiary)',
-        bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
-        },
-      {
-        id: 'gemini-2.5-flash',
-        name: t('models.gemini25Flash', 'Gemini 2.5 Flash'),
-        description: isTranslationSection
-          ? t('translation.modelGemini25Flash', 'output length 65536 tokens (usually no splitting needed)')
-          : t('models.smarterFaster', 'Smarter & faster'),
-        icon: <span className="material-symbols-rounded model-icon zap-icon" style={{ color: 'var(--md-tertiary)' }}>bolt</span>,
-        color: 'var(--md-tertiary)',
-        bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
-      },
-      {
-        id: 'gemini-2.5-flash-lite',
-        name: t('models.gemini25FlashLite', 'Gemini 2.5 Flash Lite'),
-        description: isTranslationSection
-          ? t('translation.modelGemini25FlashLite', 'output length 65536 tokens (usually no splitting needed)')
-          : t('models.fastestAdvanced', 'Fastest 2.5 model'),
-        icon: <span className="material-symbols-rounded model-icon trending-icon" style={{ color: 'var(--md-tertiary)' }}>trending_up</span>,
-        color: 'var(--md-tertiary)',
-        bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
-      },
-      {
-        id: 'gemini-2.0-flash',
-        name: t('models.gemini20Flash', 'Gemini 2.0 Flash'),
-        description: isTranslationSection
-          ? t('translation.modelGemini20Flash', 'output length 8192 tokens (splitting recommended)')
-          : t('models.balancedModel', 'Balanced'),
-        icon: <span className="material-symbols-rounded model-icon activity-icon">activity_zone</span>,
-        color: 'var(--md-primary)',
-        bgColor: 'rgba(var(--md-primary-rgb), 0.1)'
-      },
-      {
-        id: 'gemini-2.0-flash-lite',
-        name: t('models.gemini20FlashLite', 'Gemini 2.0 Flash Lite'),
-        description: isTranslationSection
-          ? t('translation.modelGemini20FlashLite', 'output length 8192 tokens (splitting recommended)')
-          : t('models.fastestModel', 'Fastest'),
-        icon: <span className="material-symbols-rounded model-icon cpu-icon">memory</span>,
-        color: 'var(--success-color)',
-        bgColor: 'rgba(var(--success-color-rgb), 0.1)'
-      }
-    ];
+    const builtInModels = GEMINI_MODELS.map(model => ({
+      id: model.id,
+      name: t(model.nameKey, model.nameDefault),
+      description: isTranslationSection
+        ? t(model.translationDescKey, model.translationDescDefault)
+        : t(model.descKey, model.descDefault),
+      icon: (
+        <span
+          className={`material-symbols-rounded ${model.icon.className}`}
+          style={model.icon.style}
+        >
+          {model.icon.symbol}
+        </span>
+      ),
+      color: model.color,
+      bgColor: model.bgColor
+    }));
 
     // Add custom models
     const customModels = getCustomModels();
@@ -113,7 +79,9 @@ const ModelDropdown = ({
   const modelOptions = getModelOptions();
 
   // Get the currently selected model
-  const currentModel = modelOptions.find(model => model.id === selectedModel) || modelOptions[2]; // Default to Flash
+  const currentModel = modelOptions.find(model => model.id === selectedModel)
+    || modelOptions.find(model => model.id === 'gemini-2.5-flash')
+    || modelOptions[0];
 
   // Position the dropdown relative to the button
   const positionDropdown = useCallback(() => {

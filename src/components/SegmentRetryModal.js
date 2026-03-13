@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import CloseButton from './common/CloseButton';
 import '../styles/SegmentRetryModal.css';
+import { GEMINI_MODELS } from '../config/geminiModels';
 
 /**
  * Modal component for retrying a segment with custom options
@@ -28,56 +29,29 @@ const SegmentRetryModal = ({
   const [currentStep, setCurrentStep] = useState(1);
 
   // Model selection state
-  const [selectedModel, setSelectedModel] = useState(localStorage.getItem('gemini_model') || 'gemini-2.0-flash');
+  const [selectedModel, setSelectedModel] = useState(localStorage.getItem('gemini_model') || 'gemini-2.5-flash');
 
   // Subtitle options state
   const [subtitlesOption, setSubtitlesOption] = useState('none');
   const [customSubtitles, setCustomSubtitles] = useState('');
   const textareaRef = useRef(null);
 
-  // Model options with their icons and colors
-  const modelOptions = [
-    {
-      id: 'gemini-2.5-pro',
-      name: t('models.gemini25Pro', 'Gemini 2.5 Pro'),
-      description: t('models.bestAccuracy', 'Best accuracy'),
-      icon: <span className="material-symbols-rounded model-icon star-icon">star</span>,
-      color: 'var(--md-tertiary)',
-      bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
-    },
-    {
-      id: 'gemini-2.5-flash',
-      name: t('models.gemini25Flash', 'Gemini 2.5 Flash'),
-      description: t('models.smarterFaster', 'Smarter & faster'),
-      icon: <span className="material-symbols-rounded model-icon zap-icon" style={{ color: 'var(--md-tertiary)' }}>bolt</span>,
-      color: 'var(--md-tertiary)',
-      bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
-    },
-    {
-      id: 'gemini-2.5-flash-lite',
-      name: t('models.gemini25FlashLite', 'Gemini 2.5 Flash Lite'),
-      description: t('models.fastestAdvanced', 'Fastest 2.5 model'),
-      icon: <span className="material-symbols-rounded model-icon trending-icon" style={{ color: 'var(--md-tertiary)' }}>trending_up</span>,
-      color: 'var(--md-tertiary)',
-      bgColor: 'rgba(var(--md-tertiary-rgb), 0.1)'
-    },
-    {
-      id: 'gemini-2.0-flash',
-      name: t('models.gemini20Flash', 'Gemini 2.0 Flash'),
-      description: t('models.balancedModel', 'Balanced'),
-      icon: <span className="material-symbols-rounded model-icon activity-icon">activity_zone</span>,
-      color: 'var(--md-primary)',
-      bgColor: 'rgba(var(--md-primary-rgb), 0.1)'
-    },
-    {
-      id: 'gemini-2.0-flash-lite',
-      name: t('models.gemini20FlashLite', 'Gemini 2.0 Flash Lite'),
-      description: t('models.fastestModel', 'Fastest'),
-      icon: <span className="material-symbols-rounded model-icon cpu-icon">memory</span>,
-      color: 'var(--success-color)',
-      bgColor: 'rgba(var(--success-color-rgb), 0.1)'
-    }
-  ];
+  // Model options derived from central config
+  const modelOptions = GEMINI_MODELS.map(model => ({
+    id: model.id,
+    name: t(model.nameKey, model.nameDefault),
+    description: t(model.descKey, model.descDefault),
+    icon: (
+      <span
+        className={`material-symbols-rounded ${model.icon.className}`}
+        style={model.icon.style}
+      >
+        {model.icon.symbol}
+      </span>
+    ),
+    color: model.color,
+    bgColor: model.bgColor
+  }));
 
   useEffect(() => {
     if (isOpen) {

@@ -21,7 +21,7 @@ const t = (key, fallback) => i18n.t(key, fallback);
  * @param {string} customPrompt - Optional custom prompt to use
  * @returns {Promise<string>} - Summarized document text
  */
-export const summarizeDocument = async (subtitlesText, model = 'gemini-2.0-flash', customPrompt = null) => {
+export const summarizeDocument = async (subtitlesText, model = 'gemini-2.5-flash', customPrompt = null) => {
     if (!subtitlesText || subtitlesText.trim() === '') {
         throw new Error('No text to process');
     }

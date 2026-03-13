@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { GEMINI_MODELS, ANALYSIS_MODEL_IDS, getModelById } from '../../../config/geminiModels';
 import SliderWithValue from '../../common/SliderWithValue';
 import MaterialSwitch from '../../common/MaterialSwitch';
 import { DisplayIcon, VideoAnalysisIcon } from '../icons/TabIcons';
@@ -62,11 +63,10 @@ const VideoProcessingTab = ({
 
   // Helper function to get analysis models (subset of all models)
   const getAnalysisModels = () => {
-    const builtInAnalysisModels = [
-      { id: 'gemini-2.5-flash', name: t('settings.modelFlash25', 'Gemini 2.5 Flash (Best)') },
-      { id: 'gemini-2.5-flash-lite', name: t('settings.modelFlash25LiteSettings', 'Gemini 2.5 Flash Lite (Fast + Efficient)') },
-      { id: 'gemini-2.0-flash', name: t('settings.modelFlash', 'Gemini 2.0 Flash (Normal)') }
-    ];
+    const builtInAnalysisModels = ANALYSIS_MODEL_IDS.map(id => {
+      const m = getModelById(id);
+      return { id: m.id, name: t(m.analysisLabelKey, m.analysisLabelDefault) };
+    });
 
     const customModels = customGeminiModels.map(model => ({
       id: model.id,
@@ -76,6 +76,9 @@ const VideoProcessingTab = ({
 
     return [...builtInAnalysisModels, ...customModels];
   };
+
+  // Which model's thinking settings are currently shown
+  const [selectedThinkingModel, setSelectedThinkingModel] = useState('gemini-2.5-flash');
 
   // Helper function to get the dropdown mode for a thinking budget value
   const getThinkingMode = (budget) => {
@@ -142,6 +145,14 @@ const VideoProcessingTab = ({
     setThinkingBudgets(prev => ({
       ...prev,
       [modelId]: tokens
+    }));
+  };
+
+  // Handle thinking level change for Gemini 3.x models
+  const handleLevelChange = (modelId, level) => {
+    setThinkingBudgets(prev => ({
+      ...prev,
+      [modelId]: level
     }));
   };
 
@@ -422,130 +433,179 @@ const VideoProcessingTab = ({
               {t('settings.thinkingBudgetDescription', 'Configure how much thinking each AI model should use. Higher budgets allow more detailed reasoning but increase processing time and cost.')}
             </p>
 
-            {/* Gemini 2.5 Pro */}
+            {/* Model selector */}
             <div className="compact-setting">
-              <label htmlFor="thinking-mode-25-pro">
-                {t('settings.thinkingBudget25Pro', 'Gemini 2.5 Pro Thinking Budget')}
-              </label>
-              <p className="setting-description">
-                {t('settings.thinkingBudget25ProDesc', 'Cannot disable thinking. Choose dynamic or set custom token budget.')}
-              </p>
+              <label>{t('settings.thinkingModelSelect', 'Model')}</label>
               <CustomDropdown
-                value={getThinkingMode(thinkingBudgets['gemini-2.5-pro'] || -1)}
-                onChange={(value) => handleModeChange('gemini-2.5-pro', value)}
-                options={[
-                  { value: 'dynamic', label: `${t('settings.thinkingDynamic', 'Dynamic (Auto)')} (${t('settings.default', 'Default')})` },
-                  { value: 'custom', label: t('settings.thinkingCustom', 'Custom') }
-                ]}
-                placeholder={t('settings.selectThinkingMode', 'Select Thinking Mode')}
+                value={selectedThinkingModel}
+                onChange={setSelectedThinkingModel}
+                options={GEMINI_MODELS.map(m => ({ value: m.id, label: t(m.nameKey, m.nameDefault) }))}
+                placeholder={t('settings.selectModel', 'Select model')}
               />
-
-              {getThinkingMode(thinkingBudgets['gemini-2.5-pro'] || 128) === 'custom' && (
-                <div className="thinking-slider-container">
-                  <SliderWithValue
-                    value={getSliderValue(thinkingBudgets['gemini-2.5-pro'], 'gemini-2.5-pro')}
-                    onChange={(value) => handleSliderChange('gemini-2.5-pro', parseInt(value))}
-                    min={0}
-                    max={100}
-                    step={1}
-                    orientation="Horizontal"
-                    size="XSmall"
-                    state="Enabled"
-                    className="thinking-budget-slider"
-                    id="thinking-budget-pro"
-                    ariaLabel={t('settings.thinkingBudget', 'Thinking Budget')}
-                    formatValue={() => `${thinkingBudgets['gemini-2.5-pro']} ${t('settings.tokens', 'tokens')}`}
-                  />
-                  <div className="slider-range-info">
-                    {t('settings.thinkingRange', 'Range')}: 128 - 32,768 {t('settings.tokens', 'tokens')}
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* Gemini 2.5 Flash */}
-            <div className="compact-setting">
-              <label htmlFor="thinking-mode-25-flash">
-                {t('settings.thinkingBudget25Flash', 'Gemini 2.5 Flash Thinking Budget')}
-              </label>
-              <p className="setting-description">
-                {t('settings.thinkingBudget25FlashDesc', 'Can be disabled for fastest response, dynamic for auto, or custom token budget.')}
-              </p>
-              <CustomDropdown
-                value={getThinkingMode(thinkingBudgets['gemini-2.5-flash'] || -1)}
-                onChange={(value) => handleModeChange('gemini-2.5-flash', value)}
-                options={[
-                  { value: 'disabled', label: t('settings.thinkingDisabled', 'Disabled') },
-                  { value: 'dynamic', label: `${t('settings.thinkingDynamic', 'Dynamic (Auto)')} (${t('settings.default', 'Default')})` },
-                  { value: 'custom', label: t('settings.thinkingCustom', 'Custom') }
-                ]}
-                placeholder={t('settings.selectThinkingMode', 'Select Thinking Mode')}
-              />
+            {/* ── Gemini 3.1 Pro ── thinkingLevel, no minimal */}
+            {selectedThinkingModel === 'gemini-3.1-pro-preview' && (
+              <div className="compact-setting">
+                <p className="setting-description">
+                  {t('settings.thinkingBudget31ProDesc', 'Cannot disable thinking. High is default for maximum reasoning depth.')}
+                </p>
+                <CustomDropdown
+                  value={thinkingBudgets['gemini-3.1-pro-preview'] || 'high'}
+                  onChange={(value) => handleLevelChange('gemini-3.1-pro-preview', value)}
+                  options={[
+                    { value: 'low',    label: t('settings.thinkingLow', 'Low') },
+                    { value: 'medium', label: t('settings.thinkingMedium', 'Medium') },
+                    { value: 'high',   label: `${t('settings.thinkingHigh', 'High')} (${t('settings.default', 'Default')})` },
+                  ]}
+                  placeholder={t('settings.selectThinkingLevel', 'Select Thinking Level')}
+                />
+              </div>
+            )}
 
-              {getThinkingMode(thinkingBudgets['gemini-2.5-flash'] || 0) === 'custom' && (
-                <div className="thinking-slider-container">
-                  <SliderWithValue
-                    value={getSliderValue(thinkingBudgets['gemini-2.5-flash'], 'gemini-2.5-flash')}
-                    onChange={(value) => handleSliderChange('gemini-2.5-flash', parseInt(value))}
-                    min={0}
-                    max={100}
-                    step={1}
-                    orientation="Horizontal"
-                    size="XSmall"
-                    state="Enabled"
-                    className="thinking-budget-slider"
-                    id="thinking-budget-flash"
-                    ariaLabel={t('settings.thinkingBudget', 'Thinking Budget')}
-                    formatValue={() => `${thinkingBudgets['gemini-2.5-flash']} ${t('settings.tokens', 'tokens')}`}
-                  />
-                  <div className="slider-range-info">
-                    {t('settings.thinkingRange', 'Range')}: 1 - 24,576 {t('settings.tokens', 'tokens')}
+            {/* ── Gemini 3 Flash ── thinkingLevel, all 4 levels, default high */}
+            {selectedThinkingModel === 'gemini-3-flash-preview' && (
+              <div className="compact-setting">
+                <p className="setting-description">
+                  {t('settings.thinkingBudget3FlashDesc', 'Choose thinking depth. High is default. Minimal turns off thinking for most queries.')}
+                </p>
+                <CustomDropdown
+                  value={thinkingBudgets['gemini-3-flash-preview'] || 'high'}
+                  onChange={(value) => handleLevelChange('gemini-3-flash-preview', value)}
+                  options={[
+                    { value: 'minimal', label: t('settings.thinkingMinimal', 'Minimal (Off for most queries)') },
+                    { value: 'low',     label: t('settings.thinkingLow', 'Low') },
+                    { value: 'medium',  label: t('settings.thinkingMedium', 'Medium') },
+                    { value: 'high',    label: `${t('settings.thinkingHigh', 'High')} (${t('settings.default', 'Default')})` },
+                  ]}
+                  placeholder={t('settings.selectThinkingLevel', 'Select Thinking Level')}
+                />
+              </div>
+            )}
+
+            {/* ── Gemini 3.1 Flash Lite ── thinkingLevel, default minimal */}
+            {selectedThinkingModel === 'gemini-3.1-flash-lite-preview' && (
+              <div className="compact-setting">
+                <p className="setting-description">
+                  {t('settings.thinkingBudget31FlashLiteDesc', 'Minimal by default (thinking off). Upgrade to Low/Medium/High for deeper reasoning at extra cost.')}
+                </p>
+                <CustomDropdown
+                  value={thinkingBudgets['gemini-3.1-flash-lite-preview'] || 'minimal'}
+                  onChange={(value) => handleLevelChange('gemini-3.1-flash-lite-preview', value)}
+                  options={[
+                    { value: 'minimal', label: `${t('settings.thinkingMinimal', 'Minimal (Off for most queries)')} (${t('settings.default', 'Default')})` },
+                    { value: 'low',     label: t('settings.thinkingLow', 'Low') },
+                    { value: 'medium',  label: t('settings.thinkingMedium', 'Medium') },
+                    { value: 'high',    label: t('settings.thinkingHigh', 'High') },
+                  ]}
+                  placeholder={t('settings.selectThinkingLevel', 'Select Thinking Level')}
+                />
+              </div>
+            )}
+
+            {/* ── Gemini 2.5 Pro ── thinkingBudget, no disable */}
+            {selectedThinkingModel === 'gemini-2.5-pro' && (
+              <div className="compact-setting">
+                <p className="setting-description">
+                  {t('settings.thinkingBudget25ProDesc', 'Cannot disable thinking. Choose dynamic or set custom token budget.')}
+                </p>
+                <CustomDropdown
+                  value={getThinkingMode(thinkingBudgets['gemini-2.5-pro'] || -1)}
+                  onChange={(value) => handleModeChange('gemini-2.5-pro', value)}
+                  options={[
+                    { value: 'dynamic', label: `${t('settings.thinkingDynamic', 'Dynamic (Auto)')} (${t('settings.default', 'Default')})` },
+                    { value: 'custom',  label: t('settings.thinkingCustom', 'Custom') },
+                  ]}
+                  placeholder={t('settings.selectThinkingMode', 'Select Thinking Mode')}
+                />
+                {getThinkingMode(thinkingBudgets['gemini-2.5-pro'] || 128) === 'custom' && (
+                  <div className="thinking-slider-container">
+                    <SliderWithValue
+                      value={getSliderValue(thinkingBudgets['gemini-2.5-pro'], 'gemini-2.5-pro')}
+                      onChange={(value) => handleSliderChange('gemini-2.5-pro', parseInt(value))}
+                      min={0} max={100} step={1}
+                      orientation="Horizontal" size="XSmall" state="Enabled"
+                      className="thinking-budget-slider" id="thinking-budget-pro"
+                      ariaLabel={t('settings.thinkingBudget', 'Thinking Budget')}
+                      formatValue={() => `${thinkingBudgets['gemini-2.5-pro']} ${t('settings.tokens', 'tokens')}`}
+                    />
+                    <div className="slider-range-info">
+                      {t('settings.thinkingRange', 'Range')}: 128 - 32,768 {t('settings.tokens', 'tokens')}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
-            {/* Gemini 2.5 Flash Lite */}
-            <div className="compact-setting">
-              <label htmlFor="thinking-mode-25-flash-lite">
-                {t('settings.thinkingBudget25FlashLite', 'Gemini 2.5 Flash Lite Thinking Budget')}
-              </label>
-              <p className="setting-description">
-                {t('settings.thinkingBudget25FlashLiteDesc', 'Disabled by default for fastest response. Choose dynamic or custom token budget.')}
-              </p>
-              <CustomDropdown
-                value={getThinkingMode(thinkingBudgets['gemini-2.5-flash-lite'] || -1)}
-                onChange={(value) => handleModeChange('gemini-2.5-flash-lite', value)}
-                options={[
-                  { value: 'disabled', label: t('settings.thinkingDisabled', 'Disabled') },
-                  { value: 'dynamic', label: `${t('settings.thinkingDynamic', 'Dynamic (Auto)')} (${t('settings.default', 'Default')})` },
-                  { value: 'custom', label: t('settings.thinkingCustom', 'Custom') }
-                ]}
-                placeholder={t('settings.selectThinkingMode', 'Select Thinking Mode')}
-              />
-
-              {getThinkingMode(thinkingBudgets['gemini-2.5-flash-lite'] || 0) === 'custom' && (
-                <div className="thinking-slider-container">
-                  <SliderWithValue
-                    value={getSliderValue(thinkingBudgets['gemini-2.5-flash-lite'], 'gemini-2.5-flash-lite')}
-                    onChange={(value) => handleSliderChange('gemini-2.5-flash-lite', parseInt(value))}
-                    min={0}
-                    max={100}
-                    step={1}
-                    orientation="Horizontal"
-                    size="XSmall"
-                    state="Enabled"
-                    className="thinking-budget-slider"
-                    id="thinking-budget-lite"
-                    ariaLabel={t('settings.thinkingBudget', 'Thinking Budget')}
-                    formatValue={() => `${thinkingBudgets['gemini-2.5-flash-lite']} ${t('settings.tokens', 'tokens')}`}
-                  />
-                  <div className="slider-range-info">
-                    {t('settings.thinkingRange', 'Range')}: 512 - 24,576 {t('settings.tokens', 'tokens')}
+            {/* ── Gemini 2.5 Flash ── thinkingBudget, can disable */}
+            {selectedThinkingModel === 'gemini-2.5-flash' && (
+              <div className="compact-setting">
+                <p className="setting-description">
+                  {t('settings.thinkingBudget25FlashDesc', 'Can be disabled for fastest response, dynamic for auto, or custom token budget.')}
+                </p>
+                <CustomDropdown
+                  value={getThinkingMode(thinkingBudgets['gemini-2.5-flash'] || -1)}
+                  onChange={(value) => handleModeChange('gemini-2.5-flash', value)}
+                  options={[
+                    { value: 'disabled', label: t('settings.thinkingDisabled', 'Disabled') },
+                    { value: 'dynamic',  label: `${t('settings.thinkingDynamic', 'Dynamic (Auto)')} (${t('settings.default', 'Default')})` },
+                    { value: 'custom',   label: t('settings.thinkingCustom', 'Custom') },
+                  ]}
+                  placeholder={t('settings.selectThinkingMode', 'Select Thinking Mode')}
+                />
+                {getThinkingMode(thinkingBudgets['gemini-2.5-flash'] || 0) === 'custom' && (
+                  <div className="thinking-slider-container">
+                    <SliderWithValue
+                      value={getSliderValue(thinkingBudgets['gemini-2.5-flash'], 'gemini-2.5-flash')}
+                      onChange={(value) => handleSliderChange('gemini-2.5-flash', parseInt(value))}
+                      min={0} max={100} step={1}
+                      orientation="Horizontal" size="XSmall" state="Enabled"
+                      className="thinking-budget-slider" id="thinking-budget-flash"
+                      ariaLabel={t('settings.thinkingBudget', 'Thinking Budget')}
+                      formatValue={() => `${thinkingBudgets['gemini-2.5-flash']} ${t('settings.tokens', 'tokens')}`}
+                    />
+                    <div className="slider-range-info">
+                      {t('settings.thinkingRange', 'Range')}: 1 - 24,576 {t('settings.tokens', 'tokens')}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Gemini 2.5 Flash Lite ── thinkingBudget, can disable, default off */}
+            {selectedThinkingModel === 'gemini-2.5-flash-lite' && (
+              <div className="compact-setting">
+                <p className="setting-description">
+                  {t('settings.thinkingBudget25FlashLiteDesc', 'Disabled by default for fastest response. Choose dynamic or custom token budget.')}
+                </p>
+                <CustomDropdown
+                  value={getThinkingMode(thinkingBudgets['gemini-2.5-flash-lite'] || -1)}
+                  onChange={(value) => handleModeChange('gemini-2.5-flash-lite', value)}
+                  options={[
+                    { value: 'disabled', label: `${t('settings.thinkingDisabled', 'Disabled')} (${t('settings.default', 'Default')})` },
+                    { value: 'dynamic',  label: t('settings.thinkingDynamic', 'Dynamic (Auto)') },
+                    { value: 'custom',   label: t('settings.thinkingCustom', 'Custom') },
+                  ]}
+                  placeholder={t('settings.selectThinkingMode', 'Select Thinking Mode')}
+                />
+                {getThinkingMode(thinkingBudgets['gemini-2.5-flash-lite'] || 0) === 'custom' && (
+                  <div className="thinking-slider-container">
+                    <SliderWithValue
+                      value={getSliderValue(thinkingBudgets['gemini-2.5-flash-lite'], 'gemini-2.5-flash-lite')}
+                      onChange={(value) => handleSliderChange('gemini-2.5-flash-lite', parseInt(value))}
+                      min={0} max={100} step={1}
+                      orientation="Horizontal" size="XSmall" state="Enabled"
+                      className="thinking-budget-slider" id="thinking-budget-lite"
+                      ariaLabel={t('settings.thinkingBudget', 'Thinking Budget')}
+                      formatValue={() => `${thinkingBudgets['gemini-2.5-flash-lite']} ${t('settings.tokens', 'tokens')}`}
+                    />
+                    <div className="slider-range-info">
+                      {t('settings.thinkingRange', 'Range')}: 512 - 24,576 {t('settings.tokens', 'tokens')}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
