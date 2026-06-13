@@ -24,7 +24,18 @@ const VENV_DIR = '.venv'; // Define the virtual environment directory name
 const PYTHON_VERSION_TARGET = "3.11"; // Target Python version
 const F5_TTS_DIR = 'f5-tts-temp'; // Temporary directory for F5-TTS installation
 const F5_TTS_REPO_URL = 'https://github.com/SWivid/F5-TTS.git';
-const F5_TTS_REF = process.env.F5_TTS_REF || '1.1.17'; // Pin to a known-good release; override explicitly if needed
+const F5_TTS_REF = process.env.F5_TTS_REF || '1.1.20'; // Pin to a known-good release; override explicitly if needed
+// Pin Chatterbox to a release TAG, not the default-branch HEAD. This is the single biggest source
+// of "it broke overnight" install failures: without a pin every install pulled whatever was on HEAD.
+// We deliberately avoid HEAD even when newer: chatterbox >=0.1.7 pulls `resemble-perth @
+// git+.../Perth.git@master` (an UNPINNED transitive git dep) and fails to build under
+// --no-build-isolation. The v0.1.2 release uses `resemble-perth==1.0.1` from PyPI, so it is fully
+// reproducible and builds cleanly. Only bump to a newer *tag* (see scripts/check-tts-versions.js).
+const CHATTERBOX_DIR = 'chatterbox-temp'; // Temporary directory for Chatterbox installation
+const CHATTERBOX_REPO_URL = 'https://github.com/resemble-ai/chatterbox.git';
+const CHATTERBOX_REF = process.env.CHATTERBOX_REF || 'v0.1.2'; // Pinned release tag; override explicitly if needed
+// yt-dlp ChromeCookieUnlock plugin: pin to a known-good commit instead of refs/heads/main.
+const YTDLP_COOKIE_PLUGIN_REF = process.env.YTDLP_COOKIE_PLUGIN_REF || '3a95f2d7c0f7086a88da6870cc69587434b60cc5';
 const NARRATION_CONSTRAINTS_FILE = path.join(__dirname, 'narration-constraints.txt');
 const NARRATION_COMPAT_PACKAGE_SPECS = ['protobuf>=4.25.8,<7'];
 const BLACKWELL_GPU_REGEX = /\b(BLACKWELL|RTX 5090|RTX 5080|RTX 5070|RTX 5060|RTX 5050)\b/i;
@@ -75,6 +86,19 @@ function getNarrationConstraintsArg() {
 
 function quotePackageSpecs(specs) {
     return specs.map(spec => `"${spec}"`).join(' ');
+}
+
+// Shallow-clone a repository at a specific ref. Unlike `git clone --branch`, this works for a
+// bare commit SHA as well as a tag/branch name (GitHub allows fetching an arbitrary SHA), so we
+// can pin TTS engines to an exact commit and get reproducible installs across machines.
+function shallowCloneAtRef(repoUrl, ref, targetDir) {
+    if (fs.existsSync(targetDir)) {
+        fs.rmSync(targetDir, { recursive: true, force: true });
+    }
+    execSync(`git init "${targetDir}"`, { stdio: 'inherit' });
+    execSync(`git -C "${targetDir}" remote add origin ${repoUrl}`, { stdio: 'inherit' });
+    execSync(`git -C "${targetDir}" fetch --depth 1 origin ${ref}`, { stdio: 'inherit' });
+    execSync(`git -C "${targetDir}" checkout --detach FETCH_HEAD`, { stdio: 'inherit' });
 }
 
 function buildTorchInstallCommand(profile, includePython = false) {
@@ -891,31 +915,8 @@ print('OK' if not missing else ('Missing:' + ','.join(missing)))
         logger.command(installF5Cmd);
 
         const env = { ...process.env, UV_HTTP_TIMEOUT: '600' }; // 10 minutes for installation
-        try {
-            execSync(installF5Cmd, { stdio: 'inherit', env });
-            logger.success('F5-TTS installation completed');
-        } catch (installErr) {
-            const msg = String(installErr?.message || installErr);
-            logger.warning(`F5-TTS install failed: ${msg}`);
-            // If failure is due to Poetry backend missing, install both poetry-core and poetry, then retry once
-            const mayBePoetryBackend = /No module named 'poetry'|poetry\.core|poetry\.masonry|prepare_metadata_for_build_wheel/i.test(msg);
-            if (mayBePoetryBackend) {
-                try {
-                    const poetryInstallCmd = `uv pip install --python ${VENV_DIR} ${getNarrationConstraintsArg()} poetry`;
-                    logger.progress('Installing Poetry (full) for legacy Poetry build backends');
-                    logger.command(poetryInstallCmd);
-                    execSync(poetryInstallCmd, { stdio: 'inherit' });
-                    // Retry install
-                    logger.progress('Retrying F5-TTS installation after installing Poetry');
-                    execSync(installF5Cmd, { stdio: 'inherit', env });
-                    logger.success('F5-TTS installation completed after installing Poetry');
-                } catch (retryErr) {
-                    throw retryErr; // Re-throw to be handled by outer catch
-                }
-            } else {
-                throw installErr;
-            }
-        }
+        execSync(installF5Cmd, { stdio: 'inherit', env });
+        logger.success('F5-TTS installation completed');
 
         // Copy example audio files to server directory for the reference audio controller
         logger.progress('Copying example audio files to server directory');
@@ -990,29 +991,18 @@ print('OK' if not missing else ('Missing:' + ','.join(missing)))
     // --- 6. Install official chatterbox using uv pip ---
     logger.step(6, 9, 'Installing chatterbox');
     logger.installing('Voice cloning engine (chatterbox)');
-    const CHATTERBOX_DIR = 'chatterbox-temp'; // Temporary directory for cloning
     try {
-        // Clone the official chatterbox repository
-        logger.progress('Cloning official chatterbox repository');
-
-        // Remove existing chatterbox directory if it exists
-        if (fs.existsSync(CHATTERBOX_DIR)) {
-            logger.info('Removing existing chatterbox directory...');
-            fs.rmSync(CHATTERBOX_DIR, { recursive: true, force: true });
-        }
-
-        // Clone the repository
-        const cloneCmd = `git clone https://github.com/resemble-ai/chatterbox.git ${CHATTERBOX_DIR}`;
-        logger.command(cloneCmd);
-        execSync(cloneCmd, { stdio: 'inherit' });
-        logger.success('Chatterbox repository cloned');
+        // Clone the official chatterbox repository at the pinned commit
+        logger.progress(`Cloning official chatterbox repository at pinned ref ${CHATTERBOX_REF}`);
+        shallowCloneAtRef(CHATTERBOX_REPO_URL, CHATTERBOX_REF, CHATTERBOX_DIR);
+        logger.success(`Chatterbox repository cloned at ${CHATTERBOX_REF}`);
 
         // Apply PyTorch compatibility fix by modifying chatterbox dependencies
         logger.progress('Applying PyTorch compatibility fix for chatterbox');
         const pyprojectPath = path.join(CHATTERBOX_DIR, 'pyproject.toml');
 
         if (fs.existsSync(pyprojectPath)) {
-            logger.info('Updating chatterbox dependencies for PyTorch 2.4.1 compatibility...');
+            logger.info(`Updating chatterbox dependencies for PyTorch ${selectedTorchProfile.expectedTorch} compatibility...`);
 
             let pyprojectContent = fs.readFileSync(pyprojectPath, 'utf8');
 
@@ -1082,31 +1072,8 @@ print('OK' if not missing else ('Missing:' + ','.join(missing)))
         logger.info(`Installing chatterbox with pinned python-dateutil (single resolution, site-packages)`);
 
         const env = { ...process.env, UV_HTTP_TIMEOUT: '600' }; // 10 minutes for installation
-        try {
-            execSync(installChatterboxCmd, { stdio: 'inherit', env });
-            logger.success('Chatterbox installation completed');
-        } catch (installErr) {
-            const msg = String(installErr?.message || installErr);
-            logger.warning(`Chatterbox install failed: ${msg}`);
-            // If failure is due to Poetry backend missing, install both poetry-core and poetry, then retry once
-            const mayBePoetryBackend = /No module named 'poetry'|poetry\.core|poetry\.masonry|prepare_metadata_for_build_wheel/i.test(msg);
-            if (mayBePoetryBackend) {
-                try {
-                    const poetryInstallCmd = `uv pip install --python ${VENV_DIR} poetry`;
-                    logger.progress('Installing Poetry (full) for legacy Poetry build backends');
-                    logger.command(poetryInstallCmd);
-                    execSync(poetryInstallCmd, { stdio: 'inherit' });
-                    // Retry install
-                    logger.progress('Retrying chatterbox installation after installing Poetry');
-                    execSync(installChatterboxCmd, { stdio: 'inherit', env });
-                    logger.success('Chatterbox installation completed after installing Poetry');
-                } catch (retryErr) {
-                    throw retryErr; // Re-throw to be handled by outer catch
-                }
-            } else {
-                throw installErr;
-            }
-        }
+        execSync(installChatterboxCmd, { stdio: 'inherit', env });
+        logger.success('Chatterbox installation completed');
 
         // Clean up the temporary directory after installation
         logger.progress('Cleaning up temporary directory');
@@ -1135,20 +1102,6 @@ print('OK' if not missing else ('Missing:' + ','.join(missing)))
         }
 
         logger.success('Chatterbox is ready to use');
-
-        // Final safeguard: ensure python-dateutil is present after chatterbox install
-        try {
-            const ensureDateutilCmd = `uv pip install --python ${VENV_DIR} --force-reinstall --no-cache python-dateutil==2.9.0.post0 six==1.16.0`;
-            logger.progress('Ensuring python-dateutil is present (post-chatterbox)');
-            logger.command(ensureDateutilCmd);
-            execSync(ensureDateutilCmd, { stdio: 'inherit' });
-            // Verify import strictly from the .venv interpreter
-            const verifyDateutilCmd = `uv run --python ${VENV_DIR} -- python -c "import dateutil,sys; print('dateutil OK from', sys.executable)"`;
-            execSync(verifyDateutilCmd, { stdio: 'inherit' });
-        } catch (e) {
-            logger.warning(`Could not verify python-dateutil after chatterbox install: ${e.message}`);
-        }
-
 
         logger.progress('Verifying voice cloning engine');
         const verifyChatterboxPyCode = `
@@ -1304,7 +1257,7 @@ print('✅ Verification completed (with warnings if any shown above)')
             delete packageJson.scripts['dev:cuda:uv'];
             delete packageJson.scripts['dev:uv'];
 
-            fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+            fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
             logger.success('Installation configuration completed');
         }
     } catch (error) {
@@ -1569,14 +1522,15 @@ print('✅ All service dependencies and required files verified successfully!')
                 logger.info(`Created plugins directory: ${pluginsDir}`);
             }
 
-            // Check if plugin is already installed
-            if (fs.existsSync(pluginDir) && verifyPluginInstallation(pluginsDir)) {
+            // Check if plugin is already installed (verifyPluginInstallation expects the
+            // ChromeCookieUnlock dir, which contains yt_dlp_plugins -- not its parent)
+            if (fs.existsSync(pluginDir) && verifyPluginInstallation(pluginDir)) {
                 logger.info('ChromeCookieUnlock plugin already installed and verified');
                 return;
             }
 
-            // Download plugin from GitHub
-            const pluginUrl = 'https://github.com/seproDev/yt-dlp-ChromeCookieUnlock/archive/refs/heads/main.zip';
+            // Download plugin from GitHub at the pinned commit (not refs/heads/main, which drifts)
+            const pluginUrl = `https://github.com/seproDev/yt-dlp-ChromeCookieUnlock/archive/${YTDLP_COOKIE_PLUGIN_REF}.zip`;
             const tempZipPath = path.join(os.tmpdir(), 'ChromeCookieUnlock.zip');
 
             logger.info('Downloading ChromeCookieUnlock plugin...');
@@ -1662,7 +1616,10 @@ print('✅ All service dependencies and required files verified successfully!')
     logger.step(7, 9, 'Installing Parakeet ASR dependencies');
     try {
         logger.installing('Parakeet ASR service dependencies');
-        const parakeetCmd = `uv pip install --python ${VENV_DIR} onnx-asr onnxruntime --force-reinstall`;
+        // Apply the shared narration constraints here too: onnxruntime otherwise pulls protobuf>=7,
+        // which breaks wandb (a transitive import of f5_tts). The constraint keeps protobuf<7, which
+        // is compatible with onnxruntime, wandb, F5-TTS and Chatterbox all at once.
+        const parakeetCmd = `uv pip install --python ${VENV_DIR} ${getNarrationConstraintsArg()} onnx-asr onnxruntime --force-reinstall`;
         logger.command(parakeetCmd);
         execSync(parakeetCmd, { stdio: 'inherit' });
         logger.success('Parakeet ASR dependencies installed successfully');
@@ -1671,17 +1628,71 @@ print('✅ All service dependencies and required files verified successfully!')
         logger.info('   The Parakeet ASR service may not function properly');
     }
 
-    // --- 7b. Install yt-dlp ChromeCookieUnlock Plugin ---
-    logger.step(7, 9, 'Installing yt-dlp ChromeCookieUnlock plugin...');
+    // --- 8. Install yt-dlp ChromeCookieUnlock Plugin ---
+    logger.step(8, 9, 'Installing yt-dlp ChromeCookieUnlock plugin...');
     await installYtDlpCookiePlugin();
+
+    // --- End-state verification (MUST be the last package-affecting step) ---
+    // Earlier verifications run before Parakeet/plugin installs, so they can miss regressions those
+    // steps introduce (e.g. onnxruntime pulling protobuf>=7 and breaking wandb/F5-TTS). Re-apply the
+    // shared compatibility constraints, then validate the real end state so a broken environment can
+    // never report success.
+    logger.progress('Verifying final shared-environment compatibility');
+    // Re-pin the shared constraints as a best-effort touch-up. This is redundant (the Parakeet step
+    // already installs under the same constraints), so a transient PyPI/network failure here must NOT
+    // fail a fully-installed environment -- the authoritative gate is the end-state import check below.
+    try {
+        repairNarrationCompatibility('Re-applying shared narration compatibility constraints after all installs');
+    } catch (repairErr) {
+        logger.warning(`Could not re-apply compatibility constraints (relying on end-state check): ${repairErr.message}`);
+    }
+    try {
+        // Hard invariants every narration service shares: protobuf<7, plus wandb / F5-TTS / Parakeet
+        // importing cleanly. numpy is printed for visibility but intentionally NOT bounded here --
+        // Chatterbox v0.1.2 requires numpy>=1.26 and the verified stack runs on numpy 2.x (Python 3.11),
+        // so asserting numpy<1.26 would fail a healthy install.
+        const endStateVerifyPyCode = `
+import sys, traceback
+import importlib.metadata as md
+try:
+    proto_ver = md.version("protobuf")
+    assert int(proto_ver.split(".")[0]) < 7, f"protobuf {proto_ver} is incompatible with wandb/F5-TTS (need <7)"
+    import numpy
+    import wandb
+    from f5_tts.api import F5TTS
+    import onnx_asr, onnxruntime
+    print(f"protobuf {proto_ver}, numpy {md.version('numpy')}, wandb {md.version('wandb')}, onnxruntime {md.version('onnxruntime')}")
+    print("✅ Core shared-environment imports verified (protobuf<7; F5-TTS + Parakeet + wandb coexist)")
+except Exception as e:
+    print(f"❌ End-state verification failed: {e}")
+    traceback.print_exc()
+    sys.exit(1)
+
+# Chatterbox (voice cloning) is an optional/degradable feature: torch/torchvision on CPU/MPS/ROCm
+# targets can make it fail to import while F5-TTS/Parakeet stay fully functional. Match the in-step
+# policy (non-fatal) rather than aborting an otherwise-working install.
+try:
+    from chatterbox.tts import ChatterboxTTS
+    print("✅ Chatterbox voice cloning verified")
+except Exception as e:
+    print(f"⚠️ Chatterbox import failed (voice cloning may be unavailable; install still OK): {e}")
+`;
+        const endStateVerifyCmd = `uv run --python ${VENV_DIR} -- python -c "${endStateVerifyPyCode.replace(/"/g, '\\"')}"`;
+        execSync(endStateVerifyCmd, { stdio: 'inherit', encoding: 'utf8' });
+        logger.success('Final shared-environment compatibility verified');
+    } catch (error) {
+        logger.error('Final shared-environment verification failed; the installed environment is not consistent.');
+        logger.info('This usually means a late install step changed a shared dependency (e.g. protobuf). See output above.');
+        process.exit(1);
+    }
 
     // --- 9. Final Summary ---
     logger.step(9, 9, 'Setup completed successfully!');
 
     const summaryItems = [
         `Target PyTorch backend: ${gpuVendor}`,
-        `F5-TTS package installed from GitHub`,
-        `Chatterbox package installed from GitHub`,
+        `F5-TTS installed from GitHub (pinned ${F5_TTS_REF})`,
+        `Chatterbox installed from GitHub (pinned ${CHATTERBOX_REF})`,
         `Parakeet ASR service dependencies installed`,
         `Shared virtual environment at: ./${VENV_DIR}`,
         `Python ${PYTHON_VERSION_TARGET} confirmed/installed`,

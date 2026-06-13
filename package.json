@@ -54,6 +54,7 @@
     "setup:react-env": "node scripts/generate-react-env.js",
     "test:cors": "node scripts/test-cors-configuration.js",
     "setup:narration:uv": "node setup-narration.js",
+    "check:tts-versions": "node scripts/check-tts-versions.js",
     "setup:narration:quiet": "cross-env QUIET=true node setup-narration.js",
     "setup:narration:verbose": "cross-env VERBOSE=true node setup-narration.js",
     "install:yt-dlp:quiet": "cross-env QUIET=true node install-yt-dlp.js",
