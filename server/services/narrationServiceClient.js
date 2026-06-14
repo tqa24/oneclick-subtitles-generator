@@ -20,40 +20,48 @@ const {
  * Check if the narration service is running - DRASTICALLY SIMPLIFIED VERSION
  * @returns {Promise<Object>} - Status object with available, device, and gpu_info properties
  */
-const checkService = async () => {
-  // Completely simplified version with no retries to eliminate logs
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2000);
+const checkService = async (retries = 1, timeout = 2000) => {
+  // Honor the (retries, timeout) callers pass so we can ride out the slow first-run F5-TTS model
+  // load instead of giving up after a single 2s probe and wrongly reporting the service down.
+  const attempts = Math.max(1, retries);
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-    const response = await fetch(`http://127.0.0.1:${NARRATION_PORT}/api/narration/status`, {
-      signal: controller.signal,
-      mode: 'cors',
-      credentials: 'include',
-      headers: {
-        'Accept': 'application/json'
+      const response = await fetch(`http://127.0.0.1:${NARRATION_PORT}/api/narration/status`, {
+        signal: controller.signal,
+        mode: 'cors',
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const statusData = await response.json();
+        if (statusData.available) {
+          return {
+            available: true,
+            device: statusData.device || 'cpu',
+            gpu_info: statusData.gpu_info || {}
+          };
+        }
       }
-    });
-
-    clearTimeout(timeoutId);
-
-    if (response.ok) {
-      const statusData = await response.json();
-      if (statusData.available) {
-        return {
-          available: true,
-          device: statusData.device || 'cpu',
-          gpu_info: statusData.gpu_info || {}
-        };
-      }
+    } catch (error) {
+      // Connection error / timeout — fall through to retry.
     }
 
-    // Service not available
-    return { available: false, device: 'none', gpu_info: {} };
-  } catch (error) {
-    // Error connecting to service
-    return { available: false, device: 'none', gpu_info: {} };
+    // Wait briefly before the next attempt (not after the last one).
+    if (attempt < attempts - 1) {
+      await new Promise(resolve => setTimeout(resolve, Math.min(timeout, 2000)));
+    }
   }
+
+  // Service not available after all attempts
+  return { available: false, device: 'none', gpu_info: {} };
 };
 
 /**

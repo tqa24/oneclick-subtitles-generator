@@ -112,32 +112,35 @@ async function startServer() {
 // Start the server
 const serverPromise = startServer();
 
-// Handle server shutdown
-process.on('SIGINT', async () => {
-  console.log('\n🛑 Shutting down server and services...');
+// Handle server shutdown (SIGINT for Ctrl+C, SIGTERM when a launcher forwards it)
+let shuttingDownServer = false;
+async function shutdownServer(signal) {
+  if (shuttingDownServer) return;
+  shuttingDownServer = true;
+  console.log(`\n🛑 (${signal}) Shutting down server and services...`);
 
   try {
     const server = await serverPromise;
+    await new Promise((resolve) => server.close(resolve));
 
-    server.close(() => {
-      // Kill the narration service processes
-      if (narrationProcesses) {
-        if (narrationProcesses.narrationProcess) {
-          console.log('🔄 Stopping F5-TTS narration service...');
-          narrationProcesses.narrationProcess.kill();
-        }
-
-        if (narrationProcesses.chatterboxProcess) {
-          console.log('🔄 Stopping Chatterbox service...');
-          narrationProcesses.chatterboxProcess.kill();
-        }
+    // Tree-kill the REAL python/uvicorn narration workers. narrationProcess.kill() would only signal
+    // the `uv` launcher, leaving the worker holding ports 3035/3036 and GPU VRAM (the zombie problem).
+    if (narrationProcesses && (narrationProcesses.narrationProcess || narrationProcesses.chatterboxProcess)) {
+      console.log('🔄 Stopping narration services (F5-TTS + Chatterbox)...');
+      try {
+        await killProcessesOnPorts([NARRATION_PORT, CHATTERBOX_PORT]);
+      } catch (e) {
+        console.warn('Could not fully stop narration services:', e.message);
       }
+    }
 
-      console.log('✅ Server shutdown complete');
-      process.exit(0);
-    });
+    console.log('✅ Server shutdown complete');
+    process.exit(0);
   } catch (error) {
     console.error('Error during shutdown:', error);
     process.exit(1);
   }
-});
+}
+
+process.on('SIGINT', () => shutdownServer('SIGINT'));
+process.on('SIGTERM', () => shutdownServer('SIGTERM'));

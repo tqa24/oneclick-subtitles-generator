@@ -1,5 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const { validateVideoIdParam } = require('../utils/validateVideoId');
+// Reject path-traversal / malformed ids before any :videoId route builds a filesystem path.
+router.param('videoId', validateVideoIdParam);
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');

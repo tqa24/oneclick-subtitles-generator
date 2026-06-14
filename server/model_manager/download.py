@@ -11,14 +11,18 @@ from .registry import get_registry, save_registry
 from .download_status import update_download_status, remove_download_status
 from .download_helpers import _custom_download_file, _download_model_from_hf_thread, _download_model_from_url_thread
 
+# get_cache_dir was removed from huggingface_hub and is unused here -- provide a no-op stub instead
+# of attempting an import that always fails and logs a warning on every model_manager import.
+def get_cache_dir():
+    return None
+
 try:
-    from huggingface_hub import get_cache_dir
     from huggingFaceCache import delete_huggingface_cache_model
 except ImportError:
-    # Provide dummy function if the import fails
-    logger.warning("huggingface_hub or huggingFaceCache module not found. Cache operations might be limited.")
-    def get_cache_dir(): return None
-    def delete_huggingface_cache_model(repo_id): return (False, "huggingFaceCache module not found")
+    # Optional helper; absence is expected in this deployment. Debug-level so it isn't console noise.
+    logger.debug("huggingFaceCache module not found; cache deletion will be a no-op.")
+    def delete_huggingface_cache_model(repo_id):
+        return (False, "huggingFaceCache module not found")
 
 
 def cancel_download(model_id):

@@ -9,6 +9,8 @@ const path = require('path');
 // Import port management and CORS setup
 const { killProcessesOnPorts, cleanupTrackingFile } = require('../server/utils/portManager');
 const { setupEnvironmentVariables } = require('./setup-cors-env');
+const pm = require('./process-manager');
+const { PORTS } = require('../server/config');
 
 async function startAllServices() {
   console.log('🚀 Starting One-Click Subtitles Generator...');
@@ -65,13 +67,23 @@ async function startAllServices() {
       const childProcess = spawn(cmd, args, {
         stdio: ['pipe', 'pipe', 'pipe'],
         shell: true, // Use shell: true for cross-platform npm compatibility
+        detached: process.platform !== 'win32', // own process group on POSIX so we can kill the whole tree
         cwd: cwd,
         env: {
           ...process.env,
           START_PYTHON_SERVER: 'true',
-          DEV_SERVER_MANAGED: 'true'
+          DEV_SERVER_MANAGED: 'true',
+          // Quiet HuggingFace download progress bars + telemetry in the shared console.
+          HF_HUB_DISABLE_PROGRESS_BARS: '1',
+          HF_HUB_DISABLE_TELEMETRY: '1',
+          // Silence the Windows huggingface_hub symlink UserWarning (harmless on this setup).
+          HF_HUB_DISABLE_SYMLINKS_WARNING: '1',
+          // Silence the two known-noisy warnings without a blanket ignore: diffusers' FutureWarning
+          // and pydub's "Couldn't find ffmpeg" RuntimeWarning. Real warnings/errors still show.
+          PYTHONWARNINGS: process.env.PYTHONWARNINGS || 'ignore::FutureWarning,ignore:Couldn\'t find ffmpeg:RuntimeWarning,ignore:pkg_resources is deprecated:UserWarning'
         }
       });
+      pm.trackChild(childProcess, name); // record PID so shutdown tree-kills it + its grandchildren
 
       childProcess.stdout.on('data', (data) => {
         console.log(prefixOutput(name, data));
@@ -94,16 +106,25 @@ async function startAllServices() {
       });
     });
 
-    // Handle shutdown gracefully
-    process.on('SIGINT', () => {
-      console.log('\n🛑 Shutting down all services...');
-      process.exit(0);
-    });
+    // Tree-kill every spawned service (and its grandchildren) on Ctrl+C / window close, so ports
+    // 3030-3038 and GPU VRAM are freed instead of orphaned.
+    pm.installShutdown();
 
-    process.on('SIGTERM', () => {
-      console.log('\n🛑 Shutting down all services...');
-      process.exit(0);
-    });
+    // Only announce "ready" once each service's port actually answers (first CUDA model load is slow).
+    const ready = await pm.waitForPorts([
+      { name: 'SERVER', port: PORTS.BACKEND, path: '/api/health' },
+      { name: 'FRONTEND', port: PORTS.FRONTEND },
+      { name: 'RENDERER', port: PORTS.VIDEO_RENDERER },
+      { name: 'MIDI', port: PORTS.PROMPTDJ_MIDI },
+      { name: 'PARAKEET', port: PORTS.PARAKEET, path: '/' },
+      { name: 'F5-TTS', port: PORTS.NARRATION, path: '/' },
+      { name: 'CHATTERBOX', port: PORTS.CHATTERBOX, path: '/' }
+    ], { timeoutMs: 180000 });
+    if (ready) {
+      console.log(`\n✅ All services ready — open http://localhost:${PORTS.FRONTEND}`);
+    } else {
+      console.log('\n⚠️  Some services were slow to start (see ⚠️ above); the app may still come up shortly.');
+    }
 
   } catch (error) {
     console.error('❌ Error during startup:', error);

@@ -6,7 +6,11 @@
 const { spawn, exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const net = require('net');
 const { PORTS } = require('../config');
+
+const isWindows = process.platform === 'win32';
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // File to store process tracking information
 const PROCESS_TRACKING_FILE = path.join(__dirname, '..', '..', '.port_processes.json');
@@ -138,8 +142,8 @@ function findProcessesOnPortsUnix(ports) {
 /**
  * Find processes using application ports
  */
-async function findProcessesOnPorts() {
-  const ports = getAllPorts();
+async function findProcessesOnPorts(portsOverride) {
+  const ports = portsOverride || getAllPorts();
   const isWindows = process.platform === 'win32';
   
   if (isWindows) {
@@ -155,13 +159,18 @@ async function findProcessesOnPorts() {
 function killProcess(pid, processName = 'Unknown') {
   return new Promise((resolve) => {
     const isWindows = process.platform === 'win32';
-    const killCommand = isWindows ? `taskkill /F /PID ${pid}` : `kill -9 ${pid}`;
-    
+    // /T kills the whole process tree (the uv -> python -> uvicorn grandchildren that actually hold
+    // the ports), not just the launcher.
+    const killCommand = isWindows ? `taskkill /F /T /PID ${pid}` : `kill -9 ${pid}`;
+
     console.log(`🔪 Killing process ${processName} (PID: ${pid})`);
-    
+
     exec(killCommand, (error) => {
       if (error) {
-        console.warn(`⚠️  Could not kill process ${pid}: ${error.message}`);
+        // A process that is already gone ("not found"/"not running") is a no-op, not a real failure,
+        // so don't print an alarming warning during routine port cleanup.
+        const benign = /not found|not running|no (running )?task|128/i.test(error.message || '');
+        if (!benign) console.warn(`⚠️  Could not kill process ${pid}: ${error.message}`);
         resolve(false);
       } else {
         console.log(`✅ Successfully killed process ${processName} (PID: ${pid})`);
@@ -172,12 +181,127 @@ function killProcess(pid, processName = 'Unknown') {
 }
 
 /**
+ * Authoritative "is this port actually free to bind?" check. We attempt the SAME thing the Python
+ * services do — bind 0.0.0.0:port — and report success/failure. A client-connect probe is not enough:
+ * it can't distinguish "free" from "bound but not accepting", and a TIME_WAIT/leftover socket can still
+ * block a real bind. On Windows, Node (libuv) does not set SO_REUSEADDR for servers, so this mirrors an
+ * exclusive bind closely.
+ */
+function canBindPort(port, host = '0.0.0.0') {
+  return new Promise((resolve) => {
+    const tester = net.createServer();
+    tester.once('error', () => resolve(false));
+    tester.once('listening', () => tester.close(() => resolve(true)));
+    try {
+      tester.listen(port, host);
+    } catch (_) {
+      resolve(false);
+    }
+  });
+}
+
+/**
+ * Snapshot of every live process as {pid, ppid}. Used to walk a process tree when the PID that
+ * netstat blames for a port is a DEAD parent whose live child still holds the inherited socket.
+ * `wmic` is gone on Windows 11, so use Get-CimInstance (works without admin). Returns null if the
+ * snapshot can't be produced, so callers fall back to killing just the netstat PID.
+ */
+function getProcessSnapshotWindows() {
+  return new Promise((resolve) => {
+    const cmd =
+      'powershell -NoProfile -NonInteractive -Command ' +
+      '"Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId | ConvertTo-Csv -NoTypeInformation"';
+    exec(cmd, { windowsHide: true, timeout: 8000, maxBuffer: 16 * 1024 * 1024 }, (error, stdout) => {
+      if (error || !stdout) {
+        resolve(null);
+        return;
+      }
+      const rows = [];
+      for (const line of stdout.split(/\r?\n/)) {
+        // Rows are CSV like "1234","5678"; the "ProcessId","ParentProcessId" header has no digits and is skipped.
+        const m = line.match(/^"?(\d+)"?\s*,\s*"?(\d+)"?/);
+        if (m) rows.push({ pid: parseInt(m[1], 10), ppid: parseInt(m[2], 10) });
+      }
+      resolve(rows.length ? rows : null);
+    });
+  });
+}
+
+/**
+ * Given root PID(s) and a live-process snapshot, return the set of those PIDs plus all their live
+ * descendants. KEY Windows fact (verified): when a parent dies, Windows does NOT reparent its children
+ * — each child keeps the dead parent's PID in ParentProcessId. So walking children-of-deadPid still
+ * finds the live grandchild that inherited the listening socket (the exact 3036 zombie we hit).
+ */
+function collectDescendantPids(rootPids, snapshot) {
+  const childrenByPpid = new Map();
+  for (const { pid, ppid } of snapshot) {
+    let arr = childrenByPpid.get(ppid);
+    if (!arr) { arr = []; childrenByPpid.set(ppid, arr); }
+    arr.push(pid);
+  }
+  const result = new Set();
+  const queue = [...rootPids];
+  while (queue.length) {
+    const pid = queue.shift();
+    if (result.has(pid)) continue;
+    result.add(pid); // root PIDs are included even if already dead — taskkill on them is a harmless no-op
+    const kids = childrenByPpid.get(pid);
+    if (kids) for (const k of kids) if (!result.has(k)) queue.push(k);
+  }
+  return result;
+}
+
+/**
+ * Guarantee a single port is free to bind, then return true. Handles the case that broke Chatterbox on
+ * port 3036: netstat reports the socket against a DEAD parent PID, `taskkill /PID <deadpid>` reaps
+ * nothing, and the live child that inherited the socket keeps the port. We resolve the holder, kill its
+ * whole live descendant tree (not just the netstat PID), then VERIFY with a real bind — retrying a few
+ * times — instead of sleeping once and hoping. Never throws; returns false if the port stays stuck.
+ */
+async function ensurePortFree(port, options = {}) {
+  const { label = `port ${port}`, attempts = 6, intervalMs = 500 } = options;
+
+  // Fast path: nothing holding it (also the success exit of the loop below) — no PowerShell spawned.
+  if (await canBindPort(port)) return true;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    const holders = await findProcessesOnPorts([port]);
+    const rootPids = [...new Set(holders.map((h) => h.pid))].filter((pid) => pid && pid !== process.pid);
+
+    if (rootPids.length > 0) {
+      let targets = new Set(rootPids);
+      if (isWindows) {
+        // The netstat PID may be a dead parent — expand to its live descendants so the real
+        // socket-holder (e.g. a uvicorn reload/multiprocessing child) is the one we kill.
+        const snapshot = await getProcessSnapshotWindows();
+        if (snapshot) {
+          targets = collectDescendantPids(rootPids, snapshot);
+          targets.delete(process.pid);
+        }
+      }
+      for (const pid of targets) {
+        await killProcess(pid, label);
+      }
+    }
+
+    await sleep(intervalMs);
+    if (await canBindPort(port)) return true;
+  }
+
+  console.warn(`⚠️  Port ${port} (${label}) is STILL in use after ${attempts} cleanup attempts.`);
+  console.warn('   A process from a previous run may be stuck — close other app windows or reboot.');
+  console.warn('   If it persists, the holder may be owned by another user / elevated and need admin rights.');
+  return false;
+}
+
+/**
  * Kill all processes on application ports
  */
-async function killProcessesOnPorts() {
+async function killProcessesOnPorts(portsOverride) {
   console.log('🔍 Scanning for processes on application ports...');
-  
-  const processes = await findProcessesOnPorts();
+
+  const processes = await findProcessesOnPorts(portsOverride);
   const tracking = loadProcessTracking();
   
   if (processes.length === 0) {
@@ -186,18 +310,29 @@ async function killProcessesOnPorts() {
   }
 
   console.log(`🎯 Found ${processes.length} process(es) on application ports`);
-  
-  for (const { port, pid } of processes) {
+
+  // Free each occupied port via ensurePortFree, which kills the holder's whole live tree (covering the
+  // dead-parent / inherited-socket zombie case) and verifies the port is actually bindable before moving
+  // on — instead of killing the (possibly dead) netstat PID once and assuming success.
+  const occupiedPorts = [...new Set(processes.map((p) => p.port))];
+  let stuck = 0;
+  for (const port of occupiedPorts) {
     const trackedProcess = tracking[port];
     const processName = trackedProcess ? trackedProcess.processName : `Port ${port}`;
-    
-    await killProcess(pid, processName);
-    untrackProcess(port);
+
+    const freed = await ensurePortFree(port, { label: processName });
+    if (freed) {
+      untrackProcess(port);
+    } else {
+      stuck++;
+    }
   }
-  
-  // Wait a moment for processes to fully terminate
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  console.log('🧹 Port cleanup completed');
+
+  if (stuck === 0) {
+    console.log('🧹 Port cleanup completed');
+  } else {
+    console.warn(`⚠️  Port cleanup finished, but ${stuck} port(s) could not be freed (see warnings above).`);
+  }
 }
 
 /**
@@ -220,6 +355,10 @@ module.exports = {
   untrackProcess,
   findProcessesOnPorts,
   killProcessesOnPorts,
+  ensurePortFree,
+  canBindPort,
+  collectDescendantPids,
+  getProcessSnapshotWindows,
   cleanupTrackingFile,
   PROCESS_TRACKING_FILE
 };

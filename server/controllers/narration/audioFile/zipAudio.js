@@ -4,7 +4,7 @@
 
 const path = require('path');
 const fs = require('fs');
-const { spawn } = require('child_process');
+const AdmZip = require('adm-zip');
 
 // Import directory paths
 const { OUTPUT_AUDIO_DIR, TEMP_AUDIO_DIR } = require('../directoryManager');
@@ -56,43 +56,19 @@ const downloadAllAudio = async (req, res) => {
 
 
 
-    // Create a zip file using the zip command with spawn
-
-
-    // Prepare arguments for zip command
-    const zipArgs = ['-j', zipPath, ...validFiles];
-
-    await new Promise((resolve, reject) => {
-      const zipProcess = spawn('zip', zipArgs);
-
-      let stdoutData = '';
-      let stderrData = '';
-
-      zipProcess.stdout.on('data', (data) => {
-        stdoutData += data.toString();
-      });
-
-      zipProcess.stderr.on('data', (data) => {
-        stderrData += data.toString();
-      });
-
-      zipProcess.on('close', (code) => {
-        if (code !== 0) {
-          console.error(`zip process exited with code ${code}`);
-          console.error(`stderr: ${stderrData}`);
-          reject(new Error(`zip process failed with code ${code}`));
-          return;
-        }
-
-
-        resolve();
-      });
-
-      zipProcess.on('error', (err) => {
-        console.error(`Error spawning zip process: ${err.message}`);
-        reject(err);
-      });
-    });
+    // Build the zip in-process with adm-zip (already bundled). The previous spawn('zip', ...) broke
+    // on stock Windows, which has no `zip` command, so this feature failed for every .bat user.
+    // `-j` (junk paths) == addLocalFile, which stores each file under its basename only.
+    try {
+      const zip = new AdmZip();
+      for (const filePath of validFiles) {
+        zip.addLocalFile(filePath);
+      }
+      zip.writeZip(zipPath);
+    } catch (zipErr) {
+      console.error(`Failed to create zip file: ${zipErr.message}`);
+      return res.status(500).json({ error: 'Failed to create zip file' });
+    }
 
     // Check if the zip file was created
     if (!fs.existsSync(zipPath)) {

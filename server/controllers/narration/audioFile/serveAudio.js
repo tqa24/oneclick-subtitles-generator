@@ -94,6 +94,16 @@ const serveAudioFile = (req, res) => {
       return res.status(400).json({ error: 'No filename provided' });
     }
 
+    // Path-traversal guard: every branch below joins `filename` onto a fixed base directory, so a
+    // value containing ".." or an absolute path could escape it and read arbitrary files. Legitimate
+    // audio names ("subtitle_<id>/N.wav", "N.wav") never contain those, so reject them up front.
+    let decodedName = filename;
+    try { decodedName = decodeURIComponent(filename); } catch (e) { /* keep raw */ }
+    if (decodedName.includes('..') || path.isAbsolute(decodedName) || /^[A-Za-z]:[\\/]/.test(decodedName)) {
+      console.warn(`[serveAudio] Rejected suspicious filename: ${filename}`);
+      return res.status(400).json({ error: 'Invalid filename' });
+    }
+
     // Check if the filename includes a path separator (new structure)
     if (filename.includes(path.sep) || filename.includes('/')) {
       debugLog(`[DEBUG] Handling path with separators: ${filename}`);

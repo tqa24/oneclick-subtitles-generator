@@ -84,7 +84,9 @@ function startChatterboxService() {
         startApiPath,  // Use relative path from project root
         '--host', '0.0.0.0',
         '--port', CHATTERBOX_PORT.toString(),
-        '--reload'
+        // --reload spawns a file-watcher + worker (doubles Python processes) and can reload the model
+        // mid-use. Only enable it when explicitly developing the chatterbox service.
+        ...(process.env.OSG_DEV_RELOAD === 'true' ? ['--reload'] : [])
       ];
     } else {
       // Use uv with .venv in development mode
@@ -97,7 +99,7 @@ function startChatterboxService() {
         startApiPath,  // Use relative path from project root
         '--host', '0.0.0.0',
         '--port', CHATTERBOX_PORT.toString(),
-        '--reload'
+        ...(process.env.OSG_DEV_RELOAD === 'true' ? ['--reload'] : [])
       ];
     }
 
@@ -244,7 +246,9 @@ if torch.cuda.is_available():
         const { execSync } = require('child_process');
         const venvRelativePath = path.relative(projectRoot, VENV_PATH);
         const ensureCmd = `${UV_EXECUTABLE} pip show --python ${venvRelativePath} python-dateutil || ${UV_EXECUTABLE} pip install --python ${venvRelativePath} python-dateutil==2.9.0.post0`;
-        execSync(ensureCmd, { stdio: 'inherit', cwd: projectRoot });
+        // stdio:'ignore' (not 'inherit') so the `pip show` metadata table + absolute path are not
+        // dumped to the console on every startup.
+        execSync(ensureCmd, { stdio: 'ignore', cwd: projectRoot });
       } catch (e) {
         console.warn(`Warning: Failed to ensure python-dateutil in venv: ${e.message}`);
       }

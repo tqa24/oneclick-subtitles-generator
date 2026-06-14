@@ -340,6 +340,9 @@ const generateNarration = async (req, res) => {
         // Full filename for response (includes subtitle directory)
         const fullFilename = `subtitle_${subtitle.id || i}/${filename}`;
 
+        // STATIC script: dynamic values arrive as JSON on stdin and are used only as DATA, never
+        // interpolated into source. Closes the code-injection (RCE) vector via text/voice/rate/
+        // volume/pitch/id.
         const scriptContent = `
 import asyncio
 import json
@@ -352,12 +355,13 @@ try:
     import edge_tts
 
     async def generate_audio():
-        text = """${subtitle.text.replace(/"/g, '\\"')}"""
-        voice = "${voice}"
-        rate = "${rate}"
-        volume = "${volume}"
-        pitch = "${pitch}"
-        output_path = "${outputPath.replace(/\\/g, '\\\\')}"
+        data = json.loads(sys.stdin.read())
+        text = data["text"]
+        voice = data["voice"]
+        rate = data["rate"]
+        volume = data["volume"]
+        pitch = data["pitch"]
+        output_path = data["outputPath"]
 
         # Create a temporary text file for the input
         with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8') as temp_file:
@@ -385,7 +389,7 @@ try:
             # Run the command
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
 
-            print(json.dumps({'success': True, 'filename': '${fullFilename}'}))
+            print(json.dumps({'success': True, 'filename': data["fullFilename"]}))
 
         finally:
             # Clean up temporary file
@@ -406,16 +410,23 @@ except Exception as e:
 `;
 
         fs.writeFileSync(tempScript, scriptContent);
-        console.log(`[Edge TTS] Written Python script to: ${tempScript}`);
-
         // Execute the Python script
-        console.log(`[Edge TTS] Executing Python script with: ${pythonExecutable} ${tempScript}`);
-        console.log(`[Edge TTS] Expected edge-tts command: ${pythonExecutable} -m edge_tts --voice ${voice} --file <temp_file> --write-media ${outputPath}${rate !== '+0%' ? ` --rate=${rate}` : ''}${volume !== '+0%' ? ` --volume=${volume}` : ''}${pitch !== '+0Hz' ? ` --pitch=${pitch}` : ''}`);
         const result = await new Promise((resolve, reject) => {
           const pythonProcess = spawn(pythonExecutable, [tempScript], {
             stdio: ['pipe', 'pipe', 'pipe']
           });
-          console.log(`[Edge TTS] Python process spawned with PID: ${pythonProcess.pid}`);
+
+          // Feed dynamic values as JSON over stdin (never interpolated into the script source).
+          pythonProcess.on('error', (err) => reject(new Error(`Failed to launch python for edge-tts: ${err.message}`)));
+          try {
+            pythonProcess.stdin.write(JSON.stringify({
+              text: String(subtitle.text || ''),
+              voice, rate, volume, pitch,
+              outputPath,
+              fullFilename,
+            }));
+            pythonProcess.stdin.end();
+          } catch (e) { /* stdin may already be closed if spawn failed */ }
 
           let stdout = '';
           let stderr = '';

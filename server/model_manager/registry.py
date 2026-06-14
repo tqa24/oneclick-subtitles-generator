@@ -8,8 +8,8 @@ from .constants import MODELS_REGISTRY_FILE, logger
 try:
     from huggingFaceCache import list_huggingface_cache_models
 except ImportError:
-    # Provide dummy function if the import fails, to avoid crashing
-    logger.warning("huggingFaceCache module not found. Cache operations might be limited.")
+    # Optional helper; absence is expected in this deployment. Debug-level so it isn't console noise.
+    logger.debug("huggingFaceCache module not found; cache listing will be empty.")
     def list_huggingface_cache_models(): return []
 
 

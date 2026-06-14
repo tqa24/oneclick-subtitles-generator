@@ -105,6 +105,8 @@ const modifyAudioSpeed = async (req, res) => {
 
     // Execute the ffmpeg command
     const ffmpegProcess = spawn(getFfmpegPath(), ffmpegArgs);
+    // Spawn failures emit 'error'; reject instead of crashing the server with an unhandled event.
+    ffmpegProcess.on('error', (err) => reject(new Error(`Failed to launch ffmpeg: ${err.message}`)));
 
     let stdoutData = '';
     let stderrData = '';

@@ -5,13 +5,19 @@ const axios = require('axios');
 // Base URL for the Parakeet FastAPI service
 const PARAKEET_BASE_URL = process.env.PARAKEET_BASE_URL || 'http://127.0.0.1:3038';
 
-// Simple health check proxy
+// Health check proxy: forwards the REAL readiness signal from the Parakeet service.
+// Returns 503 (not a misleading 200) when the ASR model is not loaded, so the UI gates correctly.
 router.get('/parakeet/health', async (req, res) => {
   try {
-    const resp = await axios.get(`${PARAKEET_BASE_URL}/`);
-    res.json({ success: true, service: resp.data });
+    const resp = await axios.get(`${PARAKEET_BASE_URL}/health`, {
+      timeout: 5000,
+      validateStatus: () => true, // forward the upstream status verbatim (don't throw on 503)
+    });
+    const ready = resp.status >= 200 && resp.status < 300;
+    res.status(resp.status).json({ success: ready, service: resp.data });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message || 'Failed to reach Parakeet service' });
+    // Service not up yet / unreachable -> not ready (503), not a generic 500.
+    res.status(503).json({ success: false, error: err.message || 'Failed to reach Parakeet service' });
   }
 });
 

@@ -45,6 +45,11 @@ function getVideoDimensions(videoPath) {
 
     let out = '';
     let err = '';
+    // A spawn failure (e.g. ffprobe missing/unlaunchable) emits 'error'. Without this handler the
+    // unhandled event would crash the entire server process; reject the promise instead.
+    ff.on('error', (spawnErr) => {
+      reject(new Error(`Failed to launch ffprobe (${ffprobePath}): ${spawnErr.message}`));
+    });
     ff.stdout.on('data', d => { out += d.toString(); });
     ff.stderr.on('data', d => { err += d.toString(); });
     ff.on('close', (code) => {
@@ -221,6 +226,8 @@ function convertAudioToVideo(audioPath, videoPath) {
         '-of', 'default=noprint_wrappers=1:nokey=1',
         videoPath
       ]);
+      // ffprobe duration here is best-effort; a spawn failure should not crash the server.
+      ffprobe.on('error', () => resolve({ width: 256, height: 144, fps: 15, duration: null }));
 
       let durationOutput = '';
 
@@ -1570,6 +1577,7 @@ router.post('/extract-video-segment', streamingUpload.single('file'), async (req
           req.file.path
         ]);
         let out = '';
+        ffprobe.on('error', err => reject(err)); // don't let a spawn failure crash the server
         ffprobe.stdout.on('data', d => out += d);
         ffprobe.on('close', code => {
           if (code === 0) {
@@ -1602,6 +1610,10 @@ router.post('/extract-video-segment', streamingUpload.single('file'), async (req
     ]);
 
     let err = '';
+    ff.on('error', (spawnErr) => {
+      try { fs.unlinkSync(req.file.path); } catch {}
+      if (!res.headersSent) res.status(500).json({ success: false, error: `Failed to launch ffmpeg: ${spawnErr.message}` });
+    });
     ff.stderr.on('data', d => { err += d.toString(); });
     ff.on('close', (code) => {
       try { fs.unlinkSync(req.file.path); } catch {}

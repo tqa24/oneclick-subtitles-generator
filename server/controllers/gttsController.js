@@ -185,27 +185,22 @@ const generateNarration = async (req, res) => {
         // Full filename for response (includes subtitle directory)
         const fullFilename = `subtitle_${subtitle.id || i}/${filename}`;
 
+        // STATIC script: every dynamic value arrives as JSON on stdin and is used only as DATA,
+        // never interpolated into source. This closes the code-injection (RCE) vector where
+        // subtitle text / lang / tld / id flowed into executed Python.
         const scriptContent = `
 import json
 import sys
-import tempfile
-import os
 
 try:
     from gtts import gTTS
-    
-    text = """${subtitle.text.replace(/"/g, '\\"')}"""
-    lang = "${lang}"
-    tld = "${tld}"
-    slow = ${slow ? 'True' : 'False'}
-    
-    tts = gTTS(text=text, lang=lang, tld=tld, slow=slow)
-    
-    # Save to output file
-    tts.save("${outputPath.replace(/\\/g, '\\\\')}")
-    
-    print(json.dumps({'success': True, 'filename': '${fullFilename}'}))
-    
+
+    data = json.loads(sys.stdin.read())
+    tts = gTTS(text=data["text"], lang=data["lang"], tld=data["tld"], slow=bool(data["slow"]))
+    tts.save(data["outputPath"])
+
+    print(json.dumps({'success': True, 'filename': data["fullFilename"]}))
+
 except ImportError:
     print(json.dumps({'success': False, 'error': 'gtts library not available'}))
     sys.exit(1)
@@ -221,6 +216,20 @@ except Exception as e:
           const pythonProcess = spawn(pythonExecutable, [tempScript], {
             stdio: ['pipe', 'pipe', 'pipe']
           });
+
+          // Feed all dynamic values as JSON over stdin (never interpolated into the script source).
+          pythonProcess.on('error', (err) => reject(new Error(`Failed to launch python for gTTS: ${err.message}`)));
+          try {
+            pythonProcess.stdin.write(JSON.stringify({
+              text: String(subtitle.text || ''),
+              lang,
+              tld,
+              slow: !!slow,
+              outputPath,
+              fullFilename,
+            }));
+            pythonProcess.stdin.end();
+          } catch (e) { /* stdin may already be closed if spawn failed */ }
 
           let stdout = '';
           let stderr = '';

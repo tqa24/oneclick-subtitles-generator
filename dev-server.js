@@ -6,6 +6,8 @@ const chalk = require('chalk');
 // Import port management for cleanup and CORS setup
 const { killProcessesOnPorts, cleanupTrackingFile } = require('./server/utils/portManager');
 const { setupEnvironmentVariables } = require('./scripts/setup-cors-env');
+const pm = require('./scripts/process-manager');
+const { PORTS } = require('./server/config');
 
 // Colors for different services
 const colors = {
@@ -74,12 +76,14 @@ async function startServices() {
     const childProcess = spawn(cmd, args, {
       stdio: ['pipe', 'pipe', 'pipe'],
       shell: true, // Use shell: true for cross-platform npm compatibility (works on Windows, Linux, macOS)
+      detached: process.platform !== 'win32', // own process group on POSIX so we can kill the whole tree
       cwd: cwd,
       env: {
         ...process.env,
         DEV_SERVER_MANAGED: 'true' // Tell services they're managed by dev-server
       }
     });
+    pm.trackChild(childProcess, name); // record PID so shutdown tree-kills it + its grandchildren
 
     childProcess.stdout.on('data', (data) => {
       console.log(prefixOutput(name, data));
@@ -99,16 +103,26 @@ async function startServices() {
       console.log(color(`[${name}] Error: ${err.message}`));
     });
   });
+
+  // Tree-kill every spawned service (and its grandchildren) on Ctrl+C / window close.
+  pm.installShutdown();
+
+  // Announce "ready" only once each lite service's port actually answers.
+  const ready = await pm.waitForPorts([
+    { name: 'SERVER', port: PORTS.BACKEND, path: '/api/health' },
+    { name: 'FRONTEND', port: PORTS.FRONTEND },
+    { name: 'RENDERER', port: PORTS.VIDEO_RENDERER },
+    { name: 'MIDI', port: PORTS.PROMPTDJ_MIDI }
+  ], { timeoutMs: 120000 });
+  if (ready) {
+    console.log(chalk.green(`\n✅ All services ready — open http://localhost:${PORTS.FRONTEND}`));
+  } else {
+    console.log(chalk.yellow('\n⚠️  Some services were slow to start; the app may still come up shortly.'));
+  }
 }
 
 // Start services
 startServices().catch(error => {
   console.error(chalk.red('❌ Error starting services:', error));
   process.exit(1);
-});
-
-// Handle Ctrl+C gracefully
-process.on('SIGINT', () => {
-  console.log(chalk.yellow('\nShutting down development servers...'));
-  process.exit(0);
 });

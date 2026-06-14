@@ -9,8 +9,8 @@ from .registry import get_registry, save_registry
 try:
     from huggingFaceCache import delete_huggingface_cache_model
 except ImportError:
-    # Provide dummy function if the import fails, to avoid crashing
-    logger.warning("huggingFaceCache module not found. Cache operations might be limited.")
+    # Optional helper; absence is expected in this deployment. Debug-level so it isn't console noise.
+    logger.debug("huggingFaceCache module not found; cache deletion will be a no-op.")
     def delete_huggingface_cache_model(repo_id): return (False, "huggingFaceCache module not found")
 
 

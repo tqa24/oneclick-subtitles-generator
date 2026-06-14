@@ -205,6 +205,9 @@ const modifyAudioTrimAndSpeedCombined = async (req, res) => {
     const ffmpegArgs = ['-i', sourceFile, '-vn', '-af', filters.join(','), ...getCodecArgs(audioPath), '-y', audioPath];
 
     const ff = spawn(getFfmpegPath(), ffmpegArgs);
+    ff.on('error', (err) => {
+      if (!res.headersSent) res.status(500).json({ success: false, error: `Failed to launch ffmpeg: ${err.message}` });
+    });
     let stderrData = '';
     ff.stderr.on('data', (d) => { stderrData += d.toString(); });
 

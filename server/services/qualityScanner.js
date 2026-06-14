@@ -38,6 +38,9 @@ async function scanAvailableQualities(videoURL, useCookies = false) {
 
     // Use yt-dlp to list available formats
     const ytdlpProcess = spawn(ytDlpPath, args);
+    // A spawn failure (e.g. yt-dlp missing) emits 'error'; without this the unhandled event
+    // would crash the whole server. Reject so the caller's try/catch can handle it.
+    ytdlpProcess.on('error', (err) => reject(new Error(`Failed to launch yt-dlp (is it installed?): ${err.message}`)));
 
     let stdout = '';
     let stderr = '';
@@ -198,6 +201,9 @@ async function getVideoInfo(videoURL, useCookies = false) {
 
     // Use yt-dlp to get video information
     const ytdlpProcess = spawn(ytDlpPath, args);
+    // A spawn failure (e.g. yt-dlp missing) emits 'error'; without this the unhandled event
+    // would crash the whole server. Reject so the caller's try/catch can handle it.
+    ytdlpProcess.on('error', (err) => reject(new Error(`Failed to launch yt-dlp (is it installed?): ${err.message}`)));
 
     let stdout = '';
     let stderr = '';
@@ -328,6 +334,9 @@ async function downloadWithQualityAttempt(videoURL, outputPath, quality, videoId
     console.log(`[downloadWithQualityAttempt] Running yt-dlp with args:`, args);
 
     const ytdlpProcess = spawn(ytDlpPath, args);
+    // A spawn failure (e.g. yt-dlp missing) emits 'error'; without this the unhandled event
+    // would crash the whole server. Reject so the caller's try/catch can handle it.
+    ytdlpProcess.on('error', (err) => reject(new Error(`Failed to launch yt-dlp (is it installed?): ${err.message}`)));
 
     // Track process for cancellation if videoId provided
     if (videoId) {

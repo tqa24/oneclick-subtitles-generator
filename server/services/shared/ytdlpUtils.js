@@ -7,6 +7,11 @@ const path = require('path');
 const os = require('os');
 const { spawn } = require('child_process');
 
+// Verbose debug logging: the yt-dlp resolver/args traces below print ~2x per download, so gate them
+// behind VERBOSE (default off) to keep the shared console readable. Warnings/errors stay unconditional.
+const VERBOSE = process.env.VERBOSE === 'true';
+const dbg = (...args) => { if (VERBOSE) console.log(...args); };
+
 // Cookie cache to avoid re-extraction within the same session
 let cookieCache = {
   lastExtracted: null,
@@ -37,7 +42,7 @@ function getYtDlpPath() {
   if (isPackaged && resourcesPath) {
     // In packaged mode, use the bundled Python venv
     venvPath = path.join(resourcesPath, 'python-venv', 'venv');
-    console.log(`[getYtDlpPath] Packaged mode detected, venv path: ${venvPath}`);
+    dbg(`[getYtDlpPath] Packaged mode detected, venv path: ${venvPath}`);
   } else {
     // In development, check both .venv and bin/python-wheelhouse/venv
     const devVenvPath = path.join(process.cwd(), '.venv');
@@ -45,14 +50,14 @@ function getYtDlpPath() {
 
     // Prefer .venv if it exists, otherwise use wheelhouse
     venvPath = fs.existsSync(devVenvPath) ? devVenvPath : wheelhouseVenvPath;
-    console.log(`[getYtDlpPath] Development mode, venv path: ${venvPath}`);
+    dbg(`[getYtDlpPath] Development mode, venv path: ${venvPath}`);
   }
 
   const venvBinDir = process.platform === 'win32' ? 'Scripts' : 'bin';
   const venvYtDlpPath = path.join(venvPath, venvBinDir, process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp');
 
   if (fs.existsSync(venvYtDlpPath)) {
-    console.log(`[getYtDlpPath] Found yt-dlp at: ${venvYtDlpPath}`);
+    dbg(`[getYtDlpPath] Found yt-dlp at: ${venvYtDlpPath}`);
     return venvYtDlpPath;
   }
 
@@ -100,7 +105,7 @@ function detectAvailableBrowser() {
   for (const browser of browsers) {
     try {
       if (fs.existsSync(browser.path)) {
-        console.log(`[detectAvailableBrowser] Found ${browser.name} at: ${browser.path}`);
+        dbg(`[detectAvailableBrowser] Found ${browser.name} at: ${browser.path}`);
         return browser.name;
       }
     } catch (error) {
@@ -109,7 +114,7 @@ function detectAvailableBrowser() {
     }
   }
 
-  console.log('[detectAvailableBrowser] No supported browser found for cookie extraction');
+  dbg('[detectAvailableBrowser] No supported browser found for cookie extraction');
   return null;
 }
 
@@ -161,13 +166,13 @@ function isChromeCookieUnlockAvailable() {
 
       if (fs.existsSync(namespacePath) && fs.existsSync(namespaceInit) && fs.existsSync(postprocessorDir) &&
         fs.existsSync(postprocessorDirInit) && fs.existsSync(postprocessorPlugin)) {
-        console.log(`[isChromeCookieUnlockAvailable] Plugin found at: ${pluginPath}`);
+        dbg(`[isChromeCookieUnlockAvailable] Plugin found at: ${pluginPath}`);
         return true;
       }
     }
   }
 
-  console.log(`[isChromeCookieUnlockAvailable] Plugin not found in any of these locations:`, pluginPaths);
+  dbg(`[isChromeCookieUnlockAvailable] Plugin not found in any of these locations:`, pluginPaths);
   return false;
 }
 
@@ -197,7 +202,7 @@ function getCommonYtDlpArgs() {
 
   if (fs.existsSync(pluginDir)) {
     args.push('--plugin-dirs', pluginDir);
-    console.log(`[getCommonYtDlpArgs] Using plugin directory: ${pluginDir}`);
+    dbg(`[getCommonYtDlpArgs] Using plugin directory: ${pluginDir}`);
   }
 
   // Try to add browser cookies for better authentication
@@ -207,13 +212,13 @@ function getCommonYtDlpArgs() {
 
     if (availableBrowser === 'chrome' && os.platform() === 'win32' && !hasPlugin) {
       // On Windows with Chrome, warn about potential cookie locking issues
-      console.log(`[getCommonYtDlpArgs] Chrome detected on Windows without ChromeCookieUnlock plugin`);
-      console.log(`[getCommonYtDlpArgs] Cookie extraction may fail if Chrome is running`);
-      console.log(`[getCommonYtDlpArgs] Consider closing Chrome or installing ChromeCookieUnlock plugin`);
+      dbg(`[getCommonYtDlpArgs] Chrome detected on Windows without ChromeCookieUnlock plugin`);
+      dbg(`[getCommonYtDlpArgs] Cookie extraction may fail if Chrome is running`);
+      dbg(`[getCommonYtDlpArgs] Consider closing Chrome or installing ChromeCookieUnlock plugin`);
     }
 
     args.push('--cookies-from-browser', availableBrowser);
-    console.log(`[getCommonYtDlpArgs] Using cookies from browser: ${availableBrowser}${hasPlugin ? ' (with ChromeCookieUnlock plugin)' : ''}`);
+    dbg(`[getCommonYtDlpArgs] Using cookies from browser: ${availableBrowser}${hasPlugin ? ' (with ChromeCookieUnlock plugin)' : ''}`);
   }
 
   return args;
@@ -262,10 +267,11 @@ async function extractCookiesToFile() {
     'https://www.youtube.com/watch?v=dQw4w9WgXcQ' // Dummy URL just to trigger cookie extraction
   );
 
-  console.log(`[extractCookiesToFile] Extracting cookies to: ${cookieCache.tempCookieFile}`);
+  dbg(`[extractCookiesToFile] Extracting cookies to: ${cookieCache.tempCookieFile}`);
 
   return new Promise((resolve, reject) => {
     const process = spawn(ytdlpPath, args);
+    process.on('error', (err) => reject(new Error(`Failed to launch yt-dlp for cookie extraction: ${err.message}`)));
 
     let output = '';
     let errorOutput = '';
@@ -277,13 +283,13 @@ async function extractCookiesToFile() {
     process.stderr.on('data', (data) => {
       errorOutput += data.toString();
       if (errorOutput.includes('Attempting to unlock cookies')) {
-        console.log('[extractCookiesToFile] Cookie extraction in progress...');
+        dbg('[extractCookiesToFile] Cookie extraction in progress...');
       }
     });
 
     process.on('close', (code) => {
       if (code === 0 && fs.existsSync(cookieCache.tempCookieFile)) {
-        console.log('[extractCookiesToFile] Cookies extracted successfully');
+        dbg('[extractCookiesToFile] Cookies extracted successfully');
         cookieCache.lastExtracted = Date.now();
         cookieCache.isValid = true;
         resolve(cookieCache.tempCookieFile);
@@ -310,7 +316,7 @@ async function extractCookiesToFile() {
 function getYtDlpArgs(useCookies = false, forceRefresh = false) {
   const args = [];
 
-  console.log(`[getYtDlpArgs] Called with useCookies:`, useCookies, typeof useCookies);
+  dbg(`[getYtDlpArgs] Called with useCookies:`, useCookies, typeof useCookies);
 
   // Determine if we're running in packaged Electron mode
   const isPackaged = process.env.ELECTRON_RUN_AS_PACKAGED === '1' || process.execPath.includes('One-Click Subtitles Generator.exe');
@@ -331,7 +337,7 @@ function getYtDlpArgs(useCookies = false, forceRefresh = false) {
 
   if (fs.existsSync(pluginDir)) {
     args.push('--plugin-dirs', pluginDir);
-    console.log(`[getYtDlpArgs] Using plugin directory: ${pluginDir}`);
+    dbg(`[getYtDlpArgs] Using plugin directory: ${pluginDir}`);
   }
 
   // Only add cookie arguments if useCookies is true
@@ -345,7 +351,7 @@ function getYtDlpArgs(useCookies = false, forceRefresh = false) {
     if (!forceRefresh && cacheValid && fs.existsSync(cookieCache.tempCookieFile)) {
       // Use cached cookies
       const ageSeconds = Math.round((now - cookieCache.lastExtracted) / 1000);
-      console.log(`[getYtDlpArgs] Using cached cookies (${ageSeconds}s old)`);
+      dbg(`[getYtDlpArgs] Using cached cookies (${ageSeconds}s old)`);
       args.push('--cookies', cookieCache.tempCookieFile);
     } else {
       // Use browser cookies (will trigger extraction)
@@ -353,7 +359,7 @@ function getYtDlpArgs(useCookies = false, forceRefresh = false) {
       if (availableBrowser) {
         const hasPlugin = isChromeCookieUnlockAvailable();
 
-        console.log(`[getYtDlpArgs] Using browser cookies: ${availableBrowser}${hasPlugin ? ' (with ChromeCookieUnlock plugin)' : ''} - will extract fresh cookies`);
+        dbg(`[getYtDlpArgs] Using browser cookies: ${availableBrowser}${hasPlugin ? ' (with ChromeCookieUnlock plugin)' : ''} - will extract fresh cookies`);
         args.push('--cookies-from-browser', availableBrowser);
 
         // DON'T mark as extracted yet - wait for actual extraction to complete
@@ -362,7 +368,7 @@ function getYtDlpArgs(useCookies = false, forceRefresh = false) {
       }
     }
   } else {
-    console.log(`[getYtDlpArgs] Cookie usage disabled - downloading without authentication`);
+    dbg(`[getYtDlpArgs] Cookie usage disabled - downloading without authentication`);
   }
 
   return args;
@@ -395,7 +401,7 @@ function getOptimizedYtDlpArgs(forceRefresh = false) {
 
   if (fs.existsSync(pluginDir)) {
     args.push('--plugin-dirs', pluginDir);
-    console.log(`[getOptimizedYtDlpArgs] Using plugin directory: ${pluginDir}`);
+    dbg(`[getOptimizedYtDlpArgs] Using plugin directory: ${pluginDir}`);
   }
 
   // Check if we should use cached cookies
@@ -407,7 +413,7 @@ function getOptimizedYtDlpArgs(forceRefresh = false) {
   if (!forceRefresh && cacheValid && fs.existsSync(cookieCache.tempCookieFile)) {
     // Use cached cookies
     const ageSeconds = Math.round((now - cookieCache.lastExtracted) / 1000);
-    console.log(`[getOptimizedYtDlpArgs] Using cached cookies (${ageSeconds}s old)`);
+    dbg(`[getOptimizedYtDlpArgs] Using cached cookies (${ageSeconds}s old)`);
     args.push('--cookies', cookieCache.tempCookieFile);
   } else {
     // Use browser cookies (will trigger extraction)
@@ -415,7 +421,7 @@ function getOptimizedYtDlpArgs(forceRefresh = false) {
     if (availableBrowser) {
       const hasPlugin = isChromeCookieUnlockAvailable();
 
-      console.log(`[getOptimizedYtDlpArgs] Using browser cookies: ${availableBrowser}${hasPlugin ? ' (with ChromeCookieUnlock plugin)' : ''} - will extract fresh cookies`);
+      dbg(`[getOptimizedYtDlpArgs] Using browser cookies: ${availableBrowser}${hasPlugin ? ' (with ChromeCookieUnlock plugin)' : ''} - will extract fresh cookies`);
       args.push('--cookies-from-browser', availableBrowser);
 
       // DON'T mark as extracted yet - wait for actual extraction to complete
