@@ -72,8 +72,9 @@ async function downloadWithYtdlp(videoURL, outputPath, quality = '360p', videoId
       '-o', tempPath,
       '--no-playlist',
       '--merge-output-format', 'mp4',
-      '--no-post-overwrites',  // Prevent hanging on post-processing
-      '--prefer-ffmpeg'        // Use ffmpeg for merging (more reliable)
+      '--no-post-overwrites'   // Prevent hanging on post-processing
+      // ffmpeg location is supplied centrally by getYtDlpArgs() above; --prefer-ffmpeg was
+      // removed (deprecated in yt-dlp and ffmpeg is already the default merger).
     ];
 
     console.log(`[ytdlpDownloader] Running yt-dlp with args:`, args);

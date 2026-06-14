@@ -6,11 +6,29 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { spawn } = require('child_process');
+const { getFfmpegLocationDir } = require('./ffmpegUtils');
 
 // Verbose debug logging: the yt-dlp resolver/args traces below print ~2x per download, so gate them
 // behind VERBOSE (default off) to keep the shared console readable. Warnings/errors stay unconditional.
 const VERBOSE = process.env.VERBOSE === 'true';
 const dbg = (...args) => { if (VERBOSE) console.log(...args); };
+
+// Single source of truth for telling yt-dlp where ffmpeg is. yt-dlp needs ffmpeg to merge
+// separate video+audio streams; without an explicit location it searches the system PATH and
+// fails on machines where ffmpeg isn't reachable by the spawned process (the classic
+// "merging ... but ffmpeg is not installed" -> output file never written). We always hand it
+// the ffmpeg we bundle, so downloads never depend on a system install. Computed once; every
+// arg-builder below spreads it, so adding/adjusting this is a one-line change for all downloaders.
+let _ffmpegLocationArgs = null;
+function getFfmpegLocationArgs() {
+  if (_ffmpegLocationArgs === null) {
+    const dir = getFfmpegLocationDir();
+    _ffmpegLocationArgs = dir ? ['--ffmpeg-location', dir] : [];
+    if (dir) dbg(`[ytdlpUtils] Pointing yt-dlp at bundled ffmpeg: ${dir}`);
+    else console.warn('[ytdlpUtils] No bundled ffmpeg found; yt-dlp will fall back to PATH for merging');
+  }
+  return _ffmpegLocationArgs;
+}
 
 // Cookie cache to avoid re-extraction within the same session
 let cookieCache = {
@@ -205,6 +223,9 @@ function getCommonYtDlpArgs() {
     dbg(`[getCommonYtDlpArgs] Using plugin directory: ${pluginDir}`);
   }
 
+  // Always point yt-dlp at our bundled ffmpeg so stream merging never depends on a system install
+  args.push(...getFfmpegLocationArgs());
+
   // Try to add browser cookies for better authentication
   const availableBrowser = detectAvailableBrowser();
   if (availableBrowser) {
@@ -340,6 +361,9 @@ function getYtDlpArgs(useCookies = false, forceRefresh = false) {
     dbg(`[getYtDlpArgs] Using plugin directory: ${pluginDir}`);
   }
 
+  // Always point yt-dlp at our bundled ffmpeg so stream merging never depends on a system install
+  args.push(...getFfmpegLocationArgs());
+
   // Only add cookie arguments if useCookies is true
   if (useCookies) {
     // Check if we should use cached cookies
@@ -404,6 +428,9 @@ function getOptimizedYtDlpArgs(forceRefresh = false) {
     dbg(`[getOptimizedYtDlpArgs] Using plugin directory: ${pluginDir}`);
   }
 
+  // Always point yt-dlp at our bundled ffmpeg so stream merging never depends on a system install
+  args.push(...getFfmpegLocationArgs());
+
   // Check if we should use cached cookies
   const now = Date.now();
   const cacheValid = cookieCache.isValid &&
@@ -452,6 +479,7 @@ async function checkYtDlpVersion() {
 
 module.exports = {
   getYtDlpPath,
+  getFfmpegLocationArgs,
   checkYtDlpVersion,
   detectAvailableBrowser,
   getCommonYtDlpArgs,

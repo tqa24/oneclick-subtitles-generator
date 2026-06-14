@@ -82,6 +82,31 @@ function getFfprobePath() {
 }
 
 /**
+ * Directory to hand yt-dlp via --ffmpeg-location.
+ *
+ * yt-dlp needs ffmpeg to merge separate video+audio streams; if it can't find one it
+ * silently skips the merge and the expected output file is never written. Relying on the
+ * system PATH is unreliable (e.g. winget's WindowsApps alias isn't resolvable from the
+ * spawned server process), so we point yt-dlp straight at the binary we already bundle.
+ * Remotion's compositor dir ships BOTH ffmpeg and ffprobe, so prefer it; otherwise fall
+ * back to the directory of whatever ffmpeg we resolved. Returns null only when no bundled
+ * ffmpeg exists (then the caller omits the flag and yt-dlp falls back to PATH as before).
+ * @returns {string|null}
+ */
+function getFfmpegLocationDir() {
+  const remotionFfmpeg = findRemotionBinary('ffmpeg');
+  if (remotionFfmpeg) return path.dirname(remotionFfmpeg);
+
+  const ffmpegPath = getFfmpegPath();
+  // Only return a real directory; if resolution fell back to the bare 'ffmpeg' name there
+  // is no bundled location to point at.
+  if (ffmpegPath && (path.isAbsolute(ffmpegPath) || ffmpegPath.includes(path.sep))) {
+    return path.dirname(ffmpegPath);
+  }
+  return null;
+}
+
+/**
  * Test if ffmpeg is available and working
  * @returns {Promise<boolean>} - True if ffmpeg is available
  */
@@ -145,6 +170,7 @@ async function getDiagnosticInfo() {
 module.exports = {
   getFfmpegPath,
   getFfprobePath,
+  getFfmpegLocationDir,
   testFfmpegAvailability,
   testFfprobeAvailability,
   getDiagnosticInfo

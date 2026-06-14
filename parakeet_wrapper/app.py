@@ -25,6 +25,28 @@ try:
 except Exception as _e:
     logging.getLogger(__name__).debug(f"onnxruntime CUDA preload skipped: {_e}")
 
+# --- Prefer the bundled ffmpeg/ffprobe over any system install ---
+# pydub (AudioSegment, below) decodes/resamples audio by shelling out to whatever ffmpeg/ffprobe it
+# finds on PATH. Prepend the ffmpeg we ship in node_modules (Remotion's per-platform compositor dir
+# bundles BOTH ffmpeg and ffprobe) so ASR preprocessing never depends on a system install — matching
+# how the Node server and yt-dlp resolve ffmpeg (see server/services/shared/ffmpegUtils.js).
+def _prepend_bundled_ffmpeg_to_path():
+    import glob
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    exe = 'ffmpeg.exe' if os.name == 'nt' else 'ffmpeg'
+    for pattern in (
+        os.path.join(root, 'node_modules', '@remotion', 'compositor-*', exe),
+        os.path.join(root, 'node_modules', '@ffmpeg-installer', '*', exe),
+    ):
+        for candidate in glob.glob(pattern):
+            if os.path.isfile(candidate):
+                bin_dir = os.path.dirname(candidate)
+                os.environ['PATH'] = bin_dir + os.pathsep + os.environ.get('PATH', '')
+                return bin_dir
+    return None
+
+_prepend_bundled_ffmpeg_to_path()
+
 from onnx_asr import load_model
 from pydub import AudioSegment
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form

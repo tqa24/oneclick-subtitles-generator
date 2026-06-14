@@ -1032,13 +1032,28 @@ def download_with_yt_dlp(url, output_path):
         print(f"Error downloading with yt-dlp: {str(e)}", file=sys.stderr)
         return False
 
+def _resolve_ffmpeg():
+    """Prefer the ffmpeg bundled in node_modules (Remotion compositor / @ffmpeg-installer) so this
+    never depends on a system install; fall back to bare 'ffmpeg' on PATH."""
+    import glob
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    exe = 'ffmpeg.exe' if os.name == 'nt' else 'ffmpeg'
+    for pattern in (
+        os.path.join(root, 'node_modules', '@remotion', 'compositor-*', exe),
+        os.path.join(root, 'node_modules', '@ffmpeg-installer', '*', exe),
+    ):
+        for candidate in glob.glob(pattern):
+            if os.path.isfile(candidate):
+                return candidate
+    return 'ffmpeg'
+
 def download_with_ffmpeg(url, output_path):
     """Download a file using ffmpeg"""
     try:
         print(f"Downloading with ffmpeg from: {url}", file=sys.stdout)
 
-        # Find ffmpeg executable
-        ffmpeg_path = "ffmpeg"  # Assume ffmpeg is in PATH
+        # Prefer the bundled ffmpeg (no system dependency); falls back to PATH
+        ffmpeg_path = _resolve_ffmpeg()
 
         # Use subprocess for better error handling
         result = subprocess.run(

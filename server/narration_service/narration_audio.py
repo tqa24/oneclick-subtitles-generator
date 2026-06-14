@@ -11,37 +11,67 @@ from .narration_language import is_text_english
 
 logger = logging.getLogger(__name__)
 
+_FFMPEG_PATH_CACHE = None
+
+
+def _find_bundled_ffmpeg():
+    """
+    Locate the ffmpeg that ships inside the app's node_modules, so narration never depends on
+    a system install. This mirrors how the Node server and yt-dlp resolve ffmpeg (see
+    server/services/shared/ffmpegUtils.js): Remotion's per-platform compositor dir bundles both
+    ffmpeg and ffprobe, so prefer it, then fall back to @ffmpeg-installer. Returns the executable
+    path, or None if nothing is bundled.
+    """
+    import glob
+
+    exe = 'ffmpeg.exe' if os.name == 'nt' else 'ffmpeg'
+    # This file is <root>/server/narration_service/narration_audio.py, so the repo root (which
+    # holds node_modules) is two directories up from its own directory.
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    patterns = [
+        os.path.join(root, 'node_modules', '@remotion', 'compositor-*', exe),
+        os.path.join(root, 'node_modules', '@ffmpeg-installer', '*', exe),
+    ]
+    for pattern in patterns:
+        for candidate in glob.glob(pattern):
+            if os.path.isfile(candidate):
+                return candidate
+    return None
+
+
 def get_ffmpeg_path():
     """
-    Get the path to ffmpeg executable, checking common installation locations.
-    Falls back to just 'ffmpeg' if not found in common paths (relies on PATH env var).
+    Resolve the ffmpeg executable, preferring the binary bundled in node_modules so narration
+    works on a clean PC with no system ffmpeg. Falls back to the system PATH and common install
+    locations, then bare 'ffmpeg' (PATH) as a last resort. Result is cached.
     """
+    global _FFMPEG_PATH_CACHE
+    if _FFMPEG_PATH_CACHE:
+        return _FFMPEG_PATH_CACHE
+
     import shutil
     import platform
-    
-    # Try to use shutil.which() first (checks system PATH)
-    ffmpeg_in_path = shutil.which('ffmpeg')
-    if ffmpeg_in_path:
-        return ffmpeg_in_path
-    
-    # Check common installation paths on Windows
-    if platform.system() == 'Windows':
+
+    # Prefer the bundled binary (no system dependency)
+    resolved = _find_bundled_ffmpeg()
+
+    # Then the system PATH
+    if not resolved:
+        resolved = shutil.which('ffmpeg')
+
+    # Then common install locations on Windows
+    if not resolved and platform.system() == 'Windows':
         common_paths = [
             r'C:\ffmpeg\bin\ffmpeg.exe',
             r'C:\Program Files\ffmpeg\bin\ffmpeg.exe',
             r'C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe',
+            r'C:\ProgramData\chocolatey\bin\ffmpeg.exe',
         ]
-        for path in common_paths:
-            if os.path.exists(path):
-                return path
-        
-        # Check Chocolatey installation
-        choco_path = r'C:\ProgramData\chocolatey\bin\ffmpeg.exe'
-        if os.path.exists(choco_path):
-            return choco_path
-    
-    # Fallback to just 'ffmpeg' (expects it to be in system PATH)
-    return 'ffmpeg'
+        resolved = next((p for p in common_paths if os.path.exists(p)), None)
+
+    # Last resort: rely on PATH at call time
+    _FFMPEG_PATH_CACHE = resolved or 'ffmpeg'
+    return _FFMPEG_PATH_CACHE
 
 # Create blueprint for audio processing routes
 audio_bp = Blueprint('narration_audio', __name__)
