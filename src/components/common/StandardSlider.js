@@ -99,8 +99,15 @@ const StandardSlider = ({
   const currentValueStart = getCurrentValue('start');
   const currentValueEnd = getCurrentValue('end');
 
-  const percentageStart = ((currentValueStart - min) / (max - min)) * 100;
-  const percentageEnd = ((currentValueEnd - min) / (max - min)) * 100;
+  // Guard against a zero or invalid range (max === min, e.g. a track whose duration is still 0):
+  // (value - min) / 0 is NaN/Infinity, which renders as `flexGrow: NaN` and warns on every render.
+  const valueRange = (max - min) || 1;
+  const toPercent = (v) => {
+    const pct = ((v - min) / valueRange) * 100;
+    return Number.isFinite(pct) ? Math.max(0, Math.min(100, pct)) : 0;
+  };
+  const percentageStart = toPercent(currentValueStart);
+  const percentageEnd = toPercent(currentValueEnd);
 
   const inactiveStartFlex = percentageStart;
   const activeFlex = percentageEnd - percentageStart;
