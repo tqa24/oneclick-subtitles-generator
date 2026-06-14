@@ -42,15 +42,9 @@ function executeWithRetry(command, options = {}, maxRetries = 3) {
       if (retries < maxRetries) {
         const waitTime = retries * 2000; // Exponential backoff: 2s, 4s, 6s...
         logger.progress(`Waiting ${waitTime/1000} seconds before retrying...`);
-        try {
-          execSync(`sleep ${waitTime/1000}`, { stdio: 'ignore' });
-        } catch (e) {
-          // On Windows, sleep is not available, use a timeout instead
-          const startTime = Date.now();
-          while (Date.now() - startTime < waitTime) {
-            // Wait
-          }
-        }
+        // Block without busy-spinning a CPU core (the old `sleep` shells out and throws on Windows,
+        // falling into a tight while-loop that pegs a core for the whole backoff).
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, waitTime);
       }
     }
   }

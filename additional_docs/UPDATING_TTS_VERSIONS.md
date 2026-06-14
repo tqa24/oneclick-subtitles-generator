@@ -12,6 +12,14 @@ The narration setup (`setup-narration.js`) installs three things straight from G
 install pulled whatever upstream had pushed that day. A bad upstream commit = every user's install
 breaks. Pinning to a known-good ref makes installs reproducible and stable.
 
+> **Chatterbox note:** it is pinned to a *commit* (the multilingual 0.1.7 release), not the older
+> tagged `v0.1.2`, because the app imports `ChatterboxMultilingualTTS`, which v0.1.2 does not export.
+> That commit also declares an UNPINNED `resemble-perth @ git+...Perth.git@master` dependency that
+> fails to build under `--no-build-isolation`; `setup-narration.js` automatically rewrites it to the
+> reproducible PyPI release `resemble-perth==1.0.1` (the same version). When bumping `CHATTERBOX_REF`,
+> keep both properties — a commit that still exports `ChatterboxMultilingualTTS` — and always re-verify
+> with `npm run setup:narration:uv` (its end-state check imports the exact symbols the app uses).
+
 ## The regular update routine
 
 Do this periodically (e.g. monthly, or when you want newer engine features):

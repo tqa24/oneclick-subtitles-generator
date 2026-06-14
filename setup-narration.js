@@ -25,15 +25,17 @@ const PYTHON_VERSION_TARGET = "3.11"; // Target Python version
 const F5_TTS_DIR = 'f5-tts-temp'; // Temporary directory for F5-TTS installation
 const F5_TTS_REPO_URL = 'https://github.com/SWivid/F5-TTS.git';
 const F5_TTS_REF = process.env.F5_TTS_REF || '1.1.20'; // Pin to a known-good release; override explicitly if needed
-// Pin Chatterbox to a release TAG, not the default-branch HEAD. This is the single biggest source
-// of "it broke overnight" install failures: without a pin every install pulled whatever was on HEAD.
-// We deliberately avoid HEAD even when newer: chatterbox >=0.1.7 pulls `resemble-perth @
-// git+.../Perth.git@master` (an UNPINNED transitive git dep) and fails to build under
-// --no-build-isolation. The v0.1.2 release uses `resemble-perth==1.0.1` from PyPI, so it is fully
-// reproducible and builds cleanly. Only bump to a newer *tag* (see scripts/check-tts-versions.js).
+// Pin Chatterbox to an exact commit, not the drifting default-branch HEAD -- without a pin, every
+// install pulled whatever was on HEAD, the single biggest source of "it broke overnight" failures.
+// We pin the multilingual 0.1.7 commit because the app (chatterbox-fastapi/api.py) imports
+// `ChatterboxMultilingualTTS`, which only exists from 0.1.7 onward (the v0.1.2 release lacks it).
+// That commit declares `resemble-perth @ git+.../Perth.git@master` -- an UNPINNED transitive git dep
+// that also fails to build under --no-build-isolation -- so the pyproject rewrite below swaps it for
+// the equivalent PyPI release `resemble-perth==1.0.1` (the same version git master resolves to),
+// making the install both reproducible and buildable.
 const CHATTERBOX_DIR = 'chatterbox-temp'; // Temporary directory for Chatterbox installation
 const CHATTERBOX_REPO_URL = 'https://github.com/resemble-ai/chatterbox.git';
-const CHATTERBOX_REF = process.env.CHATTERBOX_REF || 'v0.1.2'; // Pinned release tag; override explicitly if needed
+const CHATTERBOX_REF = process.env.CHATTERBOX_REF || '65b18437192794391a0308a8f705b1e33e633948'; // Pinned multilingual 0.1.7 commit; override explicitly if needed
 // yt-dlp ChromeCookieUnlock plugin: pin to a known-good commit instead of refs/heads/main.
 const YTDLP_COOKIE_PLUGIN_REF = process.env.YTDLP_COOKIE_PLUGIN_REF || '3a95f2d7c0f7086a88da6870cc69587434b60cc5';
 const NARRATION_CONSTRAINTS_FILE = path.join(__dirname, 'narration-constraints.txt');
@@ -97,8 +99,52 @@ function shallowCloneAtRef(repoUrl, ref, targetDir) {
     }
     execSync(`git init "${targetDir}"`, { stdio: 'inherit' });
     execSync(`git -C "${targetDir}" remote add origin ${repoUrl}`, { stdio: 'inherit' });
-    execSync(`git -C "${targetDir}" fetch --depth 1 origin ${ref}`, { stdio: 'inherit' });
+    // The fetch is the only network step of the four -- make it retry on transient failures.
+    executeWithRetry(`git -C "${targetDir}" fetch --depth 1 origin ${ref}`, { label: 'git fetch' });
     execSync(`git -C "${targetDir}" checkout --detach FETCH_HEAD`, { stdio: 'inherit' });
+}
+
+// --- Network-step retry helper ---------------------------------------------
+// A single Wi-Fi blip during the ~2.5GB torch download or any pip/git step used to abort the whole
+// 20-30 min install. Wrap ONLY network-bound commands (downloads, clones, pip/uv installs) in this;
+// keep non-network logic fail-fast so real bugs are not hidden behind retries.
+function sleepSync(ms) {
+    try {
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+    } catch (_) {
+        const end = Date.now() + ms;
+        while (Date.now() < end) { /* noop */ }
+    }
+}
+
+// Only retry on errors that look transient (network/timeout/DNS/TLS/HTTP 5xx) so a deterministic
+// resolver/build error fails fast instead of wasting time on doomed retries.
+function looksTransient(error) {
+    const msg = `${error && error.message ? error.message : ''} ${error && error.stderr ? error.stderr : ''}`.toLowerCase();
+    return /timed out|timeout|connection|connreset|reset by peer|temporary failure|temporarily|network|getaddrinfo|enotfound|eai_again|could not resolve|failed to connect|ssl|tls|handshake|remote end hung up|rpc failed|early eof|http error 5\d\d|502|503|504|429|throttl|read error|broken pipe/.test(msg);
+}
+
+function executeWithRetry(command, options = {}) {
+    const { maxRetries = 3, label = 'network step', env: extraEnv = {}, ...execOpts } = options;
+    const env = { ...process.env, UV_HTTP_TIMEOUT: '600', ...extraEnv };
+    let lastError = null;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            execSync(command, { stdio: 'inherit', env, ...execOpts });
+            return;
+        } catch (error) {
+            lastError = error;
+            const transient = looksTransient(error);
+            if (attempt >= maxRetries || !transient) {
+                throw lastError;
+            }
+            const waitMs = attempt * 4000; // 4s, 8s
+            logger.warning(`${label} failed (attempt ${attempt}/${maxRetries}): ${error.message}`);
+            logger.progress(`Transient failure detected. Retrying in ${waitMs / 1000}s...`);
+            sleepSync(waitMs);
+        }
+    }
+    throw lastError || new Error(`${label} failed after ${maxRetries} attempts`);
 }
 
 function buildTorchInstallCommand(profile, includePython = false) {
@@ -296,8 +342,18 @@ function detectGpuVendor() {
     // --- 4. Platform-Specific Checks (Less reliable than nvidia-smi) ---
     try {
         if (platform === 'win32') {
-            // Windows: Use WMIC
-            const wmicOutput = execSync('wmic path win32_VideoController get name', { encoding: 'utf8' }).toUpperCase();
+            // Windows: query video controllers. wmic was removed in recent Win11 builds (24H2+), so
+            // use CIM via PowerShell first and only fall back to wmic on older systems.
+            let wmicOutput = '';
+            try {
+                wmicOutput = execSync('powershell -NoProfile -Command "(Get-CimInstance Win32_VideoController).Name"', { encoding: 'utf8' }).toUpperCase();
+            } catch (cimErr) {
+                try {
+                    wmicOutput = execSync('wmic path win32_VideoController get name', { encoding: 'utf8' }).toUpperCase();
+                } catch (wmicErr) {
+                    wmicOutput = '';
+                }
+            }
             if (wmicOutput.includes('NVIDIA')) {
                 logger.found('NVIDIA GPU', 'via WMIC');
                 return 'NVIDIA';
@@ -572,7 +628,7 @@ async function runSetup() {
 
         // --- Try uv first, fall back to pip if needed ---
         try {
-            execSync(torchInstallCmdWithVenv, { stdio: 'inherit', env });
+            executeWithRetry(torchInstallCmdWithVenv, { label: 'PyTorch install', env });
             logger.success(`PyTorch (${gpuVendor} target) installed successfully via uv`);
         } catch (uvError) {
             logger.warning(`⚠️ Standard uv installation failed: ${uvError.message}`);
@@ -592,7 +648,7 @@ async function runSetup() {
             const fallbackCmd = `uv run --python ${VENV_DIR} -- python -m pip install ${pipArgs}`;
 
             logger.command(fallbackCmd);
-            execSync(fallbackCmd, { stdio: 'inherit', env });
+            executeWithRetry(fallbackCmd, { label: 'PyTorch pip fallback', env });
             logger.success(`✅ PyTorch (${gpuVendor} target) installed successfully via pip fallback`);
         }
 
@@ -770,17 +826,18 @@ except Exception as e:
             'soundfile',
             'numpy<1.26',
             'vocos',
-            'setuptools',
+            'setuptools<81',  // >=81 removed pkg_resources, which resemble-perth (a Chatterbox dep) imports
 
-            // Additional TTS libraries
-            'edge-tts',  // Microsoft Edge TTS
-            'gtts'       // Google Text-to-Speech
+            // Additional TTS libraries (pinned for reproducible installs; bump deliberately like the
+            // TTS engines. yt-dlp is intentionally NOT pinned -- it must track YouTube changes.)
+            'edge-tts==7.2.7',  // Microsoft Edge TTS
+            'gtts==2.5.4'       // Google Text-to-Speech
         ];
 
         const depsCmd = `uv pip install --python ${VENV_DIR} ${getNarrationConstraintsArg()} ${coreDeps.map(d => `"${d}"`).join(' ')}`;
         logger.command(depsCmd);
         const env = { ...process.env, UV_HTTP_TIMEOUT: '300' }; // 5 minutes
-        execSync(depsCmd, { stdio: 'inherit', env });
+        executeWithRetry(depsCmd, { label: 'core AI dependencies', env });
 
         // Verify critical runtime deps are importable; auto-fix if missing (Windows-friendly)
         try {
@@ -915,7 +972,7 @@ print('OK' if not missing else ('Missing:' + ','.join(missing)))
         logger.command(installF5Cmd);
 
         const env = { ...process.env, UV_HTTP_TIMEOUT: '600' }; // 10 minutes for installation
-        execSync(installF5Cmd, { stdio: 'inherit', env });
+        executeWithRetry(installF5Cmd, { label: 'F5-TTS install', env });
         logger.success('F5-TTS installation completed');
 
         // Copy example audio files to server directory for the reference audio controller
@@ -1013,7 +1070,12 @@ print('OK' if not missing else ('Missing:' + ','.join(missing)))
                 .replace(/torchaudio==2\.\d+\.\d+(\+cu\d+)?/g, `torchaudio==${selectedTorchProfile.torchaudio}`)
                 .replace(/torchvision==0\.\d+\.\d+(\+cu\d+)?/g, `torchvision==${selectedTorchProfile.torchvision}`)
                 .replace(/transformers==4\.4[6-9]\.\d+/g, 'transformers>=4.40.0,<4.47.0')
-                .replace(/diffusers==0\.2[9]\.\d+/g, 'diffusers>=0.25.0,<0.30.0');
+                .replace(/diffusers==0\.2[9]\.\d+/g, 'diffusers>=0.25.0,<0.30.0')
+                // Replace the UNPINNED git dep `resemble-perth @ git+.../Perth.git@master` with the
+                // equivalent PyPI release (same 1.0.1 version git master resolves to). The git source
+                // uses the uv_build backend which fails under --no-build-isolation; the PyPI wheel
+                // installs cleanly and makes the pinned commit fully reproducible.
+                .replace(/resemble-perth\s*@\s*git\+[^"']+/g, 'resemble-perth==1.0.1');
 
 
             // Remove russian-text-stresser due to spacy==3.6.* hard pin causing conflict with gradio/typer (pydantic v2)
@@ -1072,7 +1134,7 @@ print('OK' if not missing else ('Missing:' + ','.join(missing)))
         logger.info(`Installing chatterbox with pinned python-dateutil (single resolution, site-packages)`);
 
         const env = { ...process.env, UV_HTTP_TIMEOUT: '600' }; // 10 minutes for installation
-        execSync(installChatterboxCmd, { stdio: 'inherit', env });
+        executeWithRetry(installChatterboxCmd, { label: 'Chatterbox install', env });
         logger.success('Chatterbox installation completed');
 
         // Clean up the temporary directory after installation
@@ -1617,11 +1679,39 @@ print('✅ All service dependencies and required files verified successfully!')
     try {
         logger.installing('Parakeet ASR service dependencies');
         // Apply the shared narration constraints here too: onnxruntime otherwise pulls protobuf>=7,
-        // which breaks wandb (a transitive import of f5_tts). The constraint keeps protobuf<7, which
-        // is compatible with onnxruntime, wandb, F5-TTS and Chatterbox all at once.
-        const parakeetCmd = `uv pip install --python ${VENV_DIR} ${getNarrationConstraintsArg()} onnx-asr onnxruntime --force-reinstall`;
-        logger.command(parakeetCmd);
-        execSync(parakeetCmd, { stdio: 'inherit' });
+        // which breaks wandb (a transitive import of f5_tts). The constraint keeps protobuf<7.
+        const constraintsArg = getNarrationConstraintsArg();
+        const parakeetEnv = { ...process.env, UV_HTTP_TIMEOUT: '600' };
+
+        // Install the onnx-asr frontend (no --force-reinstall so its resolved deps stay stable).
+        executeWithRetry(`uv pip install --python ${VENV_DIR} ${constraintsArg} onnx-asr`, { label: 'onnx-asr', env: parakeetEnv });
+
+        // Pick the onnxruntime wheel from the GPU vendor we already detected for PyTorch:
+        //   NVIDIA -> onnxruntime-gpu (CUDA); AMD/INTEL on Windows -> onnxruntime-directml; else CPU onnxruntime.
+        // If the GPU wheel fails to install, fall back to plain CPU onnxruntime so Parakeet still works.
+        let onnxRuntimePkg = 'onnxruntime';
+        if (gpuVendor === 'NVIDIA') {
+            onnxRuntimePkg = 'onnxruntime-gpu';
+        } else if ((gpuVendor === 'AMD' || gpuVendor === 'INTEL') && process.platform === 'win32') {
+            onnxRuntimePkg = 'onnxruntime-directml';
+        }
+        const installOrt = (pkg) => executeWithRetry(
+            `uv pip install --python ${VENV_DIR} ${constraintsArg} ${pkg} --force-reinstall`,
+            { label: `onnxruntime (${pkg})`, env: parakeetEnv }
+        );
+        try {
+            installOrt(onnxRuntimePkg);
+            logger.success(`Parakeet ASR: installed ${onnxRuntimePkg === 'onnxruntime' ? 'CPU runtime onnxruntime' : 'GPU runtime ' + onnxRuntimePkg}`);
+        } catch (gpuErr) {
+            if (onnxRuntimePkg !== 'onnxruntime') {
+                logger.warning(`GPU onnxruntime (${onnxRuntimePkg}) install failed: ${gpuErr.message}`);
+                logger.info('Falling back to CPU onnxruntime so Parakeet still works (no GPU acceleration).');
+                installOrt('onnxruntime');
+                logger.success('Parakeet ASR: installed CPU runtime onnxruntime (fallback)');
+            } else {
+                throw gpuErr;
+            }
+        }
         logger.success('Parakeet ASR dependencies installed successfully');
     } catch (error) {
         logger.warning(`⚠️  Parakeet ASR installation failed: ${error.message}`);
@@ -1670,10 +1760,11 @@ except Exception as e:
 
 # Chatterbox (voice cloning) is an optional/degradable feature: torch/torchvision on CPU/MPS/ROCm
 # targets can make it fail to import while F5-TTS/Parakeet stay fully functional. Match the in-step
-# policy (non-fatal) rather than aborting an otherwise-working install.
+# policy (non-fatal) rather than aborting an otherwise-working install. Import the SAME symbols the
+# app uses (chatterbox-fastapi/api.py) so a version lacking ChatterboxMultilingualTTS is caught here.
 try:
-    from chatterbox.tts import ChatterboxTTS
-    print("✅ Chatterbox voice cloning verified")
+    from chatterbox import ChatterboxMultilingualTTS, ChatterboxTTS
+    print("✅ Chatterbox voice cloning verified (multilingual + base)")
 except Exception as e:
     print(f"⚠️ Chatterbox import failed (voice cloning may be unavailable; install still OK): {e}")
 `;

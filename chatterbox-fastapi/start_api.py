@@ -33,19 +33,12 @@ def main():
         print(f"Error: api.py not found at {api_path}")
         sys.exit(1)
     
-    print(f"Starting Chatterbox API server...")
-    print(f"Host: {args.host}")
-    print(f"Port: {args.port}")
-    print(f"Workers: {args.workers}")
-    print(f"Log level: {args.log_level}")
-    print(f"Reload: {args.reload}")
-    print(f"API docs will be available at: http://{args.host}:{args.port}/docs")
-    print("-" * 50)
-    
+    print(f"Chatterbox API -> http://{args.host}:{args.port} (docs: /docs)")
+
     # Change to the chatterbox-fastapi directory for uvicorn to find the api module
     import os
     os.chdir(Path(__file__).parent)
-    
+
     uvicorn.run(
         "api:app",
         host=args.host,
@@ -53,7 +46,7 @@ def main():
         workers=args.workers if not args.reload else 1,  # reload doesn't work with multiple workers
         reload=args.reload,
         log_level=args.log_level,
-        access_log=True
+        access_log=False  # was True: stops the repeated "GET /health 200 OK" poll spam; errors still log
     )
 
 

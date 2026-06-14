@@ -75,15 +75,12 @@ async def startup_event():
     """Initialize service without loading models - models will be loaded on first wake-up call"""
     global tts_model_multi, tts_model_en, vc_model
 
-    print(f"Chatterbox API service starting on device: {DEVICE}")
-    print("Models will be loaded on first wake-up call for faster startup")
-
     # Don't load models on startup - let them be loaded on demand via wake-up endpoint
     tts_model_multi = None
     tts_model_en = None
     vc_model = None
 
-    print("Service ready - call /wake-up to load models")
+    print(f"Chatterbox API ready on device {DEVICE} - call /wake-up to load models")
 
 
 @app.get("/health", response_model=HealthResponse)

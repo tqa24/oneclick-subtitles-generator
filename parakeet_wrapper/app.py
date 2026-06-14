@@ -10,6 +10,21 @@ from contextlib import asynccontextmanager
 
 import numpy as np
 import uvicorn
+
+# --- onnxruntime CUDA bootstrap (MUST run before onnx_asr/onnxruntime build a session) ---
+# torch (2.7.x+cuXXX) bundles the CUDA 12 / cuDNN 9 DLLs onnxruntime-gpu needs (cublasLt64_12.dll,
+# cudnn*.dll) under site-packages/torch/lib, but that dir is not on the Windows DLL search path
+# unless torch is imported first. onnxruntime>=1.19 exposes preload_dlls() which finds torch/lib and
+# loads them; without it, onnxruntime_providers_cuda.dll fails ("cublasLt64_12.dll missing, Error 126")
+# once per session and silently falls back to CPU.
+try:
+    import onnxruntime as _ort
+    _ort.set_default_logger_severity(3)  # 3=ERROR: quiet repeated provider-init warnings
+    if hasattr(_ort, "preload_dlls"):
+        _ort.preload_dlls(cuda=True, cudnn=True, msvc=True)
+except Exception as _e:
+    logging.getLogger(__name__).debug(f"onnxruntime CUDA preload skipped: {_e}")
+
 from onnx_asr import load_model
 from pydub import AudioSegment
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form
@@ -31,17 +46,89 @@ app_state = {}
 
 # --- FastAPI Lifespan Management ---
 
+def _cuda_actually_works() -> bool:
+    """Build a throwaway session forced onto CUDA. True only if it actually binds
+    CUDAExecutionProvider (not a silent CPU fallback)."""
+    try:
+        import onnxruntime as ort
+        from onnx import helper, TensorProto
+        x = helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 2])
+        y = helper.make_tensor_value_info("Y", TensorProto.FLOAT, [1, 2])
+        node = helper.make_node("Identity", ["X"], ["Y"])
+        graph = helper.make_graph([node], "probe", [x], [y])
+        model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)])
+        model.ir_version = 9
+        sess = ort.InferenceSession(
+            model.SerializeToString(),
+            providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
+        )
+        return "CUDAExecutionProvider" in sess.get_providers()
+    except Exception:
+        return False
+
+
+def _select_providers():
+    """Return an ordered onnxruntime provider list, GPU-first, filtered to what this runtime build
+    can ACTUALLY bind (not just what it lists). Falls back cleanly to CPU."""
+    try:
+        import onnxruntime as ort
+        available = set(ort.get_available_providers())
+    except Exception as e:
+        logger.warning(f"Could not query onnxruntime providers: {e}")
+        return None
+    preferred = [
+        "CUDAExecutionProvider",   # onnxruntime-gpu (NVIDIA / dev:cuda)
+        "DmlExecutionProvider",    # onnxruntime-directml (Windows AMD/Intel)
+        "CoreMLExecutionProvider", # macOS
+        "CPUExecutionProvider",    # always-present fallback
+    ]
+    chosen = [p for p in preferred if p in available]
+    # CUDA is "available" (listed) even when its DLLs cannot load. Verify once and drop it if it would
+    # only fall back to CPU -- this stops the per-session "Failed to create CUDAExecutionProvider" flood.
+    if "CUDAExecutionProvider" in chosen and not _cuda_actually_works():
+        logger.warning("CUDAExecutionProvider is listed but failed to initialize "
+                       "(missing CUDA/cuDNN DLLs or unsupported GPU); using CPU.")
+        chosen = [p for p in chosen if p != "CUDAExecutionProvider"]
+    if "CPUExecutionProvider" not in chosen:
+        chosen.append("CPUExecutionProvider")
+    return chosen
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info(f"Loading ASR model: {MODEL_NAME}...")
+    providers = _select_providers()
+    app_state["providers"] = providers
+    app_state["active_provider"] = None
     try:
-        model = load_model(MODEL_NAME)
-        app_state["asr_model"] = model.with_timestamps()
-        logger.info("ASR model loaded successfully.")
+        if providers:
+            logger.info(f"Requesting onnxruntime providers (in order): {providers}")
+            model = load_model(MODEL_NAME, providers=providers)
+        else:
+            model = load_model(MODEL_NAME)
+        wrapped = model.with_timestamps()
+        app_state["asr_model"] = wrapped
+        # Report the provider onnxruntime ACTUALLY bound (inspect the underlying session) rather than
+        # blindly echoing the requested preference -- otherwise we'd claim CUDA on a silent CPU fallback.
+        active = None
+        try:
+            import onnxruntime as ort
+            inner = getattr(wrapped, "asr", wrapped)
+            for attr in vars(inner).values():
+                if isinstance(attr, ort.InferenceSession):
+                    active = attr.get_providers()[0]
+                    break
+        except Exception as e:
+            logger.debug(f"Could not introspect bound provider: {e}")
+        app_state["active_provider"] = active or (providers[0] if providers else "CPUExecutionProvider")
+        if app_state["active_provider"] == "CUDAExecutionProvider":
+            logger.info("ASR model loaded on GPU (CUDAExecutionProvider).")
+        else:
+            logger.info(f"ASR model loaded on {app_state['active_provider']} (CPU or non-CUDA).")
     except Exception as e:
         logger.error(f"Failed to load ASR model: {e}", exc_info=True)
         app_state["asr_model"] = None
-    
+
     yield
 
     logger.info("Cleaning up resources...")
@@ -263,6 +350,24 @@ def transcribe_audio(audio_path: str, model, segment_strategy: str, max_chars: i
 async def root():
     return {"message": "Parakeet Speech Transcription API", "version": "1.0.0"}
 
+@app.get("/health")
+async def health():
+    # Return NOT ready (503) when the ASR model failed to load (or hasn't yet), so the UI gates
+    # honestly instead of letting users start jobs that then 503 per-request.
+    model = app_state.get("asr_model")
+    if model is None:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unavailable", "model_loaded": False, "detail": "ASR model is not available."},
+        )
+    return {
+        "status": "ok",
+        "model_loaded": True,
+        "model": MODEL_NAME,
+        "provider": app_state.get("active_provider"),
+        "providers": app_state.get("providers"),
+    }
+
 @app.post("/transcribe")
 async def transcribe_endpoint(
     file: UploadFile = File(...),
@@ -340,4 +445,5 @@ async def transcribe_base64_endpoint(payload: TranscribeBase64Request):
 
 if __name__ == "__main__":
     logger.info("Starting Parakeet ASR FastAPI server...")
-    uvicorn.run(app, host="0.0.0.0", port=3038)
+    # access_log=False: stop the per-request "GET /health 200 OK" frontend-poll spam (warnings/errors still log).
+    uvicorn.run(app, host="0.0.0.0", port=3038, access_log=False)

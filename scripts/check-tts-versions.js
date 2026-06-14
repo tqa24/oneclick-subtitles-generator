@@ -33,9 +33,9 @@ const ENGINES = [
     name: 'Chatterbox',
     repo: 'https://github.com/resemble-ai/chatterbox.git',
     constant: 'CHATTERBOX_REF',
-    // Track release tags only. HEAD pulls an unpinned resemble-perth git@master and fails to build,
-    // so we never want "latest commit" suggestions here -- only genuine new releases.
-    kind: 'tag',
+    // Pinned to a specific commit (the multilingual 0.1.7 release the app needs). Compare against the
+    // default-branch HEAD so a newer upstream commit is surfaced for review before bumping.
+    kind: 'head',
   },
   {
     name: 'ChromeCookieUnlock (yt-dlp plugin)',
