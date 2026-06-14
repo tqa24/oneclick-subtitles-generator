@@ -14,6 +14,10 @@ import { downloadAndPrepareYouTubeVideo } from "./VideoProcessingHandlers";
 import { hasValidTokens } from "../../services/youtubeApiService";
 import { hasValidDownloadedVideo } from "../../utils/videoUtils";
 
+// Gated debug logging (enable in the browser console: localStorage.debug_logs = 'true')
+const DEBUG_LOGS = (typeof window !== 'undefined') && (localStorage.getItem('debug_logs') === 'true');
+const dbg = (...args) => { if (DEBUG_LOGS) console.log(...args); };
+
 /**
  * Hook for application event handlers
  */
@@ -196,7 +200,7 @@ export const useAppHandlers = (appState) => {
 
         // With simplified processing, we don't need to prepare video segments when uploading SRT files
         // The subtitles are already available and ready to use
-        console.log(
+        dbg(
           "SRT file uploaded successfully, no video segment preparation needed"
         );
       } else if (hasUnifiedVideo) {
@@ -396,7 +400,7 @@ export const useAppHandlers = (appState) => {
                 currentVideoUrl
               );
 
-              console.log(
+              dbg(
                 "[AppHandlers] Checking for cached subtitles for downloaded video (URL-based):",
                 urlBasedCacheId
               );
@@ -412,7 +416,7 @@ export const useAppHandlers = (appState) => {
                 result.subtitles &&
                 result.subtitles.length > 0
               ) {
-                console.log(
+                dbg(
                   "[AppHandlers] Found cached subtitles for downloaded video, loading immediately:",
                   result.subtitles.length,
                   "subtitles"
@@ -426,7 +430,7 @@ export const useAppHandlers = (appState) => {
                   type: "success",
                 });
               } else {
-                console.log(
+                dbg(
                   "[AppHandlers] No cached subtitles found for this downloaded video"
                 );
                 const isAudio = processedFile?.type?.startsWith('audio/');
@@ -448,7 +452,7 @@ export const useAppHandlers = (appState) => {
               );
               const fileCacheId = await generateFileCacheId(processedFile);
               localStorage.setItem("current_file_cache_id", fileCacheId);
-              console.log(
+              dbg(
                 "[AppHandlers] Generated file cache ID for Files API caching:",
                 fileCacheId
               );
@@ -518,7 +522,7 @@ export const useAppHandlers = (appState) => {
           const cacheId = await generateFileCacheId(processedFile);
           localStorage.setItem("current_file_cache_id", cacheId);
 
-          console.log(
+          dbg(
             "[AppHandlers] Checking for cached subtitles for uploaded file:",
             cacheId
           );
@@ -534,7 +538,7 @@ export const useAppHandlers = (appState) => {
             result.subtitles &&
             result.subtitles.length > 0
           ) {
-            console.log(
+            dbg(
               "[AppHandlers] Found cached subtitles, loading immediately:",
               result.subtitles.length,
               "subtitles"
@@ -548,7 +552,7 @@ export const useAppHandlers = (appState) => {
               type: "success",
             });
           } else {
-            console.log(
+            dbg(
               "[AppHandlers] No cached subtitles found for this file"
             );
             const isAudio = processedFile?.type?.startsWith('audio/');
@@ -595,7 +599,7 @@ export const useAppHandlers = (appState) => {
       // Only set the default status if we haven't already set a cache-related status
       // We'll just set the default status since the cache-related status was already set above if needed
       // The cache logic above handles setting the appropriate status message
-      console.log("[AppHandlers] Video processing complete, ready for segment selection");
+      dbg("[AppHandlers] Video processing complete, ready for segment selection");
       // Apply any pending auto-downloaded subtitles now that video download is complete
       try {
         if (pendingAutoSubtitleRef.current) {
@@ -644,10 +648,10 @@ export const useAppHandlers = (appState) => {
 
       // Set processing state to true when starting
       setIsProcessingSegment(true);
-      console.log(
+      dbg(
         "[ProcessWithOptions] Started processing segment, animation should begin"
       );
-      console.log(
+      dbg(
         "[ProcessWithOptions] Received segmentProcessingDelay:",
         options.segmentProcessingDelay
       );
@@ -681,13 +685,13 @@ export const useAppHandlers = (appState) => {
         parakeetMaxWords: options.parakeetMaxWords,
       };
       
-      console.log("[ProcessWithOptions] Passing to generateSubtitles - segmentProcessingDelay:", subtitleOptions.segmentProcessingDelay);
+      dbg("[ProcessWithOptions] Passing to generateSubtitles - segmentProcessingDelay:", subtitleOptions.segmentProcessingDelay);
 
       // Add custom prompt if provided
       if (options.customPrompt) {
         // Store the custom prompt temporarily for this processing session
         sessionStorage.setItem("current_session_prompt", options.customPrompt);
-        console.log(
+        dbg(
           "[ProcessWithOptions] Using custom prompt for this session:",
           options.promptPreset
         );
@@ -723,7 +727,7 @@ export const useAppHandlers = (appState) => {
       } finally {
         // Clear the session prompt after processing
         sessionStorage.removeItem("current_session_prompt");
-        console.log(
+        dbg(
           "[ProcessWithOptions] Cleared session prompt after processing"
         );
 
@@ -733,7 +737,7 @@ export const useAppHandlers = (appState) => {
         try {
           window.dispatchEvent(new CustomEvent('processing-ranges', { detail: { ranges: [] } }));
         } catch {}
-        console.log(
+        dbg(
           "[ProcessWithOptions] Processing complete, animation should stop"
         );
       }
@@ -755,17 +759,17 @@ export const useAppHandlers = (appState) => {
    * Handle retrying subtitle generation - FORCE RETRY that ignores validation
    */
   const handleRetryGeneration = async () => {
-    console.log("FORCE RETRY: handleRetryGeneration called");
+    dbg("FORCE RETRY: handleRetryGeneration called");
 
     // Prevent multiple simultaneous retries
     if (isRetrying) {
-      console.log("FORCE RETRY: Already retrying, ignoring duplicate call");
+      dbg("FORCE RETRY: Already retrying, ignoring duplicate call");
       return;
     }
 
     // Only check for API key - this is the minimum requirement
     if (!apiKeysSet.gemini) {
-      console.log("No Gemini API key available");
+      dbg("No Gemini API key available");
       setStatus({
         message: t("errors.apiKeyRequired", "Gemini API key is required"),
         type: "error",
@@ -773,25 +777,25 @@ export const useAppHandlers = (appState) => {
       return;
     }
 
-    console.log("FORCE RETRY: Setting retrying state to true");
+    dbg("FORCE RETRY: Setting retrying state to true");
     // Set retrying state to true immediately
     setIsRetrying(true);
 
     // Clear the segments-status before starting the retry process
     setSegmentsStatus([]);
 
-    console.log("FORCE RETRY: Determining input source...");
+    dbg("FORCE RETRY: Determining input source...");
     let input, inputType;
 
     // Try to get input from current state or localStorage
     // Priority: 1. Current selected video/file, 2. localStorage cached data
 
     if (uploadedFile) {
-      console.log("FORCE RETRY: Using uploaded file");
+      dbg("FORCE RETRY: Using uploaded file");
       input = uploadedFile;
       inputType = "file-upload";
     } else if (selectedVideo) {
-      console.log("FORCE RETRY: Using selected video");
+      dbg("FORCE RETRY: Using selected video");
       input = selectedVideo;
       inputType =
         activeTab.includes("youtube") || activeTab === "unified-url"
@@ -803,17 +807,17 @@ export const useAppHandlers = (appState) => {
       const cachedFileUrl = localStorage.getItem("current_file_url");
 
       if (cachedVideoUrl) {
-        console.log("FORCE RETRY: Using cached video URL");
+        dbg("FORCE RETRY: Using cached video URL");
         // Create a video object from cached URL
         input = { url: cachedVideoUrl };
         inputType = "youtube";
       } else if (cachedFileUrl) {
-        console.log("FORCE RETRY: Using cached file URL");
+        dbg("FORCE RETRY: Using cached file URL");
         // For cached files, we'll need to use the retryGeneration function directly
         input = null; // Will be handled by retryGeneration
         inputType = "file-upload";
       } else {
-        console.log(
+        dbg(
           "FORCE RETRY: No input source found, but proceeding anyway..."
         );
         // If we have subtitles data, we can still retry with the last known configuration
@@ -822,7 +826,7 @@ export const useAppHandlers = (appState) => {
       }
     }
 
-    console.log("FORCE RETRY: Input determined:", { input, inputType });
+    dbg("FORCE RETRY: Input determined:", { input, inputType });
 
     // For YouTube or Unified URL tabs, download the video first and switch to upload tab
     if (
@@ -885,7 +889,7 @@ export const useAppHandlers = (appState) => {
         }
 
         // FORCE RETRY: Always retry generating subtitles, ignore existing data
-        console.log(
+        dbg(
           "FORCE RETRY: Forcing subtitle regeneration for downloaded video..."
         );
         await retryGeneration(input, inputType, apiKeysSet, subtitleOptions);
@@ -932,7 +936,7 @@ export const useAppHandlers = (appState) => {
         }
 
         // FORCE RETRY: Always retry generating subtitles, ignore existing data
-        console.log("FORCE RETRY: Forcing subtitle regeneration...");
+        dbg("FORCE RETRY: Forcing subtitle regeneration...");
         await retryGeneration(input, inputType, apiKeysSet, subtitleOptions);
       } finally {
         // Reset retrying state regardless of success or failure
@@ -942,11 +946,11 @@ export const useAppHandlers = (appState) => {
       }
     } else {
       // Direct retry without re-downloading - use retryGeneration function
-      console.log("FORCE RETRY: Using direct retry method");
+      dbg("FORCE RETRY: Using direct retry method");
 
       try {
         // First, delete any existing subtitle files to force regeneration
-        console.log("FORCE RETRY: Deleting existing subtitle files...");
+        dbg("FORCE RETRY: Deleting existing subtitle files...");
         try {
           const response = await fetch("/api/delete-subtitles", {
             method: "POST",
@@ -964,21 +968,21 @@ export const useAppHandlers = (appState) => {
           });
 
           if (response.ok) {
-            console.log("FORCE RETRY: Subtitle files deleted successfully");
+            dbg("FORCE RETRY: Subtitle files deleted successfully");
           } else {
-            console.log(
+            dbg(
               "FORCE RETRY: Could not delete subtitle files, but continuing..."
             );
           }
         } catch (deleteError) {
-          console.log(
+          dbg(
             "FORCE RETRY: Error deleting files, but continuing...",
             deleteError
           );
         }
 
         // Clear any cached subtitles data and preview section
-        console.log("FORCE RETRY: Clearing all subtitle data and preview...");
+        dbg("FORCE RETRY: Clearing all subtitle data and preview...");
         setSubtitlesData(null);
         localStorage.removeItem("subtitles_data");
         localStorage.removeItem("latest_segment_subtitles");
@@ -1002,7 +1006,7 @@ export const useAppHandlers = (appState) => {
           subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
         }
 
-        console.log("FORCE RETRY: Calling retryGeneration with:", {
+        dbg("FORCE RETRY: Calling retryGeneration with:", {
           input,
           inputType,
           subtitleOptions,
@@ -1011,7 +1015,7 @@ export const useAppHandlers = (appState) => {
         // Call retryGeneration directly - it will handle finding the right input
         await retryGeneration(input, inputType, apiKeysSet, subtitleOptions);
 
-        console.log("FORCE RETRY: retryGeneration completed");
+        dbg("FORCE RETRY: retryGeneration completed");
       } catch (error) {
         console.error("FORCE RETRY: Error during direct retry:", error);
         setStatus({
@@ -1171,7 +1175,7 @@ export const useAppHandlers = (appState) => {
         useOptimizedPreviewSetting.toString()
       );
       appState.setUseOptimizedPreview(useOptimizedPreviewSetting);
-      console.log(
+      dbg(
         "[AppHandlers] Updated useOptimizedPreview setting:",
         useOptimizedPreviewSetting
       );

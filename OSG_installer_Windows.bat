@@ -104,7 +104,7 @@ CALL :CleanInstall "%PROJECT_PATH%"
 IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Downloading application (Tai ung dung)...' -ForegroundColor Cyan"
-git clone %GIT_REPO_URL% "%PROJECT_PATH%" >nul 2>&1
+git clone %GIT_REPO_URL% "%PROJECT_PATH%"
 IF %ERRORLEVEL% NEQ 0 (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment (Khoi dong lai de cap nhat moi truong)...' -ForegroundColor Blue"
     GOTO ErrorOccurred
@@ -165,7 +165,7 @@ CALL :CleanInstall "%PROJECT_PATH%"
 IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Downloading application (Tai ung dung)...' -ForegroundColor Cyan"
-git clone %GIT_REPO_URL% "%PROJECT_PATH%" >nul 2>&1
+git clone %GIT_REPO_URL% "%PROJECT_PATH%"
 IF %ERRORLEVEL% NEQ 0 (
     powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment (Khoi dong lai de cap nhat moi truong)...' -ForegroundColor Blue"
     GOTO ErrorOccurred

@@ -880,7 +880,6 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, f
     return () => {
       // Clean up aligned narration audio
       if (typeof window.resetAlignedNarration === 'function') {
-        console.log('Cleaning up aligned narration on component unmount');
         window.resetAlignedNarration();
       }
 

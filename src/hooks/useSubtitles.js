@@ -421,7 +421,7 @@ export const useSubtitles = (t) => {
                         return (streamingSubtitles, isStreaming, chunkInfo) => {
                             // Real-time subtitle updates during streaming
                             if (streamingSubtitles && streamingSubtitles.length > 0) {
-                                // console.log(`[Subtitle Generation] Streaming update: ${streamingSubtitles.length} subtitles`);
+                                // debugLog(`[Subtitle Generation] Streaming update: ${streamingSubtitles.length} subtitles`);
 
                                 const now = Date.now();
                                 const timeSinceMerge = now - lastMergeTime;
@@ -523,7 +523,7 @@ export const useSubtitles = (t) => {
                     }
                 );
 
-                console.log('[Subtitle Generation] Streaming complete:', {
+                debugLog('[Subtitle Generation] Streaming complete:', {
                     newSegmentCount: segmentSubtitles.length,
                     segmentRange: `${segment.start}s - ${segment.end}s`
                 });
@@ -537,7 +537,7 @@ export const useSubtitles = (t) => {
                         setSubtitlesData(current => {
                             const currentSubtitles = current || [];
 
-                            console.log('[DEBUG] Before merge - current subtitles:', {
+                            debugLog('[DEBUG] Before merge - current subtitles:', {
                                 count: currentSubtitles.length,
                                 beforeSegment: currentSubtitles.filter(s => s.end <= segment.start).length,
                                 inSegment: currentSubtitles.filter(s => s.start < segment.end && s.end > segment.start).length,
@@ -555,7 +555,7 @@ export const useSubtitles = (t) => {
                             const mergedSubtitles = [...nonOverlappingSubtitles, ...segmentSubtitles]
                                 .sort((a, b) => a.start - b.start);
 
-                            console.log('[Subtitle Generation] Merging single segment result:', {
+                            debugLog('[Subtitle Generation] Merging single segment result:', {
                                 existingCount: currentSubtitles.length,
                                 nonOverlappingCount: nonOverlappingSubtitles.length,
                                 segmentCount: segmentSubtitles.length,
@@ -583,7 +583,7 @@ export const useSubtitles = (t) => {
                     });
                 }
 
-                console.log('[Subtitle Generation] Using final streaming result:', {
+                debugLog('[Subtitle Generation] Using final streaming result:', {
                     totalCount: subtitles?.length || 0,
                     finalSubtitles: subtitles?.map(s => `${s.start}-${s.end}: ${s.text.substring(0, 20)}...`) || []
                 });
@@ -764,7 +764,7 @@ export const useSubtitles = (t) => {
             if (cacheId && subtitles && subtitles.length > 0 && !segment) {
                 await saveSubtitlesToCache(cacheId, subtitles);
             } else if (segment) {
-                console.log('[Subtitle Generation] Skipping cache save for segment processing - not overwriting full file cache');
+                debugLog('[Subtitle Generation] Skipping cache save for segment processing - not overwriting full file cache');
             }
 
             // Check if using a strong model (Gemini 2.5 Pro or Gemini 2.0 Flash Thinking)
@@ -1101,9 +1101,9 @@ export const useSubtitles = (t) => {
         const { modelId } = options;
 
         if (modelId) {
-            console.log(`[RetrySegment] Using custom model for segment ${segmentIndex + 1}: ${modelId}`);
+            debugLog(`[RetrySegment] Using custom model for segment ${segmentIndex + 1}: ${modelId}`);
         } else {
-            console.log(`[RetrySegment] Using default model for segment ${segmentIndex + 1}`);
+            debugLog(`[RetrySegment] Using default model for segment ${segmentIndex + 1}`);
         }
 
         // Mark this segment as retrying temporarily

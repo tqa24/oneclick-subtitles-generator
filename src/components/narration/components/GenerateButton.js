@@ -31,6 +31,11 @@ const GenerateButton = ({
 }) => {
   const { t } = useTranslation();
 
+  // Chatterbox REQUIRES a reference voice (F5-TTS does not). Gate the button so the user can't click
+  // Generate without one and hit a confusing error toast — give a clear tooltip instead.
+  const hasReferenceAudio = !!(referenceAudio && (referenceAudio.filepath || referenceAudio.url));
+  const chatterboxNeedsReference = narrationMethod === 'chatterbox' && !hasReferenceAudio;
+
   return (
     <div className="narration-row generate-button-row">
       <div className="row-content generate-button-container">
@@ -64,9 +69,10 @@ const GenerateButton = ({
             <button
               className="pill-button primary"
               onClick={handleGenerateNarration}
-              disabled={(referenceAudio !== null && !referenceAudio) || !subtitleSource || !isServiceAvailable}
+              disabled={(referenceAudio !== null && !referenceAudio) || !subtitleSource || !isServiceAvailable || chatterboxNeedsReference}
               title={
                 !isServiceAvailable ? serviceUnavailableMessage :
+                chatterboxNeedsReference ? t('narration.noReferenceAudioError', 'Please upload or record reference audio') :
                 !subtitleSource ? t('narration.noSourceSelectedError', 'Please select a subtitle source (Original or Translated)') :
                 (referenceAudio !== null && !referenceAudio) ? t('narration.noReferenceAudioError', 'Please upload or record reference audio') : ''
               }

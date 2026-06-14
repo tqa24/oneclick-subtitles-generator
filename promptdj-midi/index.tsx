@@ -12,8 +12,6 @@ import { LiveMusicHelper } from './utils/LiveMusicHelper';
 import { AudioAnalyser } from './utils/AudioAnalyser';
 
 let ai: GoogleGenAI | null = null;
-// Temporary debug logging
-console.log('[PDJ] index.tsx loaded');
 const model = 'lyria-realtime-exp';
 
 // Recorder plumbing shared across message handlers
@@ -31,7 +29,6 @@ let currentPlaybackState: PlaybackState = 'stopped';
 
 
 function main() {
-  console.log('[PDJ] main() start');
   const initialPrompts = buildInitialPrompts();
 
   // Default to light theme unless parent tells us otherwise
@@ -39,11 +36,9 @@ function main() {
 
   const pdjMidi = new PromptDjMidi(initialPrompts);
   document.body.appendChild(pdjMidi);
-  console.log('[PDJ] <prompt-dj-midi> attached');
 
   const toastMessage = new ToastMessage();
   document.body.appendChild(toastMessage);
-  console.log('[PDJ] <toast-message> attached');
 
   // Wire UI events regardless of helper init timing
   pdjMidi.addEventListener('prompts-changed', ((e: Event) => {

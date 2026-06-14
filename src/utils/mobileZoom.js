@@ -71,10 +71,7 @@ export const initializeMobileZoom = (zoomLevel = 0.5) => {
       // Small delay to ensure DOM is ready
       setTimeout(() => {
         applyZoom(zoomLevel);
-        console.log('Mobile zoom initialized');
       }, 100);
-    } else {
-      console.log('Desktop device detected, skipping mobile zoom');
     }
   } catch (error) {
     console.warn('Error initializing mobile zoom:', error);

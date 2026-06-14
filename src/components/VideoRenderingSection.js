@@ -22,6 +22,10 @@ import { hydrateNarrationResultsForAlignment } from '../utils/narrationAlignment
 
 import HelpIcon from './common/HelpIcon';
 
+// Gated debug logging (enable in the browser console: localStorage.debug_logs = 'true')
+const DEBUG_LOGS = (typeof window !== 'undefined') && (localStorage.getItem('debug_logs') === 'true');
+const dbg = (...args) => { if (DEBUG_LOGS) console.log(...args); };
+
 
 const VideoRenderingSection = ({
   selectedVideo,
@@ -200,7 +204,7 @@ const VideoRenderingSection = ({
   // Auto-fill data when autoFillData changes - with improved state management
   useEffect(() => {
     if (autoFillData) {
-      console.log('[VideoRenderingSection] Processing autoFillData:', autoFillData);
+      dbg('[VideoRenderingSection] Processing autoFillData:', autoFillData);
 
       // Expand/scroll sequencing: when coming from video-quality-modal, scroll first, then expand
       const shouldSequenceScrollThenExpand =
@@ -245,7 +249,7 @@ const VideoRenderingSection = ({
 
       // Auto-scroll ONLY if explicitly requested
       if (shouldSequenceScrollThenExpand) {
-        console.log('[VideoRenderingSection] Sequencing: scroll first, then expand');
+        dbg('[VideoRenderingSection] Sequencing: scroll first, then expand');
         // Use a JS-driven smooth scroll to avoid any CSS/UA interruptions
         setTimeout(() => {
           const targetEl = sectionRef.current;
@@ -273,7 +277,7 @@ const VideoRenderingSection = ({
           requestAnimationFrame(animate);
         }, 50);
       } else if (autoFillData.autoScroll && autoFillData.source !== 'video-quality-modal') {
-        console.log('[VideoRenderingSection] Auto-scroll requested but blocked - source:', autoFillData.source);
+        dbg('[VideoRenderingSection] Auto-scroll requested but blocked - source:', autoFillData.source);
       }
     }
   }, [autoFillData, actualVideoUrl, selectedVideo, uploadedFile, subtitlesData, translatedSubtitles, narrationResults, userHasCollapsed]);
@@ -367,7 +371,7 @@ const VideoRenderingSection = ({
 
         if (data.status === 'active') {
           // Render is still active, reconnect to it
-          console.log('Reconnecting to active render:', renderId);
+          dbg('Reconnecting to active render:', renderId);
           setIsRendering(true);
 
           // Update queue item status to processing
@@ -379,7 +383,7 @@ const VideoRenderingSection = ({
           reconnectToRender(renderId, queueItem);
         } else if (data.status === 'completed') {
           // Render completed while user was away
-          console.log('Render completed while away:', renderId);
+          dbg('Render completed while away:', renderId);
           setRenderQueue(prev => prev.map(item =>
             item.id === queueItem.id
               ? { ...item, status: 'completed', progress: 100, outputPath: data.outputPath }
@@ -392,7 +396,7 @@ const VideoRenderingSection = ({
           setTimeout(() => startNextPendingRender(), 1000);
         } else {
           // Render failed or was cancelled
-          console.log('Render failed or cancelled while away:', renderId);
+          dbg('Render failed or cancelled while away:', renderId);
           setRenderQueue(prev => prev.map(item =>
             item.id === queueItem.id
               ? { ...item, status: 'failed', error: data.error || t('videoRendering.renderFailedBrowserClosed', 'Render failed while browser was closed') }
@@ -406,7 +410,7 @@ const VideoRenderingSection = ({
         }
       } else {
         // Server doesn't know about this render, mark as failed
-        console.log('Server does not know about render:', renderId);
+        dbg('Server does not know about render:', renderId);
         setRenderQueue(prev => prev.map(item =>
           item.id === queueItem.id
             ? { ...item, status: 'failed', error: 'Render not found on server' }
@@ -454,7 +458,7 @@ const VideoRenderingSection = ({
       while (true) {
         // Check if the request was aborted
         if (controller.signal.aborted) {
-          console.log('Reconnection stream reading aborted');
+          dbg('Reconnection stream reading aborted');
           break;
         }
 
@@ -471,12 +475,12 @@ const VideoRenderingSection = ({
 
               // Debug logging to understand what the server is sending during reconnection
               if (data.message && data.message.includes('Chrome')) {
-                console.log('[Chrome Download Debug - Reconnection] Server message:', data);
+                dbg('[Chrome Download Debug - Reconnection] Server message:', data);
               }
 
               // Also log any data with progress-related info during reconnection
               if (data.message && (data.message.includes('Mb/') || data.message.includes('download'))) {
-                console.log('[Progress Debug - Reconnection] Server message with download info:', data);
+                dbg('[Progress Debug - Reconnection] Server message with download info:', data);
               }
 
               // IMPORTANT: Check Chrome download FIRST before other phases (reconnection)
@@ -485,7 +489,7 @@ const VideoRenderingSection = ({
                 // This is the actual format from server: { chromeDownload: { downloaded: X, total: Y } }
                 const { downloaded, total } = data.chromeDownload;
                 const downloadProgress = Math.round((downloaded / total) * 100);
-                console.log(`[Chrome Download Progress - Reconnection] ${downloaded}MB / ${total}MB = ${downloadProgress}%`);
+                dbg(`[Chrome Download Progress - Reconnection] ${downloaded}MB / ${total}MB = ${downloadProgress}%`);
 
                 const chromeDownloadStatus = t('videoRendering.downloadingChrome', 'Downloading Chrome for Testing (first time only)');
 
@@ -524,9 +528,9 @@ const VideoRenderingSection = ({
                     const downloaded = parseFloat(match[1]);
                     const total = parseFloat(match[2]);
                     downloadProgress = Math.round((downloaded / total) * 100);
-                    console.log(`[Chrome Download - Reconnection] Parsed progress: ${downloaded}/${total} MB = ${downloadProgress}%`);
+                    dbg(`[Chrome Download - Reconnection] Parsed progress: ${downloaded}/${total} MB = ${downloadProgress}%`);
                   } else {
-                    console.log(`[Chrome Download - Reconnection] Could not parse progress from message: "${data.message}"`);
+                    dbg(`[Chrome Download - Reconnection] Could not parse progress from message: "${data.message}"`);
                   }
                 }
 
@@ -636,7 +640,7 @@ const VideoRenderingSection = ({
       console.error('Reconnection error:', error);
 
       if (error.name === 'AbortError') {
-        console.log('Reconnection was aborted');
+        dbg('Reconnection was aborted');
         setRenderStatus(t('videoRendering.cancelled', 'Render cancelled'));
         setRenderProgress(0);
 
@@ -777,7 +781,7 @@ const VideoRenderingSection = ({
         ? groupedNarrations
         : originalNarrations;
 
-      console.log(`Using ${isUsingGroupedSubtitles ? 'grouped' : 'original'} narrations for alignment. Found ${narrations.length} narrations.`);
+      dbg(`Using ${isUsingGroupedSubtitles ? 'grouped' : 'original'} narrations for alignment. Found ${narrations.length} narrations.`);
 
       // Check if we have any narration results
       if (!narrations || narrations.length === 0) {
@@ -1222,11 +1226,11 @@ const VideoRenderingSection = ({
 
       // Capture the render ID from response headers
       const renderId = response.headers.get('X-Render-ID');
-      console.log('Response headers:', Array.from(response.headers.entries()));
-      console.log('Extracted render ID:', renderId);
+      dbg('Response headers:', Array.from(response.headers.entries()));
+      dbg('Extracted render ID:', renderId);
       if (renderId) {
         setCurrentRenderId(renderId);
-        console.log('Render started with ID:', renderId);
+        dbg('Render started with ID:', renderId);
       } else {
         console.warn('No render ID found in response headers');
       }
@@ -1238,7 +1242,7 @@ const VideoRenderingSection = ({
       while (true) {
         // Check if the request was aborted
         if (controller.signal.aborted) {
-          console.log('Stream reading aborted');
+          dbg('Stream reading aborted');
           break;
         }
 
@@ -1258,12 +1262,12 @@ const VideoRenderingSection = ({
 
               // Debug logging to understand what the server is sending
               if (data.message && data.message.includes('Chrome')) {
-                console.log('[Chrome Download Debug] Server message:', data);
+                dbg('[Chrome Download Debug] Server message:', data);
               }
 
               // Also log any data with progress-related info
               if (data.message && (data.message.includes('Mb/') || data.message.includes('download'))) {
-                console.log('[Progress Debug] Server message with download info:', data);
+                dbg('[Progress Debug] Server message with download info:', data);
               }
 
               // IMPORTANT: Check Chrome download FIRST before other phases
@@ -1272,7 +1276,7 @@ const VideoRenderingSection = ({
                 // This is the actual format from server: { chromeDownload: { downloaded: X, total: Y } }
                 const { downloaded, total } = data.chromeDownload;
                 const downloadProgress = Math.round((downloaded / total) * 100);
-                console.log(`[Chrome Download Progress] ${downloaded}MB / ${total}MB = ${downloadProgress}%`);
+                dbg(`[Chrome Download Progress] ${downloaded}MB / ${total}MB = ${downloadProgress}%`);
 
                 const chromeDownloadStatus = t('videoRendering.downloadingChrome', 'Downloading Chrome for Testing (first time only)');
 
@@ -1316,9 +1320,9 @@ const VideoRenderingSection = ({
                     const downloaded = parseFloat(match[1]);
                     const total = parseFloat(match[2]);
                     downloadProgress = Math.round((downloaded / total) * 100);
-                    console.log(`[Chrome Download] Parsed progress: ${downloaded}/${total} MB = ${downloadProgress}%`);
+                    dbg(`[Chrome Download] Parsed progress: ${downloaded}/${total} MB = ${downloadProgress}%`);
                   } else {
-                    console.log(`[Chrome Download] Could not parse progress from message: "${data.message}"`);
+                    dbg(`[Chrome Download] Could not parse progress from message: "${data.message}"`);
                   }
                 }
 
@@ -1494,7 +1498,7 @@ const VideoRenderingSection = ({
 
       // Check if this was an abort (cancellation)
       if (error.name === 'AbortError') {
-        console.log('Render was aborted');
+        dbg('Render was aborted');
         setRenderStatus(t('videoRendering.cancelled', 'Render cancelled'));
         setRenderProgress(0);
 

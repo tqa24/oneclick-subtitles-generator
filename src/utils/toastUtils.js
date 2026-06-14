@@ -10,16 +10,11 @@
  * @param {string} className - Additional CSS class names
  */
 export const showToast = (message, type = 'info', duration = 6000, className = '') => {
-  console.log(`[Toast] Creating ${type} toast:`, message);
-
   // If ToastPanel is mounted, use it
   if (window.addToast) {
-    console.log(`[Toast] Using ToastPanel for ${type} toast`);
     window.addToast(message, type, duration);
     return;
   }
-
-  console.log(`[Toast] Using fallback DOM creation for ${type} toast`);
 
   // Fallback to DOM manipulation
   // Create the toast element

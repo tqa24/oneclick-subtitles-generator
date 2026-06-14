@@ -12,6 +12,10 @@ import { getAudioUrl } from '../../../services/narrationService';
 import { SERVER_URL } from '../../../config';
 import { deriveSubtitleId, idsEqual } from '../../../utils/subtitle/idUtils';
 import { formatTime } from '../../../utils/timeFormatter';
+
+// Gated debug logging (enable in the browser console: localStorage.debug_logs = 'true')
+const DEBUG_LOGS = (typeof window !== 'undefined') && (localStorage.getItem('debug_logs') === 'true');
+const dbg = (...args) => { if (DEBUG_LOGS) console.log(...args); };
 // Removed PlayPauseMorphType4 import - replaced with simple material symbols
 
 // Constants for localStorage keys
@@ -459,7 +463,7 @@ const GeminiNarrationResults = ({
         setCurrentFile('');
       }
 
-      console.log(`Modifying speed of ${successfulNarrations.length} narration files to ${speedValue}x`);
+      dbg(`Modifying speed of ${successfulNarrations.length} narration files to ${speedValue}x`);
 
       // Use new batch combined endpoint to process all files at once
       const apiUrl = `${SERVER_URL}/api/narration/batch-modify-audio-trim-speed-combined`;
@@ -573,7 +577,7 @@ const GeminiNarrationResults = ({
         }
       }
 
-      console.log(`Successfully applied combined trim+speed to ${items.length} files`);
+      dbg(`Successfully applied combined trim+speed to ${items.length} files`);
 
       // Optionally refresh durations in background (non-blocking UI)
       try {
@@ -857,7 +861,7 @@ const GeminiNarrationResults = ({
     // Build cache-busting URL and fetch fresh file like other methods
     const baseUrl = getAudioUrl(result.filename);
     const cacheBustUrl = `${baseUrl}?t=${Date.now()}`;
-    console.log(`[DEBUG] Playing audio via fresh fetch: ${cacheBustUrl}`);
+    dbg(`[DEBUG] Playing audio via fresh fetch: ${cacheBustUrl}`);
 
     try {
       const resp = await fetch(cacheBustUrl, {
@@ -920,20 +924,20 @@ const GeminiNarrationResults = ({
   const downloadAudio = (result) => {
     if (result.filename) {
       try {
-        console.log(`[DEBUG] Downloading audio with filename: ${result.filename}`);
+        dbg(`[DEBUG] Downloading audio with filename: ${result.filename}`);
 
         // Get the audio URL
         const audioUrl = getAudioUrl(result.filename);
-        console.log(`[DEBUG] Download URL: ${audioUrl}`);
+        dbg(`[DEBUG] Download URL: ${audioUrl}`);
 
         // Add a cache-busting parameter to the URL
         const cacheBustUrl = `${audioUrl}?t=${Date.now()}`;
-        console.log(`[DEBUG] Cache-busting download URL: ${cacheBustUrl}`);
+        dbg(`[DEBUG] Cache-busting download URL: ${cacheBustUrl}`);
 
         // Use fetch to get the file as a blob
         fetch(cacheBustUrl)
           .then(response => {
-            console.log(`[DEBUG] Download fetch response status: ${response.status}`);
+            dbg(`[DEBUG] Download fetch response status: ${response.status}`);
             if (!response.ok) {
               console.error(`[DEBUG] Download fetch failed: ${response.status} ${response.statusText}`);
               const errorMsg = `Server responded with ${response.status}: ${response.statusText}`;
@@ -943,7 +947,7 @@ const GeminiNarrationResults = ({
             return response.blob();
           })
           .then(blob => {
-            console.log(`[DEBUG] Got blob for download, size: ${blob.size} bytes, type: ${blob.type}`);
+            dbg(`[DEBUG] Got blob for download, size: ${blob.size} bytes, type: ${blob.type}`);
 
             // Create a blob URL
             const blobUrl = URL.createObjectURL(blob);

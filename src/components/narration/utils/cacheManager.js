@@ -5,6 +5,10 @@
 
 import { SERVER_URL } from '../../../config';
 
+// Gated debug logging (enable in the browser console: localStorage.debug_logs = 'true')
+const DEBUG_LOGS = (typeof window !== 'undefined') && (localStorage.getItem('debug_logs') === 'true');
+const dbg = (...args) => { if (DEBUG_LOGS) console.log(...args); };
+
 /**
  * Clear all narration-related caches and files
  * This should be called at the beginning of each generate narration handler
@@ -12,7 +16,7 @@ import { SERVER_URL } from '../../../config';
  * @param {Function} setGenerationResults - Function to clear UI generation results
  */
 export const clearNarrationCachesAndFiles = async (setGenerationResults = null) => {
-  console.log('Clearing narration caches and files for fresh generation...');
+  dbg('Clearing narration caches and files for fresh generation...');
 
   try {
     // 1. Clear localStorage caches for all narration methods
@@ -27,26 +31,26 @@ export const clearNarrationCachesAndFiles = async (setGenerationResults = null) 
     cacheKeys.forEach(key => {
       if (localStorage.getItem(key)) {
         localStorage.removeItem(key);
-        console.log(`Cleared localStorage cache: ${key}`);
+        dbg(`Cleared localStorage cache: ${key}`);
       }
     });
 
     // 2. Clear window global narration references
     if (window.originalNarrations) {
       window.originalNarrations = [];
-      console.log('Cleared window.originalNarrations');
+      dbg('Cleared window.originalNarrations');
     }
     if (window.translatedNarrations) {
       window.translatedNarrations = [];
-      console.log('Cleared window.translatedNarrations');
+      dbg('Cleared window.translatedNarrations');
     }
     if (window.groupedNarrations) {
       window.groupedNarrations = [];
-      console.log('Cleared window.groupedNarrations');
+      dbg('Cleared window.groupedNarrations');
     }
     if (window.useGroupedSubtitles !== undefined) {
       window.useGroupedSubtitles = false;
-      console.log('Reset window.useGroupedSubtitles to false');
+      dbg('Reset window.useGroupedSubtitles to false');
     }
 
     // 3. Clear browser cache for narration audio files
@@ -56,7 +60,7 @@ export const clearNarrationCachesAndFiles = async (setGenerationResults = null) 
         for (const cacheName of cacheNames) {
           if (cacheName.includes('narration') || cacheName.includes('audio')) {
             await caches.delete(cacheName);
-            console.log(`Cleared browser cache: ${cacheName}`);
+            dbg(`Cleared browser cache: ${cacheName}`);
           }
         }
       } catch (error) {
@@ -74,7 +78,7 @@ export const clearNarrationCachesAndFiles = async (setGenerationResults = null) 
       });
 
       if (response.ok) {
-        console.log('Successfully cleared server narration files');
+        dbg('Successfully cleared server narration files');
       } else {
         console.warn('Server file clearing returned non-OK status:', response.status);
       }
@@ -86,10 +90,10 @@ export const clearNarrationCachesAndFiles = async (setGenerationResults = null) 
     // 5. Clear UI generation results if setter function is provided
     if (setGenerationResults) {
       setGenerationResults([]);
-      console.log('Cleared UI generation results');
+      dbg('Cleared UI generation results');
     }
 
-    console.log('Cache and file clearing completed');
+    dbg('Cache and file clearing completed');
   } catch (error) {
     console.error('Error during cache and file clearing:', error);
     // Don't throw error - generation should continue even if clearing fails
@@ -100,7 +104,7 @@ export const clearNarrationCachesAndFiles = async (setGenerationResults = null) 
  * Clear only browser-side caches (for lighter clearing when server files should be preserved)
  */
 export const clearBrowserCaches = () => {
-  console.log('Clearing browser-side narration caches...');
+  dbg('Clearing browser-side narration caches...');
 
   // Clear localStorage caches
   const cacheKeys = [
@@ -114,7 +118,7 @@ export const clearBrowserCaches = () => {
   cacheKeys.forEach(key => {
     if (localStorage.getItem(key)) {
       localStorage.removeItem(key);
-      console.log(`Cleared localStorage cache: ${key}`);
+      dbg(`Cleared localStorage cache: ${key}`);
     }
   });
 
@@ -132,5 +136,5 @@ export const clearBrowserCaches = () => {
     window.useGroupedSubtitles = false;
   }
 
-  console.log('Browser cache clearing completed');
+  dbg('Browser cache clearing completed');
 };

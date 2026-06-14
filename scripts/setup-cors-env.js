@@ -19,11 +19,9 @@ function setupEnvironmentVariables() {
   
   // Set environment variables for all port configurations
   Object.entries(PORTS).forEach(([key, port]) => {
-    const envKey = `${key}_PORT`;
-    process.env[envKey] = port.toString();
-    console.log(`   ${envKey}=${port}`);
+    process.env[`${key}_PORT`] = port.toString();
   });
-  
+
   console.log('✅ Environment variables configured');
 }
 

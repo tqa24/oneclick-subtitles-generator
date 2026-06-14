@@ -20,7 +20,7 @@ const checkChatterboxAvailability = async () => {
     if (!response.ok) {
       return {
         available: false,
-        message: "Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh."
+        message: "SERVICE_UNAVAILABLE" // Will be translated by frontend (was a hardcoded Vietnamese string)
       };
     }
 

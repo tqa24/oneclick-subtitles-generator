@@ -379,7 +379,8 @@ const useChatterboxNarration = ({
             referenceAudio: referenceAudio ? {
               filename: referenceAudio.filename,
               text: referenceAudio.text || '',
-              url: referenceAudio.url
+              url: referenceAudio.url,
+              filepath: referenceAudio.filepath  // needed so getReferenceAudioPath() works after a reload-restore
             } : null
           };
 

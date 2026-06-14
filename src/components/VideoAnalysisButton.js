@@ -7,6 +7,10 @@ import LoadingIndicator from './common/LoadingIndicator';
 import { showErrorToast, showWarningToast } from '../utils/toastUtils';
 import '../styles/VideoAnalysisButton.css';
 
+// Gated debug logging (enable in the browser console: localStorage.debug_logs = 'true')
+const DEBUG_LOGS = (typeof window !== 'undefined') && (localStorage.getItem('debug_logs') === 'true');
+const dbg = (...args) => { if (DEBUG_LOGS) console.log(...args); };
+
 
 // Custom analyze icon: panel with Gemini star inside
 const AnalyzeIcon = ({ size = 16 }) => (
@@ -81,7 +85,7 @@ const VideoAnalysisButton = ({ disabled = false, uploadedFile = null, uploadedFi
     
     // Check if video has actually changed
     if (currentFingerprint !== lastVideoIdentifier) {
-      console.log('[VideoAnalysisButton] Video changed from:', lastVideoIdentifier, 'to:', currentFingerprint);
+      dbg('[VideoAnalysisButton] Video changed from:', lastVideoIdentifier, 'to:', currentFingerprint);
       
       // Clear everything when video changes or is removed
       setHasAnalysis(false);
@@ -104,7 +108,7 @@ const VideoAnalysisButton = ({ disabled = false, uploadedFile = null, uploadedFi
         // First video loaded - check if we have rules for it
         const rules = getTranscriptionRulesSync();
         if (rules) {
-          console.log('[VideoAnalysisButton] Found existing rules on initial load');
+          dbg('[VideoAnalysisButton] Found existing rules on initial load');
           setHasAnalysis(true);
           setTranscriptionRulesState(rules);
         }
@@ -136,24 +140,24 @@ const VideoAnalysisButton = ({ disabled = false, uploadedFile = null, uploadedFi
     const videoFile = uploadedFileData || uploadedFile;
 
     if (videoFile) {
-      console.log('[VideoAnalysisButton] Found video file:', videoFile.name || 'unnamed file');
+      dbg('[VideoAnalysisButton] Found video file:', videoFile.name || 'unnamed file');
       return videoFile;
     }
 
     // Fallback: Try to get from window globals (legacy support)
     const windowUploadedFile = window.uploadedVideoFile;
     if (windowUploadedFile) {
-      console.log('[VideoAnalysisButton] Found video file from window.uploadedVideoFile:', windowUploadedFile.name);
+      dbg('[VideoAnalysisButton] Found video file from window.uploadedVideoFile:', windowUploadedFile.name);
       return windowUploadedFile;
     }
 
     const windowDownloadedFile = window.downloadedVideoFile;
     if (windowDownloadedFile) {
-      console.log('[VideoAnalysisButton] Found video file from window.downloadedVideoFile:', windowDownloadedFile.name);
+      dbg('[VideoAnalysisButton] Found video file from window.downloadedVideoFile:', windowDownloadedFile.name);
       return windowDownloadedFile;
     }
 
-    console.log('[VideoAnalysisButton] No video file found');
+    dbg('[VideoAnalysisButton] No video file found');
     return null;
   };
 
@@ -175,7 +179,7 @@ const VideoAnalysisButton = ({ disabled = false, uploadedFile = null, uploadedFi
     try {
       // Create a status update callback
       const onStatusUpdate = (status) => {
-        console.log('Video analysis status:', status.message);
+        dbg('Video analysis status:', status.message);
       };
 
       // Perform video analysis
@@ -222,7 +226,7 @@ const VideoAnalysisButton = ({ disabled = false, uploadedFile = null, uploadedFi
   const handleChangePrompt = (preset) => {
     // The TranscriptionRulesEditor already saves to localStorage
     // We just need to log for debugging
-    console.log('[VideoAnalysisButton] Preset changed in Rules Editor:', preset?.id || 'custom');
+    dbg('[VideoAnalysisButton] Preset changed in Rules Editor:', preset?.id || 'custom');
   };
 
 

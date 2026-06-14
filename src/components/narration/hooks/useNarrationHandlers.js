@@ -2245,6 +2245,32 @@ const useNarrationHandlers = ({
             text: result.reference_text || referenceText
           });
         }
+
+        // Persist so this example voice is auto-restored on reload (uploads already do this).
+        // Without it, a reload loses the reference voice and Chatterbox narration auto-reload fails.
+        try {
+          const currentVideoUrl = localStorage.getItem('current_video_url');
+          const currentFileUrl = localStorage.getItem('current_file_url');
+          let mediaId = null;
+          if (currentVideoUrl) {
+            const m = currentVideoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+            mediaId = m ? m[1] : null;
+          } else if (currentFileUrl) {
+            mediaId = localStorage.getItem('current_file_cache_id');
+          }
+          if (mediaId) {
+            localStorage.setItem('reference_audio_cache', JSON.stringify({
+              mediaId,
+              timestamp: Date.now(),
+              referenceAudio: {
+                filename: result.filename,
+                text: result.reference_text || '',
+                url: audioUrl,
+                filepath: result.filepath
+              }
+            }));
+          }
+        } catch (e) { /* non-fatal: persistence is best-effort */ }
       } else {
         console.error('Example upload failed:', result.error);
         setError(result.error || t('narration.uploadError', 'Error uploading example audio'));

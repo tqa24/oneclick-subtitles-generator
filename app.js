@@ -109,13 +109,11 @@ app.use('/api/health', (req, res, next) => {
 // Note: Keep JSON limit lower than file upload limits to prevent memory issues with JSON payloads
 app.use(express.json({ limit: '1gb' }));
 
-// Global download tracking middleware - logs ALL download requests
+// Global download tracking middleware - logs download requests on demand (gated behind VERBOSE;
+// no full request-body dump, which was noisy and could log URLs/cookies).
 app.use((req, res, next) => {
-  if (req.path.includes('download') && req.method === 'POST') {
-    console.log(`[GLOBAL-DOWNLOAD-TRACKER] ${req.method} ${req.path}`, {
-      body: req.body,
-      timestamp: new Date().toISOString()
-    });
+  if (process.env.VERBOSE === 'true' && req.path.includes('download') && req.method === 'POST') {
+    console.log(`[GLOBAL-DOWNLOAD-TRACKER] ${req.method} ${req.path}`);
   }
   next();
 });
@@ -481,7 +479,6 @@ app.get('/api/git-branch', (req, res) => {
     }
 
     const branch = stdout.trim();
-    console.log('Current git branch:', branch);
 
     res.json({
       success: true,

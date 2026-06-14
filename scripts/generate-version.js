@@ -206,13 +206,8 @@ function main() {
     generateVersionFile(gitInfo);
     generateEnvFile(gitInfo);
     
-    console.log('✅ Version generation completed successfully!');
-    console.log('');
-    console.log('📋 Usage:');
-    console.log('   - Import version info: import versionInfo from "./src/config/version.js"');
-    console.log('   - Use in build: source .env.version before building');
-    console.log('   - Environment variables are automatically available in React app');
-    
+    console.log('✅ Version generation completed');
+
   } catch (error) {
     console.error('❌ Failed to generate version information:', error);
     process.exit(1);

@@ -4,6 +4,7 @@ import './styles/index.css';
 import './styles/audio-player-dark-theme.css';
 import './styles/video-player-dark-theme.css';
 import App from './App';
+import ErrorBoundary from './components/ErrorBoundary';
 import './i18n/i18n';
 import './utils/sliderDragHandler';
 import './utils/sliderResetHandler';
@@ -116,6 +117,8 @@ window.scrollTo(0, 0);
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>
 );

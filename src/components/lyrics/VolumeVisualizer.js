@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-// Debug gate for waveform logging
-const DEBUG_WAVEFORM = false;
+// Debug gate for waveform logging (enable in the browser console: localStorage.debug_logs = 'true')
+const DEBUG_WAVEFORM = (typeof window !== 'undefined') && (localStorage.getItem('debug_logs') === 'true');
 const dbgWave = (...args) => { if (DEBUG_WAVEFORM) console.log(...args); };
 
 // Global cache for audio data to avoid reprocessing the same audio
@@ -127,32 +127,32 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
     const currentDuration = duration;
     
     debounceTimerRef.current = setTimeout(() => {
-      console.log('[WAVEFORM] Processing after debounce:', {
+      dbgWave('[WAVEFORM] Processing after debounce:', {
         audioSource: currentSource?.substring(0, 100),
         duration: currentDuration
       });
       
       // Skip if we don't have a valid duration yet
       if (!currentDuration || currentDuration <= 0) {
-        console.log('[WAVEFORM] Invalid duration, skipping processing for now');
+        dbgWave('[WAVEFORM] Invalid duration, skipping processing for now');
         return;
       }
       
       // If we already have waveform data loaded, skip processing
       if (waveformLOD && isProcessed && processingSourceRef.current === currentSource) {
-        console.log('[WAVEFORM] Already have waveform data for this source, skipping');
+        dbgWave('[WAVEFORM] Already have waveform data for this source, skipping');
         return;
       }
       
       // Skip if already processing this exact source
       if (isProcessing && processingSourceRef.current === currentSource) {
-        console.log('[WAVEFORM] Already processing this exact source, skipping');
+        dbgWave('[WAVEFORM] Already processing this exact source, skipping');
         return;
       }
       
       // Skip if we're processing a different source - abort it first
       if (isProcessing && processingSourceRef.current !== currentSource) {
-        console.log('[WAVEFORM] Processing different source, aborting previous');
+        dbgWave('[WAVEFORM] Processing different source, aborting previous');
         if (abortControllerRef.current) {
           abortControllerRef.current.abort();
           abortControllerRef.current = null;
@@ -227,30 +227,30 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
 
     const processEntireAudio = async (signal) => {
         try {
-            console.log('[WAVEFORM] Starting full audio processing for:', currentSource?.substring(0, 100));
+            dbgWave('[WAVEFORM] Starting full audio processing for:', currentSource?.substring(0, 100));
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             if (!audioContextRef.current) {
                 audioContextRef.current = new AudioContext();
             }
             
             const response = await fetch(currentSource, { signal });
-            console.log('[WAVEFORM] Fetched audio data, size:', response.headers.get('Content-Length'), 'bytes');
+            dbgWave('[WAVEFORM] Fetched audio data, size:', response.headers.get('Content-Length'), 'bytes');
             const arrayBuffer = await response.arrayBuffer();
             
             // Use longer timeout for large files (over 50MB)
             const fileSize = arrayBuffer.byteLength;
             const timeoutMs = fileSize > 50 * 1024 * 1024 ? 60000 : 30000;
-            console.log('[WAVEFORM] File size:', (fileSize / 1024 / 1024).toFixed(2), 'MB, timeout:', timeoutMs / 1000, 's');
+            dbgWave('[WAVEFORM] File size:', (fileSize / 1024 / 1024).toFixed(2), 'MB, timeout:', timeoutMs / 1000, 's');
             
             const audioBuffer = await decodeWithTimeout(audioContextRef.current, arrayBuffer, timeoutMs);
-            console.log('[WAVEFORM] Audio decoded successfully, duration:', audioBuffer.duration, 's');
+            dbgWave('[WAVEFORM] Audio decoded successfully, duration:', audioBuffer.duration, 's');
 
             if (!audioBuffer || audioBuffer.numberOfChannels === 0) {
               throw new Error('No audio channels found in the media file');
             }
 
             const channelData = audioBuffer.getChannelData(0);
-            console.log('[WAVEFORM] Analyzing volume data...');
+            dbgWave('[WAVEFORM] Analyzing volume data...');
             // Clamp analysis to video duration to avoid waveform extending beyond video
             const volumeData = await analyzeVolume(channelData, 1000, audioBuffer.duration, currentDuration);
             const finalLOD = new WaveformLOD(volumeData);
@@ -258,11 +258,11 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
             if (!signal.aborted) {
                 setWaveformLOD(finalLOD);
                 audioDataCache.set(currentSource, finalLOD);
-                console.log('[WAVEFORM] Processing complete');
+                dbgWave('[WAVEFORM] Processing complete');
             }
         } catch (error) {
             if (error.name === 'AbortError') {
-                console.log('[WAVEFORM] Processing aborted (expected)');
+                dbgWave('[WAVEFORM] Processing aborted (expected)');
                 return;
             }
             console.error('[WAVEFORM] Full processing failed:', error);
@@ -280,7 +280,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
 
     const processBlobInChunks = async (signal) => {
         try {
-            console.log('[WAVEFORM] Starting chunked processing for long blob:', currentSource?.substring(0, 100), 'Duration:', duration, 's');
+            dbgWave('[WAVEFORM] Starting chunked processing for long blob:', currentSource?.substring(0, 100), 'Duration:', duration, 's');
             setProcessingProgress(0);
             
             const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -289,17 +289,17 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
             }
             
             // Load the entire blob once (since we can't use range requests)
-            console.log('[WAVEFORM] Fetching blob...');
+            dbgWave('[WAVEFORM] Fetching blob...');
             const response = await fetch(currentSource, { signal });
             const arrayBuffer = await response.arrayBuffer();
-            console.log('[WAVEFORM] Blob loaded, size:', (arrayBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB');
+            dbgWave('[WAVEFORM] Blob loaded, size:', (arrayBuffer.byteLength / 1024 / 1024).toFixed(2), 'MB');
             
             if (signal.aborted) return;
             setProcessingProgress(0.1); // 10%
             
-            console.log('[WAVEFORM] Decoding audio...');
+            dbgWave('[WAVEFORM] Decoding audio...');
             const audioBuffer = await decodeWithTimeout(audioContextRef.current, arrayBuffer, 60000);
-            console.log('[WAVEFORM] Audio decoded, duration:', audioBuffer.duration, 's');
+            dbgWave('[WAVEFORM] Audio decoded, duration:', audioBuffer.duration, 's');
             
             if (signal.aborted) return;
             if (!audioBuffer || audioBuffer.numberOfChannels === 0) {
@@ -312,11 +312,11 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
             const samplesPerChunk = Math.floor(channelData.length / numChunks);
             let combinedVolumeData = new Float32Array();
             
-            console.log('[WAVEFORM] Processing', numChunks, 'chunks,', samplesPerChunk, 'samples per chunk');
+            dbgWave('[WAVEFORM] Processing', numChunks, 'chunks,', samplesPerChunk, 'samples per chunk');
             
             for (let i = 0; i < numChunks; i++) {
                 if (signal.aborted) {
-                    console.log('[WAVEFORM] Processing aborted in chunk', i + 1);
+                    dbgWave('[WAVEFORM] Processing aborted in chunk', i + 1);
                     return;
                 }
                 
@@ -324,7 +324,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
                 const endSample = Math.min(startSample + samplesPerChunk, channelData.length);
                 const chunkData = channelData.subarray(startSample, endSample);
                 
-                console.log('[WAVEFORM] Processing chunk', i + 1, '/', numChunks, 'Progress:', ((i + 1) / numChunks * 90).toFixed(1) + '%');
+                dbgWave('[WAVEFORM] Processing chunk', i + 1, '/', numChunks, 'Progress:', ((i + 1) / numChunks * 90).toFixed(1) + '%');
                 
                 // Force UI update before processing each chunk
                 setProcessingProgress(0.1 + (i / numChunks) * 0.8);
@@ -336,7 +336,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
                 
                 // Update progress immediately after analysis
                 const progress = 0.1 + ((i + 1) / numChunks) * 0.8;
-                console.log('[WAVEFORM] Setting progress to', (progress * 100).toFixed(1) + '%');
+                dbgWave('[WAVEFORM] Setting progress to', (progress * 100).toFixed(1) + '%');
                 setProcessingProgress(progress);
                 
                 // Combine results and update UI progressively
@@ -347,7 +347,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
                 
                 if (!signal.aborted) {
                     const waveformLOD = new WaveformLOD(combinedVolumeData);
-                    console.log('[WAVEFORM] Created LOD with', combinedVolumeData.length, 'samples');
+                    dbgWave('[WAVEFORM] Created LOD with', combinedVolumeData.length, 'samples');
                     setWaveformLOD(waveformLOD);
                 }
                 
@@ -356,11 +356,11 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
             }
             
             if (!signal.aborted) {
-                console.log('[WAVEFORM] Setting final progress to 100%');
+                dbgWave('[WAVEFORM] Setting final progress to 100%');
                 setProcessingProgress(1.0);
                 
                 audioDataCache.set(currentSource, new WaveformLOD(combinedVolumeData));
-                console.log('[WAVEFORM] Chunked processing complete, combined data length:', combinedVolumeData.length);
+                dbgWave('[WAVEFORM] Chunked processing complete, combined data length:', combinedVolumeData.length);
                 
                 // Small delay before finishing
                 setTimeout(() => {
@@ -373,7 +373,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
             }
         } catch (error) {
             if (error.name === 'AbortError') {
-                console.log('[WAVEFORM] Chunked processing aborted (expected)');
+                dbgWave('[WAVEFORM] Chunked processing aborted (expected)');
                 setIsProcessing(false);
                 return;
             }
@@ -388,7 +388,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
 
     const processAudioInSegments = async (signal) => {
         try {
-            console.log('[WAVEFORM] Starting segmented processing for long audio:', currentSource?.substring(0, 100));
+            dbgWave('[WAVEFORM] Starting segmented processing for long audio:', currentSource?.substring(0, 100));
             setProcessingProgress(0);
             
             const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -412,12 +412,12 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
             const bytesPerSecond = fileSize / duration;
             let combinedVolumeData = new Float32Array();
 
-            console.log('[WAVEFORM] Processing', numSegments, 'segments, file size:', (fileSize / 1024 / 1024).toFixed(2), 'MB');
+            dbgWave('[WAVEFORM] Processing', numSegments, 'segments, file size:', (fileSize / 1024 / 1024).toFixed(2), 'MB');
             setProcessingProgress(0.05); // 5%
 
             for (let i = 0; i < numSegments; i++) {
                 if (signal.aborted) {
-                    console.log('[WAVEFORM] Processing aborted in segment', i + 1);
+                    dbgWave('[WAVEFORM] Processing aborted in segment', i + 1);
                     return;
                 }
 
@@ -427,7 +427,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
                 const startByte = Math.floor(startTime * bytesPerSecond);
                 const endByte = Math.floor(endTime * bytesPerSecond) - 1;
 
-                console.log('[WAVEFORM] Processing segment', i + 1, '/', numSegments, 'Time:', startTime, '-', endTime, 's');
+                dbgWave('[WAVEFORM] Processing segment', i + 1, '/', numSegments, 'Time:', startTime, '-', endTime, 's');
 
                 // Update progress before fetching
                 const progress = 0.05 + (i / numSegments) * 0.9;
@@ -460,7 +460,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
                     
                     if (!signal.aborted) {
                        setWaveformLOD(new WaveformLOD(combinedVolumeData));
-                       console.log('[WAVEFORM] Updated with', combinedVolumeData.length, 'samples, progress:', ((i + 1) / numSegments * 100).toFixed(1) + '%');
+                       dbgWave('[WAVEFORM] Updated with', combinedVolumeData.length, 'samples, progress:', ((i + 1) / numSegments * 100).toFixed(1) + '%');
                     }
                 }
                  // Yield to the main thread to allow UI updates
@@ -470,7 +470,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
             if (!signal.aborted) {
                 setProcessingProgress(1.0);
                 audioDataCache.set(currentSource, new WaveformLOD(combinedVolumeData));
-                console.log('[WAVEFORM] Segmented processing complete, data length:', combinedVolumeData.length);
+                dbgWave('[WAVEFORM] Segmented processing complete, data length:', combinedVolumeData.length);
                 
                 setIsProcessing(false);
                 setIsProcessed(true);
@@ -480,7 +480,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
             }
         } catch (error) {
             if (error.name === 'AbortError') {
-                console.log('[WAVEFORM] Segmented processing aborted (expected)');
+                dbgWave('[WAVEFORM] Segmented processing aborted (expected)');
                 setIsProcessing(false);
                 return;
             }
@@ -595,7 +595,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
     
     const handleProcessingError = (error) => {
         if (error.name === 'AbortError') {
-          console.log('[WAVEFORM] Processing aborted.');
+          dbgWave('[WAVEFORM] Processing aborted.');
           return;
         }
         console.error('[WAVEFORM] ❌ Error processing audio:', error);
@@ -614,7 +614,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
       return () => {
         if (localAbortController) {
           try {
-            console.log('[WAVEFORM] Cleanup: aborting fetch');
+            dbgWave('[WAVEFORM] Cleanup: aborting fetch');
             localAbortController.abort();
           } catch {}
         }
@@ -655,7 +655,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
     const endSample = Math.ceil(visibleEnd * lodSamplesPerSecond);
     const samplesToDraw = endSample - startSample;
 
-    console.log('[WAVEFORM] Rendering:', {
+    dbgWave('[WAVEFORM] Rendering:', {
       duration: duration,
       totalDataLength: waveformLOD.levels[0].length,
       samplesPerSecond: samplesPerSecond,
@@ -702,7 +702,7 @@ const VolumeVisualizer = ({ audioSource, duration, visibleTimeRange, height = 26
     ctx.closePath();
     ctx.fill();
 
-    console.log('[WAVEFORM] Rendered', samplesToDraw, 'samples, amplitude range:', {
+    dbgWave('[WAVEFORM] Rendered', samplesToDraw, 'samples, amplitude range:', {
       min: Math.min(...lodData.slice(startSample, endSample)),
       max: Math.max(...lodData.slice(startSample, endSample))
     });

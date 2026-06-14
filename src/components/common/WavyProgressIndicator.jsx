@@ -337,30 +337,6 @@ const WavyProgressIndicator = forwardRef(({
         || getRootCssVar('--figma-track-color')
         || WavyProgressDefaults.trackColor;
     
-    // Debug: log computed theme and color sources at runtime (browser only)
-    useEffect(() => {
-        try {
-            const info = {
-                propColor: color || null,
-                propTrackColor: trackColor || null,
-                rootWavyProgressColor: getRootCssVar('--wavy-progress-color'),
-                rootFigmaProgressColor: getRootCssVar('--figma-progress-color'),
-                rootWavyTrackColor: getRootCssVar('--wavy-track-color'),
-                rootFigmaTrackColor: getRootCssVar('--figma-track-color'),
-                dataThemeRoot: (typeof document !== 'undefined') ? document.documentElement.getAttribute('data-theme') : null,
-                dataThemeBody: (typeof document !== 'undefined') ? document.body.getAttribute('data-theme') : null,
-                rootHasDarkClass: (typeof document !== 'undefined') ? document.documentElement.classList.contains('dark') : null,
-                bodyHasDarkClass: (typeof document !== 'undefined') ? document.body.classList.contains('dark') : null,
-                prefersDark: (typeof window !== 'undefined' && window.matchMedia) ? window.matchMedia('(prefers-color-scheme: dark)').matches : null,
-                effectiveColor,
-                effectiveTrackColor
-            };
-            // Use a concise label so it's easy to find in the console
-            console.log('WavyProgressIndicator theme debug:', info);
-        } catch (e) {
-            // ignore in non-browser environments
-        }
-    }, [color, trackColor, effectiveColor, effectiveTrackColor]);
 
     // Constants
     const ENTRANCE_DISAPPEARANCE_DURATION = 500;

@@ -40,10 +40,6 @@ function generateReactEnv() {
   fs.writeFileSync(envPath, envContent);
 
   console.log(`✅ React environment file created: ${envPath}`);
-  console.log('📋 Generated variables:');
-  reactEnvVars.forEach(varLine => {
-    console.log(`   ${varLine}`);
-  });
 }
 
 /**
@@ -146,20 +142,12 @@ export default {
  * Main function
  */
 function main() {
-  console.log('🚀 Setting up React environment configuration');
-  console.log('==============================================\n');
-
   try {
     generateReactEnv();
     createReactConfigFile();
     updatePackageJsonScripts();
 
-    console.log('\n✅ React environment setup completed successfully!');
-    console.log('\n📋 Next steps:');
-    console.log('   1. Restart your React development server');
-    console.log('   2. Update your components to use the new config:');
-    console.log('      import { PORTS, API_URLS } from "../config/appConfig";');
-    console.log('   3. The environment variables are automatically loaded');
+    console.log('✅ React environment setup completed');
 
   } catch (error) {
     console.error('❌ Error setting up React environment:', error);
