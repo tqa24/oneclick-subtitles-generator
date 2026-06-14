@@ -42,6 +42,14 @@ const sendFileWithRange = (req, res, filePath) => {
     const fileSize = stat.size;
     const contentType = getContentType(filePath);
 
+    // Optional forced download: ?download[=filename] serves the file as an attachment so the browser
+    // saves it instead of playing it inline. Lets clients trigger a NATIVE download of large generated
+    // audio (e.g. aligned narration) instead of pulling the bytes through fetch().blob().
+    const dl = req.query && req.query.download;
+    const dispositionHeaders = dl
+      ? { 'Content-Disposition': `attachment; filename="${String(typeof dl === 'string' && dl !== '1' ? dl : path.basename(filePath)).replace(/"/g, '')}"` }
+      : {};
+
     const range = req.headers?.range;
 
     if (range) {
@@ -58,7 +66,8 @@ const sendFileWithRange = (req, res, filePath) => {
         'Accept-Ranges': 'bytes',
         'Content-Length': chunkSize,
         'Content-Type': contentType,
-        'Cache-Control': 'no-store'
+        'Cache-Control': 'no-store',
+        ...dispositionHeaders
       });
       const stream = fs.createReadStream(filePath, { start, end });
       stream.on('error', () => res.status(500).end());
@@ -68,7 +77,8 @@ const sendFileWithRange = (req, res, filePath) => {
         'Content-Length': fileSize,
         'Content-Type': contentType,
         'Accept-Ranges': 'bytes',
-        'Cache-Control': 'no-store'
+        'Cache-Control': 'no-store',
+        ...dispositionHeaders
       });
       const stream = fs.createReadStream(filePath);
       stream.on('error', () => res.status(500).end());

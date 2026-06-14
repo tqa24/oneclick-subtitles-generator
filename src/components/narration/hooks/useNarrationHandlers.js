@@ -14,6 +14,7 @@ import { isModelAvailable } from '../../../services/modelAvailabilityService';
 import ISO6391 from 'iso-639-1';
 import { deriveSubtitleId } from '../../../utils/subtitle/idUtils';
 import { hydrateNarrationResultsForAlignment } from '../../../utils/narrationAlignmentUtils';
+import { checkAudioAlignmentFromResponse } from '../../../utils/audioAlignmentNotification';
 
 
 /**
@@ -171,6 +172,61 @@ const createLoadingOverlay = (message) => {
         document.body.removeChild(container);
       }
     }
+  };
+};
+
+/**
+ * Lightweight pure-DOM loading overlay (no React, no canvas, no dynamic imports).
+ * The React-based createLoadingOverlay above renders LoadingIndicator, whose mount/unmount and
+ * dynamic-import animation setup can wedge the main thread when it's created/updated/torn down
+ * around an in-flight download. This drop-in replacement (same updateProgress/destroy API) is just
+ * a CSS-spinner div, so it can never block the download flow.
+ * @param {string} message - Initial loading message
+ */
+const createSimpleLoadingOverlay = (message) => {
+  if (!document.getElementById('osg-simple-overlay-style')) {
+    const style = document.createElement('style');
+    style.id = 'osg-simple-overlay-style';
+    style.textContent = '@keyframes osg-spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(style);
+  }
+
+  const container = document.createElement('div');
+  container.style.cssText = [
+    'position:fixed', 'top:50%', 'left:50%', 'transform:translate(-50%,-50%)',
+    'padding:24px 32px', 'background:rgba(0,0,0,0.85)', 'border-radius:16px', 'z-index:9999',
+    'text-align:center', 'box-shadow:0 8px 32px rgba(0,0,0,0.3)', 'min-width:260px',
+    'backdrop-filter:blur(8px)', 'color:#fff', 'font-size:15px', 'line-height:1.4',
+  ].join(';');
+
+  const spinner = document.createElement('div');
+  spinner.style.cssText = [
+    'width:32px', 'height:32px', 'margin:0 auto 14px',
+    'border:3px solid rgba(255,255,255,0.22)', 'border-top-color:#60a5fa',
+    'border-radius:50%', 'animation:osg-spin 0.8s linear infinite',
+  ].join(';');
+
+  const msgEl = document.createElement('div');
+  msgEl.textContent = message || '';
+
+  container.appendChild(spinner);
+  container.appendChild(msgEl);
+  document.body.appendChild(container);
+
+  let destroyed = false;
+  return {
+    container,
+    updateProgress: ({ message: m } = {}) => {
+      if (!destroyed && typeof m === 'string') msgEl.textContent = m;
+    },
+    updateMessage: (m) => {
+      if (!destroyed && typeof m === 'string') msgEl.textContent = m;
+    },
+    destroy: () => {
+      if (destroyed) return;
+      destroyed = true;
+      if (container.parentNode) container.parentNode.removeChild(container);
+    },
   };
 };
 
@@ -1384,7 +1440,7 @@ const useNarrationHandlers = ({
     }
 
     // Create a React-based loading overlay
-    const loadingOverlay = createLoadingOverlay(
+    const loadingOverlay = createSimpleLoadingOverlay(
       t(
         'narration.alignedDownloadPreparing',
         'Preparing aligned narration download...',
@@ -1393,7 +1449,6 @@ const useNarrationHandlers = ({
     const alignedJobId = `aligned_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
     let progressPollInterval = null;
     let requestTimeoutId = null;
-    let latestServerProgress = 0;
 
     try {
       // Get the server URL from the narration service
@@ -1469,8 +1524,11 @@ const useNarrationHandlers = ({
             }
           }
 
-          // If we found a matching subtitle or created synthetic timing, use it
-          if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
+          // If we found a matching subtitle or created synthetic timing, use it.
+          // NOTE: use Number.isFinite, not typeof === 'number' — typeof NaN is 'number', and a NaN
+          // start/end here propagates into the server timeline math, producing an invalid ffmpeg
+          // filter that hangs the aligned render (the download appears frozen at 0%).
+          if (subtitle && Number.isFinite(subtitle.start) && Number.isFinite(subtitle.end) && subtitle.end > subtitle.start) {
             return {
               filename: result.filename,
               subtitle_id: result.subtitle_id,
@@ -1503,33 +1561,22 @@ const useNarrationHandlers = ({
       }
 
 
-      // Create a download link
-      const downloadUrl = `${SERVER_URL}/api/narration/download-aligned`;
+      // Render the aligned file on the server, then trigger a NATIVE browser download of it.
+      // We deliberately do NOT pull the audio bytes into JS via response.blob(): buffering a
+      // multi-MB body through fetch is slow/unstable in some environments (a network-capturing
+      // browser extension can pin the main thread on it) and is pointless — the browser can fetch
+      // the file directly. So we POST to /generate-aligned (which returns a small JSON with the
+      // file URL) and then let the browser download that URL natively. The ?download flag makes the
+      // server serve it as an attachment.
+      const generateUrl = `${SERVER_URL}/api/narration/generate-aligned`;
       const progressUrl = `${SERVER_URL}/api/narration/aligned-progress/${encodeURIComponent(alignedJobId)}`;
 
       const pollAlignedProgress = async () => {
         try {
-          const progressResponse = await fetch(progressUrl, {
-            method: 'GET',
-            mode: 'cors',
-            credentials: 'include',
-          });
-
-          if (!progressResponse.ok) {
-            return;
-          }
-
+          const progressResponse = await fetch(progressUrl, { method: 'GET', mode: 'cors', credentials: 'include' });
+          if (!progressResponse.ok) return;
           const progressData = await progressResponse.json();
-          const rawProgressValue = typeof progressData.progress === 'number'
-            ? Math.max(0, Math.min(100, progressData.progress))
-            : null;
-          const progressValue = progressData.status === 'completed' && rawProgressValue !== null
-            ? Math.min(97, rawProgressValue)
-            : rawProgressValue;
-          latestServerProgress = progressValue ?? latestServerProgress;
-
           loadingOverlay.updateProgress({
-            progress: progressValue,
             message: translateAlignedDownloadMessage(progressData),
             detail: getAlignedDownloadSegmentDetail(progressData),
           });
@@ -1538,43 +1585,30 @@ const useNarrationHandlers = ({
         }
       };
 
-      loadingOverlay.updateProgress({
-        progress: 0,
-        message: t(
-          'narration.alignedDownloadPreparing',
-          'Preparing aligned narration download...',
-        ),
-        detail: t(
-          'narration.alignedDownloadSegmentProgress',
-          '{{current}}/{{total}} segments',
-          {
-            current: 0,
-            total: narrationData.length,
-          },
-        ),
-      });
-
-      await pollAlignedProgress();
       progressPollInterval = window.setInterval(pollAlignedProgress, 800);
 
       const abortController = new AbortController();
+      // Aligned audio is a fast audio-only concat render (seconds even for long timelines), so a
+      // multi-minute wait means something is wrong. Abort after 5 min so the user gets a retryable
+      // error instead of an indefinitely stuck overlay.
       requestTimeoutId = window.setTimeout(() => {
         abortController.abort();
-      }, 30 * 60 * 1000);
+      }, 5 * 60 * 1000);
 
-      const response = await fetch(downloadUrl, {
+      const response = await fetch(generateUrl, {
         method: 'POST',
         mode: 'cors',
         credentials: 'include',
         signal: abortController.signal,
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'audio/wav'
+          'Accept': 'application/json',
         },
         body: JSON.stringify({
           narrations: narrationData,
+          format: 'wav',
           jobId: alignedJobId,
-        })
+        }),
       });
 
       if (progressPollInterval) {
@@ -1582,104 +1616,42 @@ const useNarrationHandlers = ({
         progressPollInterval = null;
       }
 
-      // Check for audio alignment notification after successful response
-      if (response.ok) {
-        // Import and check for duration notification
-        const { checkAudioAlignmentFromResponse } = await import('../../../utils/audioAlignmentNotification.js');
-        checkAudioAlignmentFromResponse(response);
-        latestServerProgress = Math.min(latestServerProgress, 97);
-        loadingOverlay.updateProgress({
-          progress: Math.max(latestServerProgress, 98),
-          message: t(
-            'narration.alignedDownloadReceiving',
-            'Downloading generated audio...',
-          ),
-          detail: '',
-        });
-      }
-
-
-      // Check if the response is successful
       if (!response.ok) {
-        // Try to parse error message if it's JSON
+        let message = `Failed to create aligned audio: ${response.statusText}`;
         try {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to download aligned audio');
-        } catch (jsonError) {
-          // If it's not JSON, use the status text
-          throw new Error(`Failed to download aligned audio: ${response.statusText}`);
-        }
+          message = errorData.error || message;
+        } catch (jsonError) { /* keep statusText */ }
+        throw new Error(message);
       }
 
-      // Get the blob from the response
-      let blob;
-      const contentLength = Number(response.headers.get('Content-Length') || 0);
-      if (response.body && contentLength > 0) {
-        const reader = response.body.getReader();
-        const chunks = [];
-        let receivedBytes = 0;
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            break;
-          }
-
-          if (value) {
-            chunks.push(value);
-            receivedBytes += value.length;
-            const bodyProgress = receivedBytes / contentLength;
-            loadingOverlay.updateProgress({
-              progress: Math.max(latestServerProgress, 98 + bodyProgress * 2),
-              message: t(
-                'narration.alignedDownloadReceiving',
-                'Downloading generated audio...',
-              ),
-              detail: t(
-                'narration.alignedDownloadByteProgress',
-                '{{percent}}% downloaded',
-                {
-                  percent: Math.round(bodyProgress * 100),
-                },
-              ),
-            });
-          }
-        }
-
-        blob = new Blob(chunks, {
-          type: response.headers.get('Content-Type') || 'audio/wav',
-        });
-      } else {
-        blob = await response.blob();
+      // Small JSON response: { url, filename, durationDifference, ... } — no large body to buffer.
+      const result = await response.json();
+      if (!result || !result.url) {
+        throw new Error('Aligned audio generation did not return a file URL');
       }
 
-      loadingOverlay.updateProgress({
-        progress: 100,
-        message: t(
-          'narration.alignedDownloadStarting',
-          'Starting download...',
-        ),
-        detail: '',
-      });
+      loadingOverlay.destroy();
 
-
-      // Create a URL for the blob
-      const url = URL.createObjectURL(blob);
-
-      // Create a temporary anchor element
+      // Trigger a native browser download of the generated file. The ?download flag makes the
+      // server send Content-Disposition: attachment (the anchor's download attribute is ignored
+      // cross-origin, so we rely on that header). The browser downloads the file directly to disk
+      // without it ever passing through page JavaScript.
+      const sep = result.url.includes('?') ? '&' : '?';
+      const fileUrl = `${SERVER_URL}${result.url}${sep}download=${encodeURIComponent('aligned_narration.wav')}`;
       const a = document.createElement('a');
-      a.href = url;
+      a.href = fileUrl;
       a.download = 'aligned_narration.wav';
-      a.target = '_blank'; // Open in a new tab to avoid redirecting
       a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
-
-      // Clean up
       setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, 100);
+        if (a.parentNode) document.body.removeChild(a);
+      }, 1000);
+
+      // Non-critical: warn (via toast) if the aligned audio ended up notably longer than expected.
+      // The X-* duration headers are present on the generate-aligned response too.
+      checkAudioAlignmentFromResponse(response);
     } catch (error) {
       console.error('Error downloading aligned audio:', error);
       if (error?.name === 'AbortError') {
