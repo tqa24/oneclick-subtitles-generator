@@ -9,20 +9,28 @@
 const path = require("path");
 const fs = require("fs");
 
-const { OUTPUT_AUDIO_DIR, TEMP_AUDIO_DIR } = require("../directoryManager");
+const { TEMP_AUDIO_DIR } = require("../directoryManager");
 const {
   analyzeAndAdjustSegments,
   getMediaDuration,
   renderAlignedAudioTimeline,
 } = require("./batchProcessor");
 const { removeAudioMetadata, toDurationNumber } = require("./mediaMetadata");
+const {
+  resolveNarrationSegments,
+  cleanupTemporarySegmentFiles,
+} = require("./narrationResolver");
+const {
+  ALIGNED_FILE_PREFIX,
+  cleanupStaleAlignedAudioFiles,
+} = require("./alignedAudioCleanup");
+const {
+  setAlignedJobProgress,
+  getAlignedJobState,
+} = require("./alignedJobState");
 
 const DEFAULT_PLAYBACK_FORMAT = "m4a";
 const DEFAULT_DOWNLOAD_FORMAT = "wav";
-const ALIGNED_FILE_PREFIX = "aligned_narration_";
-const TEMP_SEGMENT_FILE_PREFIX = "temp_aligned_";
-const STALE_ALIGNED_FILE_MAX_AGE_MS = 12 * 60 * 60 * 1000;
-const ALIGNED_JOB_MAX_AGE_MS = 30 * 60 * 1000;
 const ALIGNED_RESPONSE_HEADERS = [
   "Content-Disposition",
   "X-Duration-Difference",
@@ -32,8 +40,6 @@ const ALIGNED_RESPONSE_HEADERS = [
   "X-Max-Adjustment-Amount",
   "X-Max-Adjustment-Strategy",
 ].join(", ");
-const AUDIO_FILE_EXTENSIONS = new Set([".wav", ".mp3", ".m4a"]);
-const alignedDownloadJobs = new Map();
 
 const getAudioContentType = (format) => {
   if (format === "wav") {
@@ -55,55 +61,6 @@ const inferDownloadFormat = (req) => {
   }
 
   return DEFAULT_DOWNLOAD_FORMAT;
-};
-
-const cleanupStaleAlignedAudioFiles = () => {
-  try {
-    if (!fs.existsSync(TEMP_AUDIO_DIR)) {
-      return;
-    }
-
-    const now = Date.now();
-    const candidates = fs
-      .readdirSync(TEMP_AUDIO_DIR)
-      .filter(
-        (filename) =>
-          filename.startsWith(ALIGNED_FILE_PREFIX) ||
-          filename.startsWith(TEMP_SEGMENT_FILE_PREFIX),
-      )
-      .map((filename) => {
-        const filePath = path.join(TEMP_AUDIO_DIR, filename);
-        const stats = fs.statSync(filePath);
-        return {
-          filename,
-          filePath,
-          mtimeMs: stats.mtimeMs,
-        };
-      })
-      .sort((a, b) => b.mtimeMs - a.mtimeMs);
-
-    candidates.forEach((candidate, index) => {
-      const isRecentEnough =
-        now - candidate.mtimeMs < STALE_ALIGNED_FILE_MAX_AGE_MS;
-      const keepRecentFiles = index < 5;
-      if (isRecentEnough || keepRecentFiles) {
-        return;
-      }
-
-      try {
-        fs.unlinkSync(candidate.filePath);
-        removeAudioMetadata(candidate.filePath);
-      } catch (error) {
-        console.error(
-          `Failed to remove stale aligned audio file ${candidate.filename}: ${error.message}`,
-        );
-      }
-    });
-  } catch (error) {
-    console.error(
-      `Failed to clean stale aligned audio files: ${error.message}`,
-    );
-  }
 };
 
 const buildAudioRoutePath = (publicFilename) => {
@@ -157,256 +114,6 @@ const setAlignedResponseHeaders = (res, metadata, format) => {
 
   if (format) {
     res.setHeader("Content-Type", getAudioContentType(format));
-  }
-};
-
-const cleanupStaleAlignedJobs = () => {
-  const now = Date.now();
-  for (const [jobId, jobState] of alignedDownloadJobs.entries()) {
-    if (!jobState?.updatedAt || now - jobState.updatedAt > ALIGNED_JOB_MAX_AGE_MS) {
-      alignedDownloadJobs.delete(jobId);
-    }
-  }
-};
-
-const setAlignedJobProgress = (jobId, patch = {}) => {
-  if (!jobId) {
-    return null;
-  }
-
-  cleanupStaleAlignedJobs();
-  const currentState = alignedDownloadJobs.get(jobId) || {
-    jobId,
-    progress: 0,
-    status: "pending",
-    messageKey: "alignedDownloadQueued",
-    message: "Waiting to start aligned download...",
-    processedSegments: 0,
-    totalSegments: 0,
-    createdAt: Date.now(),
-    completed: false,
-    error: null,
-  };
-
-  const nextState = {
-    ...currentState,
-    ...patch,
-    updatedAt: Date.now(),
-  };
-
-  alignedDownloadJobs.set(jobId, nextState);
-  return nextState;
-};
-
-const getAlignedJobState = (jobId) => {
-  cleanupStaleAlignedJobs();
-  return alignedDownloadJobs.get(jobId) || null;
-};
-
-const listAudioFiles = (directoryPath) => {
-  try {
-    return fs
-      .readdirSync(directoryPath)
-      .filter((file) =>
-        AUDIO_FILE_EXTENSIONS.has(path.extname(file).toLowerCase()),
-      )
-      .sort();
-  } catch {
-    return [];
-  }
-};
-
-const resolveAudioFileCandidate = (filePath, publicFilename) => {
-  try {
-    if (!fs.existsSync(filePath)) {
-      const parentDir = path.dirname(filePath);
-      if (
-        !fs.existsSync(parentDir) ||
-        !path.basename(parentDir).startsWith("subtitle_")
-      ) {
-        return { filePath, publicFilename };
-      }
-
-      const audioFiles = listAudioFiles(parentDir);
-      if (audioFiles.length === 0) {
-        return { filePath, publicFilename };
-      }
-
-      return {
-        filePath: path.join(parentDir, audioFiles[0]),
-        publicFilename: `${path.basename(parentDir)}/${audioFiles[0]}`,
-      };
-    }
-
-    const stats = fs.statSync(filePath);
-    if (stats.isFile()) {
-      return { filePath, publicFilename };
-    }
-
-    if (!stats.isDirectory()) {
-      return { filePath, publicFilename };
-    }
-
-    const audioFiles = listAudioFiles(filePath);
-    if (audioFiles.length === 0) {
-      return { filePath, publicFilename };
-    }
-
-    return {
-      filePath: path.join(filePath, audioFiles[0]),
-      publicFilename: `${path.basename(filePath)}/${audioFiles[0]}`,
-    };
-  } catch (error) {
-    console.error(
-      `Error resolving audio candidate ${publicFilename || filePath}: ${error.message}`,
-    );
-    return { filePath, publicFilename };
-  }
-};
-
-const getNarrationDurationHint = (narration) =>
-  toDurationNumber(
-    narration?.actualDuration ??
-      narration?.audioDuration ??
-      narration?.duration ??
-      narration?.metadataDuration,
-  );
-
-const resolveNarrationSegments = (narrations) => {
-  const audioSegments = [];
-
-  for (const narration of narrations) {
-    if (narration.filename) {
-      let filePath = path.join(OUTPUT_AUDIO_DIR, narration.filename);
-
-      try {
-        if (
-          !fs.existsSync(filePath) &&
-          narration.filename.includes("f5tts_1.wav")
-        ) {
-          const alternativeFilename = narration.filename.replace(
-            "f5tts_1.wav",
-            "1.wav",
-          );
-          const alternativePath = path.join(
-            OUTPUT_AUDIO_DIR,
-            alternativeFilename,
-          );
-          if (fs.existsSync(alternativePath)) {
-            filePath = alternativePath;
-            narration.filename = alternativeFilename;
-          }
-        }
-        const resolvedCandidate = resolveAudioFileCandidate(
-          filePath,
-          narration.filename,
-        );
-        filePath = resolvedCandidate.filePath;
-        narration.filename = resolvedCandidate.publicFilename;
-      } catch (dirError) {
-        console.error(
-          `Error resolving narration file ${narration.filename}: ${dirError.message}`,
-        );
-      }
-
-      if (!fs.existsSync(filePath)) {
-        console.warn(`Skipping missing narration file: ${narration.filename}`);
-        continue;
-      }
-
-      const stats = fs.statSync(filePath);
-      if (!stats.isFile()) {
-        console.warn(`Skipping non-file narration path: ${narration.filename}`);
-        continue;
-      }
-      if (stats.size === 0) {
-        throw new Error(`Audio file is empty: ${narration.filename}`);
-      }
-
-      const start = typeof narration.start === "number" ? narration.start : 0;
-      const end = typeof narration.end === "number" ? narration.end : start + 5;
-      if (end <= start) {
-        throw new Error(
-          `Invalid duration for audio file: ${narration.filename}`,
-        );
-      }
-
-      audioSegments.push({
-        path: filePath,
-        start,
-        end,
-        subtitle_id: narration.subtitle_id,
-        original_ids: narration.original_ids,
-        publicFilename: narration.filename,
-        type: "file",
-        isGrouped: narration.original_ids && narration.original_ids.length > 1,
-        actualDuration: getNarrationDurationHint(narration),
-      });
-      continue;
-    }
-
-    if (narration.audioData) {
-      const tempFilename = `temp_aligned_${narration.subtitle_id}_${Date.now()}.wav`;
-      const tempFilePath = path.join(TEMP_AUDIO_DIR, tempFilename);
-
-      if (!fs.existsSync(TEMP_AUDIO_DIR)) {
-        fs.mkdirSync(TEMP_AUDIO_DIR, { recursive: true });
-      }
-
-      let base64Data = narration.audioData;
-      if (base64Data.includes(",")) {
-        base64Data = base64Data.split(",")[1];
-      }
-
-      fs.writeFileSync(tempFilePath, Buffer.from(base64Data, "base64"));
-
-      const start = typeof narration.start === "number" ? narration.start : 0;
-      const end = typeof narration.end === "number" ? narration.end : start + 5;
-      if (end <= start) {
-        throw new Error(
-          `Invalid duration for narration ${narration.subtitle_id}`,
-        );
-      }
-
-      audioSegments.push({
-        path: tempFilePath,
-        start,
-        end,
-        subtitle_id: narration.subtitle_id,
-        original_ids: narration.original_ids,
-        publicFilename: tempFilename,
-        type: "temp",
-        isGrouped: narration.original_ids && narration.original_ids.length > 1,
-        tempFile: tempFilePath,
-        actualDuration: getNarrationDurationHint(narration),
-      });
-      continue;
-    }
-
-    console.warn(
-      `Skipping narration ${narration.subtitle_id}: no filename or audioData`,
-    );
-  }
-
-  return audioSegments;
-};
-
-const cleanupTemporarySegmentFiles = (audioSegments) => {
-  for (const segment of audioSegments) {
-    if (
-      segment.type === "temp" &&
-      segment.tempFile &&
-      fs.existsSync(segment.tempFile)
-    ) {
-      try {
-        fs.unlinkSync(segment.tempFile);
-        removeAudioMetadata(segment.tempFile);
-      } catch (error) {
-        console.error(
-          `Failed to clean temp narration segment ${segment.tempFile}: ${error.message}`,
-        );
-      }
-    }
   }
 };
 

@@ -16,10 +16,11 @@ const VideoAnalysisModal = ({
 
   // Clean up localStorage on unmount to prevent stale data
   useEffect(() => {
-    // Check if this is a page refresh
-    const pageWasReloaded = window.performance &&
-      (window.performance.getEntriesByType('navigation')[0]?.type === 'reload' ||
-       document.referrer === document.location.href);
+    // Check if this is a page refresh. Guard getEntriesByType — the Performance Timeline
+    // API isn't available in every environment (older browsers, jsdom/test, faked timers).
+    const pageWasReloaded =
+      window.performance?.getEntriesByType?.('navigation')?.[0]?.type === 'reload' ||
+      document.referrer === document.location.href;
 
     if (pageWasReloaded) {
       // Clear analysis data on page refresh
@@ -246,7 +247,7 @@ const VideoAnalysisModal = ({
 
   return (
     <div className="video-analysis-modal-overlay" onClick={handleUserInteraction}>
-      <div className="video-analysis-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="video-analysis-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
         {!showRules ? (
           <>
             <div className="modal-header">

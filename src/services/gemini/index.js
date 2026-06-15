@@ -9,10 +9,7 @@ import { callGeminiApi, callGeminiApiWithFilesApi, callGeminiApiWithFilesApiForA
 // Export Files API functionality
 import {
     uploadFileToGemini,
-    shouldUseFilesApi,
-    getFileInfo,
-    deleteFile,
-    listFiles
+    shouldUseFilesApi
 } from './filesApi';
 
 // Export request management functionality
@@ -45,18 +42,12 @@ import { GeminiWebSocketClient } from './client/GeminiWebSocketClient';
 // Export audio utilities
 import {
     convertPcmBase64ToWavBase64,
-    createWavFromPcm,
     base64ToArrayBuffer,
     writeString
 } from './utils/audioUtils';
 
 // Export blob utilities
 import { blobToJSON } from './utils/blobUtils';
-
-// Export aliases for backward compatibility
-const transcribeVideo = callGeminiApi;
-const transcribeAudio = callGeminiApi;
-const transcribeYouTubeVideo = callGeminiApi;
 
 // Export all functionality
 export {
@@ -70,9 +61,6 @@ export {
     // Files API
     uploadFileToGemini,
     shouldUseFilesApi,
-    getFileInfo,
-    deleteFile,
-    listFiles,
 
     // Request management
     abortAllRequests,
@@ -101,15 +89,9 @@ export {
 
     // Audio utilities
     convertPcmBase64ToWavBase64,
-    createWavFromPcm,
     base64ToArrayBuffer,
     writeString,
 
     // Blob utilities
-    blobToJSON,
-
-    // Aliases for backward compatibility
-    transcribeVideo,
-    transcribeAudio,
-    transcribeYouTubeVideo
+    blobToJSON
 };

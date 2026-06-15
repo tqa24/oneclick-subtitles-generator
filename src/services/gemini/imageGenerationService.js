@@ -4,18 +4,8 @@
  * - Generates a background image conditioned on prompt + album art using Gemini image model
  */
 
-// Utility: Convert Blob to base64 string (without data: prefix)
-const blobToBase64 = (blob) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onloadend = () => {
-    const result = reader.result;
-    // result is a data URL: data:<mime>;base64,<data>
-    const base64 = String(result).split(',')[1] || '';
-    resolve(base64);
-  };
-  reader.onerror = reject;
-  reader.readAsDataURL(blob);
-});
+// Convert Blob to base64 string (without data: prefix) — shared helper.
+import { toBase64 as blobToBase64 } from '../../utils/fileUtils';
 
 // Load an image blob and return a resized JPEG base64 (to keep payloads small and consistent)
 const resizeImageBlobToJpegBase64 = async (blob, maxDim = 1024, quality = 0.92) => {

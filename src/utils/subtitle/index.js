@@ -5,7 +5,6 @@
 
 import { parseRawTextManually } from './formatParsers';
 import { parseStructuredJsonResponse } from './structuredJsonParser';
-import { parseTranslatedSubtitles } from './translationParser';
 import { convertTimeStringToSeconds, formatSecondsToSRTTime } from './timeUtils';
 import { deduplicateAndSortSubtitles } from './subtitleUtils';
 import {
@@ -350,7 +349,6 @@ export const parseGeminiResponse = (response) => {
 // Export all functions
 export {
     parseRawTextManually,
-    parseTranslatedSubtitles,
     convertTimeStringToSeconds,
     formatSecondsToSRTTime,
     deduplicateAndSortSubtitles,

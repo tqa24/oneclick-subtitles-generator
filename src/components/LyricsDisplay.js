@@ -1,21 +1,16 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { EVENTS, publish, subscribe } from '../events/bus';
+import { EVENTS, subscribe } from '../events/bus';
 import '../styles/LyricsDisplay.css';
 import TimelineVisualization from './lyrics/TimelineVisualization';
-import LyricItem from './lyrics/LyricItem';
 import LyricsHeader from './lyrics/LyricsHeader';
 import { useLyricsEditor } from '../hooks/useLyricsEditor';
-import { VariableSizeList as List } from 'react-window';
-import { extractYoutubeVideoId } from '../utils/videoDownloader';
+import { useLyricsSave } from '../hooks/useLyricsSave';
+import { useLyricsDrag } from '../hooks/useLyricsDrag';
 import { downloadTXT, downloadSRT, downloadJSON } from '../utils/fileUtils';
 import { completeDocument, summarizeDocument } from '../services/geminiService';
-import { generateUrlBasedCacheId } from '../services/subtitleCache';
-import DownloadOptionsModal from './DownloadOptionsModal';
-
-// Debug logging gate (enable by setting localStorage.debug_logs = 'true')
-
-
+import LyricsVirtualizedList from './LyricsVirtualizedList';
+import LyricsDownloadAndOutput from './LyricsDownloadAndOutput';
 
 // Helper function to download files
 const downloadFile = (content, filename, type = 'text/plain') => {
@@ -28,55 +23,6 @@ const downloadFile = (content, filename, type = 'text/plain') => {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-};
-
-// Virtualized row renderer for lyrics (simplified for deterministic height)
-const VirtualizedLyricRow = ({ index, style, data }) => {
-  const {
-    lyrics,
-    currentIndex,
-    currentTime,
-    allowEditing,
-    isDragging,
-    onLyricClick,
-    onMouseDown,
-    onTouchStart,
-    getLastDragEnd,
-    onDelete,
-    onTextEdit,
-    onInsert,
-    onMerge,
-    timeFormat
-  } = data;
-
-  const lyric = lyrics[index];
-  const hasNextLyric = index < lyrics.length - 1;
-
-  // The complex height measurement logic has been removed.
-  // The layout is now controlled by getRowHeight and CSS.
-  return (
-    <div style={style}>
-      <LyricItem
-        key={index} // key is appropriate here within the mapping context of the parent
-        lyric={lyric}
-        index={index}
-        isCurrentLyric={index === currentIndex}
-        currentTime={currentTime}
-        allowEditing={allowEditing}
-        isDragging={isDragging}
-        onLyricClick={onLyricClick}
-        onMouseDown={onMouseDown}
-        onTouchStart={onTouchStart}
-        getLastDragEnd={getLastDragEnd}
-        onDelete={onDelete}
-        onTextEdit={onTextEdit}
-        onInsert={onInsert}
-        onMerge={onMerge}
-        hasNextLyric={hasNextLyric}
-        timeFormat={timeFormat}
-      />
-    </div>
-  );
 };
 
 const LyricsDisplay = ({
@@ -476,170 +422,8 @@ const LyricsDisplay = ({
     }
   };
 
-  // Function to save current subtitles to cache
-  const handleSave = async () => {
-    try {
-      // Get the current video source
-      const currentVideoUrl = localStorage.getItem('current_video_url');
-      const currentFileUrl = localStorage.getItem('current_file_url');
-      let cacheId = null;
-
-      if (currentVideoUrl) {
-        // For any video URL, use unified URL-based caching
-        cacheId = await generateUrlBasedCacheId(currentVideoUrl);
-      } else if (currentFileUrl) {
-        // For uploaded files, the cacheId is already stored
-        cacheId = localStorage.getItem('current_file_cache_id');
-      }
-
-      if (!cacheId) {
-        console.error('No cache ID found for current media');
-        return;
-      }
-
-      // Check if we have latest segment subtitles in localStorage
-      let subtitlesToSave = lyrics;
-      try {
-        const latestSubtitles = localStorage.getItem('latest_segment_subtitles');
-        if (latestSubtitles) {
-          const parsedSubtitles = JSON.parse(latestSubtitles);
-          if (Array.isArray(parsedSubtitles) && parsedSubtitles.length > 0) {
-            subtitlesToSave = parsedSubtitles;
-            // Clear the localStorage entry to avoid using it again
-            localStorage.removeItem('latest_segment_subtitles');
-          }
-        }
-      } catch (e) {
-        console.error('Error parsing latest subtitles from localStorage:', e);
-      }
-
-      // Save to cache (server when available; local-only in FE-only)
-      const { probeServerAvailability } = await import('../utils/serverEnv');
-      let hasServer = false;
-      try { hasServer = await probeServerAvailability(); } catch {}
-
-      if (hasServer) {
-        const response = await fetch('http://localhost:3031/api/save-subtitles', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            cacheId,
-            subtitles: subtitlesToSave
-          })
-        });
-
-        const result = await response.json();
-        if (result.success) {
-          // Show success toast using centralized system
-          window.addToast(t('output.subtitlesSaved', 'Progress saved successfully'), 'success', 3000);
-
-          // Update the saved lyrics state in the editor
-          updateSavedLyrics();
-
-          // Call the callback if provided to update parent component state
-          if (onSaveSubtitles) {
-            onSaveSubtitles(subtitlesToSave);
-          }
-
-          // Notify listeners
-          window.dispatchEvent(new CustomEvent('subtitles-saved', { detail: { success: true } }));
-          window.dispatchEvent(new CustomEvent('subtitle-timing-changed', {
-            detail: { action: 'save', timestamp: Date.now(), subtitles: subtitlesToSave }
-          }));
-        } else {
-          console.error('Failed to save subtitles:', result.error);
-        }
-      } else {
-        // Frontend-only: simulate success (local state + events only)
-        // Show success toast using centralized system
-        window.addToast(t('output.subtitlesSaved', 'Progress saved successfully'), 'success', 3000);
-
-        updateSavedLyrics();
-        if (onSaveSubtitles) {
-          onSaveSubtitles(subtitlesToSave);
-        }
-        window.dispatchEvent(new CustomEvent('subtitles-saved', { detail: { success: true } }));
-        window.dispatchEvent(new CustomEvent('subtitle-timing-changed', {
-          detail: { action: 'save', timestamp: Date.now(), subtitles: subtitlesToSave }
-        }));
-      }
-    } catch (error) {
-      console.error('Error saving subtitles:', error);
-    }
-  };
-
-  // Listen for save-before-update events triggered before new video processing results
-  useEffect(() => {
-    const handleSaveBeforeUpdate = (event) => {
-
-
-      // Handle both segment processing start and video processing complete
-      const isSegmentStart = event.detail?.source === 'segment-processing-start';
-      const isProcessingComplete = event.detail?.source === 'video-processing-complete';
-
-      if (isSegmentStart || isProcessingComplete) {
-        const action = isSegmentStart ? 'segment processing' : 'video processing completion';
-
-
-        // Trigger the save function to checkpoint current edits
-        handleSave().then(() => {
-
-          // Update the saved state to gray out the save button
-          updateSavedLyrics();
-
-          // Dispatch save-complete event to notify that save is done
-          publish(EVENTS.SAVE_COMPLETE, {
-            source: event.detail?.source,
-            success: true
-          });
-        }).catch((error) => {
-          console.error(`[LyricsDisplay] Error during checkpoint save for ${action}:`, error);
-
-          // Dispatch save-complete event even on error to prevent hanging
-          publish(EVENTS.SAVE_COMPLETE, {
-            source: event.detail?.source,
-            success: false,
-            error: error.message
-          });
-        });
-      }
-    };
-
-  const unsubscribe = subscribe(EVENTS.SAVE_BEFORE_UPDATE, handleSaveBeforeUpdate);
-
-    return () => {
-  unsubscribe();
-    };
-  }, [lyrics]); // Only include lyrics in dependency array since handleSave is stable
-
-  // Listen for save-after-streaming events triggered after streaming completion
-  useEffect(() => {
-    const handleSaveAfterStreaming = (event) => {
-
-
-      // Only trigger save if the event is from streaming completion and we have lyrics
-      if (event.detail?.source === 'streaming-complete' && lyrics && lyrics.length > 0) {
-
-
-        // Trigger the save function to preserve the new streaming results
-        handleSave().then(() => {
-
-          // Update the saved state to gray out the save button
-          updateSavedLyrics();
-        }).catch((error) => {
-          console.error('[LyricsDisplay] Error during auto-save after streaming:', error);
-        });
-      }
-    };
-
-  const unsubscribe2 = subscribe(EVENTS.SAVE_AFTER_STREAMING, handleSaveAfterStreaming);
-
-    return () => {
-  unsubscribe2();
-    };
-  }, [lyrics]); // Only include lyrics in dependency array since handleSave is stable
+  // Save current subtitles to cache + handle save-before-update / save-after-streaming events
+  const { handleSave } = useLyricsSave({ lyrics, updateSavedLyrics, onSaveSubtitles });
 
   // Listen for capture-before-merge events to support undo/redo for merging operations
   useEffect(() => {
@@ -660,84 +444,14 @@ const LyricsDisplay = ({
     };
   }, [lyrics, captureStateBeforeMerge]); // Include captureStateBeforeMerge in dependencies
 
-  // Setup drag event handlers with performance optimizations
-  const handleMouseDown = (e, index, field) => {
-    e.preventDefault();
-    e.stopPropagation();
-    startDrag(index, field, e.clientX, lyrics[index][field]);
-
-    // Use passive event listeners for better performance
-    document.addEventListener('mousemove', handleMouseMove, { passive: false });
-    document.addEventListener('mouseup', handleMouseUp, { passive: false });
-
-    // Add a class to the body to indicate dragging is in progress
-    document.body.classList.add('lyrics-dragging');
-  };
-
-  // Use a throttled mouse move handler
-  const lastMoveTimeRef = useRef(0);
-  const handleMouseMove = (e) => {
-    e.preventDefault();
-
-    // Throttle mousemove events
-    const now = performance.now();
-    if (now - lastMoveTimeRef.current < 16) { // ~60fps
-      return;
-    }
-    lastMoveTimeRef.current = now;
-
-    // Use requestAnimationFrame for smoother updates
-    requestAnimationFrame(() => {
-      handleDrag(e.clientX, duration);
-    });
-  };
-
-  const handleMouseUp = (e) => {
-    e.preventDefault();
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
-    document.body.classList.remove('lyrics-dragging');
-    endDrag();
-  };
-
-  // Touch drag support for mobile
-  const handleTouchStart = (e, index, field) => {
-    if (!e.touches || e.touches.length === 0) return;
-    e.preventDefault();
-    e.stopPropagation();
-    const touch = e.touches[0];
-    startDrag(index, field, touch.clientX, lyrics[index][field]);
-
-    document.addEventListener('touchmove', handleTouchMove, { passive: false });
-    document.addEventListener('touchend', handleTouchEnd, { passive: false });
-    document.addEventListener('touchcancel', handleTouchEnd, { passive: false });
-    document.body.classList.add('lyrics-dragging');
-  };
-
-  const handleTouchMove = (e) => {
-    if (!e.touches || e.touches.length === 0) return;
-    e.preventDefault();
-
-    const now = performance.now();
-    if (now - lastMoveTimeRef.current < 16) {
-      return;
-    }
-    lastMoveTimeRef.current = now;
-
-    const touch = e.touches[0];
-    requestAnimationFrame(() => {
-      handleDrag(touch.clientX, duration);
-    });
-  };
-
-  const handleTouchEnd = (e) => {
-    e.preventDefault();
-    document.removeEventListener('touchmove', handleTouchMove);
-    document.removeEventListener('touchend', handleTouchEnd);
-    document.removeEventListener('touchcancel', handleTouchEnd);
-    document.body.classList.remove('lyrics-dragging');
-    endDrag();
-  };
+  // Mouse + touch drag handlers for adjusting lyric timings
+  const { handleMouseDown, handleTouchStart } = useLyricsDrag({
+    lyrics,
+    duration,
+    startDrag,
+    handleDrag,
+    endDrag
+  });
 
   return (
     <div className={`lyrics-display ${Object.keys(isDragging()).length > 0 ? 'dragging-active' : ''}`}>
@@ -791,42 +505,33 @@ const LyricsDisplay = ({
 
       <div className="lyrics-container-wrapper">
         {lyrics.length > 0 ? (
-          <List
-            ref={listRef}
-            className="lyrics-container"
-            height={300} // Reduced height for more compact view
-            width="100%"
-            itemCount={lyrics.length}
-            itemSize={getRowHeight} // Dynamic row heights based on content
-            overscanCount={5} // Number of items to render outside of the visible area
-            itemData={{
-              lyrics,
-              currentIndex,
-              currentTime,
-              allowEditing,
-              isDragging,
-              onLyricClick: (time) => {
-                // Center the timeline on the clicked lyric
-                setCenterTimelineAt(time);
-                // Reset the center time in the next frame to allow future clicks to work
-                requestAnimationFrame(() => {
-                  setCenterTimelineAt(null);
-                });
-                // Call the original onLyricClick function
-                onLyricClick(time);
-              },
-              onMouseDown: handleMouseDown,
-              onTouchStart: handleTouchStart,
-              getLastDragEnd,
-              onDelete: handleDeleteLyric,
-              onTextEdit: handleTextEdit,
-              onInsert: handleInsertLyric,
-              onMerge: handleMergeLyrics,
-              timeFormat
+          <LyricsVirtualizedList
+            listRef={listRef}
+            lyrics={lyrics}
+            currentIndex={currentIndex}
+            currentTime={currentTime}
+            allowEditing={allowEditing}
+            isDragging={isDragging}
+            getRowHeight={getRowHeight}
+            onLyricClick={(time) => {
+              // Center the timeline on the clicked lyric
+              setCenterTimelineAt(time);
+              // Reset the center time in the next frame to allow future clicks to work
+              requestAnimationFrame(() => {
+                setCenterTimelineAt(null);
+              });
+              // Call the original onLyricClick function
+              onLyricClick(time);
             }}
-          >
-            {VirtualizedLyricRow}
-          </List>
+            onMouseDown={handleMouseDown}
+            onTouchStart={handleTouchStart}
+            getLastDragEnd={getLastDragEnd}
+            onDelete={handleDeleteLyric}
+            onTextEdit={handleTextEdit}
+            onInsert={handleInsertLyric}
+            onMerge={handleMergeLyrics}
+            timeFormat={timeFormat}
+          />
         ) : (
           <div className="lyrics-empty-state" style={{ height: 300 }}>
             <div className="empty-add-hotspot" title={t('lyrics.addFirst', 'Add first subtitle')}>
@@ -863,37 +568,17 @@ const LyricsDisplay = ({
           </div>
         )}
 
-        <div className="download-buttons">
-          <button
-            className="btn-base btn-primary btn-large download-btn-primary"
-            onClick={() => setIsModalOpen(true)}
-            disabled={!lyrics.length}
-          >
-            <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>download</span>
-            <span>{t('download.downloadCenter', 'Download Center')}</span>
-          </button>
-
-          {/* Show consolidation status if available */}
-          {consolidationStatus && (
-            <div className="consolidation-status">
-              <div className="status-spinner"></div>
-              <span>{consolidationStatus}</span>
-            </div>
-          )}
-
-          {/* Download Options Modal */}
-          <DownloadOptionsModal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            onDownload={handleDownload}
-            onProcess={handleProcess}
-            hasTranslation={translatedSubtitles && translatedSubtitles.length > 0}
-            hasOriginal={lyrics && lyrics.length > 0}
-            sourceSubtitleName={getNamingInfo().sourceSubtitleName}
-            videoName={getNamingInfo().videoName}
-            targetLanguages={getNamingInfo().targetLanguages}
-          />
-        </div>
+        <LyricsDownloadAndOutput
+          lyrics={lyrics}
+          translatedSubtitles={translatedSubtitles}
+          consolidationStatus={consolidationStatus}
+          isModalOpen={isModalOpen}
+          onOpenModal={() => setIsModalOpen(true)}
+          onCloseModal={() => setIsModalOpen(false)}
+          onDownload={handleDownload}
+          onProcess={handleProcess}
+          namingInfo={getNamingInfo()}
+        />
       </div>
     </div>
   );

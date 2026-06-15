@@ -30,6 +30,16 @@ function getFfmpegLocationArgs() {
   return _ffmpegLocationArgs;
 }
 
+// Map a quality label (e.g. '720p') to the numeric height yt-dlp expects ('720').
+// Single source of truth — the youtube/douyin/all-sites downloaders previously each inlined an
+// identical switch. Unknown/empty values fall back to '360'.
+const QUALITY_TO_RESOLUTION = {
+  '144p': '144', '240p': '240', '360p': '360', '480p': '480', '720p': '720', '1080p': '1080',
+};
+function qualityToResolution(quality) {
+  return QUALITY_TO_RESOLUTION[quality] || '360';
+}
+
 // Cookie cache to avoid re-extraction within the same session
 let cookieCache = {
   lastExtracted: null,
@@ -480,6 +490,7 @@ async function checkYtDlpVersion() {
 module.exports = {
   getYtDlpPath,
   getFfmpegLocationArgs,
+  qualityToResolution,
   checkYtDlpVersion,
   detectAvailableBrowser,
   getCommonYtDlpArgs,

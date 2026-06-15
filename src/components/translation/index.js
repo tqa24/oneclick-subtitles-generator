@@ -1,9 +1,17 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { downloadSRT, downloadJSON, downloadTXT } from '../../utils/fileUtils';
 import { completeDocument, summarizeDocument } from '../../services/geminiService';
 import useTranslationState, { getCurrentMediaId, generateSubtitleHash } from '../../hooks/useTranslationState';
 import useLanguageChain from '../../hooks/useLanguageChain';
+import usePostSplitSubtitles from './hooks/usePostSplitSubtitles';
+import { handleRetrySegment as retrySegment } from './handlers/retryHandlers';
+import {
+  generateFilename as buildFilename,
+  getNamingInfo as buildNamingInfo,
+  handleDownload as downloadSubtitles,
+  handleBulkDownloadAll as bulkDownloadAll,
+  handleBulkDownloadZip as bulkDownloadZip
+} from './utils/downloadUtils';
 import TranslationHeader from './TranslationHeader';
 import LanguageChain from './LanguageChain';
 import ModelSelection from './ModelSelection';
@@ -20,7 +28,6 @@ import TranslationComplete from './TranslationComplete';
 import SliderWithValue from '../common/SliderWithValue';
 import HelpIcon from '../common/HelpIcon';
 
-import { autoSplitSubtitles, countWords } from '../../utils/subtitle/splitUtils';
 // Narration section moved to OutputContainer
 import '../../styles/translation/index.css';
 import '../../styles/translation/languageChain.css';
@@ -100,285 +107,33 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
     handleBulkFilesRemovalAll
   } = useTranslationState(subtitles, onTranslationComplete);
 
-  // Post-split translated subtitles (1–30 and Unlimited=31). Default: Unlimited
-  const [postSplitMaxWords, setPostSplitMaxWords] = useState(() => {
-    const saved = localStorage.getItem('translation_post_split_max_words');
-    let num = saved ? parseInt(saved, 10) : 31; // Default Unlimited (31)
-    if (!Number.isFinite(num)) num = 31;
-    // Migrate legacy 0 (old Unlimited) to 31
-    if (num === 0) num = 31;
-    // Clamp to [1..31]
-    if (num < 1) num = 1;
-    if (num > 31) num = 31;
-    return num;
+  // Post-split translated subtitles (max words per subtitle) state + effects
+  const { postSplitMaxWords, setPostSplitMaxWords } = usePostSplitSubtitles({
+    translatedSubtitles,
+    updateTranslatedSubtitles
   });
-
-  // Persist post-split setting
-  useEffect(() => {
-    try {
-      localStorage.setItem('translation_post_split_max_words', String(postSplitMaxWords));
-    } catch {}
-  }, [postSplitMaxWords]);
-
-  // Apply post-split to translated subtitles when needed
-  useEffect(() => {
-    if (!Array.isArray(translatedSubtitles) || translatedSubtitles.length === 0) return;
-
-    const v = Number(postSplitMaxWords);
-    if (!Number.isFinite(v) || v >= 31) return; // Unlimited
-
-    const limit = Math.max(1, v);
-
-    // Only split when any subtitle exceeds the limit
-    const exceeds = translatedSubtitles.some(s => countWords(s?.text || '') > limit);
-    if (!exceeds) return;
-
-    const split = autoSplitSubtitles(translatedSubtitles, limit);
-    updateTranslatedSubtitles(split);
-
-    try {
-      window.dispatchEvent(new CustomEvent('translation-updated', {
-        detail: { translatedSubtitles: split, source: 'post-split' }
-      }));
-    } catch {}
-  }, [translatedSubtitles, postSplitMaxWords, updateTranslatedSubtitles]);
-
 
   /**
    * Handle retry for a specific segment
    * @param {Object} segment - Segment info object
    */
-  const handleRetrySegment = useCallback(async (segment) => {
-    if (!translatedSubtitles || !subtitles) return;
-
-    try {
-      // For bulk translations, we need to get the correct subtitle array
-      let sourceSubtitles = subtitles;
-
-      if (segment.isFromBulk && segment.fileId && segment.fileId !== 'main') {
-        // Find the bulk translation result to get the original file reference
-        const bulkTranslationIndex = parseInt(segment.fileId.replace('bulk-', ''));
-        const bulkTranslation = bulkTranslations[bulkTranslationIndex];
-
-        if (bulkTranslation && bulkTranslation.originalFile) {
-          // Find the corresponding bulk file with original subtitles
-          const bulkFile = bulkFiles.find(bf => bf.id === bulkTranslation.originalFile.id);
-
-          if (bulkFile && bulkFile.subtitles) {
-            sourceSubtitles = bulkFile.subtitles;
-          } else {
-            console.error('Could not find original subtitles for bulk file:', segment.fileId);
-            return;
-          }
-        } else {
-          console.error('Could not find bulk translation for fileId:', segment.fileId);
-          return;
-        }
-      }
-      // For main translation (fileId === 'main' or no fileId), use the original subtitles array
-
-      // Extract the subtitles for this segment from the correct source
-      let segmentSubtitles;
-      let contextStartIndex = segment.startIndex;
-      let contextEndIndex = segment.endIndex;
-      let targetSubtitleIndices = [];
-
-      // Check if this is a single subtitle retry (indicated by segmentNumber starting with "subtitle-")
-      const isSingleSubtitleRetry = typeof segment.segmentNumber === 'string' && segment.segmentNumber.startsWith('subtitle-');
-
-      if (isSingleSubtitleRetry) {
-        // For individual subtitle retry, just retry that single subtitle without extra context
-        // This ensures we get exactly one translation back
-        const targetIndex = segment.startIndex; // The subtitle we want to retry
-
-        // Extract just the target subtitle
-        segmentSubtitles = [sourceSubtitles[targetIndex]];
-
-        // Set context indices to match single subtitle
-        contextStartIndex = targetIndex;
-        contextEndIndex = targetIndex;
-
-        // Track that we're updating just one subtitle
-        targetSubtitleIndices = [0]; // Index 0 in the result array
-
-        console.log(`Retrying subtitle ${targetIndex + 1} (single subtitle)`);
-      } else {
-        // For segment retry, use the original logic
-        segmentSubtitles = sourceSubtitles.slice(segment.startIndex, segment.endIndex + 1);
-        // All subtitles in the segment are targets for update
-        targetSubtitleIndices = Array.from({ length: segmentSubtitles.length }, (_, i) => i);
-      }
-
-      // Show status
-      let statusMessage;
-      if (isSingleSubtitleRetry) {
-        const subtitleNumber = segment.startIndex + 1;
-        statusMessage = t('translation.retryingSubtitle', 'Retrying subtitle {{subtitle}}...', {
-          subtitle: subtitleNumber
-        });
-      } else {
-        statusMessage = t('translation.retryingSegment', 'Retrying segment {{segment}}...', {
-          segment: segment.segmentNumber
-        });
-      }
-
-      // Dispatch status event
-      window.dispatchEvent(new CustomEvent('translation-status', {
-        detail: { message: statusMessage }
-      }));
-
-      // Get the target languages
-      const languages = getLanguageValues();
-      if (languages.length === 0) return;
-
-      // Import the translation function
-      const { translateSubtitles } = await import('../../services/gemini/translation');
-      const { getSimpleTranslationPrompt } = await import('../../services/gemini/promptManagement');
-
-      // For single subtitle retry, use a much simpler custom prompt to avoid instruction translation
-      let retryPrompt = customTranslationPrompt;
-      if (isSingleSubtitleRetry && !customTranslationPrompt) {
-        // Use the simple translation prompt for single subtitle
-        const subtitleText = segmentSubtitles[0].text; // Get the single subtitle text
-        const targetLang = languages.length === 1 ? languages[0] : languages;
-        retryPrompt = getSimpleTranslationPrompt(subtitleText, targetLang);
-      }
-
-      // Translate just this segment
-      const result = await translateSubtitles(
-        segmentSubtitles,
-        languages.length === 1 ? languages[0] : languages,
-        selectedModel,
-        retryPrompt, // Use retry prompt which might be simpler for single subtitle
-        0, // No split duration for segment retry
-        includeRules && !isSingleSubtitleRetry, // Don't include rules for single subtitle retry
-        ' ', // Default delimiter
-        false, // No parentheses
-        null, // No bracket style
-        chainItems, // Pass chain items
-        `segment-${segment.segmentNumber}` // File context
-      );
-
-      if (result && result.length > 0) {
-        if (segment.isFromBulk && segment.fileId && segment.fileId !== 'main') {
-          // For bulk translations, update the specific bulk translation result
-          const bulkTranslationIndex = parseInt(segment.fileId.replace('bulk-', ''));
-          const updatedBulkTranslations = [...bulkTranslations];
-
-          if (updatedBulkTranslations[bulkTranslationIndex]) {
-            const newTranslatedSubtitles = [...updatedBulkTranslations[bulkTranslationIndex].translatedSubtitles];
-
-            // Replace the segment in the bulk translation
-            if (isSingleSubtitleRetry) {
-              // For single subtitle retry, we have exactly one result
-              if (result.length === 1 && segment.startIndex < newTranslatedSubtitles.length) {
-                newTranslatedSubtitles[segment.startIndex] = result[0];
-                console.log(`Updated subtitle ${segment.startIndex + 1} in bulk translation`);
-              } else {
-                console.warn(`Single subtitle retry returned ${result.length} results, expected 1`);
-              }
-            } else {
-              // For segment retry, update all subtitles in the segment
-              // Only update up to the minimum of result length and segment size
-              const updateCount = Math.min(result.length, segment.endIndex - segment.startIndex + 1);
-              for (let i = 0; i < updateCount; i++) {
-                const targetIndex = segment.startIndex + i;
-                if (targetIndex < newTranslatedSubtitles.length) {
-                  newTranslatedSubtitles[targetIndex] = result[i];
-                }
-              }
-              console.log(`Updated ${updateCount} subtitles in segment ${segment.segmentNumber}`);
-            }
-
-            // Update the bulk translation result
-            updatedBulkTranslations[bulkTranslationIndex] = {
-              ...updatedBulkTranslations[bulkTranslationIndex],
-              translatedSubtitles: newTranslatedSubtitles
-            };
-
-            // Update the bulk translations state
-            setBulkTranslations(updatedBulkTranslations);
-          }
-        } else {
-          // For main translation (fileId === 'main' or no fileId), update the main translated subtitles
-          const newTranslatedSubtitles = [...translatedSubtitles];
-
-          if (isSingleSubtitleRetry) {
-            // For single subtitle retry, we have exactly one result
-            if (result.length === 1 && segment.startIndex < newTranslatedSubtitles.length) {
-              newTranslatedSubtitles[segment.startIndex] = result[0];
-              console.log(`Updated subtitle ${segment.startIndex + 1} in main translation`);
-            } else {
-              console.warn(`Single subtitle retry returned ${result.length} results, expected 1`);
-            }
-          } else {
-            // For segment retry, update all subtitles in the segment
-            // Only update up to the minimum of result length and segment size
-            const updateCount = Math.min(result.length, segment.endIndex - segment.startIndex + 1);
-            for (let i = 0; i < updateCount; i++) {
-              const targetIndex = segment.startIndex + i;
-              if (targetIndex < newTranslatedSubtitles.length) {
-                newTranslatedSubtitles[targetIndex] = result[i];
-              }
-            }
-            console.log(`Updated ${updateCount} subtitles in segment ${segment.segmentNumber}`);
-          }
-
-          // Update the translated subtitles state
-          updateTranslatedSubtitles(newTranslatedSubtitles);
-
-          // CRITICAL: Update the parent component's state via onTranslationComplete
-          if (onTranslationComplete) {
-            onTranslationComplete(newTranslatedSubtitles);
-          }
-
-          // Update the global window.translatedSubtitles for consistency
-          window.translatedSubtitles = newTranslatedSubtitles;
-
-          // Dispatch event to notify other components of the update
-          window.dispatchEvent(new CustomEvent('translation-updated', {
-            detail: {
-              translatedSubtitles: newTranslatedSubtitles,
-              source: 'retry'
-            }
-          }));
-
-          // Update the cache with the new translations
-          try {
-            const mediaId = getCurrentMediaId();
-            if (mediaId) {
-              const subtitleHash = generateSubtitleHash(subtitles);
-              const cacheEntry = {
-                mediaId,
-                subtitleHash,
-                timestamp: Date.now(),
-                translations: newTranslatedSubtitles
-              };
-              localStorage.setItem('translated_subtitles_cache', JSON.stringify(cacheEntry));
-              console.log('Updated translation cache after retry');
-            }
-          } catch (error) {
-            console.error('Error updating translation cache after retry:', error);
-          }
-        }
-
-        // Dispatch success event
-        window.dispatchEvent(new CustomEvent('translation-status', {
-          detail: {
-            message: t('translation.translationComplete', 'Translation complete')
-          }
-        }));
-      }
-    } catch (error) {
-      console.error('Segment retry failed:', error);
-      window.dispatchEvent(new CustomEvent('translation-status', {
-        detail: {
-          message: `Segment ${segment.segmentNumber} retry failed: ${error.message}`,
-          isError: true
-        }
-      }));
-    }
-  }, [translatedSubtitles, subtitles, t, getLanguageValues, selectedModel, customTranslationPrompt, includeRules, chainItems, updateTranslatedSubtitles, bulkFiles, bulkTranslations, onTranslationComplete]);
+  const handleRetrySegment = useCallback((segment) => retrySegment(segment, {
+    translatedSubtitles,
+    subtitles,
+    bulkFiles,
+    bulkTranslations,
+    selectedModel,
+    customTranslationPrompt,
+    includeRules,
+    chainItems,
+    t,
+    getLanguageValues,
+    updateTranslatedSubtitles,
+    setBulkTranslations,
+    onTranslationComplete,
+    getCurrentMediaId,
+    generateSubtitleHash
+  }), [translatedSubtitles, subtitles, t, getLanguageValues, selectedModel, customTranslationPrompt, includeRules, chainItems, updateTranslatedSubtitles, setBulkTranslations, bulkFiles, bulkTranslations, onTranslationComplete]);
 
   // Initialize container height on component mount
   useEffect(() => {
@@ -444,211 +199,28 @@ const TranslationSection = ({ subtitles, videoTitle, onTranslationComplete }) =>
   };
 
   // Generate comprehensive filename based on priority system
-  const generateFilename = (source, namingInfo = {}) => {
-    const { sourceSubtitleName = '', videoName = '', targetLanguages: targetLangs = [] } = namingInfo;
-
-    // Priority 1: Source subtitle name (remove extension)
-    let baseName = '';
-    if (sourceSubtitleName) {
-      baseName = sourceSubtitleName.replace(/\.(srt|json)$/i, '');
-    }
-    // Priority 2: Video name (remove extension)
-    else if (videoName) {
-      baseName = videoName.replace(/\.[^/.]+$/, '');
-    }
-    // Fallback: Use video title or default
-    else {
-      baseName = videoTitle || 'subtitles';
-    }
-
-    // Add language suffix for translations
-    let langSuffix = '';
-    if (source === 'translated' && targetLangs.length > 0) {
-      if (targetLangs.length === 1) {
-        // Single language: use the language name
-        const langName = targetLangs[0].value || targetLangs[0];
-        langSuffix = `_${langName.toLowerCase().replace(/\s+/g, '_')}`;
-      } else {
-        // Multiple languages: use multi_lang
-        langSuffix = '_multi_lang';
-      }
-    }
-
-    return `${baseName}${langSuffix}`;
-  };
+  const generateFilename = (source, namingInfo = {}) => buildFilename(source, namingInfo, videoTitle);
 
   // Get naming information for downloads
-  const getNamingInfo = () => {
-    // Get uploaded SRT info
-    let sourceSubtitleName = '';
-    try {
-      const uploadedSrtInfo = localStorage.getItem('uploaded_srt_info');
-      if (uploadedSrtInfo) {
-        const srtInfo = JSON.parse(uploadedSrtInfo);
-        if (srtInfo.hasUploaded && srtInfo.fileName) {
-          sourceSubtitleName = srtInfo.fileName;
-        }
-      }
-    } catch (error) {
-      console.error('Error parsing uploaded SRT info:', error);
-    }
-
-    return {
-      sourceSubtitleName,
-      videoName: videoTitle,
-      targetLanguages
-    };
-  };
+  const getNamingInfo = () => buildNamingInfo(videoTitle, targetLanguages);
 
   // Handle download request from modal
-  const handleDownload = (source, format, namingInfo = {}) => {
-    const subtitlesToUse = source === 'translated' ? translatedSubtitles : subtitles;
-
-    if (subtitlesToUse && subtitlesToUse.length > 0) {
-      // Use provided naming info or get it from local state
-      const finalNamingInfo = Object.keys(namingInfo).length > 0 ? namingInfo : getNamingInfo();
-      const baseFilename = generateFilename(source, finalNamingInfo);
-
-      switch (format) {
-        case 'srt':
-          downloadSRT(subtitlesToUse, `${baseFilename}.srt`);
-          break;
-        case 'json':
-          downloadJSON(subtitlesToUse, `${baseFilename}.json`);
-          break;
-        case 'txt':
-          const content = downloadTXT(subtitlesToUse, `${baseFilename}.txt`);
-          setTxtContent(content);
-          break;
-        default:
-          break;
-      }
-    }
-  };
-
-  // Generate filename for bulk translations
-  const generateBulkFilename = (originalName, targetLanguages) => {
-    // Remove extension from original name
-    const baseName = originalName.replace(/\.(srt|json)$/i, '');
-
-    // Create language suffix
-    const languageSuffix = targetLanguages.map(lang => lang.value || lang).join('_');
-
-    return `${baseName}_${languageSuffix}`;
-  };
+  const handleDownload = (source, format, namingInfo = {}) =>
+    downloadSubtitles(source, format, namingInfo, {
+      translatedSubtitles,
+      subtitles,
+      videoTitle,
+      targetLanguages,
+      setTxtContent
+    });
 
   // Handle bulk download all (includes main translation + bulk translations)
-  const handleBulkDownloadAll = () => {
-    const allDownloads = [];
-
-    // Add main translation if available (always as SRT since it comes from video processing)
-    if (translatedSubtitles && translatedSubtitles.length > 0) {
-      const namingInfo = getNamingInfo();
-      const baseFilename = generateFilename('translated', namingInfo);
-
-      allDownloads.push({
-        subtitles: translatedSubtitles,
-        filename: `${baseFilename}.srt`,
-        format: 'srt'
-      });
-    }
-
-    // Add bulk translations
-    const successfulBulkTranslations = bulkTranslations.filter(bt => bt.success);
-    successfulBulkTranslations.forEach(bulkTranslation => {
-      const originalFile = bulkTranslation.originalFile;
-      const translatedSubtitles = bulkTranslation.translatedSubtitles;
-      const originalFormat = originalFile.name.toLowerCase().endsWith('.json') ? 'json' : 'srt';
-
-      // Generate filename with target languages
-      const baseFilename = generateBulkFilename(originalFile.name, targetLanguages);
-      const filename = `${baseFilename}.${originalFormat}`;
-
-      allDownloads.push({
-        subtitles: translatedSubtitles,
-        filename: filename,
-        format: originalFormat
-      });
-    });
-
-    // Download all files
-    allDownloads.forEach(download => {
-      if (download.format === 'json') {
-        downloadJSON(download.subtitles, download.filename);
-      } else {
-        downloadSRT(download.subtitles, download.filename);
-      }
-    });
-  };
+  const handleBulkDownloadAll = () =>
+    bulkDownloadAll({ translatedSubtitles, bulkTranslations, videoTitle, targetLanguages });
 
   // Handle bulk download as ZIP
-  const handleBulkDownloadZip = async () => {
-    try {
-      // Dynamic import of JSZip
-      const JSZip = (await import('jszip')).default;
-      const zip = new JSZip();
-
-      // Add main translation if available (always as SRT since it comes from video processing)
-      if (translatedSubtitles && translatedSubtitles.length > 0) {
-        const namingInfo = getNamingInfo();
-        const baseFilename = generateFilename('translated', namingInfo);
-
-        // Add SRT version only
-        const srtContent = translatedSubtitles.map(subtitle =>
-          `${subtitle.index}\n${subtitle.start} --> ${subtitle.end}\n${subtitle.text}\n`
-        ).join('\n');
-        zip.file(`${baseFilename}.srt`, srtContent);
-      }
-
-      // Add bulk translations (in same format as original files)
-      bulkTranslations.forEach(bulkTranslation => {
-        if (bulkTranslation.success && bulkTranslation.translatedSubtitles) {
-          const originalFile = bulkTranslation.originalFile;
-          const originalFormat = originalFile.name.toLowerCase().endsWith('.json') ? 'json' : 'srt';
-
-          // Generate filename with target languages
-          const baseFilename = generateBulkFilename(originalFile.name, targetLanguages);
-          const filename = `${baseFilename}.${originalFormat}`;
-
-          // Add in original format only
-          if (originalFormat === 'json') {
-            const jsonContent = JSON.stringify(bulkTranslation.translatedSubtitles, null, 2);
-            zip.file(filename, jsonContent);
-          } else {
-            const srtContent = bulkTranslation.translatedSubtitles.map(subtitle =>
-              `${subtitle.index}\n${subtitle.start} --> ${subtitle.end}\n${subtitle.text}\n`
-            ).join('\n');
-            zip.file(filename, srtContent);
-          }
-        }
-      });
-
-      // Generate ZIP file
-      const zipBlob = await zip.generateAsync({ type: 'blob' });
-
-      // Create descriptive ZIP filename
-      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
-      const targetLanguagesSuffix = targetLanguages.length > 0
-        ? `_${targetLanguages.map(lang => lang.value.toLowerCase().replace(/\s+/g, '_')).join('_')}`
-        : '';
-      const zipFilename = `translated_subtitles${targetLanguagesSuffix}_${timestamp}.zip`;
-
-      // Create download link
-      const url = URL.createObjectURL(zipBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = zipFilename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-    } catch (error) {
-      console.error('Error creating ZIP file:', error);
-      // Fallback to individual downloads
-      handleBulkDownloadAll();
-    }
-  };
+  const handleBulkDownloadZip = () =>
+    bulkDownloadZip({ translatedSubtitles, bulkTranslations, videoTitle, targetLanguages });
 
   // Handle process request from modal
   const handleProcess = async (source, processType, model, splitDurationParam, customPrompt, namingInfo = {}) => {

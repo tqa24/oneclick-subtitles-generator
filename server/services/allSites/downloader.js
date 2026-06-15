@@ -7,7 +7,7 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const { VIDEOS_DIR } = require('../../config');
 const { safeMoveFile } = require('../../utils/fileOperations');
-const { getYtDlpPath, getYtDlpArgs } = require('../shared/ytdlpUtils');
+const { getYtDlpPath, getYtDlpArgs, qualityToResolution } = require('../shared/ytdlpUtils');
 const progressTracker = require('../shared/progressTracker');
 const { setDownloadProgress } = progressTracker;
 
@@ -55,16 +55,7 @@ async function downloadVideoWithYtDlp(videoId, videoURL, quality = '360p', useCo
   }
 
   // Convert quality string to resolution for yt-dlp
-  let resolution;
-  switch (quality) {
-    case '144p': resolution = '144'; break;
-    case '240p': resolution = '240'; break;
-    case '360p': resolution = '360'; break;
-    case '480p': resolution = '480'; break;
-    case '720p': resolution = '720'; break;
-    case '1080p': resolution = '1080'; break;
-    default: resolution = '360'; // Default to 360p
-  }
+  const resolution = qualityToResolution(quality);
 
   // Create a promise to handle the download process
   return new Promise((resolve, reject) => {

@@ -1,25 +1,15 @@
 /**
- * Douyin service index file
+ * Douyin service index file — re-exports the downloader's public API.
  */
 
 const {
-  downloadDouyinVideo,
-  downloadDouyinVideoFallback,
-  downloadDouyinVideoShortUrlFallback,
-  downloadDouyinVideoSimpleFallback,
-  downloadDouyinVideoCustomExtractor,
+  downloadDouyinVideoPuppeteer,
   downloadDouyinVideoWithRetry,
   normalizeDouyinUrl,
-  getYtDlpPath
 } = require('./downloader');
 
 module.exports = {
-  downloadDouyinVideo,
-  downloadDouyinVideoFallback,
-  downloadDouyinVideoShortUrlFallback,
-  downloadDouyinVideoSimpleFallback,
-  downloadDouyinVideoCustomExtractor,
+  downloadDouyinVideoPuppeteer,
   downloadDouyinVideoWithRetry,
   normalizeDouyinUrl,
-  getYtDlpPath
 };

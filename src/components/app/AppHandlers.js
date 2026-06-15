@@ -1,22 +1,11 @@
 import { useRef } from "react";
-import { parseSrtContent } from "../../utils/srtParser";
 import { resetGeminiButtonState } from "../../utils/geminiEffects";
-import {
-  cancelYoutubeVideoDownload,
-  extractYoutubeVideoId,
-} from "../../utils/videoDownloader";
-import {
-  cancelDouyinVideoDownload,
-  extractDouyinVideoId,
-} from "../../utils/douyinDownloader";
-import { cancelGenericVideoDownload } from "../../utils/allSitesDownloader";
-import { downloadAndPrepareYouTubeVideo } from "./VideoProcessingHandlers";
-import { hasValidTokens } from "../../services/youtubeApiService";
-import { hasValidDownloadedVideo } from "../../utils/videoUtils";
-
-// Gated debug logging (enable in the browser console: localStorage.debug_logs = 'true')
-const DEBUG_LOGS = (typeof window !== 'undefined') && (localStorage.getItem('debug_logs') === 'true');
-const dbg = (...args) => { if (DEBUG_LOGS) console.log(...args); };
+import { extractYoutubeVideoId } from "../../utils/videoDownloader";
+import { extractDouyinVideoId } from "../../utils/douyinDownloader";
+import { createSubtitleHandlers } from "./handlers/subtitleHandlers";
+import { createDownloadHandlers } from "./handlers/downloadHandlers";
+import { createProcessingHandlers } from "./handlers/processingHandlers";
+import { createSettingsHandlers } from "./handlers/settingsHandlers";
 
 /**
  * Hook for application event handlers
@@ -30,8 +19,8 @@ export const useAppHandlers = (appState) => {
     uploadedFile,
     setUploadedFile,
     apiKeysSet,
+    setApiKeysSet,
     setStatus,
-    subtitlesData,
     setSubtitlesData,
     // isDownloading is used in validateInput
     setIsDownloading,
@@ -48,7 +37,6 @@ export const useAppHandlers = (appState) => {
     isRetrying,
     setIsRetrying,
     setSegmentsStatus,
-    setVideoSegments,
     // Video processing workflow
     setIsUploading,
     setSelectedSegment,
@@ -56,202 +44,107 @@ export const useAppHandlers = (appState) => {
     uploadedFileData,
     setUploadedFileData,
     setIsProcessingSegment,
+    // Settings setters consumed by saveApiKeys
+    setTimeFormat,
+    setShowWaveformLongVideos,
+    setOptimizedResolution,
+    setUseOptimizedPreview,
+    setUseCookiesForDownload,
+    setEnableYoutubeSearch,
     t = (key, defaultValue) => defaultValue, // Provide a default implementation if t is not available
   } = appState;
   // Holds auto-downloaded subtitle content until video download completes
   const pendingAutoSubtitleRef = useRef(null);
 
+  // Subtitle handlers (input validation + SRT/JSON upload) — self-contained.
+  const { validateInput, handleSrtUpload } = createSubtitleHandlers({
+    activeTab,
+    selectedVideo,
+    uploadedFile,
+    isSrtOnlyMode,
+    setStatus,
+    setSubtitlesData,
+    setIsDownloading,
+    setDownloadProgress,
+    setIsSrtOnlyMode,
+    t,
+  });
 
-  /**
-   * Validate input before generating subtitles
-   */
-  const validateInput = () => {
-    // If we're in SRT-only mode, always return true
-    if (isSrtOnlyMode) {
-      return true;
-    }
+  // Settings/navigation handlers (save API keys, tab change, cancel download).
+  // handleTabChange is consumed by download/processing handlers below.
+  const { handleCancelDownload, handleTabChange, saveApiKeys } =
+    createSettingsHandlers({
+      activeTab,
+      selectedVideo,
+      currentDownloadId,
+      setActiveTab,
+      setSelectedVideo,
+      setUploadedFile,
+      setStatus,
+      setSubtitlesData,
+      setIsDownloading,
+      setDownloadProgress,
+      setCurrentDownloadId,
+      setIsSrtOnlyMode,
+      setTimeFormat,
+      setShowWaveformLongVideos,
+      setOptimizedResolution,
+      setUseOptimizedPreview,
+      setUseCookiesForDownload,
+      setEnableYoutubeSearch,
+      setApiKeysSet,
+      t,
+    });
 
-    // Otherwise, check for video/audio sources
-    if (activeTab === "unified-url") {
-      return selectedVideo !== null;
-    } else if (activeTab === "youtube-url") {
-      return selectedVideo !== null;
-    } else if (activeTab === "youtube-search") {
-      return selectedVideo !== null;
-    } else if (activeTab === "file-upload") {
-      return uploadedFile !== null;
-    }
-    return false;
-  };
+  // Download handlers — depend on handleSrtUpload + handleTabChange (one-way).
+  const { startBackgroundVideoProcessing, handleDownloadAndPrepareYouTubeVideo } =
+    createDownloadHandlers({
+      selectedVideo,
+      setStatus,
+      setSubtitlesData,
+      setIsDownloading,
+      setDownloadProgress,
+      setCurrentDownloadId,
+      setIsSrtOnlyMode,
+      setActiveTab,
+      setUploadedFile,
+      setIsUploading,
+      setUploadedFileData,
+      pendingAutoSubtitleRef,
+      handleSrtUpload,
+      handleTabChange,
+      t,
+    });
 
-  /**
-   * Handle SRT/JSON file upload
-   */
-  const handleSrtUpload = async (fileContent, fileName) => {
-    try {
-      let parsedSubtitles = [];
-
-      // Check if it's a JSON file
-      if (fileName && fileName.toLowerCase().endsWith(".json")) {
-        try {
-          const jsonData = JSON.parse(fileContent);
-          if (Array.isArray(jsonData)) {
-            parsedSubtitles = jsonData;
-          } else {
-            setStatus({
-              message: t(
-                "errors.invalidJsonFile",
-                "JSON file must contain an array of subtitles"
-              ),
-              type: "error",
-            });
-            return;
-          }
-        } catch (error) {
-          setStatus({
-            message: t("errors.invalidJsonFormat", "Invalid JSON format"),
-            type: "error",
-          });
-          return;
-        }
-      } else {
-        // Parse as SRT content
-        parsedSubtitles = parseSrtContent(fileContent);
-      }
-
-      if (parsedSubtitles.length === 0) {
-        setStatus({
-          message: t(
-            "errors.invalidSrtFormat",
-            "Invalid SRT format or empty file"
-          ),
-          type: "error",
-        });
-        return;
-      }
-
-      // Check if we have any video sources (including pasted URLs)
-      const hasUploadedFile =
-        activeTab === "file-upload" && uploadedFile !== null;
-      const hasDownloadedVideo = hasValidDownloadedVideo(uploadedFile);
-      const hasYoutubeVideo =
-        activeTab.includes("youtube") && selectedVideo !== null;
-      const hasUnifiedVideo =
-        activeTab === "unified-url" && selectedVideo !== null;
-
-      // Determine if we should go into SRT-only mode
-      // SRT-only mode: no video source at all (no uploaded file, no downloaded video, no pasted URL)
-      const hasAnyVideoSource =
-        hasUploadedFile ||
-        hasDownloadedVideo ||
-        hasYoutubeVideo ||
-        hasUnifiedVideo;
-
-      if (!hasAnyVideoSource) {
-        setIsSrtOnlyMode(true);
-        setSubtitlesData(parsedSubtitles);
-        setStatus({
-          message: t(
-            "output.srtOnlyMode",
-            "Working with SRT only. No video source available."
-          ),
-          type: "info",
-        });
-        return;
-      } else {
-        // If we have any video source, make sure we're not in SRT-only mode
-        setIsSrtOnlyMode(false);
-
-        // Always reset downloading state when uploading an SRT file
-        setIsDownloading(false);
-        setDownloadProgress(0);
-      }
-
-      // For YouTube tabs, we don't need to download the video immediately when uploading an SRT file
-      // Just set the subtitles data and show a success message
-      if (activeTab.includes("youtube") && selectedVideo) {
-        // Make sure we're not in downloading state
-        setIsDownloading(false);
-        setDownloadProgress(0);
-
-        // Set the subtitles data directly
-        setSubtitlesData(parsedSubtitles);
-        const fileType =
-          fileName && fileName.toLowerCase().endsWith(".json") ? "JSON" : "SRT";
-        setStatus({
-          message: t(
-            "output.subtitleUploadSuccess",
-            `${fileType} file uploaded successfully!`
-          ),
-          type: "success",
-        });
-      } else if (activeTab === "file-upload" && uploadedFile) {
-        // For file upload tab, set the subtitles data directly
-        setSubtitlesData(parsedSubtitles);
-        const fileType =
-          fileName && fileName.toLowerCase().endsWith(".json") ? "JSON" : "SRT";
-        setStatus({
-          message: t(
-            "output.subtitleUploadSuccess",
-            `${fileType} file uploaded successfully!`
-          ),
-          type: "success",
-        });
-
-        // With simplified processing, we don't need to prepare video segments when uploading SRT files
-        // The subtitles are already available and ready to use
-        dbg(
-          "SRT file uploaded successfully, no video segment preparation needed"
-        );
-      } else if (hasUnifiedVideo) {
-        // For unified URL input, set the subtitles data directly
-        // We'll download the video when the user clicks "Generate Subtitles"
-
-        // Make sure we're not in downloading state
-        setIsDownloading(false);
-        setDownloadProgress(0);
-
-        setSubtitlesData(parsedSubtitles);
-        setStatus({
-          message: t(
-            "output.srtUploadSuccess",
-            "SRT file uploaded successfully!"
-          ),
-          type: "success",
-        });
-      } else if (hasDownloadedVideo) {
-        // For downloaded video, set the subtitles data directly
-        setSubtitlesData(parsedSubtitles);
-        setStatus({
-          message: t(
-            "output.srtUploadSuccess",
-            "SRT file uploaded successfully!"
-          ),
-          type: "success",
-        });
-      } else {
-        // For any other case (like unified-url tab with no URL), just set the subtitles
-        setSubtitlesData(parsedSubtitles);
-        setStatus({
-          message: t(
-            "output.srtUploadSuccess",
-            "SRT file uploaded successfully!"
-          ),
-          type: "success",
-        });
-      }
-    } catch (error) {
-      console.error("Error parsing SRT file:", error);
-      setStatus({
-        message: t(
-          "errors.srtParsingFailed",
-          "Failed to parse SRT file: {{message}}",
-          { message: error.message }
-        ),
-        type: "error",
-      });
-    }
-  };
+  // Processing handlers (segment select, process with options, retry).
+  const { handleSegmentSelect, handleProcessWithOptions, handleRetryGeneration } =
+    createProcessingHandlers({
+      activeTab,
+      selectedVideo,
+      uploadedFile,
+      apiKeysSet,
+      uploadedFileData,
+      userProvidedSubtitles,
+      useUserProvidedSubtitles,
+      generateSubtitles,
+      retryGeneration,
+      isRetrying,
+      setStatus,
+      setSubtitlesData,
+      setIsDownloading,
+      setDownloadProgress,
+      setCurrentDownloadId,
+      setIsSrtOnlyMode,
+      setUploadedFile,
+      setUploadedFileData,
+      setIsRetrying,
+      setSegmentsStatus,
+      setSelectedSegment,
+      setShowProcessingModal,
+      setIsProcessingSegment,
+      handleTabChange,
+      t,
+    });
 
   /**
    * Handle generating subtitles - New workflow with immediate output container
@@ -357,892 +250,6 @@ export const useAppHandlers = (appState) => {
 
     // Reset button animation state when generation is complete
     resetGeminiButtonState();
-  };
-
-  /**
-   * Start background video processing (download/upload)
-   */
-  const startBackgroundVideoProcessing = async (input, inputType) => {
-    try {
-      let processedFile;
-
-      if (inputType === "youtube") {
-        // Download YouTube video in background
-        const systemTabChange = (tab) => {
-          // Only update the current active tab for system-initiated changes
-          localStorage.setItem("lastActiveTab", tab);
-          setActiveTab(tab);
-        };
-
-        processedFile = await downloadAndPrepareYouTubeVideo(
-          input, // selectedVideo
-          setIsDownloading,
-          setDownloadProgress,
-          setStatus,
-          setCurrentDownloadId,
-          systemTabChange,
-          setUploadedFile,
-          setIsSrtOnlyMode,
-          t
-        );
-
-        // IMPORTANT: Check for cached subtitles immediately for downloaded videos
-        // Use URL-based caching to find existing cached subtitles (like fvkz_wJ3z-4.json)
-        if (processedFile && processedFile instanceof File) {
-          try {
-            // For downloaded videos, use URL-based cache ID to find existing cached subtitles
-            const currentVideoUrl = localStorage.getItem("current_video_url");
-            if (currentVideoUrl) {
-              const { generateUrlBasedCacheId } = await import(
-                "../../services/subtitleCache"
-              );
-              const urlBasedCacheId = await generateUrlBasedCacheId(
-                currentVideoUrl
-              );
-
-              dbg(
-                "[AppHandlers] Checking for cached subtitles for downloaded video (URL-based):",
-                urlBasedCacheId
-              );
-
-              // Check if cached subtitles exist using URL-based cache ID
-              const response = await fetch(
-                `http://localhost:3031/api/subtitle-exists/${urlBasedCacheId}`
-              );
-              const result = await response.json();
-
-              if (
-                result.exists &&
-                result.subtitles &&
-                result.subtitles.length > 0
-              ) {
-                dbg(
-                  "[AppHandlers] Found cached subtitles for downloaded video, loading immediately:",
-                  result.subtitles.length,
-                  "subtitles"
-                );
-                setSubtitlesData(result.subtitles);
-                setStatus({
-                  message: t(
-                    "output.subtitlesLoadedFromCache",
-                    "Subtitles loaded from cache! Select a segment to generate more."
-                  ),
-                  type: "success",
-                });
-              } else {
-                dbg(
-                  "[AppHandlers] No cached subtitles found for this downloaded video"
-                );
-                const isAudio = processedFile?.type?.startsWith('audio/');
-                setStatus({
-                  message: isAudio ? t(
-                    "output.audioReady",
-                    "Audio ready for segment selection..."
-                  ) : t(
-                    "output.videoReady",
-                    "Video ready for segment selection..."
-                  ),
-                  type: "info",
-                });
-              }
-
-              // Also generate file-based cache ID for Files API caching (file upload reuse)
-              const { generateFileCacheId } = await import(
-                "../../utils/cacheUtils"
-              );
-              const fileCacheId = await generateFileCacheId(processedFile);
-              localStorage.setItem("current_file_cache_id", fileCacheId);
-              dbg(
-                "[AppHandlers] Generated file cache ID for Files API caching:",
-                fileCacheId
-              );
-            } else {
-              console.warn(
-                "[AppHandlers] No current video URL found for downloaded video"
-              );
-              const isAudio = processedFile?.type?.startsWith('audio/');
-              setStatus({
-                message: isAudio ? t(
-                  "output.audioReady",
-                  "Audio ready for segment selection..."
-                ) : t(
-                  "output.videoReady",
-                  "Video ready for segment selection..."
-                ),
-                type: "info",
-              });
-            }
-          } catch (error) {
-            console.error(
-              "[AppHandlers] Error checking cached subtitles for downloaded video:",
-              error
-            );
-            const isAudio = processedFile?.type?.startsWith('audio/');
-            setStatus({
-              message: isAudio ? t(
-                "output.audioReady",
-                "Audio ready for segment selection..."
-              ) : t(
-                "output.videoReady",
-                "Video ready for segment selection..."
-              ),
-              type: "info",
-            });
-          }
-        }
-      } else {
-        // File upload case - prepare the video for the new workflow
-        processedFile = input; // uploadedFile
-
-        // Clear any stale YouTube URL reference so Files API uses file-based caching for uploads
-        try { localStorage.removeItem("current_video_url"); } catch {}
-
-        // Check if we already have a blob URL for this file
-        let blobUrl = localStorage.getItem("current_file_url");
-        if (!blobUrl || !blobUrl.startsWith("blob:")) {
-          // Create a new blob URL for the video and store it
-          blobUrl = URL.createObjectURL(processedFile);
-          localStorage.setItem("current_file_url", blobUrl);
-          try {
-            if (!window.__videoBlobMap) window.__videoBlobMap = {};
-            window.__videoBlobMap[blobUrl] = processedFile;
-          } catch {}
-        }
-        localStorage.setItem("current_file_name", processedFile.name);
-
-        // Set the uploaded file in the app state so VideoPreview can use it
-        setUploadedFile(processedFile);
-
-        // IMPORTANT: Check for cached subtitles immediately for file uploads
-        // This ensures the timeline shows cached subtitles right when output container appears
-        try {
-          const { generateFileCacheId } = await import(
-            "../../utils/cacheUtils"
-          );
-          const cacheId = await generateFileCacheId(processedFile);
-          localStorage.setItem("current_file_cache_id", cacheId);
-
-          dbg(
-            "[AppHandlers] Checking for cached subtitles for uploaded file:",
-            cacheId
-          );
-
-          // Check if cached subtitles exist
-          const response = await fetch(
-            `http://localhost:3031/api/subtitle-exists/${cacheId}`
-          );
-          const result = await response.json();
-
-          if (
-            result.exists &&
-            result.subtitles &&
-            result.subtitles.length > 0
-          ) {
-            dbg(
-              "[AppHandlers] Found cached subtitles, loading immediately:",
-              result.subtitles.length,
-              "subtitles"
-            );
-            setSubtitlesData(result.subtitles);
-            setStatus({
-              message: t(
-                "output.subtitlesLoadedFromCache",
-                "Subtitles loaded from cache! Select a segment to generate more."
-              ),
-              type: "success",
-            });
-          } else {
-            dbg(
-              "[AppHandlers] No cached subtitles found for this file"
-            );
-            const isAudio = processedFile?.type?.startsWith('audio/');
-            setStatus({
-              message: isAudio ? t(
-                "output.audioReady",
-                "Audio ready for segment selection..."
-              ) : t(
-                "output.videoReady",
-                "Video ready for segment selection..."
-              ),
-              type: "info",
-            });
-          }
-        } catch (error) {
-          console.error(
-            "[AppHandlers] Error checking cached subtitles:",
-            error
-          );
-          const isAudio = processedFile?.type?.startsWith('audio/');
-          setStatus({
-            message: isAudio ? t(
-              "output.audioReady",
-              "Audio ready for segment selection..."
-            ) : t(
-              "output.videoReady",
-              "Video ready for segment selection..."
-            ),
-            type: "info",
-          });
-        }
-      }
-
-      // Store the processed file for later use
-      setUploadedFileData(processedFile);
-
-      // Note: We don't clear cached file URIs here anymore to allow reuse within the same session
-      // The Files API caching logic in core.js will handle reusing uploaded files efficiently
-
-      // Update status to indicate upload is complete and waiting for segment selection
-      setIsUploading(false);
-      setIsDownloading(false);
-
-      // Only set the default status if we haven't already set a cache-related status
-      // We'll just set the default status since the cache-related status was already set above if needed
-      // The cache logic above handles setting the appropriate status message
-      dbg("[AppHandlers] Video processing complete, ready for segment selection");
-      // Apply any pending auto-downloaded subtitles now that video download is complete
-      try {
-        if (pendingAutoSubtitleRef.current) {
-          const { content, fileName } = pendingAutoSubtitleRef.current;
-          pendingAutoSubtitleRef.current = null;
-          await handleSrtUpload(content, fileName || 'site-subtitle.srt');
-          // Special notice for auto-downloaded subtitle (not green, with glow/particles)
-          setStatus({
-            message: t('output.autoSubtitleNotice', 'Below are subtitles provided while the video is downloading. If you don’t like them, press Ctrl+A to select all and delete/regenerate'),
-            type: 'warning',
-            duration: 15000
-          });
-        }
-      } catch (e) {
-        console.warn('[AppHandlers] Failed to apply pending auto subtitle:', e);
-      }
-
-
-    } catch (error) {
-      console.error("Error in background processing:", error);
-      setIsUploading(false);
-      setIsDownloading(false);
-      setStatus({
-        message: `${t("errors.processingFailed", "Processing failed")}: ${
-          error.message
-        }`,
-        type: "error",
-      });
-    }
-  };
-
-  /**
-   * Handle segment selection from timeline
-   */
-  const handleSegmentSelect = (segment) => {
-    setSelectedSegment(segment);
-    setShowProcessingModal(true);
-  };
-
-  /**
-   * Handle processing with selected options
-   */
-  const handleProcessWithOptions = async (options) => {
-    try {
-      setShowProcessingModal(false);
-
-      // Set processing state to true when starting
-      setIsProcessingSegment(true);
-      dbg(
-        "[ProcessWithOptions] Started processing segment, animation should begin"
-      );
-      dbg(
-        "[ProcessWithOptions] Received segmentProcessingDelay:",
-        options.segmentProcessingDelay
-      );
-
-      let fileToProcess = uploadedFileData;
-      if (!fileToProcess) {
-        if (options.videoFile) {
-          setUploadedFileData(options.videoFile);
-          fileToProcess = options.videoFile;
-        } else {
-          throw new Error("No uploaded file data available");
-        }
-      }
-
-      // Parakeet processing will be handled by generateSubtitles with method: 'nvidia-parakeet'
-
-      // Prepare options for subtitle generation
-      const subtitleOptions = {
-        segment: options.segment,
-        fps: options.fps,
-        mediaResolution: options.mediaResolution,
-        model: options.model,
-        maxDurationPerRequest: options.maxDurationPerRequest,
-        segmentProcessingDelay: options.segmentProcessingDelay,
-        autoSplitSubtitles: options.autoSplitSubtitles,
-        maxWordsPerSubtitle: options.maxWordsPerSubtitle,
-        inlineExtraction: options.inlineExtraction === true,
-        method: options.method,
-        parakeetStrategy: options.parakeetStrategy,
-        parakeetMaxChars: options.parakeetMaxChars,
-        parakeetMaxWords: options.parakeetMaxWords,
-      };
-      
-      dbg("[ProcessWithOptions] Passing to generateSubtitles - segmentProcessingDelay:", subtitleOptions.segmentProcessingDelay);
-
-      // Add custom prompt if provided
-      if (options.customPrompt) {
-        // Store the custom prompt temporarily for this processing session
-        sessionStorage.setItem("current_session_prompt", options.customPrompt);
-        dbg(
-          "[ProcessWithOptions] Using custom prompt for this session:",
-          options.promptPreset
-        );
-      }
-
-      // Add user-provided subtitles ONLY when the timing-generation preset is selected
-      if (options.promptPreset === 'timing-generation' && useUserProvidedSubtitles && userProvidedSubtitles) {
-        subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
-      }
-
-      // Before starting, if parallel requested, inform UI of processing ranges
-      try {
-        try {
-          if (options.maxDurationPerRequest && options.segment) {
-            const { splitSegmentForParallelProcessing } = await import('../../utils/parallelProcessingUtils');
-            const subSegments = splitSegmentForParallelProcessing(options.segment, options.maxDurationPerRequest);
-            if (subSegments && subSegments.length > 1) {
-              window.dispatchEvent(new CustomEvent('processing-ranges', {
-                detail: { ranges: subSegments }
-              }));
-            }
-          }
-        } catch (e) {
-          console.warn('[ProcessWithOptions] Could not compute processing ranges:', e);
-        }
-
-        await generateSubtitles(
-          fileToProcess,
-          "file-upload",
-          apiKeysSet,
-          subtitleOptions
-        );
-      } finally {
-        // Clear the session prompt after processing
-        sessionStorage.removeItem("current_session_prompt");
-        dbg(
-          "[ProcessWithOptions] Cleared session prompt after processing"
-        );
-
-        // Clear processing state when done
-        setIsProcessingSegment(false);
-        // Clear processing ranges overlay
-        try {
-          window.dispatchEvent(new CustomEvent('processing-ranges', { detail: { ranges: [] } }));
-        } catch {}
-        dbg(
-          "[ProcessWithOptions] Processing complete, animation should stop"
-        );
-      }
-    } catch (error) {
-      console.error("Error processing with options:", error);
-      setStatus({
-        message: `${t("errors.processingFailed", "Processing failed")}: ${
-          error.message
-        }`,
-        type: "error",
-      });
-
-      // Also clear processing state on error
-      setIsProcessingSegment(false);
-    }
-  };
-
-  /**
-   * Handle retrying subtitle generation - FORCE RETRY that ignores validation
-   */
-  const handleRetryGeneration = async () => {
-    dbg("FORCE RETRY: handleRetryGeneration called");
-
-    // Prevent multiple simultaneous retries
-    if (isRetrying) {
-      dbg("FORCE RETRY: Already retrying, ignoring duplicate call");
-      return;
-    }
-
-    // Only check for API key - this is the minimum requirement
-    if (!apiKeysSet.gemini) {
-      dbg("No Gemini API key available");
-      setStatus({
-        message: t("errors.apiKeyRequired", "Gemini API key is required"),
-        type: "error",
-      });
-      return;
-    }
-
-    dbg("FORCE RETRY: Setting retrying state to true");
-    // Set retrying state to true immediately
-    setIsRetrying(true);
-
-    // Clear the segments-status before starting the retry process
-    setSegmentsStatus([]);
-
-    dbg("FORCE RETRY: Determining input source...");
-    let input, inputType;
-
-    // Try to get input from current state or localStorage
-    // Priority: 1. Current selected video/file, 2. localStorage cached data
-
-    if (uploadedFile) {
-      dbg("FORCE RETRY: Using uploaded file");
-      input = uploadedFile;
-      inputType = "file-upload";
-    } else if (selectedVideo) {
-      dbg("FORCE RETRY: Using selected video");
-      input = selectedVideo;
-      inputType =
-        activeTab.includes("youtube") || activeTab === "unified-url"
-          ? "youtube"
-          : "file-upload";
-    } else {
-      // Try to get from localStorage
-      const cachedVideoUrl = localStorage.getItem("current_video_url");
-      const cachedFileUrl = localStorage.getItem("current_file_url");
-
-      if (cachedVideoUrl) {
-        dbg("FORCE RETRY: Using cached video URL");
-        // Create a video object from cached URL
-        input = { url: cachedVideoUrl };
-        inputType = "youtube";
-      } else if (cachedFileUrl) {
-        dbg("FORCE RETRY: Using cached file URL");
-        // For cached files, we'll need to use the retryGeneration function directly
-        input = null; // Will be handled by retryGeneration
-        inputType = "file-upload";
-      } else {
-        dbg(
-          "FORCE RETRY: No input source found, but proceeding anyway..."
-        );
-        // If we have subtitles data, we can still retry with the last known configuration
-        input = null;
-        inputType = "retry";
-      }
-    }
-
-    dbg("FORCE RETRY: Input determined:", { input, inputType });
-
-    // For YouTube or Unified URL tabs, download the video first and switch to upload tab
-    if (
-      (inputType === "youtube" || activeTab === "unified-url") &&
-      input &&
-      input.url
-    ) {
-      try {
-        // Set downloading state to true to disable the generate button
-        setIsDownloading(true);
-        setDownloadProgress(0);
-
-        // Set status to downloading
-        setStatus({
-          message: t("output.downloadingVideo", "Downloading video..."),
-          type: "loading",
-        });
-
-        // Create a wrapper for system-initiated tab changes
-        const systemTabChange = (tab) => handleTabChange(tab, false);
-
-        // Download and prepare the YouTube video
-        const downloadedFile = await downloadAndPrepareYouTubeVideo(
-          selectedVideo,
-          setIsDownloading,
-          setDownloadProgress,
-          setStatus,
-          setCurrentDownloadId,
-          systemTabChange,
-          setUploadedFile,
-          setIsSrtOnlyMode,
-          t
-        );
-
-        // Now process with the downloaded file
-        input = downloadedFile;
-        inputType = "file-upload";
-
-        // Prepare options for subtitle generation
-        const subtitleOptions = {};
-
-        // Add user-provided subtitles if available and enabled
-        if (useUserProvidedSubtitles && userProvidedSubtitles) {
-          subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
-        }
-
-        // Check if we have a valid input file
-        if (!input) {
-          console.error("No valid input file available after download");
-          setStatus({
-            message: t(
-              "errors.noValidInput",
-              "No valid input file available. Please try again or use a different video."
-            ),
-            type: "error",
-          });
-          // Reset retrying state
-          setIsRetrying(false);
-          return;
-        }
-
-        // FORCE RETRY: Always retry generating subtitles, ignore existing data
-        dbg(
-          "FORCE RETRY: Forcing subtitle regeneration for downloaded video..."
-        );
-        await retryGeneration(input, inputType, apiKeysSet, subtitleOptions);
-      } catch (error) {
-        console.error("Error downloading video:", error);
-        // Reset downloading state
-        setIsDownloading(false);
-        setDownloadProgress(0);
-        // Reset retrying state
-        setIsRetrying(false);
-        setStatus({
-          message: `${t(
-            "errors.videoDownloadFailed",
-            "Video download failed"
-          )}: ${error.message}`,
-          type: "error",
-        });
-        return;
-      }
-    } else if (activeTab === "file-upload" && uploadedFile) {
-      input = uploadedFile;
-      inputType = "file-upload";
-
-      try {
-        // Prepare options for subtitle generation
-        const subtitleOptions = {};
-
-        // Add user-provided subtitles if available and enabled
-        if (useUserProvidedSubtitles && userProvidedSubtitles) {
-          subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
-        }
-
-        // Check if we have a valid input file
-        if (!input) {
-          console.error("No valid input file available");
-          setStatus({
-            message: t(
-              "errors.noValidInput",
-              "No valid input file available. Please try again or upload a different file."
-            ),
-            type: "error",
-          });
-          return;
-        }
-
-        // FORCE RETRY: Always retry generating subtitles, ignore existing data
-        dbg("FORCE RETRY: Forcing subtitle regeneration...");
-        await retryGeneration(input, inputType, apiKeysSet, subtitleOptions);
-      } finally {
-        // Reset retrying state regardless of success or failure
-        setIsRetrying(false);
-        // Reset button animation state when generation is complete
-        resetGeminiButtonState();
-      }
-    } else {
-      // Direct retry without re-downloading - use retryGeneration function
-      dbg("FORCE RETRY: Using direct retry method");
-
-      try {
-        // First, delete any existing subtitle files to force regeneration
-        dbg("FORCE RETRY: Deleting existing subtitle files...");
-        try {
-          const response = await fetch("/api/delete-subtitles", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              // Send any identifiers that might help locate the files
-              videoUrl:
-                selectedVideo?.url || localStorage.getItem("current_video_url"),
-              fileName:
-                uploadedFile?.name || localStorage.getItem("current_file_name"),
-              cacheId: localStorage.getItem("current_file_cache_id"),
-            }),
-          });
-
-          if (response.ok) {
-            dbg("FORCE RETRY: Subtitle files deleted successfully");
-          } else {
-            dbg(
-              "FORCE RETRY: Could not delete subtitle files, but continuing..."
-            );
-          }
-        } catch (deleteError) {
-          dbg(
-            "FORCE RETRY: Error deleting files, but continuing...",
-            deleteError
-          );
-        }
-
-        // Clear any cached subtitles data and preview section
-        dbg("FORCE RETRY: Clearing all subtitle data and preview...");
-        setSubtitlesData(null);
-        localStorage.removeItem("subtitles_data");
-        localStorage.removeItem("latest_segment_subtitles");
-
-        // Clear any window-stored subtitle data that might be cached
-        if (window.subtitlesData) {
-          window.subtitlesData = null;
-        }
-
-        // Clear status to remove any success messages
-        setStatus({
-          message: t("output.retrying", "Retrying subtitle generation..."),
-          type: "loading",
-        });
-
-        // Prepare options for subtitle generation
-        const subtitleOptions = {};
-
-        // Add user-provided subtitles if available and enabled
-        if (useUserProvidedSubtitles && userProvidedSubtitles) {
-          subtitleOptions.userProvidedSubtitles = userProvidedSubtitles;
-        }
-
-        dbg("FORCE RETRY: Calling retryGeneration with:", {
-          input,
-          inputType,
-          subtitleOptions,
-        });
-
-        // Call retryGeneration directly - it will handle finding the right input
-        await retryGeneration(input, inputType, apiKeysSet, subtitleOptions);
-
-        dbg("FORCE RETRY: retryGeneration completed");
-      } catch (error) {
-        console.error("FORCE RETRY: Error during direct retry:", error);
-        setStatus({
-          message: `${t("errors.retryFailed", "Retry failed")}: ${
-            error.message
-          }`,
-          type: "error",
-        });
-      } finally {
-        // Reset retrying state regardless of success or failure
-        setIsRetrying(false);
-        // Reset button animation state when generation is complete
-        resetGeminiButtonState();
-      }
-    }
-  };
-
-  /**
-   * Handle cancelling the current download
-   */
-  const handleCancelDownload = () => {
-    if (currentDownloadId) {
-      // Check the source of the download
-      if (activeTab === "unified-url" && selectedVideo?.source === "douyin") {
-        // Cancel Douyin download
-        cancelDouyinVideoDownload(currentDownloadId);
-      } else if (
-        activeTab === "unified-url" &&
-        selectedVideo?.source === "all-sites"
-      ) {
-        // Cancel generic URL download
-        cancelGenericVideoDownload(currentDownloadId);
-      } else {
-        // Default to YouTube download
-        cancelYoutubeVideoDownload(currentDownloadId);
-      }
-
-      // Reset states
-      setIsDownloading(false);
-      setDownloadProgress(0);
-      setCurrentDownloadId(null);
-      setStatus({
-        message: t("download.downloadOnly.cancelled", "Download cancelled"),
-        type: "warning",
-      });
-    }
-  };
-
-  /**
-   * Handle tab change
-   */
-  const handleTabChange = (tab, isUserInitiated = true) => {
-    // Only update user preference if this is a user-initiated change
-    if (isUserInitiated) {
-      localStorage.setItem("userPreferredTab", tab);
-    }
-
-    // Always update the current active tab
-    localStorage.setItem("lastActiveTab", tab);
-    setActiveTab(tab);
-
-    // Only reset state for user-initiated tab changes
-    // System-initiated changes (like after video download) should preserve state
-    if (isUserInitiated) {
-      setSelectedVideo(null);
-      setUploadedFile(null);
-      setStatus({}); // Reset status
-      setSubtitlesData(null); // Reset subtitles data
-
-      // Only reset SRT-only mode if we don't have subtitles data in localStorage
-      const subtitlesData = localStorage.getItem("subtitles_data");
-      if (!subtitlesData) {
-        setIsSrtOnlyMode(false); // Reset SRT-only mode
-      }
-
-      localStorage.removeItem("current_video_url");
-      localStorage.removeItem("current_file_url");
-      localStorage.removeItem("current_file_cache_id"); // Also clear the file cache ID
-    }
-  };
-
-  /**
-   * Handle saving API keys and settings
-   */
-  const saveApiKeys = (
-    geminiKey,
-    youtubeKey,
-    geniusKey,
-    segmentDuration = 5,
-    geminiModel,
-    timeFormat,
-    _legacyOptimizeVideos,
-    optimizedResolutionSetting,
-    useOptimizedPreviewSetting,
-    useCookiesForDownloadSetting,
-    enableYoutubeSearchSetting,
-    showWaveformLongVideosSetting
-  ) => {
-    // Save to localStorage
-    if (geminiKey) {
-      localStorage.setItem("gemini_api_key", geminiKey);
-    } else {
-      localStorage.removeItem("gemini_api_key");
-    }
-
-    if (youtubeKey) {
-      localStorage.setItem("youtube_api_key", youtubeKey);
-    } else {
-      localStorage.removeItem("youtube_api_key");
-    }
-
-    if (geniusKey) {
-      localStorage.setItem("genius_token", geniusKey);
-    } else {
-      localStorage.removeItem("genius_token");
-    }
-
-    // Save segment duration
-    if (segmentDuration) {
-      localStorage.setItem("segment_duration", segmentDuration.toString());
-    }
-
-    // Save time format
-    if (timeFormat) {
-      localStorage.setItem("time_format", timeFormat);
-      appState.setTimeFormat(timeFormat);
-    }
-
-    // Save waveform for long videos setting
-    if (showWaveformLongVideosSetting !== undefined) {
-      localStorage.setItem("show_waveform_long_videos", showWaveformLongVideosSetting.toString());
-      appState.setShowWaveformLongVideos(showWaveformLongVideosSetting);
-
-      // Dispatch custom event for immediate effect
-      window.dispatchEvent(
-        new CustomEvent("waveformLongVideosChanged", {
-          detail: { value: showWaveformLongVideosSetting },
-        })
-      );
-    }
-
-    // Save Gemini model
-    if (geminiModel) {
-      localStorage.setItem("gemini_model", geminiModel);
-    }
-
-    // Video optimization is now always enabled - no need to save this setting
-
-    if (optimizedResolutionSetting) {
-      localStorage.setItem("optimized_resolution", optimizedResolutionSetting);
-      appState.setOptimizedResolution(optimizedResolutionSetting);
-    }
-
-    if (useOptimizedPreviewSetting !== undefined) {
-      localStorage.setItem(
-        "use_optimized_preview",
-        useOptimizedPreviewSetting.toString()
-      );
-      appState.setUseOptimizedPreview(useOptimizedPreviewSetting);
-      dbg(
-        "[AppHandlers] Updated useOptimizedPreview setting:",
-        useOptimizedPreviewSetting
-      );
-
-      // Trigger a custom event to immediately notify VideoPreview component
-      // This ensures immediate synchronization without waiting for the 500ms interval
-      window.dispatchEvent(
-        new CustomEvent("optimizedPreviewChanged", {
-          detail: { value: useOptimizedPreviewSetting },
-        })
-      );
-    }
-
-    if (useCookiesForDownloadSetting !== undefined) {
-      localStorage.setItem(
-        "use_cookies_for_download",
-        useCookiesForDownloadSetting.toString()
-      );
-      appState.setUseCookiesForDownload(useCookiesForDownloadSetting);
-    }
-
-    if (enableYoutubeSearchSetting !== undefined) {
-      localStorage.setItem(
-        "enable_youtube_search",
-        enableYoutubeSearchSetting.toString()
-      );
-      appState.setEnableYoutubeSearch(enableYoutubeSearchSetting);
-    }
-
-    // Update state based on the selected authentication method
-    const useOAuth = localStorage.getItem("use_youtube_oauth") === "true";
-    const hasOAuthTokens = hasValidTokens();
-
-    appState.setApiKeysSet({
-      gemini: !!geminiKey,
-      youtube: useOAuth ? hasOAuthTokens : !!youtubeKey,
-      genius: !!geniusKey,
-    });
-
-    // Show success notification
-    setStatus({
-      message: t("settings.savedSuccessfully", "Settings saved successfully!"),
-      type: "success",
-    });
-  };
-
-  // Create a wrapper function for downloadAndPrepareYouTubeVideo
-  const handleDownloadAndPrepareYouTubeVideo = async () => {
-    if (!selectedVideo) {
-      console.error("No YouTube video selected");
-      return;
-    }
-
-    // Create a wrapper for system-initiated tab changes
-    const systemTabChange = (tab) => handleTabChange(tab, false);
-
-    await downloadAndPrepareYouTubeVideo(
-      selectedVideo,
-      setIsDownloading,
-      setDownloadProgress,
-      setStatus,
-      setCurrentDownloadId,
-      systemTabChange,
-      setUploadedFile,
-      setIsSrtOnlyMode,
-      t
-    );
   };
 
   return {

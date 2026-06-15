@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import SliderWithValue from '../common/SliderWithValue';
 import HelpIcon from '../common/HelpIcon';
+import { formatTime } from '../../utils/timeFormatter';
 
 
 /**
@@ -63,17 +64,6 @@ const SplitDurationSlider = ({ splitDuration, onSplitDurationChange, subtitles, 
     return chunks.length > 0 ? chunks : [{ count: subtitles.length, startTime: subtitles[0]?.start || 0, endTime: subtitles[subtitles.length - 1]?.end || 0 }];
   }, [subtitles, splitDuration]);
 
-  // Helper function to format time for display
-  const formatTime = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
-  };
 
   return (
     <div className="translation-row split-duration-row">
@@ -117,7 +107,7 @@ const SplitDurationSlider = ({ splitDuration, onSplitDurationChange, subtitles, 
                   <span
                     key={index}
                     className="segment-pill"
-                    title={`${t('translation.segment', 'Segment')} ${index + 1}: ${formatTime(segment.startTime)} - ${formatTime(segment.endTime)}`}
+                    title={`${t('translation.segment', 'Segment')} ${index + 1}: ${formatTime(segment.startTime, 'hms')} - ${formatTime(segment.endTime, 'hms')}`}
                   >
                     {segment.count}
                   </span>

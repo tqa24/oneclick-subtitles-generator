@@ -1,27 +1,9 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { generateChatterboxSpeech, checkChatterboxAvailability, isChatterboxServiceInitialized } from '../../../services/chatterboxService';
 import { SERVER_URL } from '../../../config';
 import { deriveSubtitleId } from '../../../utils/subtitle/idUtils';
-
-
-// Import cleanup function
-const cleanupOldSubtitleDirectories = async (groupedSubtitles) => {
-  try {
-    const response = await fetch(`${SERVER_URL}/api/narration/cleanup-old-directories`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ groupedSubtitles })
-    });
-
-    if (!response.ok) {
-      console.error('Failed to cleanup old subtitle directories');
-    }
-  } catch (error) {
-    console.error('Error calling cleanup API:', error);
-  }
-};
+import { cleanupOldSubtitleDirectories } from '../utils/subtitleDirectoryCleanup';
+import { saveBase64AudioToServer } from '../../../services/narrationService';
 
 /**
  * Custom hook for Chatterbox narration generation
@@ -44,8 +26,6 @@ const cleanupOldSubtitleDirectories = async (groupedSubtitles) => {
  * @param {Function} params.setUseGroupedSubtitles - Function to set grouped subtitles usage
  * @param {Array} params.groupedSubtitles - Grouped subtitles
  * @param {Function} params.setGroupedSubtitles - Function to set grouped subtitles
- * @param {boolean} params.isGroupingSubtitles - Whether subtitles are being grouped
- * @param {Function} params.setIsGroupingSubtitles - Function to set grouping state
  * @param {string} params.groupingIntensity - Grouping intensity
  * @param {Function} params.t - Translation function
  * @param {Function} params.setRetryingSubtitleId - Function to set retrying subtitle ID
@@ -71,15 +51,11 @@ const useChatterboxNarration = ({
   setUseGroupedSubtitles,
   groupedSubtitles,
   setGroupedSubtitles,
-  isGroupingSubtitles,
-  setIsGroupingSubtitles,
   groupingIntensity,
   t,
   setRetryingSubtitleId,
   plannedSubtitles
 }) => {
-  // Track error state locally
-  const [localError, setLocalError] = useState('');
 
   /**
    * Get the selected subtitles based on current settings
@@ -171,58 +147,21 @@ const useChatterboxNarration = ({
 
 
   /**
-   * Convert audio blob to base64 and save to server
+   * Convert audio blob to base64 and save to server (Chatterbox endpoint).
    * @param {Blob} audioBlob - Audio blob from Chatterbox API
    * @param {number} subtitleId - Subtitle ID
    * @returns {Promise<string>} - Filename of saved audio
    */
-  const saveAudioBlobToServer = useCallback(async (audioBlob, subtitleId) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-
-      reader.onload = async () => {
-        try {
-          // Get base64 data URL and extract the base64 part
-          const dataUrl = reader.result;
-          const base64String = dataUrl.split(',')[1]; // Remove "data:audio/wav;base64," prefix
-
-          // Send to server
-          const response = await fetch(`${SERVER_URL}/api/narration/save-chatterbox-audio`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              audioData: base64String,
-              subtitle_id: subtitleId,
-              sampleRate: 24000, // Chatterbox default sample rate
-              mimeType: 'audio/wav'
-            })
-          });
-
-          if (!response.ok) {
-            throw new Error(`Server responded with ${response.status}: ${await response.text()}`);
-          }
-
-          const data = await response.json();
-
-          if (data.success) {
-            resolve(data.filename);
-          } else {
-            throw new Error(data.error || 'Unknown error saving audio to server');
-          }
-        } catch (error) {
-          reject(error);
-        }
-      };
-
-      reader.onerror = () => {
-        reject(new Error('Failed to read audio blob'));
-      };
-
-      reader.readAsDataURL(audioBlob);
-    });
-  }, []);
+  const saveAudioBlobToServer = useCallback(
+    (audioBlob, subtitleId) => saveBase64AudioToServer({
+      audioBlob,
+      subtitleId,
+      endpoint: '/api/narration/save-chatterbox-audio',
+      sampleRate: 24000, // Chatterbox default sample rate
+      mimeType: 'audio/wav',
+    }),
+    []
+  );
 
   /**
    * Generate narration for a single subtitle
@@ -285,7 +224,6 @@ const useChatterboxNarration = ({
 
       setIsGenerating(true);
       setError('');
-      setLocalError('');
       setGenerationResults([]);
 
       // Check if Chatterbox service is initialized, if not, show warming up message
@@ -428,7 +366,6 @@ const useChatterboxNarration = ({
       setError(t('narration.chatterboxGenerationError', 'Error generating narration with Chatterbox: {{error}}', {
         error: error.message
       }));
-      setLocalError(error.message);
     } finally {
       setIsGenerating(false);
     }
@@ -450,7 +387,6 @@ const useChatterboxNarration = ({
     setIsGenerating(false);
     setGenerationStatus('');
     setError('');
-    setLocalError('');
   }, [setIsGenerating, setGenerationStatus, setError]);
 
   /**

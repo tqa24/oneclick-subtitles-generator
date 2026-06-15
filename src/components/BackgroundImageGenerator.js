@@ -2,52 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import '../styles/BackgroundImageGenerator.css';
 import BackgroundPromptEditorButton from './background/BackgroundPromptEditorButton';
-import LoadingIndicator from './common/LoadingIndicator';
 import CustomScrollbarTextarea from './common/CustomScrollbarTextarea';
-import CustomDropdown from './common/CustomDropdown';
+import { useCurrentTheme } from './background/themeHook';
+import { getFriendlyErrorMessage } from './background/errorMessages';
+import PromptAndAlbumArtSection from './background/PromptAndAlbumArtSection';
+import ImageGenerationSection from './background/ImageGenerationSection';
 
 import { generateBackgroundPrompt, generateBackgroundImage } from '../services/gemini/imageGenerationService';
-import { saveBackgroundImages, loadBackgroundImages, clearBackgroundImages } from '../utils/indexedDBUtils';
-
-
-
-// Custom hook to detect current theme
-const useCurrentTheme = () => {
-  const [theme, setTheme] = useState(() => {
-    return document.documentElement.getAttribute('data-theme') || 'dark';
-  });
-
-  useEffect(() => {
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
-          const newTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-          setTheme(newTheme);
-        }
-      });
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme']
-    });
-
-    // Also listen for storage events (theme changes from other tabs)
-    const handleStorageChange = () => {
-      const newTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-      setTheme(newTheme);
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
-  return theme;
-};
+import { saveBackgroundImages, loadBackgroundImages } from '../utils/indexedDBUtils';
 
 /**
  * Component for generating background images based on lyrics and album art
@@ -55,58 +17,6 @@ const useCurrentTheme = () => {
 const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = false, onExpandChange }) => {
   const { t } = useTranslation();
   const currentTheme = useCurrentTheme();
-
-  // Helper: map raw error to friendly, localized message
-  const getFriendlyErrorMessage = (raw = '') => {
-    const msg = String(raw || '').trim();
-    const statusMatch = msg.match(/HTTP\s+(\d{3})/i);
-    if (statusMatch) {
-      const code = parseInt(statusMatch[1], 10);
-      switch (code) {
-        case 429:
-          return t('backgroundGenerator.error.quotaExceeded', 'Quota exceeded. Check your plan and billing.');
-        case 401:
-          return t('backgroundGenerator.error.unauthorized', 'Unauthorized: API key invalid or missing.');
-        case 403:
-          return t('backgroundGenerator.error.forbidden', 'Access forbidden. Check billing/quota or model access.');
-        case 400:
-          return t('backgroundGenerator.error.badRequest', 'Invalid request. Adjust prompt or album art and try again.');
-        case 413:
-          return t('backgroundGenerator.error.payloadTooLarge', 'Request too large. Try a smaller album image.');
-        case 415:
-          return t('backgroundGenerator.error.unsupportedMediaType', 'Unsupported image type. Please upload PNG or JPEG.');
-        case 500:
-        case 502:
-        case 503:
-        case 504:
-          return t('backgroundGenerator.error.serverError', 'Service is temporarily unavailable. Please try again later.');
-        default:
-          return t('backgroundGenerator.error.generic', 'Generation failed');
-      }
-    }
-    if (/exceeded\s+your\s+current\s+quota/i.test(msg) || /quota/i.test(msg)) {
-      return t('backgroundGenerator.error.quotaExceeded', 'Quota exceeded. Check your plan and billing.');
-    }
-    if (/api key not set/i.test(msg) || /api\s*key.*(invalid|missing)/i.test(msg)) {
-      return t('backgroundGenerator.error.apiKeyMissing', 'Gemini API key not set. Please set it in settings.');
-    }
-    if (/billing/i.test(msg)) {
-      return t('backgroundGenerator.error.quotaExceeded', 'Quota exceeded. Check your plan and billing.');
-    }
-    if (/cors|cross-origin/i.test(msg)) {
-      return t('backgroundGenerator.error.cors', 'Could not load album art due to CORS. Upload the image instead.');
-    }
-    if (/no image returned/i.test(msg)) {
-      return t('backgroundGenerator.error.noImageReturned', 'No image was returned. Try again or simplify the prompt.');
-    }
-    if (/no prompt returned/i.test(msg)) {
-      return t('backgroundGenerator.error.noPromptReturned', 'No prompt was returned. Try again later.');
-    }
-    if (/network/i.test(msg)) {
-      return t('backgroundGenerator.error.network', 'Network error. Check your connection and try again.');
-    }
-    return t('backgroundGenerator.error.generic', 'Generation failed');
-  };
 
   const [customLyrics, setCustomLyrics] = useState(lyrics || '');
   const [customAlbumArt, setCustomAlbumArt] = useState(albumArt || '');
@@ -163,7 +73,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
       setGeneratedPrompt(prompt);
       return prompt;
     } catch (err) {
-      window.addToast(getFriendlyErrorMessage(err?.message || String(err)), 'error', 5000);
+      window.addToast(getFriendlyErrorMessage(t, err?.message || String(err)), 'error', 5000);
       console.error('Error generating prompt:', err);
       return null;
     } finally {
@@ -232,7 +142,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
           setPendingImageCount(prev => prev - 1);
         } catch (err) {
           // Show error toast notification
-          window.addToast(getFriendlyErrorMessage(err?.message || String(err)), 'error', 5000);
+          window.addToast(getFriendlyErrorMessage(t, err?.message || String(err)), 'error', 5000);
           // Mark this image as failed
           newImages[i] = {
             url: null,
@@ -249,7 +159,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
 
       return newImages.filter(img => img.url !== null);
     } catch (err) {
-      window.addToast(getFriendlyErrorMessage(err?.message || String(err)), 'error', 5000);
+      window.addToast(getFriendlyErrorMessage(t, err?.message || String(err)), 'error', 5000);
       console.error('Error in image generation process:', err);
       return null;
     } finally {
@@ -370,21 +280,6 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lyrics, albumArt, customLyrics, customAlbumArt, customSongName, autoExecutionComplete]);
 
-
-  // Handle file upload for custom album art
-  const handleAlbumArtUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setCustomAlbumArt(e.target.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-
-
   // Generate new prompt and then generate image
   const generateWithNewPrompt = async (count = null) => {
     if (!customLyrics.trim()) {
@@ -463,7 +358,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
           setPendingImageCount(prev => prev - 1);
         } catch (err) {
           // Show error toast notification
-          window.addToast(getFriendlyErrorMessage(err?.message || String(err)), 'error', 5000);
+          window.addToast(getFriendlyErrorMessage(t, err?.message || String(err)), 'error', 5000);
           // Mark this image as failed
           newImages[i] = {
             url: null,
@@ -478,7 +373,7 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
         }
       }
     } catch (err) {
-      window.addToast(getFriendlyErrorMessage(err?.message || String(err)), 'error', 5000);
+      window.addToast(getFriendlyErrorMessage(t, err?.message || String(err)), 'error', 5000);
       console.error('Error in multi-prompt generation process:', err);
     } finally {
       setIsGeneratingPrompt(false);
@@ -495,43 +390,6 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
   // Handle image count selection for new prompt generation
   const handleNewPromptImageCountChange = (count) => {
     setNewPromptImageCount(parseInt(count, 10));
-  };
-
-  // Download generated image
-  const downloadImage = (imageUrl = null, index = null) => {
-    // If no specific image is provided, use the main generatedImage
-    const imageToDownload = imageUrl || generatedImage;
-    if (!imageToDownload) return;
-
-    const link = document.createElement('a');
-    link.href = imageToDownload;
-    link.download = `background-${index !== null ? index + 1 : new Date().getTime()}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // Download all generated images as a batch
-  const downloadAllImages = () => {
-    if (!generatedImages.length) return;
-
-    // Download each image with a slight delay to prevent browser issues
-    generatedImages.forEach((image, index) => {
-      setTimeout(() => {
-        downloadImage(image.url, index);
-      }, index * 300); // 300ms delay between downloads
-    });
-  };
-
-  // Clear all generated images
-  const clearGeneratedImages = async () => {
-    setGeneratedImages([]);
-    setGeneratedImage('');
-    try {
-      await clearBackgroundImages();
-    } catch (error) {
-      console.error('Error clearing generated images from IndexedDB:', error);
-    }
   };
 
   return (
@@ -603,274 +461,40 @@ const BackgroundImageGenerator = ({ lyrics, albumArt, songName, isExpanded = fal
             />
           </div>
 
-          {/* Right side container for song name and prompt */}
-          <div className="right-inputs-container">
-            {/* Song name input */}
-            <div className="song-name-input">
-              <h3>{t('backgroundGenerator.songName', 'Song Name')}</h3>
-              <div className="song-name-field-container">
-                <input
-                  type="text"
-                  value={customSongName}
-                  onChange={(e) => setCustomSongName(e.target.value)}
-                  placeholder={t('backgroundGenerator.songNamePlaceholder', 'Enter song name (optional)')}
-                  autoComplete="off"
-                />
-              </div>
-            </div>
-
-            {/* Prompt section */}
-            <div className="prompt-section">
-              <div className="prompt-header">
-                <h3>{t('backgroundGenerator.prompt', 'Generated Prompt')}</h3>
-                <button
-                  className={`generate-button ${isGeneratingPrompt ? 'loading' : ''}`}
-                  onClick={() => generatePrompt()}
-                  disabled={isGeneratingPrompt || !customLyrics.trim()}
-                >
-                  {isGeneratingPrompt ? (
-                    <LoadingIndicator size={20} theme={currentTheme} showContainer={false} />
-                  ) : (
-                    <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>wand_stars</span>
-                  )}
-                  <span>
-                    {isGeneratingPrompt
-                      ? t('backgroundGenerator.generatingPrompt', 'Generating...')
-                      : t('backgroundGenerator.generatePrompt', 'Generate')}
-                  </span>
-                </button>
-              </div>
-              <div className="prompt-container">
-                <CustomScrollbarTextarea
-                  value={generatedPrompt}
-                  onChange={(e) => setGeneratedPrompt(e.target.value)}
-                  placeholder={t('backgroundGenerator.promptPlaceholder', 'Generated prompt will appear here...')}
-                  rows={3}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Album art container */}
-          <div className="album-art-container">
-            <h3>{t('backgroundGenerator.albumArt', 'Album Art')}</h3>
-            <div className="album-art-preview">
-              {customAlbumArt ? (
-                <>
-                  <img src={customAlbumArt} alt="Album Art" />
-                  {/* Floating upload button */}
-                  <label className="floating-upload-button" title={t('backgroundGenerator.uploadAlbumArt', 'Upload Album Art')}>
-                    <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>upload</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAlbumArtUpload}
-                      style={{ display: 'none' }}
-                    />
-                  </label>
-                  {/* Floating download button */}
-                  <button
-                    className="floating-download-button"
-                    onClick={() => {
-                      // Create a temporary link to download the image
-                      const link = document.createElement('a');
-                      link.href = customAlbumArt;
-                      link.download = 'album-art.png';
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                    }}
-                    title={t('backgroundGenerator.downloadAlbumArt', 'Download Album Art')}
-                  >
-                    <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>download</span>
-                  </button>
-
-                </>
-              ) : (
-                <>
-                  <div className="upload-placeholder">
-                    <span className="material-symbols-rounded" style={{ fontSize: '36px' }}>hide_image</span>
-                    <p>{t('backgroundGenerator.noAlbumArt', 'No album art')}</p>
-                  </div>
-                  {/* Floating upload button even when no image */}
-                  <label className="floating-upload-button" title={t('backgroundGenerator.uploadAlbumArt', 'Upload Album Art')}>
-                    <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>upload</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleAlbumArtUpload}
-                      style={{ display: 'none' }}
-                    />
-                  </label>
-                </>
-              )}
-            </div>
-            {/* Keep the original actions div for backward compatibility, but it's hidden via CSS */}
-            <div className="album-art-actions">
-              <label className="upload-button">
-                <span className="material-symbols-rounded">upload</span>
-                <span>{t('backgroundGenerator.uploadAlbumArt', 'Upload Album Art')}</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAlbumArtUpload}
-                  style={{ display: 'none' }}
-                />
-              </label>
-            </div>
-          </div>
+          <PromptAndAlbumArtSection
+            currentTheme={currentTheme}
+            customSongName={customSongName}
+            setCustomSongName={setCustomSongName}
+            customLyrics={customLyrics}
+            generatedPrompt={generatedPrompt}
+            setGeneratedPrompt={setGeneratedPrompt}
+            customAlbumArt={customAlbumArt}
+            setCustomAlbumArt={setCustomAlbumArt}
+            isGeneratingPrompt={isGeneratingPrompt}
+            generatePrompt={generatePrompt}
+          />
         </div>
 
         {/* Second row: Generated image */}
-        <div className="media-content-grid">
-
-          {/* Generated image section */}
-          <div className="image-section">
-            <div className="image-section-header">
-              <div className="image-title-container">
-                <h3>{t('backgroundGenerator.generatedImage', 'Generated Image')}</h3>
-                <div className="image-header-buttons">
-                  {generatedImages.length > 0 && (
-                    <button className="header-action-button" onClick={clearGeneratedImages} title={t('backgroundGenerator.clearImagesTitle', 'Clear All Images')}>
-                      <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>close</span>
-                      <span>{t('backgroundGenerator.clearImages', 'Clear')}</span>
-                    </button>
-                  )}
-                  {generatedImages.length > 1 && (
-                    <button className="header-download-button" onClick={downloadAllImages} title={t('backgroundGenerator.downloadAllImages', 'Download All Images')}>
-                      <span className="material-symbols-rounded" style={{ fontSize: '16px' }}>download</span>
-                      <span>{t('backgroundGenerator.downloadAllImages', 'Download All')}</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="image-header-actions">
-                <div className="generate-button-group">
-                  <button
-                    className={`generate-button ${isGeneratingImage ? 'loading' : ''}`}
-                    onClick={() => generateImage()}
-                    disabled={isGeneratingImage || isGeneratingPrompt || !generatedPrompt.trim() || !customAlbumArt}
-                    title={t('backgroundGenerator.generateImageTooltip', 'Generate images using the same prompt')}
-                  >
-                    {isGeneratingImage ? (
-                      <LoadingIndicator size={20} theme={currentTheme} showContainer={false} />
-                    ) : (
-                      <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>image</span>
-                    )}
-                    <span>
-                      {isGeneratingImage
-                        ? t('backgroundGenerator.generatingImage', 'Generating...')
-                        : t('backgroundGenerator.generateImage', 'Generate with Same Prompt')}
-                    </span>
-                  </button>
-
-                  <CustomDropdown
-                    className="image-count-dropdown"
-                    value={String(regularImageCount)}
-                    onChange={(val) => handleRegularImageCountChange(val)}
-                    disabled={isGeneratingImage || isGeneratingPrompt}
-                    options={[1,2,3,4,5,6,7,8].map(num => ({ value: String(num), label: String(num) }))}
-                  />
-
-                </div>
-
-                <div className="generate-button-group">
-                  <button
-                    ref={generateWithUniquePromptsButtonRef}
-                    className={`generate-button new-prompt-button ${isGeneratingPrompt || isGeneratingImage ? 'loading' : ''}`}
-                    onClick={() => generateWithNewPrompt()}
-                    disabled={isGeneratingPrompt || isGeneratingImage || !customLyrics.trim() || !customAlbumArt}
-                    title={t('backgroundGenerator.generateWithNewPromptTooltip', 'Generates a unique prompt for each image')}
-                  >
-                    {isGeneratingPrompt || isGeneratingImage ? (
-                      <LoadingIndicator size={20} theme={currentTheme} showContainer={false} />
-                    ) : (
-                      <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>imagesmode</span>
-                    )}
-                    <span>
-                      {isGeneratingPrompt || isGeneratingImage
-                        ? t('backgroundGenerator.generatingWithNewPrompt', 'Generating...')
-                        : t('backgroundGenerator.generateWithNewPrompt', 'Generate with Unique Prompts')}
-                    </span>
-                  </button>
-
-                  <CustomDropdown
-                    className="image-count-dropdown"
-                    value={String(newPromptImageCount)}
-                    onChange={(val) => handleNewPromptImageCountChange(val)}
-                    disabled={isGeneratingImage || isGeneratingPrompt}
-                    options={[1,2,3,4,5,6,7,8].map(num => ({ value: String(num), label: String(num) }))}
-                  />
-
-                </div>
-              </div>
-            </div>
-            {generatedImages.length > 0 ? (
-              <>
-                <div className={`image-grid image-grid-${Math.min(generatedImages.length, 4)}`}>
-                  {generatedImages.map((image, index) => (
-                    <div className="image-grid-item" key={index}>
-                      <div className={`image-preview ${image.isLoading ? 'loading' : ''}`}>
-                        {image.url ? (
-                          <>
-                            <img src={image.url} alt={`Generated Background ${index + 1}`} />
-                            <button
-                              className="floating-download-button"
-                              onClick={() => downloadImage(image.url, index)}
-                              title={t('backgroundGenerator.downloadImage', 'Download')}
-                            >
-                              <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>download</span>
-                            </button>
-                          </>
-                        ) : image.isLoading ? (
-                          <div className="loading-placeholder">
-                            <LoadingIndicator
-                              theme="dark"
-                              showContainer={true}
-                              size={64}
-                              className="background-generator-loading"
-                            />
-                            <p>{t('backgroundGenerator.generatingImage', 'Generating...')}</p>
-                          </div>
-                        ) : image.error ? (
-                          <div className="preview-placeholder">
-                            <span className="material-symbols-rounded" style={{ fontSize: '36px' }}>error</span>
-                            <p>{t('backgroundGenerator.generationFailed')}</p>
-                          </div>
-                        ) : (
-                          <div className="preview-placeholder">
-                            <span className="material-symbols-rounded" style={{ fontSize: '36px' }}>image</span>
-                            <p>{t('backgroundGenerator.noGeneratedImage', 'No image generated yet')}</p>
-                          </div>
-                        )}
-                        <div className="image-number">{index + 1}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : generatedImage ? (
-              <div className="image-preview single-image">
-                <img src={generatedImage} alt="Generated Background" />
-                <button
-                  className="floating-download-button"
-                  onClick={() => downloadImage()}
-                  title={t('backgroundGenerator.downloadImage', 'Download')}
-                >
-                  <span className="material-symbols-rounded" style={{ fontSize: '20px' }}>download</span>
-                </button>
-              </div>
-            ) : (
-              <div className="image-preview">
-                <div className="preview-placeholder">
-                  <span className="material-symbols-rounded" style={{ fontSize: '48px' }}>gallery_thumbnail</span>
-                  <p>{t('backgroundGenerator.noGeneratedImage', 'No image generated yet')}</p>
-                </div>
-              </div>
-            )}
-            {/* Image actions moved to header */}
-          </div>
-        </div>
+        <ImageGenerationSection
+          currentTheme={currentTheme}
+          generatedImage={generatedImage}
+          setGeneratedImage={setGeneratedImage}
+          generatedImages={generatedImages}
+          setGeneratedImages={setGeneratedImages}
+          generatedPrompt={generatedPrompt}
+          customLyrics={customLyrics}
+          customAlbumArt={customAlbumArt}
+          isGeneratingPrompt={isGeneratingPrompt}
+          isGeneratingImage={isGeneratingImage}
+          regularImageCount={regularImageCount}
+          newPromptImageCount={newPromptImageCount}
+          handleRegularImageCountChange={handleRegularImageCountChange}
+          handleNewPromptImageCountChange={handleNewPromptImageCountChange}
+          generateImage={generateImage}
+          generateWithNewPrompt={generateWithNewPrompt}
+          generateWithUniquePromptsButtonRef={generateWithUniquePromptsButtonRef}
+        />
 
         </div>
       )}

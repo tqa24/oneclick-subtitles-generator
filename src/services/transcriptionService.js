@@ -2,70 +2,10 @@
  * Transcription service for voice recognition using Gemini API
  */
 
-// No need to import API_BASE_URL as it's not used in this file
+import { toBase64 } from '../utils/fileUtils';
 
-/**
- * Convert a Blob to base64 string
- * @param {Blob} blob - The blob to convert
- * @returns {Promise<string>} - Base64 string
- */
-export const blobToBase64 = (blob) => {
-  return new Promise((resolve, reject) => {
-    if (!blob || blob.size === 0) {
-      console.error('Invalid blob provided to blobToBase64:', blob);
-      reject(new Error('Invalid or empty blob'));
-      return;
-    }
-
-
-
-    const reader = new FileReader();
-
-    reader.onloadend = () => {
-      try {
-        if (!reader.result) {
-          console.error('FileReader result is empty');
-          reject(new Error('FileReader result is empty'));
-          return;
-        }
-
-        // Check if the result contains a comma (data URL format)
-        if (reader.result.indexOf(',') === -1) {
-          console.error('FileReader result is not in expected format');
-          reject(new Error('FileReader result is not in expected format'));
-          return;
-        }
-
-        // Remove the data URL prefix (e.g., 'data:audio/wav;base64,')
-        const base64String = reader.result.split(',')[1];
-
-        if (!base64String) {
-          console.error('Failed to extract base64 data from FileReader result');
-          reject(new Error('Failed to extract base64 data'));
-          return;
-        }
-
-
-        resolve(base64String);
-      } catch (error) {
-        console.error('Error in FileReader onloadend:', error);
-        reject(error);
-      }
-    };
-
-    reader.onerror = (error) => {
-      console.error('FileReader error:', error);
-      reject(error);
-    };
-
-    try {
-      reader.readAsDataURL(blob);
-    } catch (error) {
-      console.error('Error calling readAsDataURL:', error);
-      reject(error);
-    }
-  });
-};
+// blobToBase64 is the shared toBase64 helper; kept as a named export for existing call sites.
+export const blobToBase64 = toBase64;
 
 /**
  * Detect if text is in English

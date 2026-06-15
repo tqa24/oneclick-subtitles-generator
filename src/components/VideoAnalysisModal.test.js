@@ -34,6 +34,12 @@ jest.mock('../services/geminiService', () => ({
   ],
 }));
 
+// The countdown renders the message, the number (<span class="timer">) and "seconds" as
+// separate DOM nodes, so a plain getByText(/message N seconds/) can't match across the span.
+// Match against the <p>'s normalized textContent instead.
+const countdownText = (expected) => (content, el) =>
+  el?.tagName === 'P' && el.textContent.replace(/\s+/g, ' ').trim() === expected;
+
 describe('VideoAnalysisModal Component', () => {
   const mockOnClose = jest.fn();
   const mockOnUsePreset = jest.fn();
@@ -173,12 +179,12 @@ describe('VideoAnalysisModal Component', () => {
     });
 
     render(<VideoAnalysisModal {...defaultProps} />);
-    expect(screen.getByText(/Recommended countdown message 10 seconds/i)).toBeInTheDocument();
+    expect(screen.getByText(countdownText('Recommended countdown message 10 seconds'))).toBeInTheDocument();
 
     act(() => {
       jest.advanceTimersByTime(1000); // Advance 1 second
     });
-    expect(screen.getByText(/Recommended countdown message 9 seconds/i)).toBeInTheDocument();
+    expect(screen.getByText(countdownText('Recommended countdown message 9 seconds'))).toBeInTheDocument();
   });
 
   test('should display "Default countdown message" when autoSelectDefaultPreset is true', () => {
@@ -196,11 +202,11 @@ describe('VideoAnalysisModal Component', () => {
     });
 
     render(<VideoAnalysisModal {...defaultProps} />);
-    expect(screen.getByText(/Default countdown message 15 seconds/i)).toBeInTheDocument();
+    expect(screen.getByText(countdownText('Default countdown message 15 seconds'))).toBeInTheDocument();
     act(() => {
       jest.advanceTimersByTime(1000); // Advance 1 second
     });
-    expect(screen.getByText(/Default countdown message 14 seconds/i)).toBeInTheDocument();
+    expect(screen.getByText(countdownText('Default countdown message 14 seconds'))).toBeInTheDocument();
   });
 
   test('should not start countdown if timeout setting is "none"', () => {
@@ -229,11 +235,12 @@ describe('VideoAnalysisModal Component', () => {
     });
     render(<VideoAnalysisModal {...defaultProps} />);
     // Message will be "Recommended" by default if auto_select_default_preset is not 'true'
-    expect(screen.getByText(/Recommended countdown message 20 seconds/i)).toBeInTheDocument();
+    expect(screen.getByText(countdownText('Recommended countdown message 20 seconds'))).toBeInTheDocument();
 
-    // Simulate user clicking the modal overlay (which calls handleUserInteraction)
-    const modal = screen.getByRole('dialog');
-    fireEvent.click(modal);
+    // The dialog box stops click propagation; clicking the surrounding overlay is what
+    // calls handleUserInteraction and dismisses the countdown.
+    const overlay = screen.getByRole('dialog').parentElement;
+    fireEvent.click(overlay);
 
 
     expect(screen.queryByText(/Recommended countdown message/i)).not.toBeInTheDocument();

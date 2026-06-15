@@ -4,15 +4,9 @@
  */
 
 import i18n from '../../i18n/i18n';
-import { getLanguageCode } from '../../utils/languageUtils';
-import { createConsolidationSchema, addResponseSchema } from '../../utils/schemaUtils';
-import { addThinkingConfig } from '../../utils/thinkingBudgetUtils';
+import { createConsolidationSchema } from '../../utils/schemaUtils';
 import { getDefaultConsolidatePrompt } from './promptManagement';
-import { createRequestController, removeRequestController } from './requestManagement';
-import { processStructuredJsonResponse, processTextResponse } from './responseProcessingService';
-
-// Translation function shorthand
-const t = (key, fallback) => i18n.t(key, fallback);
+import { runGeminiDocumentRequest } from './documentRequest';
 
 /**
  * Consolidate document from subtitles text
@@ -29,7 +23,6 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.5-flash'
 
     // If splitDuration is specified and not 0, split text into chunks
     if (splitDuration > 0) {
-
         // Dispatch event to update UI with status
         window.dispatchEvent(new CustomEvent('consolidation-status', {
             detail: { message: i18n.t('consolidation.splittingText', 'Splitting text into chunks of {{duration}} minutes', {
@@ -39,146 +32,15 @@ export const completeDocument = async (subtitlesText, model = 'gemini-2.5-flash'
         return await completeDocumentByChunks(subtitlesText, model, customPrompt, splitDuration);
     }
 
-    // Create a unique ID for this request
-    const { requestId, signal } = createRequestController();
-
-    try {
-        // Get API key from localStorage
-        const apiKey = localStorage.getItem('gemini_api_key');
-        if (!apiKey) {
-            throw new Error(t('settings.geminiApiKeyRequired', 'Gemini API key not found'));
-        }
-
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-        // Create the prompt for document completion
-        let documentPrompt;
-
-        // Try to detect the language of the subtitles
-        // First check if we're using translated subtitles
-        const translatedLanguage = localStorage.getItem('translation_target_language');
-
-        // Get the source parameter indicating if we're using original or translated subtitles
-        const source = localStorage.getItem('current_processing_source');
-
-        // Determine the language based on the source
-        let language = null;
-
-        if (source === 'translated' && translatedLanguage) {
-            // If we're using translated subtitles, use the target language of the translation
-            language = translatedLanguage;
-
-        } else {
-            // For original subtitles, try to detect the language from the first few lines
-            // This is a simple approach - in a production environment, you might want to use
-            // a more sophisticated language detection library
-            try {
-                // In a future enhancement, we could get a sample of the text for language detection
-                // const sampleText = subtitlesText.substring(0, 500);
-
-                // For now, we'll rely on the language instruction in the prompt
-                // A future enhancement could be to add actual language detection here
-            } catch (error) {
-
-            }
-        }
-
-        if (customPrompt) {
-            // Replace variables in the custom prompt
-            documentPrompt = customPrompt.replace('{subtitlesText}', subtitlesText);
-        } else {
-            documentPrompt = getDefaultConsolidatePrompt(subtitlesText, language);
-        }
-
-        // Create request data with structured output
-        let requestData = {
-            contents: [
-                {
-                    role: "user",
-                    parts: [
-                        { text: documentPrompt }
-                    ]
-                }
-            ],
-            generationConfig: {
-                topK: 32,
-                topP: 0.95,
-                maxOutputTokens: 65536, // Increased to maximum allowed value (65536 per Gemini documentation)
-            },
-        };
-
-        // Add language code to generation config if available
-        if (language) {
-            const languageCode = getLanguageCode(language);
-            if (languageCode) {
-
-                requestData.generationConfig.stopSequences = [];
-                // Note: Gemini doesn't have a direct language parameter, but we can use this approach
-                // to help guide the model to maintain the correct language
-            }
-        }
-
-        // Always use structured output
-        requestData = addResponseSchema(requestData, createConsolidationSchema());
-
-        // Add thinking configuration if supported by the model
-        requestData = addThinkingConfig(requestData, model);
-
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestData),
-            signal: signal // Add the AbortController signal
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`Gemini API error: ${errorData.error?.message || response.statusText}`);
-        }
-
-        const data = await response.json();
-
-        // Check if this is a structured JSON response
-        if (data.candidates[0]?.content?.parts[0]?.structuredJson) {
-
-            const structuredJson = data.candidates[0].content.parts[0].structuredJson;
-
-
-            // Process the structured JSON response
-            const processedResponse = processStructuredJsonResponse(structuredJson, language);
-
-            // Remove this controller from the map after successful response
-            removeRequestController(requestId);
-
-            return processedResponse;
-        }
-
-        // Handle text response
-        let completedText = data.candidates[0]?.content?.parts[0]?.text;
-
-        // Process the text response
-        const processedText = processTextResponse(completedText);
-
-        // Remove this controller from the map after successful response
-        removeRequestController(requestId);
-
-        return processedText;
-    } catch (error) {
-        // Check if this is an AbortError
-        if (error.name === 'AbortError') {
-
-            throw new Error('Document completion request was aborted');
-        } else {
-            console.error('Document completion error:', error);
-            // Remove this controller from the map on error
-            if (requestId) {
-                removeRequestController(requestId);
-            }
-            throw error;
-        }
-    }
+    return runGeminiDocumentRequest({
+        subtitlesText,
+        model,
+        customPrompt,
+        getDefaultPrompt: getDefaultConsolidatePrompt,
+        createSchema: createConsolidationSchema,
+        errorLabel: 'Document completion error:',
+        abortMessage: 'Document completion request was aborted',
+    });
 };
 
 /**

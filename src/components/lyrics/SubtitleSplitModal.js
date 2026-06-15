@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import CustomModelDialog from '../settings/CustomModelDialog';
 import StandardSlider from '../common/StandardSlider';
+import { formatTime } from '../../utils/timeFormatter';
 
 /**
  * Smart word counting function that handles multiple languages
@@ -181,13 +182,6 @@ const SubtitleSplitModal = ({ isOpen, onClose, lyrics, onSplitSubtitles, selecte
   const { t } = useTranslation();
   const [maxWords, setMaxWords] = useState(8);
   
-  // Format time for display
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const handleApply = () => {
     if (!lyrics || lyrics.length === 0) {
       onClose();
@@ -247,7 +241,7 @@ const SubtitleSplitModal = ({ isOpen, onClose, lyrics, onSplitSubtitles, selecte
           <span>{t('subtitleSplit.title', 'Chia nhỏ subtitles')}</span>
           {selectedRange && (
             <span className="segment-time">
-              {formatTime(selectedRange.start)} - {formatTime(selectedRange.end)} ({Math.round(selectedRange.end - selectedRange.start)}s)
+              {formatTime(selectedRange.start, 'hms')} - {formatTime(selectedRange.end, 'hms')} ({Math.round(selectedRange.end - selectedRange.start)}s)
             </span>
           )}
         </div>

@@ -1,51 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { translateSubtitles, /* abortAllRequests, */ cancelTranslation, setProcessingForceStopped, getProcessingForceStopped } from '../services/geminiService';
+import { generateSubtitleHash } from '../utils/subtitle/subtitleHash';
+import { getCurrentMediaId } from '../utils/mediaId';
+import { useTranslationCaching, saveTranslationsToCache, clearTranslationCache } from './useTranslationCaching';
+import { useTranslationBulk } from './useTranslationBulk';
 
-// Constants for localStorage keys
-const TRANSLATION_CACHE_KEY = 'translated_subtitles_cache';
-const CURRENT_VIDEO_ID_KEY = 'current_video_url';
-const CURRENT_FILE_ID_KEY = 'current_file_cache_id';
-
-/**
- * Helper function to generate a hash for subtitles to use as a cache key
- * @param {Array} subtitles - Array of subtitle objects
- * @returns {string} - Hash string
- */
-export const generateSubtitleHash = (subtitles) => {
-  if (!subtitles || !subtitles.length) return '';
-
-  // Create a string representation of the subtitles (just IDs and text)
-  const subtitleString = subtitles.map(s => `${s.id || s.subtitle_id || ''}:${s.text}`).join('|');
-
-  // Simple hash function
-  let hash = 0;
-  for (let i = 0; i < subtitleString.length; i++) {
-    const char = subtitleString.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-
-  return hash.toString(16);
-};
-
-/**
- * Helper function to get the current video/file identifier
- * @returns {string|null} - Current video/file ID or null if not found
- */
-export const getCurrentMediaId = () => {
-  // Check for YouTube URL first
-  const youtubeUrl = localStorage.getItem(CURRENT_VIDEO_ID_KEY);
-
-  if (youtubeUrl) {
-    // Extract video ID from URL
-    const match = youtubeUrl.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/);
-    return match ? match[1] : null;
-  }
-
-  // Check for file cache ID
-  return localStorage.getItem(CURRENT_FILE_ID_KEY);
-};
+// Re-export the shared helpers for existing consumers (e.g. translation/index.js).
+export { generateSubtitleHash, getCurrentMediaId };
 
 /**
  * Custom hook to manage translation state
@@ -61,13 +23,6 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
   const [translationStatus, setTranslationStatus] = useState('');
   const [loadedFromCache, setLoadedFromCache] = useState(false);
   const [wasManuallyReset, setWasManuallyReset] = useState(false);
-
-  // Bulk translation state
-  const [bulkFiles, setBulkFiles] = useState([]);
-  const [bulkTranslations, setBulkTranslations] = useState([]);
-  const [isBulkTranslating, setIsBulkTranslating] = useState(false);
-  const [currentBulkFileIndex, setCurrentBulkFileIndex] = useState(-1);
-
 
   // Use a translation-specific model selection that's independent from settings
   const [selectedModel, setSelectedModel] = useState(() => {
@@ -97,6 +52,27 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
   // Reference to the status message element for scrolling
   const statusRef = useRef(null);
 
+  // Bulk translation state and handlers (composed sub-hook)
+  const {
+    bulkFiles,
+    setBulkFiles,
+    bulkTranslations,
+    setBulkTranslations,
+    isBulkTranslating,
+    setIsBulkTranslating,
+    currentBulkFileIndex,
+    setCurrentBulkFileIndex,
+    handleBulkTranslate,
+    handleBulkFileRemoval,
+    handleBulkFilesRemovalAll
+  } = useTranslationBulk({
+    selectedModel,
+    splitDuration,
+    setError,
+    setTranslationStatus,
+    t
+  });
+
   // No longer update selectedModel when localStorage changes
   // This keeps the translation model independent from the settings
 
@@ -112,80 +88,17 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
     return () => window.removeEventListener('translation-status', handleTranslationStatus);
   }, []);
 
-  // Load translations from cache on component mount
-  useEffect(() => {
-    // Only try to load from cache if we don't have results yet and have subtitles to translate
-    if (translatedSubtitles || !subtitles || subtitles.length === 0) return;
-
-    // Don't load from cache if translation was manually reset
-    if (wasManuallyReset) {
-      console.log('Translation was manually reset, not loading from cache');
-      return;
-    }
-
-    try {
-      // Get current media ID
-      const mediaId = getCurrentMediaId();
-
-      if (!mediaId) {
-        return;
-      }
-
-      // Generate a hash of the subtitles
-      const subtitleHash = generateSubtitleHash(subtitles);
-
-      // Get cache entry
-      const cacheEntryJson = localStorage.getItem(TRANSLATION_CACHE_KEY);
-      if (!cacheEntryJson) {
-        return;
-      }
-
-      const cacheEntry = JSON.parse(cacheEntryJson);
-
-      // More lenient cache matching - prioritize media ID over subtitle hash
-      // This allows translations to persist even with minor subtitle edits
-      if (cacheEntry.mediaId !== mediaId) {
-        return;
-      }
-
-      // If subtitle hash doesn't match, still load but log it for debugging
-      if (cacheEntry.subtitleHash !== subtitleHash) {
-        console.log('Translation cache: Loading despite subtitle changes (less strict mode)');
-      }
-
-      // Check if we have translations
-      if (!cacheEntry.translations || !cacheEntry.translations.length) {
-        return;
-      }
-
-      // Set loading state first
-      setLoadedFromCache(true);
-
-      // Use a small timeout to ensure the loading state is rendered
-      setTimeout(() => {
-        // Set the translated subtitles
-        setTranslatedSubtitles(cacheEntry.translations);
-
-        // Call the callback
-        if (onTranslationComplete) {
-          onTranslationComplete(cacheEntry.translations);
-        }
-
-        // Dispatch a custom event to notify other components that translation is complete
-        window.dispatchEvent(new CustomEvent('translation-complete', {
-          detail: {
-            translatedSubtitles: cacheEntry.translations,
-            loadedFromCache: true
-          }
-        }));
-
-        // Show a status message
-        setTranslationStatus(t('translation.loadedFromCache', 'Translations loaded from cache'));
-      }, 100);
-    } catch (error) {
-      console.error('Error loading translations from cache:', error);
-    }
-  }, [subtitles, translatedSubtitles, onTranslationComplete, t, wasManuallyReset]);
+  // Load translations from cache on component mount (composed sub-hook)
+  useTranslationCaching({
+    subtitles,
+    translatedSubtitles,
+    wasManuallyReset,
+    onTranslationComplete,
+    setTranslatedSubtitles,
+    setLoadedFromCache,
+    setTranslationStatus,
+    t
+  });
 
   // Check if transcription rules are available
   useEffect(() => {
@@ -368,27 +281,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
       }
 
       // Save translations to cache
-      try {
-        // Get current media ID
-        const mediaId = getCurrentMediaId();
-        if (mediaId) {
-          // Generate a hash of the subtitles
-          const subtitleHash = generateSubtitleHash(subtitles);
-
-          // Create cache entry
-          const cacheEntry = {
-            mediaId,
-            subtitleHash,
-            timestamp: Date.now(),
-            translations: result
-          };
-
-          // Save to localStorage
-          localStorage.setItem(TRANSLATION_CACHE_KEY, JSON.stringify(cacheEntry));
-        }
-      } catch (error) {
-        console.error('Error saving translations to cache:', error);
-      }
+      saveTranslationsToCache(subtitles, result);
 
       setTranslatedSubtitles(result);
 
@@ -472,12 +365,7 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
     setProcessingForceStopped(false);
 
     // Clear the translation cache
-    try {
-      localStorage.removeItem(TRANSLATION_CACHE_KEY);
-      console.log('Translation cache cleared');
-    } catch (error) {
-      console.error('Error clearing translation cache:', error);
-    }
+    clearTranslationCache();
 
     if (onTranslationComplete) {
       onTranslationComplete(null);
@@ -518,161 +406,6 @@ export const useTranslationState = (subtitles, onTranslationComplete) => {
     setIncludeRules(value);
     localStorage.setItem('translation_include_rules', value.toString());
   };
-
-  /**
-   * Handle bulk translation
-   * @param {Array} languages - Languages to translate to
-   * @param {string|null} delimiter - Delimiter for multi-language translation
-   * @param {boolean} useParentheses - Whether to use parentheses for the second language
-   * @param {Object} bracketStyle - Optional bracket style { open, close }
-   * @param {Array} chainItems - Optional chain items for format mode
-   * @param {boolean} hasMainSubtitles - Whether there are main subtitles to translate after bulk
-   */
-  const handleBulkTranslate = async (languages, delimiter = ' ', useParentheses = false, bracketStyle = null, chainItems = null, hasMainSubtitles = false) => {
-    if (bulkFiles.length === 0) {
-      setError(t('translation.bulk.noFiles', 'No files added for bulk translation'));
-      return;
-    }
-
-    setIsBulkTranslating(true);
-    setError('');
-    setBulkTranslations([]);
-    setCurrentBulkFileIndex(0);
-
-    const results = [];
-
-    try {
-      // Process each file sequentially
-      for (let i = 0; i < bulkFiles.length; i++) {
-        // Check if processing has been force stopped before processing each file
-        if (getProcessingForceStopped()) {
-          console.log('Bulk translation cancelled by user');
-          throw new Error('Bulk translation was cancelled by user');
-        }
-
-        setCurrentBulkFileIndex(i);
-        const bulkFile = bulkFiles[i];
-
-        // Update status - include main file in total count if it exists
-        const totalFiles = bulkFiles.length + (hasMainSubtitles ? 1 : 0);
-        setTranslationStatus(t('translation.bulk.processing', 'Processing file {{current}}/{{total}}: {{filename}}', {
-          current: i + 1,
-          total: totalFiles,
-          filename: bulkFile.name
-        }));
-
-        try {
-          // Use the same translation settings but skip context rules
-          const result = await translateSubtitles(
-            bulkFile.subtitles,
-            languages.length === 1 ? languages[0] : languages,
-            selectedModel,
-            null, // Skip custom prompt/context rules for bulk translation
-            splitDuration,
-            false, // Skip include rules for bulk translation
-            languages.length === 2 && useParentheses ? delimiter : (useParentheses ? null : delimiter),
-            useParentheses,
-            bracketStyle,
-            chainItems,
-            bulkFile.name // File context for bulk translation
-          );
-
-          if (result && result.length > 0) {
-            results.push({
-              originalFile: bulkFile,
-              translatedSubtitles: result,
-              success: true
-            });
-          } else {
-            results.push({
-              originalFile: bulkFile,
-              error: t('translation.emptyResult', 'Translation returned no results'),
-              success: false
-            });
-          }
-        } catch (fileError) {
-          console.error(`Error translating file ${bulkFile.name}:`, fileError);
-
-          // Check if this was a cancellation error
-          if (fileError.message && fileError.message.includes('aborted')) {
-            console.log('File translation was cancelled, stopping bulk translation');
-            throw new Error('Bulk translation was cancelled by user');
-          }
-
-          results.push({
-            originalFile: bulkFile,
-            error: fileError.message || t('translation.error', 'Error translating subtitles'),
-            success: false
-          });
-        }
-
-        // Check if processing has been force stopped after each file
-        if (getProcessingForceStopped()) {
-          console.log('Bulk translation cancelled by user after file completion');
-          throw new Error('Bulk translation was cancelled by user');
-        }
-      }
-
-      setBulkTranslations(results);
-
-      // Calculate total files including main file if it exists
-      const totalFiles = results.length + (hasMainSubtitles ? 1 : 0);
-      const successfulBulkFiles = results.filter(r => r.success).length;
-
-      if (hasMainSubtitles) {
-        // If there's a main file to translate, show intermediate status
-        setTranslationStatus(t('translation.bulk.completeWithMain', 'Bulk files complete: {{success}}/{{bulkTotal}} bulk files processed, main file next ({{current}}/{{total}} total)', {
-          success: successfulBulkFiles,
-          bulkTotal: results.length,
-          current: successfulBulkFiles,
-          total: totalFiles
-        }));
-      } else {
-        // If no main file, show final status
-        setTranslationStatus(t('translation.bulk.complete', 'Bulk translation complete: {{success}}/{{total}} files processed successfully', {
-          success: successfulBulkFiles,
-          total: totalFiles
-        }));
-      }
-
-    } catch (error) {
-      console.error('Bulk translation error:', error);
-
-      // Check if this was a cancellation
-      if (error.message && (error.message.includes('cancelled') || error.message.includes('aborted'))) {
-        setTranslationStatus(t('translation.cancelled', 'Translation cancelled by user'));
-      } else {
-        setError(t('translation.bulk.error', 'Error during bulk translation: {{message}}', { message: error.message }));
-      }
-    } finally {
-      setIsBulkTranslating(false);
-      setCurrentBulkFileIndex(-1);
-    }
-  };
-
-  /**
-   * Handle bulk file removal with translation cleanup
-   * @param {string} fileId - ID of the file to remove
-   */
-  const handleBulkFileRemoval = (fileId) => {
-    // Remove the file from bulk files
-    const updatedBulkFiles = bulkFiles.filter(bf => bf.id !== fileId);
-    setBulkFiles(updatedBulkFiles);
-
-    // Remove corresponding translation result if it exists
-    const updatedBulkTranslations = bulkTranslations.filter(bt => bt.originalFile.id !== fileId);
-    setBulkTranslations(updatedBulkTranslations);
-  };
-
-  /**
-   * Handle bulk files removal (remove all) with translation cleanup
-   */
-  const handleBulkFilesRemovalAll = () => {
-    setBulkFiles([]);
-    setBulkTranslations([]);
-  };
-
-
 
   // Function to update translated subtitles (for segment retry)
   const updateTranslatedSubtitles = useCallback((newTranslatedSubtitles) => {

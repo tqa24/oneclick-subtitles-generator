@@ -1,6 +1,5 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import { SERVER_URL } from '../../../config';
-import { saveAudioBlobToServer } from '../../../services/narrationService';
 import { deriveSubtitleId } from '../../../utils/subtitle/idUtils';
 
 

@@ -1,13 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import StandardSlider from './common/StandardSlider';
-import SubtitleCustomizationPanel, { defaultCustomization } from './SubtitleCustomizationPanel';
-import RemotionVideoPreview from './RemotionVideoPreview';
+import { defaultCustomization } from './SubtitleCustomizationPanel';
 import QueueManagerPanel from './QueueManagerPanel';
-import LoadingIndicator from './common/LoadingIndicator';
-import CustomDropdown from './common/CustomDropdown';
-import PulsingElement from './common/PulsingElement';
-import { formatTime } from '../utils/timeFormatter';
 import '../styles/VideoRenderingSection.css';
 import '../styles/CollapsibleSection.css';
 import '../styles/components/upload-drop-zone.css';
@@ -15,12 +9,18 @@ import '../styles/components/panel-resizer.css';
 import '../styles/components/buttons.css';
 import '../styles/VideoRenderingControls.css';
 import '../styles/components/form-controls.css';
-import { hydrateNarrationResultsForAlignment } from '../utils/narrationAlignmentUtils';
-
-
-
-
-import HelpIcon from './common/HelpIcon';
+import { RENDERER_BASE_URL } from '../utils/videoRendererClient';
+import { useRenderQueue } from './VideoRenderingSection/useRenderQueue';
+import { useVideoUpload } from './VideoRenderingSection/useVideoUpload';
+import { useNarration } from './VideoRenderingSection/useNarration';
+import { usePanelResize } from './VideoRenderingSection/usePanelResize';
+import { useAutoFill } from './VideoRenderingSection/useAutoFill';
+import { consumeRenderStream } from './VideoRenderingSection/renderStreamHandlers';
+import { resolveAudioFile, resolveNarrationUrl, buildRenderRequest } from './VideoRenderingSection/renderRequestBuilder';
+import InputSelectionRow from './VideoRenderingSection/InputSelectionRow';
+import RenderSettingsRow from './VideoRenderingSection/RenderSettingsRow';
+import TrimTimelineRow from './VideoRenderingSection/TrimTimelineRow';
+import PreviewCustomizationRow from './VideoRenderingSection/PreviewCustomizationRow';
 
 // Gated debug logging (enable in the browser console: localStorage.debug_logs = 'true')
 const DEBUG_LOGS = (typeof window !== 'undefined') && (localStorage.getItem('debug_logs') === 'true');
@@ -54,8 +54,19 @@ const VideoRenderingSection = ({
   const [videoDuration, setVideoDuration] = useState(0);
   // *** FIX END ***
 
+  // Drag-drop + selected video file state (extracted hook)
+  const {
+    isDragging,
+    selectedVideoFile,
+    setSelectedVideoFile,
+    handleVideoUpload,
+    handleDragEnter,
+    handleDragLeave,
+    handleDragOver,
+    handleDrop,
+  } = useVideoUpload();
+
   // Form state with localStorage persistence
-  const [selectedVideoFile, setSelectedVideoFile] = useState(null);
   const [selectedSubtitles, setSelectedSubtitles] = useState(() => {
     return localStorage.getItem('videoRender_selectedSubtitles') || 'original';
   });
@@ -115,20 +126,49 @@ const VideoRenderingSection = ({
       aspectRatio: null
     };
   });
-  const [renderQueue, setRenderQueue] = useState([]);
-  const [currentQueueItem, setCurrentQueueItem] = useState(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const userTrimAdjustedRef = useRef(false);
-  const [isRefreshingNarration, setIsRefreshingNarration] = useState(false);
   const [narrationUpdateTrigger, setNarrationUpdateTrigger] = useState(0);
 
-  // Panel resizing states with localStorage persistence
-  const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
-    const saved = localStorage.getItem('videoRender_leftPanelWidth');
-    return saved ? parseFloat(saved) : 66.67; // Default 2fr = 66.67%
+  // Narration availability + aligned-audio resolver + refresh action (extracted hook)
+  const {
+    isRefreshingNarration,
+    currentNarrationResults,
+    isAlignedNarrationAvailable,
+    hasNarrationSegments,
+    getNarrationAudioUrl,
+    handleRefreshNarration,
+  } = useNarration({ selectedNarration, narrationResults });
+
+  // handleStartRender is defined further down but referenced by the render-queue hook
+  // (startNextPendingRender) — thread it through a ref to avoid a circular dependency.
+  const startRenderRef = useRef(null);
+
+  // Render-queue state + persistence + SSE reconnection (extracted hook)
+  const {
+    renderQueue,
+    setRenderQueue,
+    currentQueueItem,
+    setCurrentQueueItem,
+    startNextPendingRender,
+    removeFromQueue,
+    clearQueue,
+  } = useRenderQueue({
+    isRendering,
+    setIsRendering,
+    setRenderProgress,
+    setRenderStatus,
+    setRenderedVideoUrl,
+    setError,
+    currentRenderId,
+    setCurrentRenderId,
+    setAbortController,
+    t,
+    startRenderRef,
   });
-  const [isResizing, setIsResizing] = useState(false);
-  const containerRef = useRef(null);  // Collapsible state - always start collapsed by default (like BackgroundImageGenerator)
+
+  // Resizable preview/customization split panel (extracted hook)
+  const { leftPanelWidth, containerRef, handleMouseDown } = usePanelResize();
+
+  // Collapsible state - always start collapsed by default (like BackgroundImageGenerator)
   const [isCollapsed, setIsCollapsed] = useState(true); // Always start collapsed
   const [userHasCollapsed, setUserHasCollapsed] = useState(false); // Track if user has manually collapsed
   const [isClickDisabled, setIsClickDisabled] = useState(false); // Disable button for 2 seconds after click
@@ -144,196 +184,22 @@ const VideoRenderingSection = ({
     return () => window.removeEventListener('narrations-updated', handleNarrationsUpdated);
   }, []);
 
-  // Panel resizing functionality
-  const handleMouseDown = (e) => {
-    setIsResizing(true);
-    e.preventDefault();
-  };
-
-  const handleMouseMove = (e) => {
-    if (!isResizing || !containerRef.current) return;
-
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const newLeftWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
-
-    // Calculate right panel width in pixels
-    const rightWidthPx = containerRect.width * (100 - newLeftWidth) / 100;
-
-    // Constrain right panel between 260px and 700px
-    const constrainedRightWidthPx = Math.min(Math.max(rightWidthPx, 260), 700);
-
-    // Convert back to left panel percentage
-    let constrainedLeftWidth = 100 - (constrainedRightWidthPx / containerRect.width * 100);
-
-    // Ensure left panel never goes below 300px
-    const minLeftWidthPx = 300;
-    const minLeftWidthPercent = (minLeftWidthPx / containerRect.width) * 100;
-    constrainedLeftWidth = Math.max(constrainedLeftWidth, minLeftWidthPercent);
-
-    setLeftPanelWidth(constrainedLeftWidth);
-  };
-
-  const handleMouseUp = () => {
-    setIsResizing(false);
-  };
-
-  // Add global mouse event listeners for resizing
-  useEffect(() => {
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-    } else {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    };
-  }, [isResizing]);
-
-  const sectionRef = useRef(null);
-  const dragCounterRef = useRef(0);
-  // Auto-fill data when autoFillData changes - with improved state management
-  useEffect(() => {
-    if (autoFillData) {
-      dbg('[VideoRenderingSection] Processing autoFillData:', autoFillData);
-
-      // Expand/scroll sequencing: when coming from video-quality-modal, scroll first, then expand
-      const shouldSequenceScrollThenExpand =
-        !!(autoFillData.expand && autoFillData.autoScroll && autoFillData.source === 'video-quality-modal');
-
-      // Expand if requested - but defer when sequencing is needed
-      if (autoFillData.expand) {
-        if (shouldSequenceScrollThenExpand) {
-          // Keep collapsed until after scroll completes
-          setUserHasCollapsed(false);
-        } else {
-          setIsCollapsed(false);
-          // Reset userHasCollapsed when auto-expanding via render button
-          setUserHasCollapsed(false);
-        }
-      }
-
-      // Auto-fill video - prioritize videoFile from quality modal, then actual video URL
-      if (autoFillData.videoFile) {
-        // Use the video file selected from the quality modal
-        setSelectedVideoFile(autoFillData.videoFile);
-      } else if (actualVideoUrl) {
-        // Create a video file object that represents the actual playing video
-        setSelectedVideoFile({
-          url: actualVideoUrl,
-          name: selectedVideo?.title || uploadedFile?.name || 'Current Video',
-          isActualVideo: true
-        });
-      }
-
-      // Auto-fill subtitles based on available data
-      if (translatedSubtitles && translatedSubtitles.length > 0) {
-        setSelectedSubtitles('translated');
-      } else if (subtitlesData && subtitlesData.length > 0) {
-        setSelectedSubtitles('original');
-      }
-
-      // Auto-fill narration if available
-      if (narrationResults && narrationResults.length > 0) {
-        setSelectedNarration('generated');
-      }
-
-      // Auto-scroll ONLY if explicitly requested
-      if (shouldSequenceScrollThenExpand) {
-        dbg('[VideoRenderingSection] Sequencing: scroll first, then expand');
-        // Use a JS-driven smooth scroll to avoid any CSS/UA interruptions
-        setTimeout(() => {
-          const targetEl = sectionRef.current;
-          if (!targetEl) return;
-          const startY = window.scrollY || window.pageYOffset;
-          const rect = targetEl.getBoundingClientRect();
-          const targetY = startY + rect.top - 12; // slight offset for aesthetics
-          const distance = targetY - startY;
-          const duration = Math.min(1200, Math.max(500, Math.abs(distance) * 0.9));
-          let startTime = null;
-          const easeOutQuart = (t) => 1 - Math.pow(1 - t, 4);
-          const animate = (ts) => {
-            if (startTime === null) startTime = ts;
-            const elapsed = ts - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            const eased = easeOutQuart(progress);
-            window.scrollTo(0, startY + distance * eased);
-            if (progress < 1) {
-              requestAnimationFrame(animate);
-            } else {
-              // Expand after scroll completes
-              setIsCollapsed(false);
-            }
-          };
-          requestAnimationFrame(animate);
-        }, 50);
-      } else if (autoFillData.autoScroll && autoFillData.source !== 'video-quality-modal') {
-        dbg('[VideoRenderingSection] Auto-scroll requested but blocked - source:', autoFillData.source);
-      }
-    }
-  }, [autoFillData, actualVideoUrl, selectedVideo, uploadedFile, subtitlesData, translatedSubtitles, narrationResults, userHasCollapsed]);
-
-  // Auto-process queue when it changes
-  // Restore render state from localStorage on component mount
-  useEffect(() => {
-    const restoreRenderState = () => {
-      try {
-        const savedQueue = localStorage.getItem('videoRenderQueue');
-        const savedCurrentItem = localStorage.getItem('currentRenderItem');
-        const savedRenderId = localStorage.getItem('currentRenderId');
-
-        if (savedQueue) {
-          const parsedQueue = JSON.parse(savedQueue);
-          setRenderQueue(parsedQueue);
-        }
-
-        if (savedCurrentItem && savedRenderId) {
-          const parsedCurrentItem = JSON.parse(savedCurrentItem);
-          setCurrentQueueItem(parsedCurrentItem);
-          setCurrentRenderId(savedRenderId);
-
-          // Check if the render is still active on the server
-          checkRenderStatus(savedRenderId, parsedCurrentItem);
-        }
-      } catch (error) {
-        console.error('Failed to restore render state:', error);
-        // Clear corrupted data
-        localStorage.removeItem('videoRenderQueue');
-        localStorage.removeItem('currentRenderItem');
-        localStorage.removeItem('currentRenderId');
-      }
-    };
-
-    restoreRenderState();
-  }, []);
-
-  // Save render state to localStorage whenever it changes
-  useEffect(() => {
-    if (renderQueue.length > 0) {
-      localStorage.setItem('videoRenderQueue', JSON.stringify(renderQueue));
-    } else {
-      localStorage.removeItem('videoRenderQueue');
-    }
-  }, [renderQueue]);
-
-  useEffect(() => {
-    if (currentQueueItem && currentRenderId) {
-      localStorage.setItem('currentRenderItem', JSON.stringify(currentQueueItem));
-      localStorage.setItem('currentRenderId', currentRenderId);
-    } else {
-      localStorage.removeItem('currentRenderItem');
-      localStorage.removeItem('currentRenderId');
-    }
-  }, [currentQueueItem, currentRenderId]);
+  // Apply incoming autoFillData (expand/scroll + pre-select inputs) — extracted hook
+  const { sectionRef } = useAutoFill({
+    autoFillData,
+    actualVideoUrl,
+    selectedVideo,
+    uploadedFile,
+    subtitlesData,
+    translatedSubtitles,
+    narrationResults,
+    userHasCollapsed,
+    setIsCollapsed,
+    setUserHasCollapsed,
+    setSelectedVideoFile,
+    setSelectedSubtitles,
+    setSelectedNarration,
+  });
 
   // Save video rendering settings to localStorage whenever they change
   useEffect(() => {
@@ -355,318 +221,8 @@ const VideoRenderingSection = ({
   useEffect(() => {
     localStorage.setItem('videoRender_cropSettings', JSON.stringify(cropSettings));
   }, [cropSettings]);
-  useEffect(() => {
-    localStorage.setItem('videoRender_leftPanelWidth', leftPanelWidth.toString());
-  }, [leftPanelWidth]);
 
   // Note: isCollapsed state is not persisted - always starts collapsed like BackgroundImageGenerator
-
-  // Check if a render is still active on the server and reconnect
-  const checkRenderStatus = async (renderId, queueItem) => {
-    try {
-      const response = await fetch(`http://localhost:3033/render-status/${renderId}`);
-
-      if (response.ok) {
-        const data = await response.json();
-
-        if (data.status === 'active') {
-          // Render is still active, reconnect to it
-          dbg('Reconnecting to active render:', renderId);
-          setIsRendering(true);
-
-          // Update queue item status to processing
-          setRenderQueue(prev => prev.map(item =>
-            item.id === queueItem.id ? { ...item, status: 'processing', progress: data.progress || 0 } : item
-          ));
-
-          // Reconnect to the render stream
-          reconnectToRender(renderId, queueItem);
-        } else if (data.status === 'completed') {
-          // Render completed while user was away
-          dbg('Render completed while away:', renderId);
-          setRenderQueue(prev => prev.map(item =>
-            item.id === queueItem.id
-              ? { ...item, status: 'completed', progress: 100, outputPath: data.outputPath }
-              : item
-          ));
-          setCurrentQueueItem(null);
-          setCurrentRenderId(null);
-
-          // Start next pending render if any
-          setTimeout(() => startNextPendingRender(), 1000);
-        } else {
-          // Render failed or was cancelled
-          dbg('Render failed or cancelled while away:', renderId);
-          setRenderQueue(prev => prev.map(item =>
-            item.id === queueItem.id
-              ? { ...item, status: 'failed', error: data.error || t('videoRendering.renderFailedBrowserClosed', 'Render failed while browser was closed') }
-              : item
-          ));
-          setCurrentQueueItem(null);
-          setCurrentRenderId(null);
-
-          // Start next pending render if any
-          setTimeout(() => startNextPendingRender(), 1000);
-        }
-      } else {
-        // Server doesn't know about this render, mark as failed
-        dbg('Server does not know about render:', renderId);
-        setRenderQueue(prev => prev.map(item =>
-          item.id === queueItem.id
-            ? { ...item, status: 'failed', error: 'Render not found on server' }
-            : item
-        ));
-        setCurrentQueueItem(null);
-        setCurrentRenderId(null);
-      }
-    } catch (error) {
-      console.error('Failed to check render status:', error);
-      // Mark as failed if we can't check status
-      setRenderQueue(prev => prev.map(item =>
-        item.id === queueItem.id
-          ? { ...item, status: 'failed', error: 'Could not reconnect to render' }
-          : item
-      ));
-      setCurrentQueueItem(null);
-      setCurrentRenderId(null);
-    }
-  };
-
-  // Reconnect to an ongoing render stream
-  const reconnectToRender = async (renderId, queueItem) => {
-    try {
-      // Create new abort controller for this reconnection
-      const controller = new AbortController();
-      setAbortController(controller);
-
-      setRenderStatus(t('videoRendering.reconnecting', 'Reconnecting to render...'));
-
-      // Connect to the render stream
-      const response = await fetch(`http://localhost:3033/render-stream/${renderId}`, {
-        method: 'GET',
-        signal: controller.signal
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to reconnect to render stream: ${response.status}`);
-      }
-
-      // Handle Server-Sent Events (same logic as in handleStartRender)
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        // Check if the request was aborted
-        if (controller.signal.aborted) {
-          dbg('Reconnection stream reading aborted');
-          break;
-        }
-
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-
-              // Debug logging to understand what the server is sending during reconnection
-              if (data.message && data.message.includes('Chrome')) {
-                dbg('[Chrome Download Debug - Reconnection] Server message:', data);
-              }
-
-              // Also log any data with progress-related info during reconnection
-              if (data.message && (data.message.includes('Mb/') || data.message.includes('download'))) {
-                dbg('[Progress Debug - Reconnection] Server message with download info:', data);
-              }
-
-              // IMPORTANT: Check Chrome download FIRST before other phases (reconnection)
-              // Chrome download happens during selectComposition after bundling
-              if (data.chromeDownload) {
-                // This is the actual format from server: { chromeDownload: { downloaded: X, total: Y } }
-                const { downloaded, total } = data.chromeDownload;
-                const downloadProgress = Math.round((downloaded / total) * 100);
-                dbg(`[Chrome Download Progress - Reconnection] ${downloaded}MB / ${total}MB = ${downloadProgress}%`);
-
-                const chromeDownloadStatus = t('videoRendering.downloadingChrome', 'Downloading Chrome for Testing (first time only)');
-
-                setRenderProgress(downloadProgress);
-                setRenderStatus(chromeDownloadStatus);
-
-                setRenderQueue(prev => prev.map(item =>
-                  item.id === queueItem.id
-                    ? {
-                        ...item,
-                        progress: downloadProgress,
-                        phase: 'chrome-download',
-                        phaseDescription: chromeDownloadStatus
-                      }
-                    : item
-                ));
-              }
-              // Handle Chrome download from other possible formats (fallback)
-              else if ((data.type === 'browser-download') ||
-                  (data.message && (data.message.includes('Chrome Headless Shell') || data.message.includes('Chrome for Testing'))) ||
-                  (data.message && data.message.includes('Downloading Chrome'))) {
-                let downloadProgress = 0;
-                let chromeDownloadStatus = '';
-
-                if (data.type === 'browser-download' && data.downloaded && data.total) {
-                } else if (data.type === 'browser-download' && data.downloaded && data.total) {
-                  // Format 2: { type: 'browser-download', downloaded: X, total: Y }
-                  downloadProgress = Math.round((data.downloaded / data.total) * 100);
-                } else if (data.message && (data.message.includes('Chrome Headless Shell') || data.message.includes('Chrome for Testing') || data.message.includes('Downloading Chrome'))) {
-                  // Format 3: Parse from message like:
-                  // "Downloading Chrome Headless Shell - 9.5 Mb/102.3 Mb"
-                  // "Downloading Chrome for Testing - 9.5 Mb/158.8 Mb"
-                  // "[RENDERER] Downloading Chrome for Testing - 9.5 Mb/158.8 Mb"
-                  const match = data.message.match(/([0-9.]+)\s*Mb\/([0-9.]+)\s*Mb/);
-                  if (match) {
-                    const downloaded = parseFloat(match[1]);
-                    const total = parseFloat(match[2]);
-                    downloadProgress = Math.round((downloaded / total) * 100);
-                    dbg(`[Chrome Download - Reconnection] Parsed progress: ${downloaded}/${total} MB = ${downloadProgress}%`);
-                  } else {
-                    dbg(`[Chrome Download - Reconnection] Could not parse progress from message: "${data.message}"`);
-                  }
-                }
-
-                chromeDownloadStatus = t('videoRendering.downloadingChrome', 'Downloading Chrome for Testing (first time only)');
-                setRenderProgress(downloadProgress);
-                setRenderStatus(chromeDownloadStatus);
-
-                setRenderQueue(prev => prev.map(item =>
-                  item.id === queueItem.id
-                    ? {
-                        ...item,
-                        progress: downloadProgress,
-                        phase: 'chrome-download',
-                        phaseDescription: chromeDownloadStatus
-                      }
-                    : item
-                ));
-              }
-              // Handle progress updates
-              else if (data.progress !== undefined) {
-                const progressPercent = Math.round(data.progress * 100);
-
-                // Simple debug to see if frame data is received
-                if (data.renderedFrames && data.durationInFrames) {
-
-                }
-
-                setRenderQueue(prev => prev.map(item =>
-                  item.id === queueItem.id
-                    ? {
-                        ...item,
-                        progress: progressPercent,
-                        renderedFrames: data.renderedFrames,
-                        durationInFrames: data.durationInFrames,
-                        phase: data.phase,
-                        phaseDescription: data.phaseDescription
-                      }
-                    : item
-                ));
-
-                setRenderProgress(progressPercent);
-
-                // Use more detailed status messages based on phase
-                if (data.phase === 'encoding' || data.phaseDescription) {
-                  setRenderStatus(data.phaseDescription || t('videoRendering.encodingFrames', 'Encoding and stitching frames...'));
-                } else if (data.renderedFrames && data.durationInFrames) {
-                  setRenderStatus(t('videoRendering.renderingFramesDetailed', 'Rendering frames: {{rendered}}/{{total}}', {
-                    rendered: data.renderedFrames,
-                    total: data.durationInFrames
-                  }));
-                } else {
-                  setRenderStatus(t('videoRendering.renderingFrames', 'Processing video frames...'));
-                }
-              }
-
-              // Handle completion
-              if (data.status === 'complete' && data.videoUrl) {
-                setRenderedVideoUrl(data.videoUrl);
-                setRenderStatus(t('videoRendering.complete', 'Render complete!'));
-                setRenderProgress(100);
-
-                const completedAt = Date.now();
-                setRenderQueue(prev => prev.map(item =>
-                  item.id === queueItem.id
-                    ? { ...item, status: 'completed', progress: 100, outputPath: data.videoUrl, completedAt }
-                    : item
-                ));
-
-                setCurrentQueueItem(null);
-                setTimeout(() => startNextPendingRender(), 1000);
-                break;
-              }
-
-              // Handle cancellation
-              if (data.status === 'cancelled') {
-                setRenderStatus(t('videoRendering.cancelled', 'Render cancelled'));
-                setRenderProgress(0);
-
-                setRenderQueue(prev => prev.map(item =>
-                  item.id === queueItem.id
-                    ? { ...item, status: 'failed', progress: 0, error: 'Render was cancelled' }
-                    : item
-                ));
-                break;
-              }
-
-              // Handle errors
-              if (data.status === 'error') {
-                const errorMessage = data.error || t('videoRendering.unknownError', 'Unknown error occurred');
-
-                setRenderQueue(prev => prev.map(item =>
-                  item.id === queueItem.id
-                    ? { ...item, status: 'failed', error: errorMessage }
-                    : item
-                ));
-
-                throw new Error(errorMessage);
-              }
-            } catch (parseError) {
-              console.warn('Failed to parse SSE data during reconnection:', parseError);
-            }
-          }
-        }
-      }
-
-    } catch (error) {
-      console.error('Reconnection error:', error);
-
-      if (error.name === 'AbortError') {
-        dbg('Reconnection was aborted');
-        setRenderStatus(t('videoRendering.cancelled', 'Render cancelled'));
-        setRenderProgress(0);
-
-        setRenderQueue(prev => prev.map(item =>
-          item.id === queueItem.id
-            ? { ...item, status: 'failed', progress: 0, error: t('videoRendering.renderCancelled', 'Render was cancelled') }
-            : item
-        ));
-      } else {
-        setError(error.message);
-        setRenderStatus(t('videoRendering.failed', 'Render failed'));
-
-        setRenderQueue(prev => prev.map(item =>
-          item.id === queueItem.id
-            ? { ...item, status: 'failed', error: error.message }
-            : item
-        ));
-      }
-    } finally {
-      setIsRendering(false);
-      setCurrentRenderId(null);
-      setAbortController(null);
-      setCurrentQueueItem(null);
-      setTimeout(() => startNextPendingRender(), 1000);
-    }
-  };
 
   // Get current subtitles based on selection
   const getCurrentSubtitles = () => {
@@ -674,403 +230,6 @@ const VideoRenderingSection = ({
       return translatedSubtitles;
     }
     return subtitlesData || [];
-  };
-
-  // Get current narration results from window (reactive to updates)
-  const currentNarrationResults = window.originalNarrations || window.translatedNarrations || [];
-
-  // Check if aligned narration is available (same logic as refresh narration button)
-  const isAlignedNarrationAvailable = () => {
-    return window.isAlignedNarrationAvailable === true && window.alignedNarrationCache?.url;
-  };
-
-  // Check if individual narration segments are available (not the aligned audio)
-  const hasNarrationSegments = () => {
-    // Check current narration results
-    if (currentNarrationResults && currentNarrationResults.length > 0) {
-      // Check if any narration has success=true (meaning individual segments exist)
-      const hasSuccessfulNarrations = currentNarrationResults.some(result => result.success === true);
-      if (hasSuccessfulNarrations) return true;
-    }
-
-    // Check window objects (where narrations are actually stored)
-    const originalNarrations = window.originalNarrations || [];
-    const translatedNarrations = window.translatedNarrations || [];
-    const groupedNarrations = window.groupedNarrations || [];
-
-    // Check if any narration segments have success=true
-    const hasOriginalSegments = originalNarrations.some(result => result.success === true);
-    const hasTranslatedSegments = translatedNarrations.some(result => result.success === true);
-    const hasGroupedSegments = groupedNarrations.some(result => result.success === true);
-
-    return hasOriginalSegments || hasTranslatedSegments || hasGroupedSegments;
-  };
-
-  // Get narration audio URL if available - same as refresh narration button
-  const getNarrationAudioUrl = async () => {
-    // First check if aligned narration is already available
-    if (isAlignedNarrationAvailable()) {
-      return window.alignedNarrationCache.url;
-    }
-
-    // If not available and user selected generated narration, try to generate it
-    if (selectedNarration === 'generated' && narrationResults && narrationResults.length > 0) {
-      try {
-        // Use the same logic as the refresh narration button
-        const narrationData = narrationResults.map(result => ({
-          filename: result.filename,
-          start: result.start ?? result.start_time ?? 0,
-          end: result.end ?? result.end_time ?? 5,
-          subtitle_id: result.subtitle_id
-        }));
-
-        // Call the same endpoint as refresh narration button
-        const response = await fetch(`http://localhost:3031/api/narration/generate-aligned`, {
-          method: 'POST',
-          mode: 'cors',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({ narrations: narrationData, format: 'm4a' })
-        });
-
-        if (response.ok) {
-          // Check for audio alignment notification
-          const { checkAudioAlignmentFromResponse } = await import('../utils/audioAlignmentNotification.js');
-          checkAudioAlignmentFromResponse(response);
-          const responseJson = await response.json();
-          const url = responseJson.filename
-            ? `http://localhost:3031/api/narration/audio/${encodeURIComponent(responseJson.filename)}`
-            : `http://localhost:3031${responseJson.url}`;
-
-          // Update the cache like the refresh button does
-          window.alignedNarrationCache = {
-            blob: null,
-            url: url,
-            filename: responseJson.filename,
-            timestamp: Date.now(),
-            subtitleTimestamps: {}
-          };
-          window.isAlignedNarrationAvailable = true;
-
-          return url;
-        }
-      } catch (error) {
-        console.error('Failed to get aligned narration:', error);
-      }
-    }
-    return null;
-  };
-
-  // Refresh narration function - same logic as the main video player
-  const handleRefreshNarration = async () => {
-    if (isRefreshingNarration) return;
-
-    try {
-      setIsRefreshingNarration(true);
-
-      // Get narrations from window object
-      const isUsingGroupedSubtitles = window.useGroupedSubtitles || false;
-      const groupedNarrations = window.groupedNarrations || [];
-      const originalNarrations = window.originalNarrations || [];
-
-      // Use grouped narrations if available and enabled, otherwise use original narrations
-      const narrations = (isUsingGroupedSubtitles && groupedNarrations.length > 0)
-        ? groupedNarrations
-        : originalNarrations;
-
-      dbg(`Using ${isUsingGroupedSubtitles ? 'grouped' : 'original'} narrations for alignment. Found ${narrations.length} narrations.`);
-
-      // Check if we have any narration results
-      if (!narrations || narrations.length === 0) {
-        console.error('No narration results available in window objects');
-
-        // Try to reconstruct narration results from the file system
-        const allSubtitles = window.subtitlesData || window.originalSubtitles || [];
-
-        if (allSubtitles.length === 0) {
-          throw new Error('No narration results or subtitles available for alignment');
-        }
-
-        // Create synthetic narration objects based on subtitles
-        const syntheticNarrations = allSubtitles.map(subtitle => ({
-          subtitle_id: subtitle.id,
-          filename: `subtitle_${subtitle.id}/1.wav`,
-          success: true,
-          start: subtitle.start,
-          end: subtitle.end,
-          text: subtitle.text
-        }));
-
-        // Use these synthetic narrations
-        narrations.length = 0;
-        narrations.push(...syntheticNarrations);
-
-        // Also update the window object for future use
-        window.originalNarrations = [...syntheticNarrations];
-      }
-
-      // Force reset the aligned narration cache
-      if (typeof window.resetAlignedNarration === 'function') {
-        window.resetAlignedNarration();
-      }
-
-      // Clean up any existing audio elements
-      if (window.alignedAudioElement) {
-        try {
-          window.alignedAudioElement.pause();
-          window.alignedAudioElement.src = '';
-          window.alignedAudioElement.load();
-          window.alignedAudioElement = null;
-        } catch (e) {
-          console.warn('Error cleaning up window.alignedAudioElement:', e);
-        }
-      }
-
-      // Get all subtitles from the window object
-      const allSubtitles = isUsingGroupedSubtitles && window.groupedSubtitles ?
-        window.groupedSubtitles :
-        (window.subtitlesData || window.originalSubtitles || []);
-
-      // Create a map for faster lookup
-      const subtitleMap = {};
-      allSubtitles.forEach(sub => {
-        if (sub.id !== undefined) {
-          subtitleMap[sub.id] = sub;
-        }
-      });
-
-      // Prepare the data for the aligned narration with correct timing
-      const narrationData = hydrateNarrationResultsForAlignment(narrations)
-        .filter(result => result.success && result.filename)
-        .map(result => {
-          const subtitle = subtitleMap[result.subtitle_id];
-          if (subtitle && typeof subtitle.start === 'number' && typeof subtitle.end === 'number') {
-            return {
-              filename: result.filename,
-              subtitle_id: result.subtitle_id,
-              start: subtitle.start,
-              end: subtitle.end,
-              text: subtitle.text || result.text || ''
-            };
-          }
-          return {
-            filename: result.filename,
-            subtitle_id: result.subtitle_id,
-            start: 0,
-            end: 5,
-            text: result.text || ''
-          };
-        });
-
-      // Sort by start time to ensure correct order
-      narrationData.sort((a, b) => a.start - b.start);
-
-      if (narrationData.length === 0) {
-        throw new Error('No valid narration files found. Please generate narrations first.');
-      }
-
-      // Call the same endpoint as refresh narration button
-      const response = await fetch(`http://localhost:3031/api/narration/generate-aligned`, {
-        method: 'POST',
-        mode: 'cors',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ narrations: narrationData, format: 'm4a' })
-      });
-
-      // Check for audio alignment notification after successful response
-      if (response.ok) {
-        const { checkAudioAlignmentFromResponse } = await import('../utils/audioAlignmentNotification.js');
-        checkAudioAlignmentFromResponse(response);
-      }
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        try {
-          const errorJson = JSON.parse(errorText);
-          if (errorJson.error && errorJson.error.includes('Audio file not found')) {
-            throw new Error(`Some narration files are missing. Please regenerate narrations before refreshing.`);
-          } else {
-            throw new Error(`Failed to generate aligned audio: ${errorJson.error || response.statusText}`);
-          }
-        } catch (jsonError) {
-          throw new Error(`Failed to generate aligned audio: ${errorText || response.statusText}`);
-        }
-      }
-
-      const responseJson = await response.json();
-      const url = responseJson.filename
-        ? `http://localhost:3031/api/narration/audio/${encodeURIComponent(responseJson.filename)}`
-        : `http://localhost:3031${responseJson.url}`;
-
-      // Update the aligned narration cache
-      window.alignedNarrationCache = {
-        blob: null,
-        url: url,
-        filename: responseJson.filename,
-        timestamp: Date.now(),
-        subtitleTimestamps: {}
-      };
-
-      // Set a flag to indicate that aligned narration is available
-      window.isAlignedNarrationAvailable = true;
-
-      // Notify the system that aligned narration is available
-      window.dispatchEvent(new CustomEvent('aligned-narration-ready', {
-        detail: {
-          url: url,
-          timestamp: Date.now()
-        }
-      }));
-
-    } catch (error) {
-      console.error('Error during aligned narration regeneration:', error);
-
-      // Dispatch aligned-narration-status event for auto-dismissing toast
-      window.dispatchEvent(new CustomEvent('aligned-narration-status', {
-        detail: {
-          status: 'error',
-          message: error.message || 'Failed to refresh narration',
-          isStillGenerating: false
-        }
-      }));
-    } finally {
-      setIsRefreshingNarration(false);
-    }
-  };
-
-  // Handle video file upload
-  const handleVideoUpload = async (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setSelectedVideoFile(file);
-    }
-  };
-
-  // Drag and drop handlers (robust: use counter + global cleanup to avoid stuck overlay)
-  const handleDragEnter = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Increment counter for nested dragenter/dragleave events
-    dragCounterRef.current = (dragCounterRef.current || 0) + 1;
-    setIsDragging(true);
-  };
-  
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Decrement counter and only clear when no more entered elements remain
-    dragCounterRef.current = Math.max(0, (dragCounterRef.current || 0) - 1);
-    if (dragCounterRef.current === 0) {
-      setIsDragging(false);
-    }
-  };
-  
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-  
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Reset counter and dragging state on drop
-    dragCounterRef.current = 0;
-    setIsDragging(false);
-  
-    const files = Array.from(e.dataTransfer.files || []);
-    if (files.length > 0) {
-      const videoFile = files.find(file => file.type && file.type.startsWith && file.type.startsWith('video/'));
-      if (videoFile) {
-        setSelectedVideoFile(videoFile);
-      }
-    }
-  };
-  
-  // Ensure overlay is cleared if drag ends outside the component or window
-  useEffect(() => {
-    const onWindowDragEnd = () => {
-      dragCounterRef.current = 0;
-      setIsDragging(false);
-    };
-    const onWindowDrop = () => {
-      dragCounterRef.current = 0;
-      setIsDragging(false);
-    };
-  
-    window.addEventListener('dragend', onWindowDragEnd);
-    window.addEventListener('drop', onWindowDrop);
-  
-    return () => {
-      window.removeEventListener('dragend', onWindowDragEnd);
-      window.removeEventListener('drop', onWindowDrop);
-    };
-  }, []);
-
-  // Upload file to video-renderer server
-  const uploadFileToRenderer = async (file, type = 'video') => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await fetch(`http://localhost:3033/upload/${type}`, {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to upload ${type}`);
-    }
-
-    const data = await response.json();
-    return data.filename;
-  };
-
-  // Download video from URL and upload to renderer
-  const downloadVideoFromUrl = async (videoUrl) => {
-    // Handle blob URLs differently - they can't be fetched from server
-    if (videoUrl.startsWith('blob:')) {
-      throw new Error('Blob URLs cannot be downloaded from server. Please upload the original file.');
-    }
-
-    // Fetch the video from the URL
-    const response = await fetch(videoUrl);
-    if (!response.ok) {
-      throw new Error('Failed to download video from URL');
-    }
-
-    // Convert to blob
-    const blob = await response.blob();
-
-    // Create a File object from the blob
-    const file = new File([blob], 'video.mp4', { type: 'video/mp4' });
-
-    // Upload to renderer
-    return await uploadFileToRenderer(file, 'video');
-  };
-
-  // Convert blob URL to File object for upload
-  const convertBlobUrlToFile = async (blobUrl, filename = 'video.mp4') => {
-    try {
-      // Fetch the blob from the blob URL
-      const response = await fetch(blobUrl);
-      if (!response.ok) {
-        throw new Error('Failed to fetch blob');
-      }
-
-      const blob = await response.blob();
-
-      // Create a File object from the blob
-      return new File([blob], filename, { type: blob.type || 'video/mp4' });
-    } catch (error) {
-      console.error('Error converting blob URL to file:', error);
-      throw new Error('Failed to convert blob URL to file');
-    }
   };
 
   // Simple render function - allows queueing multiple renders
@@ -1102,21 +261,6 @@ const VideoRenderingSection = ({
     }
   };
 
-  // Simple function to start next pending render
-  const startNextPendingRender = async () => {
-    // Find the next pending item
-    const nextItem = renderQueue.find(item => item.status === 'pending');
-    if (!nextItem || isRendering) return;
-
-    // Mark as processing and stamp start time
-    const startedAt = Date.now();
-    setRenderQueue(prev => prev.map(item =>
-      item.id === nextItem.id ? { ...item, status: 'processing', startedAt } : item
-    ));
-    setCurrentQueueItem({ ...nextItem, startedAt });
-    await handleStartRender(nextItem);
-  };
-
   // Start rendering
   const handleStartRender = async (queueItem = null) => {
     // Create abort controller for this render
@@ -1135,83 +279,23 @@ const VideoRenderingSection = ({
         throw new Error(t('videoRendering.noVideoSelected', 'Please select a video file'));
       }
 
-      // Upload video file if it's a File object
-      let audioFile;
-      if (selectedVideoFile instanceof File) {
-        setRenderStatus(t('videoRendering.uploadingVideo', 'Uploading video...'));
-        audioFile = await uploadFileToRenderer(selectedVideoFile, 'video');
-      } else if (selectedVideoFile && typeof selectedVideoFile === 'object' && selectedVideoFile.url) {
-        // If it's the actual video URL from the player
-        if (selectedVideoFile.isActualVideo) {
-          // Check if it's a blob URL
-          if (selectedVideoFile.url.startsWith('blob:')) {
-            setRenderStatus(t('videoRendering.convertingVideo', 'Converting video...'));
-            // Convert blob URL to File and upload
-            const videoFile = await convertBlobUrlToFile(selectedVideoFile.url, selectedVideoFile.name || 'video.mp4');
-            setRenderStatus(t('videoRendering.uploadingVideo', 'Uploading video...'));
-            audioFile = await uploadFileToRenderer(videoFile, 'video');
-          } else {
-            setRenderStatus(t('videoRendering.downloadingVideo', 'Downloading video...'));
-            audioFile = await downloadVideoFromUrl(selectedVideoFile.url);
-          }
-        } else {
-          throw new Error(t('videoRendering.urlNotSupported', 'URL videos not yet supported. Please upload a file.'));
-        }
-      } else {
-        throw new Error(t('videoRendering.invalidVideoFile', 'Invalid video file. Please select a valid video file.'));
-      }
-
-      // Upload narration audio if selected and get HTTP URL
-      let narrationUrl = null;
-      if (selectedNarration === 'generated') {
-        setRenderStatus(t('videoRendering.preparingNarration', 'Preparing narration...'));
-        const narrationBlobUrl = await getNarrationAudioUrl();
-        if (narrationBlobUrl) {
-          setRenderStatus(t('videoRendering.uploadingNarration', 'Uploading narration...'));
-
-          // Handle blob URLs for narration audio
-          let narrationFileObj;
-          if (narrationBlobUrl.startsWith('blob:')) {
-            // Convert blob URL to File object (client-side)
-            const narrationResponse = await fetch(narrationBlobUrl);
-            const narrationBlob = await narrationResponse.blob();
-            narrationFileObj = new File([narrationBlob], 'narration.wav', { type: 'audio/wav' });
-          } else {
-            // Handle HTTP URLs
-            const narrationResponse = await fetch(narrationBlobUrl);
-            if (!narrationResponse.ok) {
-              throw new Error('Failed to download narration from URL');
-            }
-            const narrationBlob = await narrationResponse.blob();
-            narrationFileObj = new File([narrationBlob], 'narration.wav', { type: 'audio/wav' });
-          }
-
-          // Upload the file to renderer and get HTTP URL
-          const uploadedNarrationFilename = await uploadFileToRenderer(narrationFileObj, 'audio');
-          narrationUrl = `http://localhost:3033/uploads/${uploadedNarrationFilename}`;
-        }
-      }
+      // Upload/convert the video and (optionally) narration audio
+      const audioFile = await resolveAudioFile(selectedVideoFile, setRenderStatus, t);
+      const narrationUrl = await resolveNarrationUrl(selectedNarration, getNarrationAudioUrl, setRenderStatus, t);
 
       // Prepare render request
-      const renderRequest = {
-        compositionId: 'subtitled-video',
-        audioFile: audioFile,
+      const renderRequest = buildRenderRequest({
+        audioFile,
         lyrics: getCurrentSubtitles(),
-        metadata: {
-          ...renderSettings,
-          subtitleCustomization: queueItem.customization, // Include subtitle customization in metadata
-          cropSettings: queueItem.cropSettings, // Include crop settings in metadata
-          trimStart: typeof renderSettings.trimStart === 'number' ? renderSettings.trimStart : 0,
-          trimEnd: typeof renderSettings.trimEnd === 'number' ? renderSettings.trimEnd : 0,
-        },
-        narrationUrl: narrationUrl, // Use HTTP URL instead of blob URL
-        isVideoFile: true
-      };
+        renderSettings,
+        queueItem,
+        narrationUrl,
+      });
 
       setRenderStatus(t('videoRendering.rendering', 'Rendering video...'));
 
       // Send the POST request for rendering
-      const response = await fetch('http://localhost:3033/render', {
+      const response = await fetch(`${RENDERER_BASE_URL}/render`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -1235,263 +319,20 @@ const VideoRenderingSection = ({
         console.warn('No render ID found in response headers');
       }
 
-      // Handle Server-Sent Events
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        // Check if the request was aborted
-        if (controller.signal.aborted) {
-          dbg('Stream reading aborted');
-          break;
-        }
-
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6));
-
-              // LOG EVERYTHING to understand what server is actually sending
-
-
-              // Debug logging to understand what the server is sending
-              if (data.message && data.message.includes('Chrome')) {
-                dbg('[Chrome Download Debug] Server message:', data);
-              }
-
-              // Also log any data with progress-related info
-              if (data.message && (data.message.includes('Mb/') || data.message.includes('download'))) {
-                dbg('[Progress Debug] Server message with download info:', data);
-              }
-
-              // IMPORTANT: Check Chrome download FIRST before other phases
-              // Chrome download happens during selectComposition after bundling
-              if (data.chromeDownload) {
-                // This is the actual format from server: { chromeDownload: { downloaded: X, total: Y } }
-                const { downloaded, total } = data.chromeDownload;
-                const downloadProgress = Math.round((downloaded / total) * 100);
-                dbg(`[Chrome Download Progress] ${downloaded}MB / ${total}MB = ${downloadProgress}%`);
-
-                const chromeDownloadStatus = t('videoRendering.downloadingChrome', 'Downloading Chrome for Testing (first time only)');
-
-                // Use real download progress (0-100%)
-                setRenderProgress(downloadProgress);
-                setRenderStatus(chromeDownloadStatus);
-
-                // Update the queue item's progress and phase description
-                const targetQueueItem = queueItem || currentQueueItem;
-                if (targetQueueItem) {
-                  setRenderQueue(prev => prev.map(item =>
-                    item.id === targetQueueItem.id
-                      ? {
-                          ...item,
-                          progress: downloadProgress,
-                          phase: 'chrome-download',
-                          phaseDescription: chromeDownloadStatus
-                        }
-                      : item
-                  ));
-                }
-              }
-              // Handle Chrome download from other possible formats (fallback)
-              else if ((data.type === 'browser-download') ||
-                  (data.message && (data.message.includes('Chrome Headless Shell') || data.message.includes('Chrome for Testing'))) ||
-                  (data.message && data.message.includes('Downloading Chrome'))) {
-                let downloadProgress = 0;
-                let chromeDownloadStatus = '';
-
-                if (data.type === 'browser-download' && data.downloaded && data.total) {
-                } else if (data.type === 'browser-download' && data.downloaded && data.total) {
-                  // Format 2: { type: 'browser-download', downloaded: X, total: Y }
-                  downloadProgress = Math.round((data.downloaded / data.total) * 100);
-                } else if (data.message && (data.message.includes('Chrome Headless Shell') || data.message.includes('Chrome for Testing') || data.message.includes('Downloading Chrome'))) {
-                  // Format 3: Parse from message like:
-                  // "Downloading Chrome Headless Shell - 9.5 Mb/102.3 Mb"
-                  // "Downloading Chrome for Testing - 9.5 Mb/158.8 Mb"
-                  // "[RENDERER] Downloading Chrome for Testing - 9.5 Mb/158.8 Mb"
-                  const match = data.message.match(/([0-9.]+)\s*Mb\/([0-9.]+)\s*Mb/);
-                  if (match) {
-                    const downloaded = parseFloat(match[1]);
-                    const total = parseFloat(match[2]);
-                    downloadProgress = Math.round((downloaded / total) * 100);
-                    dbg(`[Chrome Download] Parsed progress: ${downloaded}/${total} MB = ${downloadProgress}%`);
-                  } else {
-                    dbg(`[Chrome Download] Could not parse progress from message: "${data.message}"`);
-                  }
-                }
-
-                chromeDownloadStatus = t('videoRendering.downloadingChrome', 'Downloading Chrome for Testing (first time only)');
-
-                // Use real download progress (0-100%) instead of mapping to render progress
-                setRenderProgress(downloadProgress);
-                setRenderStatus(chromeDownloadStatus);
-
-                // Update the queue item's progress and phase description (use passed queueItem or fallback to currentQueueItem)
-                const targetQueueItem = queueItem || currentQueueItem;
-                if (targetQueueItem) {
-                  setRenderQueue(prev => prev.map(item =>
-                    item.id === targetQueueItem.id
-                      ? {
-                          ...item,
-                          progress: downloadProgress, // Real 0-100% progress for Chrome download
-                          phase: 'chrome-download',
-                          phaseDescription: chromeDownloadStatus
-                        }
-                      : item
-                  ));
-                }
-              }
-              // Handle bundling progress
-              else if (data.bundling) {
-                const bundlingStatus = t('videoRendering.bundling', 'Preparing video components...');
-                // Reset progress to 0 after Chrome download completes and rendering begins
-                setRenderProgress(0);
-                setRenderStatus(bundlingStatus);
-
-                // Update the queue item's progress and phase description (use passed queueItem or fallback to currentQueueItem)
-                const targetQueueItem = queueItem || currentQueueItem;
-                if (targetQueueItem) {
-                  setRenderQueue(prev => prev.map(item =>
-                    item.id === targetQueueItem.id
-                      ? {
-                          ...item,
-                          progress: 0, // Reset to 0% for new render phase after Chrome download
-                          phase: 'bundling',
-                          phaseDescription: bundlingStatus
-                        }
-                      : item
-                  ));
-                }
-              }
-              // Handle composition selection
-              else if (data.composition) {
-                const compositionStatus = t('videoRendering.selectingComposition', 'Setting up video composition...');
-                // Reset to 0% for composition phase after bundling, let server control the progress
-                setRenderProgress(0);
-                setRenderStatus(compositionStatus);
-
-                // Update the queue item's progress and phase description (use passed queueItem or fallback to currentQueueItem)
-                const targetQueueItem = queueItem || currentQueueItem;
-                if (targetQueueItem) {
-                  setRenderQueue(prev => prev.map(item =>
-                    item.id === targetQueueItem.id
-                      ? {
-                          ...item,
-                          progress: 0, // Start at 0%, let server drive progress
-                          phase: 'composition',
-                          phaseDescription: compositionStatus
-                        }
-                      : item
-                  ));
-                }
-              }
-              // Handle regular render progress - update queue item instead of global state
-              else if (data.progress !== undefined) {
-                const progressPercent = Math.round(data.progress * 100);
-
-                // Simple debug to see if frame data is received
-                if (data.renderedFrames && data.durationInFrames) {
-
-                }
-
-                // Update the queue item's progress (use passed queueItem or fallback to currentQueueItem)
-                const targetQueueItem = queueItem || currentQueueItem;
-                if (targetQueueItem) {
-                  setRenderQueue(prev => prev.map(item =>
-                    item.id === targetQueueItem.id
-                      ? {
-                          ...item,
-                          progress: progressPercent,
-                          renderedFrames: data.renderedFrames,
-                          durationInFrames: data.durationInFrames,
-                          phase: data.phase,
-                          phaseDescription: data.phaseDescription
-                        }
-                      : item
-                  ));
-                }
-
-                // Keep legacy progress for any remaining external displays (but we'll remove these)
-                setRenderProgress(progressPercent);
-
-                // Use more detailed status messages based on phase
-                if (data.phase === 'encoding' || data.phaseDescription) {
-                  setRenderStatus(data.phaseDescription || t('videoRendering.encodingFrames', 'Encoding and stitching frames...'));
-                } else if (data.renderedFrames && data.durationInFrames) {
-                  setRenderStatus(t('videoRendering.renderingFramesDetailed', 'Rendering frames: {{rendered}}/{{total}}', {
-                    rendered: data.renderedFrames,
-                    total: data.durationInFrames
-                  }));
-                } else {
-                  setRenderStatus(t('videoRendering.renderingFrames', 'Processing video frames...'));
-                }
-              }
-
-              if (data.status === 'complete' && data.videoUrl) {
-                setRenderedVideoUrl(data.videoUrl);
-                setRenderStatus(t('videoRendering.complete', 'Render complete!'));
-                setRenderProgress(100);
-
-                // Update the queue item as completed (use passed queueItem or fallback to currentQueueItem)
-                const targetQueueItem = queueItem || currentQueueItem;
-                if (targetQueueItem) {
-                  const completedAt = Date.now();
-                  setRenderQueue(prev => prev.map(item =>
-                    item.id === targetQueueItem.id
-                      ? { ...item, status: 'completed', progress: 100, outputPath: data.videoUrl, completedAt }
-                      : item
-                  ));
-                }
-
-                // Render complete - reset state and start next
-                setCurrentQueueItem(null);
-                setTimeout(() => startNextPendingRender(), 1000);
-                break;
-              }
-
-              if (data.status === 'cancelled') {
-                setRenderStatus(t('videoRendering.cancelled', 'Render cancelled'));
-                setRenderProgress(0);
-
-                // Update the queue item as cancelled (use passed queueItem or fallback to currentQueueItem)
-                const targetQueueItem = queueItem || currentQueueItem;
-                if (targetQueueItem) {
-                  setRenderQueue(prev => prev.map(item =>
-                    item.id === targetQueueItem.id
-                      ? { ...item, status: 'failed', progress: 0, error: 'Render was cancelled' }
-                      : item
-                  ));
-                }
-                break;
-              }
-
-              if (data.status === 'error') {
-                const errorMessage = data.error || t('videoRendering.unknownError', 'Unknown error occurred');
-
-                // Update the queue item as failed (use passed queueItem or fallback to currentQueueItem)
-                const targetQueueItem = queueItem || currentQueueItem;
-                if (targetQueueItem) {
-                  setRenderQueue(prev => prev.map(item =>
-                    item.id === targetQueueItem.id
-                      ? { ...item, status: 'failed', error: errorMessage }
-                      : item
-                  ));
-                }
-
-                throw new Error(errorMessage);
-              }
-            } catch (parseError) {
-              console.warn('Failed to parse SSE data:', parseError);
-            }
-          }
-        }
-      }
+      // Handle Server-Sent Events (shared with reconnectToRender)
+      await consumeRenderStream(response, controller, {
+        t,
+        setRenderProgress,
+        setRenderStatus,
+        setRenderedVideoUrl,
+        setRenderQueue,
+        setCurrentQueueItem,
+        startNextPendingRender,
+        resolveTarget: () => queueItem || currentQueueItem,
+        includePhaseEvents: true,
+        debugTag: '',
+        parseErrorLabel: 'Failed to parse SSE data:',
+      });
 
     } catch (error) {
       console.error('Render error:', error);
@@ -1536,6 +377,9 @@ const VideoRenderingSection = ({
     }
   };
 
+  // Keep the ref current so the render-queue hook can invoke the latest handleStartRender.
+  startRenderRef.current = handleStartRender;
+
   // Cancel rendering
   const handleCancelRender = async () => {
     // First, abort the fetch request if we have an abort controller
@@ -1557,7 +401,7 @@ const VideoRenderingSection = ({
 
     try {
       // Call the cancel endpoint on the server
-      const response = await fetch(`http://localhost:3033/cancel-render/${currentRenderId}`, {
+      const response = await fetch(`${RENDERER_BASE_URL}/cancel-render/${currentRenderId}`, {
         method: 'POST'
       });
 
@@ -1586,18 +430,6 @@ const VideoRenderingSection = ({
       setTimeout(() => startNextPendingRender(), 1000);
     }
   };
-
-  // Simple queue management functions
-
-  const removeFromQueue = (id) => {
-    setRenderQueue(prev => prev.filter(item => item.id !== id));
-  };
-
-  const clearQueue = () => {
-    setRenderQueue(prev => prev.filter(item => item.status === 'processing'));
-  };
-
-
 
   // No automatic queue processing - simple render history display
 
@@ -1682,386 +514,60 @@ const VideoRenderingSection = ({
         /* Expanded content */
         <div className="video-rendering-content">
           {/* First row: Video Input, Subtitle Source, and Narration Audio in one line */}
-          <div className="input-selection-row">
-            {/* Video Input */}
-            <div className="video-input-compact">
-              <h4>{t('videoRendering.videoInput', 'Video Input')}</h4>
-              {selectedVideoFile ? (
-                <div className="selected-video-info">
-                  <div className="selected-video-info-row top-row">
-                    <span className="material-symbols-rounded video-file-icon">video_file</span>
-                    <span className="video-name">
-                      {(selectedVideoFile instanceof File ? selectedVideoFile.name :
-                        (selectedVideoFile.name || selectedVideoFile.title || 'Current Video'))}
-                    </span>
-                  </div>
-                  <div className="selected-video-info-row bottom-row">
-                    {selectedVideoFile.isActualVideo && (
-                      <span className="video-source-indicator">
-                        {t('videoRendering.fromPlayer', '(from video player)')}
-                      </span>
-                    )}
-                    <button
-                      className="pill-button secondary"
-                      onClick={() => document.getElementById('video-upload-input').click()}
-                    >
-                      {t('videoRendering.changeVideo', 'Change')}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="upload-drop-zone">
-                  <button
-                    className="pill-button primary"
-                    onClick={() => document.getElementById('video-upload-input').click()}
-                  >
-                    {t('videoRendering.selectVideo', 'Select Video File')}
-                  </button>
-                  <span className="drop-text">
-                    {t('videoRendering.orDragDrop', 'or drag and drop here')}
-                  </span>
-                </div>
-              )}
-              <input
-                id="video-upload-input"
-                type="file"
-                accept="video/*"
-                onChange={handleVideoUpload}
-                style={{ display: 'none' }}
-              />
-            </div>
-
-            {/* Subtitle Selection */}
-            <div className="subtitle-selection-compact">
-              <h4>
-                {t('videoRendering.subtitleSource', 'Subtitle Source')}
-                <HelpIcon title={t('videoRendering.subtitleSourceHelp', 'You can use the Upload SRT/JSON button to upload your own subtitle files')} />
-              </h4>
-              <div className="radio-group">
-                <div className="radio-option">
-                  <input
-                    type="radio"
-                    id="subtitle-original"
-                    value="original"
-                    checked={selectedSubtitles === 'original'}
-                    onChange={(e) => setSelectedSubtitles(e.target.value)}
-                    disabled={!subtitlesData || subtitlesData.length === 0}
-                  />
-                  <label htmlFor="subtitle-original">
-                    {t('videoRendering.originalSubtitles', 'Original Subtitles')}
-                    <span className="item-count">
-                      ({subtitlesData ? subtitlesData.length : 0} {t('videoRendering.items', 'items')})
-                    </span>
-                  </label>
-                </div>
-                <div className="radio-option">
-                  <input
-                    type="radio"
-                    id="subtitle-translated"
-                    value="translated"
-                    checked={selectedSubtitles === 'translated'}
-                    onChange={(e) => setSelectedSubtitles(e.target.value)}
-                    disabled={!translatedSubtitles || translatedSubtitles.length === 0}
-                  />
-                  <label htmlFor="subtitle-translated">
-                    {t('videoRendering.translatedSubtitles', 'Translated Subtitles')}
-                    <span className="item-count">
-                      ({translatedSubtitles ? translatedSubtitles.length : 0} {t('videoRendering.items', 'items')})
-                    </span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Original Audio Volume Control */}
-              <div className="compact-volume-control">
-                <label className="volume-label">{t('videoRendering.originalAudioVolume', 'Original Audio Volume')}: {renderSettings.originalAudioVolume}%</label>
-                <StandardSlider
-                  value={renderSettings.originalAudioVolume}
-                  onChange={(value) => setRenderSettings(prev => ({ ...prev, originalAudioVolume: parseInt(value) }))}
-                  min={0}
-                  max={100}
-                  step={1}
-                  orientation="Horizontal"
-                  size="XSmall"
-                  state="Enabled"
-                  width="compact"
-                  showValueIndicator={false} // Using custom label
-                  showIcon={false}
-                  showStops={false}
-                  className="original-audio-volume-slider"
-                  id="original-audio-volume"
-                  ariaLabel={t('videoRendering.originalAudioVolume', 'Original Audio Volume')}
-                />
-              </div>
-            </div>
-
-            {/* Narration Selection */}
-            <div className="narration-selection-compact">
-              <h4>{t('videoRendering.narrationSource', 'Narration Audio')}</h4>
-              <div className="radio-group">
-                <div className="radio-option">
-                  <input
-                    type="radio"
-                    id="narration-none"
-                    value="none"
-                    checked={selectedNarration === 'none'}
-                    onChange={(e) => setSelectedNarration(e.target.value)}
-                  />
-                  <label htmlFor="narration-none">
-                    {t('videoRendering.noNarration', 'No Narration')}
-                  </label>
-                </div>
-                {isAlignedNarrationAvailable() && (
-                  <div className="radio-option">
-                    <input
-                      type="radio"
-                      id="narration-generated"
-                      value="generated"
-                      checked={selectedNarration === 'generated'}
-                      onChange={(e) => setSelectedNarration(e.target.value)}
-                    />
-                    <label htmlFor="narration-generated">
-                      {t('videoRendering.alignedNarration', 'Aligned Narration (ready)')}
-                    </label>
-                  </div>
-                )}
-
-                {/* Narration status and refresh button - only show when narration is not aligned but available */}
-                {!isAlignedNarrationAvailable() && (
-                  <div className="narration-status-container">
-                    <span
-                      className={`narration-status ${!hasNarrationSegments() ? 'disabled' : 'not-aligned'}`}
-                    >
-                      {hasNarrationSegments()
-                        ? t('videoRendering.narrationNotAligned', 'Narration not aligned')
-                        : t('videoRendering.noNarrationGenerated', 'No narration generated')
-                      }
-                    </span>
-                    <PulsingElement
-                      as="button"
-                      type="button"
-                      className="refresh-icon-button"
-                      onClick={handleRefreshNarration}
-                      disabled={isRefreshingNarration || !currentNarrationResults || currentNarrationResults.length === 0 || !currentNarrationResults.some(r => r.success && (r.audioData || r.filename))}
-                      isPulsing={hasNarrationSegments() && !isRefreshingNarration && currentNarrationResults && currentNarrationResults.length > 0 && currentNarrationResults.some(r => r.success && (r.audioData || r.filename))}
-                      title={
-                        !hasNarrationSegments()
-                          ? t('videoRendering.generateNarrationFirst', 'Generate narration first')
-                          : !currentNarrationResults || currentNarrationResults.length === 0 || !currentNarrationResults.some(r => r.success && (r.audioData || r.filename))
-                          ? t('videoRendering.noValidNarrationFiles', 'No valid narration files available')
-                          : t('videoRendering.refreshNarration', 'Click to align narration for video rendering')
-                      }
-                    >
-                      {isRefreshingNarration ? (
-                        <LoadingIndicator
-                          theme="dark"
-                          showContainer={false}
-                          size={20}
-                          className="refresh-loading-indicator"
-                        />
-                      ) : (
-                        <span className="material-symbols-rounded">refresh</span>
-                      )}
-                    </PulsingElement>
-                  </div>
-                )}
-
-              </div>
-
-              {/* Narration Volume Control */}
-              <div className="compact-volume-control">
-                <label className="volume-label">{t('videoRendering.narrationVolume', 'Narration Volume')}: {renderSettings.narrationVolume}%</label>
-                <StandardSlider
-                  value={renderSettings.narrationVolume}
-                  onChange={(value) => setRenderSettings(prev => ({ ...prev, narrationVolume: parseInt(value) }))}
-                  min={0}
-                  max={100}
-                  step={1}
-                  orientation="Horizontal"
-                  size="XSmall"
-                  state={selectedNarration === 'none' ? "Disabled" : "Enabled"}
-                  width="compact"
-                  showValueIndicator={false} // Using custom label
-                  showIcon={false}
-                  showStops={false}
-                  className="narration-volume-slider"
-                  id="narration-volume"
-                  ariaLabel={t('videoRendering.narrationVolume', 'Narration Volume')}
-                />
-              </div>
-            </div>
-          </div>
+          <InputSelectionRow
+            selectedVideoFile={selectedVideoFile}
+            handleVideoUpload={handleVideoUpload}
+            subtitlesData={subtitlesData}
+            translatedSubtitles={translatedSubtitles}
+            selectedSubtitles={selectedSubtitles}
+            setSelectedSubtitles={setSelectedSubtitles}
+            selectedNarration={selectedNarration}
+            setSelectedNarration={setSelectedNarration}
+            renderSettings={renderSettings}
+            setRenderSettings={setRenderSettings}
+            isAlignedNarrationAvailable={isAlignedNarrationAvailable}
+            hasNarrationSegments={hasNarrationSegments}
+            handleRefreshNarration={handleRefreshNarration}
+            isRefreshingNarration={isRefreshingNarration}
+            currentNarrationResults={currentNarrationResults}
+          />
 
           {/* Second row: Video Preview and Subtitle Customization side by side */}
-          <div
-            ref={containerRef}
-            className="preview-customization-row"
-            style={{
-              '--left-panel-width': `${leftPanelWidth}%`,
-              '--right-panel-width': `${100 - leftPanelWidth}%`
-            }}
-          >
-            {/* Video Preview Panel */}
-            <div
-              className="video-preview-panel"
-              style={{ flex: `0 0 ${leftPanelWidth}%` }}
-              tabIndex={0}
-            >
-              <RemotionVideoPreview
-                ref={videoPlayerRef}
-                videoFile={selectedVideoFile}
-                subtitles={getCurrentSubtitles()}
-                narrationAudioUrl={(selectedNarration === 'generated' && isAlignedNarrationAvailable()) ? window.alignedNarrationCache?.url : null}
-                subtitleCustomization={{
-                  ...subtitleCustomization,
-                  resolution: renderSettings.resolution,
-                  frameRate: renderSettings.frameRate
-                }}
-                originalAudioVolume={renderSettings.originalAudioVolume}
-                narrationVolume={selectedNarration === 'none' ? 0 : renderSettings.narrationVolume}
-                cropSettings={cropSettings}
-                onCropChange={setCropSettings}
-                onDurationChange={setVideoDuration}
-              />
-            </div>
-
-            {/* Resizable Divider */}
-            <div
-              className="panel-resizer"
-              onMouseDown={handleMouseDown}
-            ></div>
-
-            {/* Subtitle Customization Panel */}
-            <div
-              className="customization-panel"
-              style={{ flex: `0 0 ${100 - leftPanelWidth}%` }}
-            >
-              <SubtitleCustomizationPanel
-                customization={subtitleCustomization}
-                onChange={setSubtitleCustomization}
-              />
-            </div>
-          </div>
+          <PreviewCustomizationRow
+            containerRef={containerRef}
+            leftPanelWidth={leftPanelWidth}
+            handleMouseDown={handleMouseDown}
+            videoPlayerRef={videoPlayerRef}
+            selectedVideoFile={selectedVideoFile}
+            subtitles={getCurrentSubtitles()}
+            selectedNarration={selectedNarration}
+            isAlignedNarrationAvailable={isAlignedNarrationAvailable}
+            subtitleCustomization={subtitleCustomization}
+            setSubtitleCustomization={setSubtitleCustomization}
+            renderSettings={renderSettings}
+            cropSettings={cropSettings}
+            setCropSettings={setCropSettings}
+            setVideoDuration={setVideoDuration}
+          />
 
 
 
-            <div className="trimming-timeline-row" style={{ margin: '0 0 16px 0', width: '100%' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '0 16px' }}>
-                <span className="material-symbols-rounded" style={{ flexShrink: 0}}>content_cut</span>
-                <span style={{ minWidth: 70, maxWidth: 70, display: 'inline-block', textAlign: 'center', fontSize: '1.15em', fontFamily: 'monospace', fontWeight: 500 }}>
-                  {formatTime(renderSettings.trimStart || 0, 'hms_ms')}
-                </span>
-                <StandardSlider
-                  range
-                  value={[
-                    renderSettings.trimStart || 0,
-                    renderSettings.trimEnd || 0
-                  ]}
-                  min={0}
-                  // *** FIX ***
-                  // Use the independent videoDuration state for the slider's max value.
-                  // Default to 1 to prevent errors before duration is known.
-                  max={videoDuration || 1}
-                  step={0.01}
-                  onChange={([start, end]) => {
-                    setRenderSettings(prev => ({ ...prev, trimStart: start, trimEnd: end }));
-
-                    const oldStart = renderSettings.trimStart || 0;
-                    const oldEnd = renderSettings.trimEnd || 0;
-
-                    // Seek the Remotion player to the new position
-                    if (videoPlayerRef.current) {
-                      const frameRate = renderSettings.frameRate || 30;
-                      if (start !== oldStart) {
-                        // Seek to start position
-                        const frameToSeek = Math.floor(start * frameRate);
-                        videoPlayerRef.current.seekTo(frameToSeek);
-                      } else if (end !== oldEnd) {
-                        // Seek to end position
-                        const frameToSeek = Math.floor(end * frameRate);
-                        videoPlayerRef.current.seekTo(frameToSeek);
-                      }
-                    }
-                  }}
-                  orientation="Horizontal"
-                  size="Large"
-                  width="full"
-                  showValueIndicator={false}
-                  showStops={false}
-                  className="trimming-slider trim-slider"
-                  id="trimming-slider"
-                  ariaLabel={t('videoRendering.trimmingTimeline', 'Trim Video')}
-                  style={{
-                    width: '-webkit-fill-available',
-                    maxWidth: 'none'
-                  }}
-                />
-                <span style={{ minWidth: 70, maxWidth: 70, display: 'inline-block', textAlign: 'center', fontSize: '1.15em', fontFamily: 'monospace', fontWeight: 500 }}>
-                  {formatTime(renderSettings.trimEnd || 0, 'hms_ms')}
-                </span>
-              </div>
-          </div>
+            <TrimTimelineRow
+              renderSettings={renderSettings}
+              setRenderSettings={setRenderSettings}
+              videoDuration={videoDuration}
+              videoPlayerRef={videoPlayerRef}
+            />
           {/* Render Settings and Controls - compact single row */}
-          <div className="rendering-row">
-            <div className="row-label">
-              <label>{t('videoRendering.resolution', 'Resolution')}</label>
-            </div>
-            <div className="row-content">
-              <CustomDropdown
-                value={renderSettings.resolution}
-                onChange={(value) => setRenderSettings(prev => ({ ...prev, resolution: value }))}
-                options={[
-                  { value: '360p', label: '360p' },
-                  { value: '480p', label: '480p' },
-                  { value: '720p', label: '720p' },
-                  { value: '1080p', label: '1080p' },
-                  { value: '1440p', label: '1440p' },
-                  { value: '4K', label: '4K' },
-                  { value: '8K', label: '8K' }
-                ]}
-                style={{ marginRight: '1rem' }}
-              />
-
-              <label style={{ marginRight: '0.5rem', fontWeight: '500', color: 'var(--text-primary)' }}>
-                {t('videoRendering.frameRate', 'Frame Rate')}:
-              </label>
-              <CustomDropdown
-                value={renderSettings.frameRate}
-                onChange={(value) => setRenderSettings(prev => ({ ...prev, frameRate: parseInt(value) }))}
-                options={[
-                  { value: 24, label: t('videoRendering.fps24', '24 FPS (Cinema)') },
-                  { value: 25, label: t('videoRendering.fps25', '25 FPS (PAL)') },
-                  { value: 30, label: t('videoRendering.fps30', '30 FPS (Standard)') },
-                  { value: 50, label: t('videoRendering.fps50', '50 FPS (PAL High)') },
-                  { value: 60, label: t('videoRendering.fps60', '60 FPS (Smooth)') },
-                  { value: 120, label: t('videoRendering.fps120', '120 FPS (High Speed)') }
-                ]}
-                style={{ marginRight: '1rem' }}
-              />
-
-              <button
-                className="pill-button primary"
-                onClick={handleRender}
-                disabled={!selectedVideoFile}
-              >
-                <span className="material-symbols-rounded">desktop_windows</span>
-                {t('videoRendering.render', 'Render')}
-              </button>
-
-              {/* Cancel button for current render - only show when actively rendering */}
-              {isRendering && currentQueueItem && (
-                <button
-                  className="pill-button cancel"
-                  onClick={handleCancelRender}
-                  style={{ marginLeft: '0.5rem' }}
-                >
-                  <span className="material-symbols-rounded">stop</span>
-                  {t('videoRendering.cancel', 'Cancel Current')}
-                </button>
-              )}
-
-            </div>
-          </div>
+          <RenderSettingsRow
+            renderSettings={renderSettings}
+            setRenderSettings={setRenderSettings}
+            selectedVideoFile={selectedVideoFile}
+            isRendering={isRendering}
+            currentQueueItem={currentQueueItem}
+            onRender={handleRender}
+            onCancelRender={handleCancelRender}
+          />
 
           {/* Progress and errors are now shown in the queue items instead of here */}
 

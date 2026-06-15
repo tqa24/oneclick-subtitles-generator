@@ -19,6 +19,23 @@ import ModelSelectionModal from './ModelSelectionModal';
 import ManualLanguageSelectionModal from './ManualLanguageSelectionModal';
 import HelpIcon from '../../common/HelpIcon';
 import { showErrorToast } from '../../../utils/toastUtils';
+import useSubtitleLanguageDetection from '../hooks/useSubtitleLanguageDetection';
+import { handleGroupingToggle as handleGroupingToggleHandler } from '../utils/subtitleGroupingHandlers';
+import {
+  handleSourceChange as handleSourceChangeHandler,
+  handleManualLanguageSave as handleManualLanguageSaveHandler
+} from '../utils/subtitleSourceHandlers';
+import {
+  renderLanguageBadge,
+  renderRefreshButton as renderRefreshButtonHelper,
+  renderManualButton as renderManualButtonHelper,
+  renderModelLanguages
+} from '../utils/subtitleLanguageHelpers';
+
+// Chatterbox supported languages (must match backend SUPPORTED_LANGUAGES)
+const CHATTERBOX_SUPPORTED_LANGS = [
+  'ar','da','de','el','en','es','fi','fr','he','hi','it','ja','ko','ms','nl','no','pl','pt','ru','sv','sw','tr','zh'
+];
 
 /**
  * Subtitle Source Selection component
@@ -86,95 +103,17 @@ const SubtitleSourceSelection = ({
 
 
   // Function to handle subtitle grouping toggle
-  const handleGroupingToggle = async (checked) => {
-    if (checked) {
-      // Clear the user disabled flag since they're turning it back on
-      try {
-        localStorage.removeItem('user_disabled_grouping');
-      } catch (error) {
-        console.error('Error clearing user disabled grouping flag:', error);
-      }
-
-      // If turning on, check if we already have grouped subtitles
-      if (groupedSubtitles && groupedSubtitles.length > 0) {
-        // We already have grouped subtitles, just enable the toggle
-        setUseGroupedSubtitles(true);
-        return;
-      }
-
-      // No existing grouped subtitles, we need to group them
-      try {
-        // Set grouping state to true to show loading indicator
-        if (typeof window.setIsGroupingSubtitles === 'function') {
-          window.setIsGroupingSubtitles(true);
-        }
-
-        // We don't need to update the local isGroupingSubtitles prop
-        // as it's handled by the parent component through window.setIsGroupingSubtitles
-
-        // Import the subtitle grouping service
-        const { groupSubtitlesForNarration } = await import('../../../services/gemini/subtitleGroupingService');
-
-        // Get the appropriate subtitles based on the selected source
-        const subtitlesToGroup = subtitleSource === 'translated' && hasTranslatedSubtitles
-          ? translatedSubtitles
-          : originalSubtitles;
-
-        // Get the language code for the selected subtitles
-        const languageCode = subtitleSource === 'translated' && translatedLanguage
-          ? translatedLanguage.languageCode
-          : originalLanguage?.languageCode || 'en';
-
-        // Group the subtitles
-        const result = await groupSubtitlesForNarration(
-          subtitlesToGroup,
-          languageCode,
-          'gemini-2.5-flash-lite',
-          groupingIntensity
-        );
-
-        // Update the grouped subtitles
-        if (result && result.success && result.groupedSubtitles) {
-          // Update the grouped subtitles state in the parent component
-          window.groupedSubtitles = result.groupedSubtitles;
-          // If the parent component provided a function to update grouped subtitles, call it
-          if (typeof window.setGroupedSubtitles === 'function') {
-            window.setGroupedSubtitles(result.groupedSubtitles);
-          }
-          setUseGroupedSubtitles(true);
-        } else {
-          // If grouping failed, don't enable the toggle
-          setUseGroupedSubtitles(false);
-        }
-      } catch (error) {
-        console.error('Error grouping subtitles:', error);
-        setUseGroupedSubtitles(false);
-      } finally {
-        // Reset grouping state after a short delay to ensure the UI updates properly
-        setTimeout(() => {
-          if (typeof window.setIsGroupingSubtitles === 'function') {
-            window.setIsGroupingSubtitles(false);
-          }
-        }, 500);
-      }
-    } else {
-      // If turning off, clear the grouping data and update the state
-      setUseGroupedSubtitles(false);
-
-      // Clear the grouped subtitles data
-      window.groupedSubtitles = null;
-      if (typeof window.setGroupedSubtitles === 'function') {
-        window.setGroupedSubtitles(null);
-      }
-
-      // Set flag to prevent auto-loading from cache
-      try {
-        localStorage.setItem('user_disabled_grouping', 'true');
-      } catch (error) {
-        console.error('Error setting user disabled grouping flag:', error);
-      }
-    }
-  };
+  const handleGroupingToggle = (checked) => handleGroupingToggleHandler(checked, {
+    groupedSubtitles,
+    subtitleSource,
+    hasTranslatedSubtitles,
+    translatedSubtitles,
+    originalSubtitles,
+    translatedLanguage,
+    originalLanguage,
+    groupingIntensity,
+    setUseGroupedSubtitles
+  });
 
   // Functions to handle modal
   const openModal = () => setIsModalOpen(true);
@@ -191,44 +130,14 @@ const SubtitleSourceSelection = ({
   };
 
   // Handle manual language save
-  const handleManualLanguageSave = (languages) => {
-    if (!manualLanguageSource) return;
+  const handleManualLanguageSave = (languages) => handleManualLanguageSaveHandler(languages, {
+    manualLanguageSource,
+    setOriginalLanguage,
+    setTranslatedLanguage,
+    onLanguageDetected
+  });
 
-    // If no languages selected, clear the language selection
-    if (!languages || languages.length === 0) {
-      if (manualLanguageSource === 'original') {
-        setOriginalLanguage(null);
-      } else if (manualLanguageSource === 'translated') {
-        setTranslatedLanguage(null);
-      }
-      return;
-    }
-
-    // Create a manual language object
-    const manualLanguage = {
-      languageCode: languages[0] || 'unknown',
-      secondaryLanguages: languages.length > 1 ? languages.slice(1) : [],
-      isMultiLanguage: languages.length > 1,
-      isManualSelection: true,
-      confidence: 1.0 // Manual selection has full confidence
-    };
-
-    // Set the language based on source
-    if (manualLanguageSource === 'original') {
-      setOriginalLanguage(manualLanguage);
-    } else if (manualLanguageSource === 'translated') {
-      setTranslatedLanguage(manualLanguage);
-    }
-
-    // Call the callback if provided
-    if (onLanguageDetected) {
-      onLanguageDetected(manualLanguageSource, manualLanguage);
-    }
-  };
-
-  // State for language detection
-  const [isDetectingOriginal, setIsDetectingOriginal] = useState(false);
-  const [isDetectingTranslated, setIsDetectingTranslated] = useState(false);
+  // State for model selection
   const [modelError, setModelError] = useState(null);
   const [isCheckingModel, setIsCheckingModel] = useState(false);
   const [availableModels, setAvailableModels] = useState([]);
@@ -241,6 +150,17 @@ const SubtitleSourceSelection = ({
   // in state (during quick UI switches) doesn't show the refresh button briefly.
   const lastOriginalLanguageRef = React.useRef(null);
   const lastTranslatedLanguageRef = React.useRef(null);
+
+  // Wire up language-detection window events and detection-in-progress state
+  const { isDetectingOriginal, isDetectingTranslated } = useSubtitleLanguageDetection({
+    subtitleSource,
+    translatedSubtitles,
+    setOriginalLanguage,
+    setTranslatedLanguage,
+    onLanguageDetected,
+    lastOriginalLanguageRef,
+    lastTranslatedLanguageRef
+  });
 
   // Load available models
   useEffect(() => {
@@ -296,91 +216,6 @@ const SubtitleSourceSelection = ({
   const openModelModal = () => setIsModelModalOpen(true);
   const closeModelModal = () => setIsModelModalOpen(false);
 
-  // Listen for language detection events
-  useEffect(() => {
-    const handleDetectionStatus = (event) => {
-      const { source } = event.detail;
-      if (source === 'original') {
-        setIsDetectingOriginal(true);
-      } else if (source === 'translated') {
-        setIsDetectingTranslated(true);
-      }
-    };
-
-    const handleDetectionComplete = (event) => {
-      const { result, source } = event.detail;
-  
-      if (source === 'original') {
-        setIsDetectingOriginal(false);
-        setOriginalLanguage(result);
-        // keep stable ref so UI doesn't flash when user switches pills
-        lastOriginalLanguageRef.current = result;
-  
-        // Always call the callback when language is detected, regardless of current selection
-        // This ensures modals update their recommended sections
-        if (onLanguageDetected) {
-          onLanguageDetected(source, result);
-        }
-      } else if (source === 'translated') {
-        setIsDetectingTranslated(false);
-        setTranslatedLanguage(result);
-        // keep stable ref so UI doesn't flash when user switches pills
-        lastTranslatedLanguageRef.current = result;
-  
-        // Always call the callback when language is detected, regardless of current selection
-        // This ensures modals update their recommended sections
-        if (onLanguageDetected) {
-          onLanguageDetected(source, result);
-        }
-      }
-    };
-
-    const handleDetectionError = (event) => {
-      const { source } = event.detail;
-      if (source === 'original') {
-        setIsDetectingOriginal(false);
-      } else if (source === 'translated') {
-        setIsDetectingTranslated(false);
-      }
-    };
-
-    // Listen for translation complete event to trigger language detection
-    const handleTranslationComplete = () => {
-
-      // If the user has selected translated subtitles, re-detect the language
-      if (subtitleSource === 'translated' && translatedSubtitles && translatedSubtitles.length > 0) {
-
-        setTranslatedLanguage(null); // Reset the language
-        detectSubtitleLanguage(translatedSubtitles, 'translated');
-      }
-    };
-
-    // Listen for translation reset event to clear translated language
-    const handleTranslationReset = () => {
-      // Just reset the translated language state, don't interfere with subtitle source
-      setTranslatedLanguage(null);
-
-      // Don't automatically switch subtitle source - let user control this manually
-      // This prevents interference with the translation reset process
-    };
-
-    // Add event listeners
-    window.addEventListener('language-detection-status', handleDetectionStatus);
-    window.addEventListener('language-detection-complete', handleDetectionComplete);
-    window.addEventListener('language-detection-error', handleDetectionError);
-    window.addEventListener('translation-complete', handleTranslationComplete);
-    window.addEventListener('translation-reset', handleTranslationReset);
-
-    // Clean up event listeners
-    return () => {
-      window.removeEventListener('language-detection-status', handleDetectionStatus);
-      window.removeEventListener('language-detection-complete', handleDetectionComplete);
-      window.removeEventListener('language-detection-error', handleDetectionError);
-      window.removeEventListener('translation-complete', handleTranslationComplete);
-      window.removeEventListener('translation-reset', handleTranslationReset);
-    };
-  }, [subtitleSource, onLanguageDetected, translatedSubtitles, t, originalLanguage, setOriginalLanguage, setSubtitleSource, setTranslatedLanguage]);
-
   // Ensure detected languages are cleared when subtitles become unavailable
   useEffect(() => {
     // If translated subtitles become unavailable, clear any detected translated language
@@ -409,10 +244,6 @@ const SubtitleSourceSelection = ({
     if (narrationMethod !== 'chatterbox') return;
     if (userHasManuallySelectedChatterboxLanguage) return;
 
-    const supported = [
-      'ar','da','de','el','en','es','fi','fr','he','hi','it','ja','ko','ms','nl','no','pl','pt','ru','sv','sw','tr','zh'
-    ];
-
     const currentLanguageObj = subtitleSource === 'translated' ? translatedLanguage : originalLanguage;
     if (!currentLanguageObj) return;
 
@@ -421,7 +252,7 @@ const SubtitleSourceSelection = ({
       : [currentLanguageObj.languageCode];
 
     const normalized = candidates.map(c => (c || '').toLowerCase());
-    const match = normalized.find(code => supported.includes(code));
+    const match = normalized.find(code => CHATTERBOX_SUPPORTED_LANGS.includes(code));
     const next = match || 'en';
 
     if (next && next !== chatterboxLanguage) {
@@ -436,8 +267,6 @@ const SubtitleSourceSelection = ({
       showErrorToast(modelError);
     }
   }, [modelError]);
-
-  // We're using an inline function for the button click handler
 
   // Handle model selection
   const handleModelSelect = (modelId) => {
@@ -472,139 +301,41 @@ const SubtitleSourceSelection = ({
     }
   };
 
-  // We no longer need the handleModelChange function as we're using the new dropdown
-
   // Handle subtitle source change
-  const handleSourceChange = async (source) => {
-    // Only proceed if the source is different or we don't have language info yet
-    if (source !== subtitleSource ||
-        (source === 'original' && !originalLanguage) ||
-        (source === 'translated' && !translatedLanguage)) {
+  const handleSourceChange = (source) => handleSourceChangeHandler(source, {
+    subtitleSource,
+    originalLanguage,
+    translatedLanguage,
+    originalSubtitles,
+    translatedSubtitles,
+    setSubtitleSource,
+    setModelError,
+    setUserHasManuallySelectedModel,
+    onLanguageDetected
+  });
 
-      setSubtitleSource(source);
-      setModelError(null); // Clear any previous errors
+  // Render helpers (thin wrappers that supply `t`/state/setters to pure helpers)
+  const renderRefreshButton = (source, subtitles, isDetecting) =>
+    renderRefreshButtonHelper(source, subtitles, isDetecting, {
+      t,
+      originalSubtitles,
+      translatedSubtitles,
+      setOriginalLanguage,
+      setTranslatedLanguage
+    });
 
-      // Reset the manual selection flag when switching subtitle sources
-      // This allows automatic model selection for the new source
-      setUserHasManuallySelectedModel(false);
+  const renderManualButton = (source, subtitles, isHovered) =>
+    renderManualButtonHelper(source, subtitles, isHovered, {
+      t,
+      openManualLanguageModal
+    });
 
-      // Detect language for the selected source
-      if (source === 'original' && originalSubtitles && originalSubtitles.length > 0) {
-        if (!originalLanguage) {
-          // Only detect if we don't already have the language
-          detectSubtitleLanguage(originalSubtitles, 'original');
-        } else if (onLanguageDetected) {
-          // We already have the language, just call the callback
-          onLanguageDetected('original', originalLanguage);
-        }
-      } else if (source === 'translated' && translatedSubtitles && translatedSubtitles.length > 0) {
-        if (!translatedLanguage) {
-          // Only detect if we don't already have the language
-          detectSubtitleLanguage(translatedSubtitles, 'translated');
-        } else if (onLanguageDetected) {
-          // We already have the language, just call the callback
-          onLanguageDetected('translated', translatedLanguage);
-        }
-      }
-    }
-  };
+  // Models shown in the selection modal: Chatterbox advertises its own multilingual
+  // model, everything else uses the dynamically loaded available models.
+  const modelsForNarrationModal = narrationMethod === 'chatterbox'
+    ? [{ id: 'chatterbox-multilingual-tts', languages: CHATTERBOX_SUPPORTED_LANGS }]
+    : availableModels;
 
-  // Helper to render language badges
-  const renderLanguageBadge = (language) => {
-    if (!language) return null;
-
-    // If it's a multi-language text, show badges for all detected languages
-    if (language.isMultiLanguage && Array.isArray(language.secondaryLanguages) && language.secondaryLanguages.length > 0) {
-      const allLangs = [language.languageCode, ...language.secondaryLanguages].filter(Boolean);
-      return (
-        <div className="language-badge-container">
-          {allLangs.map((langCode, index) => (
-            <span key={index} className="language-badge multi">
-              {String(langCode).toUpperCase()}
-            </span>
-          ))}
-        </div>
-      );
-    }
-
-    // Otherwise, just show the primary language
-    return (
-      <span className="language-badge">
-        {language.languageCode.toUpperCase()}
-      </span>
-    );
-  };
-
-  // Helper to render refresh button when no language is detected
-  const renderRefreshButton = (source, subtitles, isDetecting) => {
-    if (!subtitles || subtitles.length === 0 || isDetecting) return null;
-
-    const handleRefresh = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      // Trigger language detection for the specific source
-      if (source === 'original') {
-        setOriginalLanguage(null);
-        detectSubtitleLanguage(originalSubtitles, 'original');
-      } else if (source === 'translated') {
-        setTranslatedLanguage(null);
-        detectSubtitleLanguage(translatedSubtitles, 'translated');
-      }
-    };
-
-    return (
-      <button
-        className="language-refresh-button"
-        onClick={handleRefresh}
-        title={t('narration.detectLanguage', 'Detect language')}
-        type="button"
-      >
-        <span className="material-symbols-rounded" style={{ fontSize: '12px' }}>refresh</span>
-      </button>
-    );
-  };
-
-  // Helper to render manual language selection button
-  const renderManualButton = (source, subtitles, isHovered) => {
-    if (!subtitles || subtitles.length === 0 || !isHovered) return null;
-
-    const handleManualSelect = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      openManualLanguageModal(source);
-    };
-
-    return (
-      <button
-        className="language-manual-button"
-        onClick={handleManualSelect}
-        title={t('narration.manualLanguageSelection', 'Manual language selection')}
-        type="button"
-      >
-        {t('narration.manual', 'manual')}
-      </button>
-    );
-  };
-
-  // Helper to render model languages in dropdown
-  const renderModelLanguages = (model) => {
-    // If model has multiple languages
-    if (Array.isArray(model.languages) && model.languages.length > 0) {
-      return `(${model.languages.map(lang => lang.toUpperCase()).join(', ')})`;
-    }
-    // If model has a single language
-    else if (model.language) {
-      return `(${model.language.toUpperCase()})`;
-    }
-    // If no language information is available
-    return '';
-  };
-  
-  // Use last-detected refs to avoid transient null flashes when switching sources
-  const displayedOriginalLanguage = originalLanguage || lastOriginalLanguageRef.current;
-  const displayedTranslatedLanguage = translatedLanguage || lastTranslatedLanguageRef.current;
-  
   return (
     <>
       <div className="narration-row subtitle-source-row animated-row">
@@ -820,28 +551,13 @@ const SubtitleSourceSelection = ({
             </div>
           </div>
         </div>
-
-      {/* Compute models for modal: override with Chatterbox's multilingual support when in chatterbox mode */}
-      {(() => {
-        // Chatterbox supported languages (must match backend SUPPORTED_LANGUAGES)
-        const chatterboxSupportedLangs = [
-          'ar','da','de','el','en','es','fi','fr','he','hi','it','ja','ko','ms','nl','no','pl','pt','ru','sv','sw','tr','zh'
-        ];
-        const chatterboxModels = [
-          { id: 'chatterbox-multilingual-tts', languages: chatterboxSupportedLangs }
-        ];
-        // Expose computed array on a scoped variable for the JSX below
-        window.__modelsForNarrationModal = (narrationMethod === 'chatterbox') ? chatterboxModels : availableModels;
-        return null;
-      })()}
-
       </div>
 
       {/* Model Selection Modal */}
       <ModelSelectionModal
         isOpen={isModelModalOpen}
         onClose={closeModelModal}
-        availableModels={window.__modelsForNarrationModal || availableModels}
+        availableModels={modelsForNarrationModal}
         isLoadingModels={isLoadingModels}
         selectedModel={selectedModel}
         onModelSelect={handleModelSelect}

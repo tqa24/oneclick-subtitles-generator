@@ -250,26 +250,47 @@ export const downloadTXT = (subtitles, filename) => {
 };
 
 /**
- * Convert a file to base64 string
- * @param {File} file - The file to convert
- * @returns {Promise<string>} - Promise resolving to base64 string
+ * Convert a Blob or File to a base64 string (without the `data:` URL prefix).
+ *
+ * Single source for what used to be four near-identical copies (fileUtils.fileToBase64,
+ * gemini/utils.fileToBase64, transcriptionService.blobToBase64, imageGenerationService).
+ * Rejects on an empty/invalid input or a FileReader result that isn't a data URL.
+ *
+ * @param {Blob|File} blobOrFile - the blob/file to convert
+ * @returns {Promise<string>} - Promise resolving to the base64-encoded contents
  */
-export const fileToBase64 = (file) => {
+export const toBase64 = (blobOrFile) => {
   return new Promise((resolve, reject) => {
+    if (!blobOrFile || blobOrFile.size === 0) {
+      reject(new Error('Invalid or empty blob/file provided to toBase64'));
+      return;
+    }
     const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      // Extract the base64 data from the data URL
-      // Format is: data:[<mediatype>][;base64],<data>
-      const base64String = reader.result.split(',')[1];
+    reader.onloadend = () => {
+      const result = reader.result;
+      // result is a data URL: data:<mediatype>;base64,<data>
+      if (!result || String(result).indexOf(',') === -1) {
+        reject(new Error('FileReader result is not a data URL'));
+        return;
+      }
+      const base64String = String(result).split(',')[1];
+      if (!base64String) {
+        reject(new Error('Failed to extract base64 data from FileReader result'));
+        return;
+      }
       resolve(base64String);
     };
-    reader.onerror = (error) => {
-      console.error('Error converting file to base64:', error);
+    reader.onerror = (error) => reject(error);
+    try {
+      reader.readAsDataURL(blobOrFile);
+    } catch (error) {
       reject(error);
-    };
+    }
   });
 };
+
+/** @deprecated Use {@link toBase64}. Kept as an alias for existing `fileToBase64` imports. */
+export const fileToBase64 = toBase64;
 
 /**
  * Extract audio from a video and download it

@@ -8,6 +8,7 @@ import { parseRawTextManually } from '../utils/subtitle';
 import { getTranscriptionRules } from '../utils/transcriptionRulesStore';
 import { API_BASE_URL } from '../config';
 import { getMaxSegmentDurationSeconds } from '../utils/durationUtils';
+import { formatTime } from '../utils/timeFormatter';
 
 /**
  * Process a single media segment (video or audio)
@@ -114,12 +115,7 @@ export async function processSegment(segment, segmentIndex, startTime, segmentCa
                 const endTime = startTime + segmentDuration;
 
                 // Format time range for display
-                const formatTime = (seconds) => {
-                    const mins = Math.floor(seconds / 60);
-                    const secs = Math.floor(seconds % 60);
-                    return `${mins}:${secs.toString().padStart(2, '0')}`;
-                };
-                const timeRange = `${formatTime(startTime)} - ${formatTime(endTime)}`;
+                const timeRange = `${formatTime(startTime, 'hms')} - ${formatTime(endTime, 'hms')}`;
 
                 // Check if this is specifically a 503 error for more specific messaging
                 const is503Error = error.message && (

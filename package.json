@@ -23,6 +23,7 @@
     "pack": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --dir",
     "generate:version": "node scripts/generate-version.js",
     "test": "react-scripts test",
+    "test:server": "node --test \"server/**/*.test.js\"",
     "eject": "react-scripts eject",
     "server": "node server.js",
     "server:start": "node server.js",
@@ -248,6 +249,11 @@
       "react-app",
       "react-app/jest"
     ]
+  },
+  "jest": {
+    "moduleNameMapper": {
+      "^@material/web/(.*)$": "<rootDir>/src/test-utils/materialWebMock.js"
+    }
   },
   "browserslist": {
     "production": [

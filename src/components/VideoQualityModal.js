@@ -5,6 +5,8 @@ import '../styles/VideoQualityModal.css';
 // import progressWebSocketClient from '../utils/progressWebSocketClient'; // DISABLED - using polling instead
 import LoadingIndicator from './common/LoadingIndicator';
 import WavyProgressIndicator from './common/WavyProgressIndicator';
+import { detectDarkTheme, getThemeColors } from './qualityModal/themeDetection';
+import useQualityProgressTracking from './qualityModal/useQualityProgressTracking';
 
 const VideoQualityModal = ({
   isOpen,
@@ -34,44 +36,10 @@ const VideoQualityModal = ({
   // Ref for WavyProgressIndicator animations
   const wavyProgressRef = useRef(null);
 
-  // Robust theme detection: look at <html>, <body>, and 'dark' class
-  const detectDarkTheme = () => {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return false;
-    try {
-      const root = document.documentElement;
-      const body = document.body;
-      const attr = (root.getAttribute('data-theme') || body?.getAttribute('data-theme') || '').toLowerCase();
-      if (attr === 'dark') return true;
-      if (root.classList.contains('dark') || body?.classList.contains('dark')) return true;
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return true;
-      // Fallback: infer from --md-surface luminance
-      const surface = getComputedStyle(root).getPropertyValue('--md-surface').trim();
-      const c = surface.startsWith('#') ? surface.slice(1) : surface;
-      if (c && (c.length === 6 || c.length === 3)) {
-        const hex = c.length === 3 ? c.split('').map(x => x + x).join('') : c;
-        const r = parseInt(hex.slice(0,2),16)/255;
-        const g = parseInt(hex.slice(2,4),16)/255;
-        const b = parseInt(hex.slice(4,6),16)/255;
-        const toLin = (u) => (u <= 0.03928 ? u/12.92 : Math.pow((u+0.055)/1.055, 2.4));
-        const L = 0.2126*toLin(r) + 0.7152*toLin(g) + 0.0722*toLin(b);
-        if (L < 0.5) return true; // dark surface
-      }
-    } catch {}
-    return false;
-  };
   const isDarkTheme = detectDarkTheme();
 
-  // Helpers to read CSS variables
-  const getCssVar = (name, fallback) => {
-    if (typeof window === 'undefined') return fallback;
-    const styles = getComputedStyle(document.documentElement);
-    const val = styles.getPropertyValue(name).trim();
-    return val || fallback;
-  };
-
   // Colors for spinner and wavy progress (invert variants per theme)
-  const waveColor = isDarkTheme ? '#FFFFFF' : getCssVar('--md-primary', '#5D5FEF');
-  const waveTrackColor = isDarkTheme ? 'rgba(255,255,255,0.35)' : '#404659';
+  const { waveColor, waveTrackColor } = getThemeColors(isDarkTheme);
 
 
 
@@ -93,6 +61,20 @@ const VideoQualityModal = ({
     }
     onClose();
   };
+
+  // Quality re-download orchestration (start, poll progress, cancel)
+  const {
+    handleCancelRedownload,
+    startQualityDownloadWithId,
+    startProgressTracking,
+  } = useQualityProgressTracking({
+    progressIntervalRef,
+    qualityVideoId,
+    setIsRedownloading,
+    setDownloadProgress,
+    onConfirm,
+    handleClose,
+  });
 
   // Reset state when modal opens
   useEffect(() => {
@@ -158,111 +140,6 @@ const VideoQualityModal = ({
       setIsScanning(false);
     }
   };
-
-
-  // Cancel an in-progress quality re-download
-  const handleCancelRedownload = async () => {
-    try {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-        progressIntervalRef.current = null;
-      }
-      if (qualityVideoId) {
-        await fetch(`http://localhost:3031/api/cancel-quality-download/${encodeURIComponent(qualityVideoId)}`, { method: 'POST' });
-      }
-    } catch (e) {
-      // ignore
-    } finally {
-      setIsRedownloading(false);
-    }
-  };
-
-
-  // Start quality download with pre-generated video ID
-  const startQualityDownloadWithId = async (quality, url, videoId) => {
-    const response = await fetch('http://localhost:3031/api/download-video-quality', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url: url,
-        quality: quality,
-        videoId: videoId,
-        useCookies: localStorage.getItem('use_cookies_for_download') === 'true'
-      }),
-    });
-
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error(data.error || 'Failed to start download');
-    }
-
-    return data;
-  };
-
-  // Start progress tracking using polling (WebSocket disabled to prevent duplicates)
-  const startProgressTracking = (videoId, quality, url) => {
-    // Clear any existing interval first
-    if (progressIntervalRef.current) {
-      clearInterval(progressIntervalRef.current);
-      progressIntervalRef.current = null;
-    }
-
-    // Use polling instead of WebSocket
-    const newProgressInterval = setInterval(async () => {
-      try {
-        const response = await fetch(`http://localhost:3031/api/quality-download-progress/${videoId}`);
-        const data = await response.json();
-
-        if (data.success) {
-          const newProgress = data.progress || 0;
-
-          // Filter out unreasonable progress values
-          if (newProgress >= 0 && newProgress <= 100) {
-            setDownloadProgress(newProgress);
-          }
-
-          if (data.status === 'completed') {
-            clearInterval(newProgressInterval);
-            progressIntervalRef.current = null;
-            setIsRedownloading(false);
-            setDownloadProgress(100);
-
-            // Call onConfirm to proceed to rendering, then close modal
-            setTimeout(async () => {
-              try {
-                await onConfirm('redownload', {
-                  quality: quality,
-                  url: url,
-                  videoId: videoId
-                });
-                handleClose();
-              } catch (error) {
-                console.error('[VideoQualityModal] Error confirming redownload:', error);
-                handleClose();
-              }
-            }, 1000);
-          } else if (data.status === 'cancelled') {
-            clearInterval(newProgressInterval);
-            progressIntervalRef.current = null;
-            setIsRedownloading(false);
-          } else if (data.status === 'error') {
-            clearInterval(newProgressInterval);
-            progressIntervalRef.current = null;
-            setIsRedownloading(false);
-            console.error('[VideoQualityModal] Download error:', data.error);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching download progress:', error);
-      }
-    }, 1000);
-
-    // Store interval in ref for cleanup
-    progressIntervalRef.current = newProgressInterval;
-  };
-
 
 
   // Cleanup progress tracking on unmount or when modal closes

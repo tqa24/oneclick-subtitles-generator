@@ -3,332 +3,53 @@
  */
 
 import { API_BASE_URL, SERVER_URL } from '../config';
+import { toBase64 } from '../utils/fileUtils';
+import { splitStreamEvents, processStreamEvent } from './narrationStreamParser';
+
+// Re-export the audio handler wrappers so the module's public surface is unchanged.
+export {
+  uploadReferenceAudio,
+  saveRecordedAudio,
+  extractAudioSegment,
+  getExampleAudioList,
+  uploadExampleAudio
+} from './narrationAudioHandlers';
+
+// Re-export the service availability checks.
+export {
+  checkNarrationStatus,
+  checkNarrationStatusWithRetry
+} from './narrationStatusChecker';
 
 /**
- * Convert a Blob to base64 string
- * @param {Blob} blob - The blob to convert
- * @returns {Promise<string>} - Base64 string
+ * Save an audio blob to the server as base64 JSON; returns the saved filename.
+ * Shared by the per-engine narration save paths (Chatterbox, Gemini, …).
+ * @param {object} opts
+ * @param {Blob} opts.audioBlob - the audio to persist
+ * @param {string|number} opts.subtitleId - subtitle this audio belongs to
+ * @param {string} opts.endpoint - server path, e.g. '/api/narration/save-chatterbox-audio'
+ * @param {number} [opts.sampleRate] - sample rate hint for the server
+ * @param {string} [opts.mimeType='audio/wav'] - mime type hint
+ * @returns {Promise<string>} the saved filename
  */
-// This function is currently unused but kept for future reference
-/*
-const blobToBase64 = (blob) => {
-  return new Promise((resolve, reject) => {
-    if (!blob || blob.size === 0) {
-      console.error('Invalid blob provided to blobToBase64:', blob);
-      reject(new Error('Invalid or empty blob'));
-      return;
-    }
+export const saveBase64AudioToServer = async ({ audioBlob, subtitleId, endpoint, sampleRate, mimeType = 'audio/wav' }) => {
+  const audioData = await toBase64(audioBlob);
 
-
-
-    const reader = new FileReader();
-
-    reader.onloadend = () => {
-      try {
-        if (!reader.result) {
-          console.error('FileReader result is empty');
-          reject(new Error('FileReader result is empty'));
-          return;
-        }
-
-        // Log the first few characters of the result to help with debugging
-
-
-        // Check if the result contains a comma (data URL format)
-        if (reader.result.indexOf(',') === -1) {
-          console.error('FileReader result is not in expected format');
-          reject(new Error('FileReader result is not in expected format'));
-          return;
-        }
-
-        // Remove the data URL prefix (e.g., 'data:audio/wav;base64,')
-        const base64String = reader.result.split(',')[1];
-
-        if (!base64String) {
-          console.error('Failed to extract base64 data from FileReader result');
-          reject(new Error('Failed to extract base64 data'));
-          return;
-        }
-
-
-        resolve(base64String);
-      } catch (error) {
-        console.error('Error in FileReader onloadend:', error);
-        reject(error);
-      }
-    };
-
-    reader.onerror = (error) => {
-      console.error('FileReader error:', error);
-      reject(error);
-    };
-
-    try {
-      reader.readAsDataURL(blob);
-    } catch (error) {
-      console.error('Error calling readAsDataURL:', error);
-      reject(error);
-    }
+  const response = await fetch(`${SERVER_URL}${endpoint}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ audioData, subtitle_id: subtitleId, sampleRate, mimeType }),
   });
-};
-*/
 
-// Removed API_BASE_URL logging
-
-/**
- * Check if the narration service is available - DRASTICALLY SIMPLIFIED VERSION
- * @returns {Promise<Object>} - Status response
- */
-export const checkNarrationStatusWithRetry = async () => {
-  // Completely simplified version with no retries to eliminate logs
-  try {
-    // First check if Express server is available
-    try {
-      const healthResponse = await fetch(`${API_BASE_URL}/health`, {
-        mode: 'cors',
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-
-      if (!healthResponse.ok) {
-        return {
-          available: false,
-          error: "Express server is not available",
-          message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
-        };
-      }
-    } catch (error) {
-      return {
-        available: false,
-        error: "Express server is not available",
-        message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
-      };
-    }
-
-    // Single attempt to check narration service
-    const response = await fetch(`${API_BASE_URL}/narration/status`, {
-      mode: 'cors',
-      credentials: 'include',
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      return {
-        available: false,
-        error: `Server returned ${response.status}`,
-        message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
-      };
-    }
-
-    const data = await response.json();
-    if (!data.available) {
-      data.message = "SERVICE_UNAVAILABLE"; // Will be translated by frontend
-    }
-    return data;
-  } catch (error) {
-    return {
-      available: false,
-      error: error.message,
-      message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
-    };
-  }
-};
-
-/**
- * Check if the narration service is available (simple version without retries)
- * @returns {Promise<Object>} - Status response
- */
-export const checkNarrationStatus = async () => {
-  // First, check if the Express server is available
-  try {
-    const healthResponse = await fetch(`${API_BASE_URL}/health`, {
-      mode: 'cors',
-      credentials: 'include',
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
-    if (!healthResponse.ok) {
-      // If the Express server is not available, don't even try to check narration service
-      return {
-        available: false,
-        error: "Express server is not available",
-        message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
-      };
-    }
-  } catch (error) {
-    // Express server is not available
-    return {
-      available: false,
-      error: "Express server is not available",
-      message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
-    };
+  if (!response.ok) {
+    throw new Error(`Server responded with ${response.status}: ${await response.text()}`);
   }
 
-  // Now check the narration service
-  try {
-    const response = await fetch(`${API_BASE_URL}/narration/status`, {
-      mode: 'cors',
-      credentials: 'include',
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      return {
-        available: false,
-        error: `Server returned ${response.status}`,
-        message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
-      };
-    }
-
-    const data = await response.json();
-    if (!data.available) {
-      data.message = "SERVICE_UNAVAILABLE"; // Will be translated by frontend
-    }
-    return data;
-  } catch (error) {
-    return {
-      available: false,
-      error: error.message,
-      message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
-    };
+  const data = await response.json();
+  if (data.success) {
+    return data.filename;
   }
-};
-
-/**
- * Upload a reference audio file
- * @param {File} file - Audio file to upload
- * @param {string} referenceText - Optional reference text for the audio
- * @returns {Promise<Object>} - Upload response
- */
-export const uploadReferenceAudio = async (file, referenceText = '') => {
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    if (referenceText) {
-      formData.append('reference_text', referenceText);
-    }
-
-    const response = await fetch(`${API_BASE_URL}/narration/upload-reference`, {
-      method: 'POST',
-      mode: 'cors',
-      credentials: 'include',
-      body: formData
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Server returned ${response.status}: ${errorText}`);
-    }
-
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      await response.text(); // Read the response body to avoid memory leaks
-      throw new Error('Server returned non-JSON response');
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-/**
- * Save recorded audio as reference
- * @param {Blob} audioBlob - Recorded audio blob
- * @param {string} referenceText - Optional reference text for the audio
- * @returns {Promise<Object>} - Upload response
- */
-export const saveRecordedAudio = async (audioBlob, referenceText = '') => {
-  try {
-    // Use the original blob directly with FormData
-    const formData = new FormData();
-
-    // Make sure we have a proper filename with extension
-    formData.append('audio_data', audioBlob, 'recorded_audio.wav');
-
-    // Add reference text if provided
-    formData.append('reference_text', referenceText || '');
-
-    // Add a flag to indicate whether to perform transcription
-    // If referenceText is empty, we want to transcribe
-    const shouldTranscribe = !referenceText;
-    formData.append('transcribe', shouldTranscribe.toString());
-
-    const response = await fetch(`${API_BASE_URL}/narration/record-reference`, {
-      method: 'POST',
-      mode: 'cors',
-      credentials: 'include',
-      body: formData
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Server returned ${response.status}: ${errorText}`);
-    }
-
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      await response.text(); // Read the response body to avoid memory leaks
-      throw new Error('Server returned non-JSON response');
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-/**
- * Extract audio segment from video
- * @param {string} videoPath - Path to the video file
- * @param {number|string} startTime - Start time in seconds or "HH:MM:SS" format
- * @param {number|string} endTime - End time in seconds or "HH:MM:SS" format
- * @returns {Promise<Object>} - Extraction response
- */
-export const extractAudioSegment = async (videoPath, startTime, endTime) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/narration/extract-segment`, {
-      method: 'POST',
-      mode: 'cors',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
-      body: JSON.stringify({
-        video_path: videoPath,
-        start_time: startTime,
-        end_time: endTime,
-        transcribe: true  // Always request transcription for extracted segments
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Server returned ${response.status}: ${errorText}`);
-    }
-
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      await response.text(); // Read the response body to avoid memory leaks
-      throw new Error('Server returned non-JSON response');
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    throw error;
-  }
+  throw new Error(data.error || 'Unknown error saving audio to server');
 };
 
 // Create a global AbortController for narration generation
@@ -457,6 +178,7 @@ export const generateNarration = async (
       const decoder = new TextDecoder();
       let buffer = '';
       const results = [];
+      const callbacks = { onProgress, onResult, onError };
 
       // Process the stream
       while (true) {
@@ -471,86 +193,19 @@ export const generateNarration = async (
         buffer += chunk;
 
         // Process complete events in the buffer
-        const events = buffer.split('\n\n');
-        buffer = events.pop() || ''; // Keep the last incomplete event in the buffer
+        const { events, rest } = splitStreamEvents(buffer);
+        buffer = rest;
 
         for (const event of events) {
-          if (event.trim() && event.startsWith('data: ')) {
-            try {
-              // Parse the JSON data
-              let data;
-              try {
-                data = JSON.parse(event.substring(6));
-              } catch (parseError) {
-                continue;
-              }
+          const directive = processStreamEvent(event, callbacks, results);
 
-              // Handle different event types
-              if (!data || !data.type) {
-                continue;
-              }
-
-              try {
-                switch (data.type) {
-                  case 'progress':
-                    if (data.message || data.message_key) {
-                      // Handle both message strings and message keys for localization
-                      const progressData = {
-                        message: data.message,
-                        messageKey: data.message_key,
-                        current: data.current || 0,
-                        total: data.total || 0,
-                        subtitle_id: data.subtitle_id,
-                        subtitle_text: data.subtitle_text
-                      };
-                      onProgress(progressData);
-                    }
-                    break;
-
-                  case 'result':
-                    if (data.result) {
-                      // Add the result to our results array
-                      results.push(data.result);
-
-                      // Call onResult to immediately update the UI with this result
-                      // This ensures each result is shown as soon as it's received
-                      onResult(data.result, data.progress || results.length, data.total || 0);
-                    }
-                    break;
-
-                  case 'error':
-                    if (data.result) {
-                      onError(data.result);
-                    } else if (data.error) {
-                      onError(data.error);
-                      // If this is a model initialization error, stop processing
-                      if (data.error.includes('F5-TTS model initialization failed') ||
-                          data.error.includes('Error initializing F5-TTS') ||
-                          data.error.includes('Model is not available')) {
-                        return { success: false, error: data.error };
-                      }
-                    } else {
-                      onError('Unknown error occurred');
-                    }
-                    break;
-
-                  case 'complete':
-                    // Mark the narration service as initialized
-                    narrationServiceInitialized = true;
-                    onComplete(data.results || results);
-                    return { success: true, results: data.results || results };
-
-                  default:
-                    // Handle unknown event types
-                    console.warn(`Unknown event type received: ${data.type}`);
-                    break;
-                }
-              } catch (eventError) {
-                // Silently handle event errors
-              }
-            } catch (error) {
-              // Silently handle parsing errors
+          if (directive.action === 'return') {
+            if (directive.markInitialized) {
+              // Mark the narration service as initialized
+              narrationServiceInitialized = true;
+              onComplete(directive.value.results);
             }
+            return directive.value;
           }
         }
       }
@@ -610,63 +265,4 @@ export const getAudioUrl = (filename) => {
   // Handle both legacy filenames and new directory structure
   // The filename might already include the subtitle directory path
   return `${SERVER_URL}/api/narration/audio/${filename}`;
-};
-
-/**
- * Get list of example audio files
- * @returns {Promise<Object>} - List of example audio files
- */
-export const getExampleAudioList = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/narration/example-audio`, {
-      method: 'GET',
-      mode: 'cors',
-      credentials: 'include'
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Server returned ${response.status}: ${errorText}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-/**
- * Upload example audio as reference
- * @param {string} filename - Example audio filename
- * @returns {Promise<Object>} - Upload response
- */
-export const uploadExampleAudio = async (filename) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/narration/upload-example-audio`, {
-      method: 'POST',
-      mode: 'cors',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ filename })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Server returned ${response.status}: ${errorText}`);
-    }
-
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      await response.text(); // Read the response body to avoid memory leaks
-      throw new Error('Server returned non-JSON response');
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    throw error;
-  }
 };
