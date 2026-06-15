@@ -18,7 +18,7 @@ const { startNarrationService } = require('./server/startNarrationService');
 const { initializeProgressWebSocket } = require('./server/services/shared/progressWebSocket');
 
 // Import port management
-const { killProcessesOnPorts, trackProcess, cleanupTrackingFile } = require('./server/utils/portManager');
+const { killProcessesOnPorts, trackProcess, cleanupTrackingFile, ensurePortFree } = require('./server/utils/portManager');
 
 
 // Startup initialization
@@ -95,18 +95,49 @@ if (isDevCuda && process.env.ELECTRON_MANAGES_PYTHON !== 'true') {
 // Start the server with initialization
 async function startServer() {
   await initializeServer();
+  return listenWithRetry();
+}
 
-  const server = mainApp.listen(PORT, () => {
-    console.log(`🌐 Server running on port ${PORT}`);
+// Bind PORT, and if it's held by a stale process (EADDRINUSE) — e.g. an orphaned server from a
+// previous run on Windows whose listening socket wasn't reaped — free it via ensurePortFree (which
+// kills the live socket-holder's whole tree and VERIFIES the port is bindable) and retry ONCE,
+// instead of letting an unhandled 'error' event crash the process. Resolves with the successfully
+// listening server so the shutdown handler closes the real instance.
+function listenWithRetry(attempt = 0) {
+  return new Promise((resolve) => {
+    const server = mainApp.listen(PORT);
 
-    // Track the main server process
-    trackProcess(PORT, process.pid, 'Express Server');
+    server.once('listening', () => {
+      console.log(`🌐 Server running on port ${PORT}${attempt ? ' (after freeing a stale process)' : ''}`);
 
-    // Initialize WebSocket server for real-time progress tracking
-    initializeProgressWebSocket(server);
+      // Track the main server process
+      trackProcess(PORT, process.pid, 'Express Server');
+
+      // Initialize WebSocket server for real-time progress tracking
+      initializeProgressWebSocket(server);
+      resolve(server);
+    });
+
+    server.once('error', async (err) => {
+      if (err.code === 'EADDRINUSE' && attempt < 1) {
+        console.error(`⚠️  Port ${PORT} is already in use — a server from a previous run may still be holding it. Freeing it and retrying...`);
+        let freed = false;
+        try {
+          freed = await ensurePortFree(PORT, { label: 'Express Server' });
+        } catch (_) { /* ignore — handled by the !freed branch below */ }
+        if (freed) {
+          resolve(listenWithRetry(attempt + 1));
+          return;
+        }
+        console.error(`❌ Could not free port ${PORT}. Stop the other process and restart:`);
+        console.error(`     netstat -ano | findstr :${PORT}     then     taskkill /F /PID <pid>`);
+        process.exit(1);
+      } else {
+        console.error(`❌ Server failed to start on port ${PORT}:`, err.code || err.message);
+        process.exit(1);
+      }
+    });
   });
-
-  return server;
 }
 
 // Start the server

@@ -299,39 +299,43 @@ async function ensurePortFree(port, options = {}) {
  * Kill all processes on application ports
  */
 async function killProcessesOnPorts(portsOverride) {
-  console.log('🔍 Scanning for processes on application ports...');
+  console.log('🔍 Ensuring application ports are free...');
 
-  const processes = await findProcessesOnPorts(portsOverride);
+  const ports = portsOverride || getAllPorts();
   const tracking = loadProcessTracking();
-  
-  if (processes.length === 0) {
-    console.log('✅ No processes found on application ports');
-    return;
-  }
 
-  console.log(`🎯 Found ${processes.length} process(es) on application ports`);
-
-  // Free each occupied port via ensurePortFree, which kills the holder's whole live tree (covering the
-  // dead-parent / inherited-socket zombie case) and verifies the port is actually bindable before moving
-  // on — instead of killing the (possibly dead) netstat PID once and assuming success.
-  const occupiedPorts = [...new Set(processes.map((p) => p.port))];
+  // Verify-and-free EVERY target port via ensurePortFree (its canBindPort fast-path makes an
+  // already-free port a cheap no-op). Crucially we do NOT gate this on a netstat scan first: an
+  // orphaned process from a previous run — especially a grandchild that inherited the listening
+  // socket from a now-dead parent — can hold a port without being reliably reported by netstat, so
+  // the only trustworthy signal is whether the port actually binds. ensurePortFree kills the holder's
+  // whole live tree (the dead-parent / inherited-socket zombie case) and verifies with a real bind.
   let stuck = 0;
-  for (const port of occupiedPorts) {
+  let freedCount = 0;
+  for (const port of ports) {
+    const wasFree = await canBindPort(port);
+    if (wasFree) {
+      untrackProcess(port);
+      continue;
+    }
+
     const trackedProcess = tracking[port];
     const processName = trackedProcess ? trackedProcess.processName : `Port ${port}`;
-
     const freed = await ensurePortFree(port, { label: processName });
     if (freed) {
+      freedCount++;
       untrackProcess(port);
     } else {
       stuck++;
     }
   }
 
-  if (stuck === 0) {
-    console.log('🧹 Port cleanup completed');
-  } else {
+  if (stuck > 0) {
     console.warn(`⚠️  Port cleanup finished, but ${stuck} port(s) could not be freed (see warnings above).`);
+  } else if (freedCount > 0) {
+    console.log(`🧹 Port cleanup completed (freed ${freedCount} stale port${freedCount === 1 ? '' : 's'})`);
+  } else {
+    console.log('✅ Application ports already free');
   }
 }
 
