@@ -21,6 +21,7 @@ export const useNarrationLaneDrag = ({
   placementStarts,
   setPlacementStarts,
   globalSpeed,
+  perLineWeight = 0,
   setLaneCursor,
 }) => {
   const lastCursorRef = useRef(null);
@@ -38,7 +39,7 @@ export const useNarrationLaneDrag = ({
   const hitTest = useCallback((clientX, clientY) => {
     const canvas = timelineRef.current;
     if (!canvas || typeof setPlacementStarts !== 'function') return null;
-    const segments = getSegmentsFor(lyrics, placementStarts, globalSpeed);
+    const segments = getSegmentsFor(lyrics, placementStarts, globalSpeed, perLineWeight);
     if (!segments.length) return null;
 
     const rect = canvas.getBoundingClientRect();
@@ -57,7 +58,7 @@ export const useNarrationLaneDrag = ({
       if (px >= x0 - 4 && px <= x1 + 4) return { seg };
     }
     return null;
-  }, [timelineRef, setPlacementStarts, getSegmentsFor, lyrics, placementStarts, globalSpeed, reserveBottom, getTimeRange]);
+  }, [timelineRef, setPlacementStarts, getSegmentsFor, lyrics, placementStarts, globalSpeed, perLineWeight, reserveBottom, getTimeRange]);
 
   const onMouseDown = useCallback((e) => {
     const hit = hitTest(e.clientX, e.clientY);
@@ -69,7 +70,7 @@ export const useNarrationLaneDrag = ({
     const baseStart = seg.start; // placement start at drag start
     const startTime = pixelToTime(e.clientX);
     const snapTargets = [];
-    getSegmentsFor(lyrics, placementStarts, globalSpeed).forEach((s) => {
+    getSegmentsFor(lyrics, placementStarts, globalSpeed, perLineWeight).forEach((s) => {
       if (s.id !== seg.id) snapTargets.push(s.start, s.end);
     });
 
@@ -88,7 +89,7 @@ export const useNarrationLaneDrag = ({
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
     return true;
-  }, [hitTest, pixelToTime, lyrics, placementStarts, globalSpeed, getSegmentsFor, setPlacementStarts, setLaneCursor]);
+  }, [hitTest, pixelToTime, lyrics, placementStarts, globalSpeed, perLineWeight, getSegmentsFor, setPlacementStarts, setLaneCursor]);
 
   const onHoverMove = useCallback((e) => {
     const next = hitTest(e.clientX, e.clientY) ? 'grab' : null;

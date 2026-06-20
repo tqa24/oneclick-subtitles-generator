@@ -3,26 +3,44 @@ import { useTranslation } from 'react-i18next';
 import { SERVER_URL } from '../../config';
 import LiquidGlass from '../common/LiquidGlass';
 import StandardSlider from '../common/StandardSlider';
-import { arrangePlacement, placementToLyrics } from './narrationLaneActions';
+import {
+  arrangePlacement,
+  computeAutoSpeed,
+  placementToLyrics,
+  resolvePlacements,
+  PER_LINE_WEIGHT_DEFAULT,
+} from './narrationLaneActions';
 
 const SPEED_MIN = 0.5;
 const SPEED_MAX = 2;
 const SPEED_STEP = 0.05;
 const formatSpeed = (v) => `${Number(v).toFixed(2)}×`;
+const formatWeight = (v) => `${Math.round(Number(v) * 100)}%`;
+
+/** Available window the narration must cover: last subtitle end minus the earliest clip start. */
+const narrationWindow = (lyrics, segments) => {
+  const ends = (lyrics || []).map((l) => l.end).filter(Number.isFinite);
+  const starts = (segments || []).map((s) => s.start).filter(Number.isFinite);
+  if (!ends.length || !starts.length) return 0;
+  return Math.max(...ends) - Math.min(...starts);
+};
 
 /**
  * Narration-lane controls overlaid on the timeline, in the SGT-style staging workflow:
- *   [ ✨ Smart arrange ]  [ speedometer + slider ]  [ ⤓ Pull subtitles ]  [ ↻ Reset ]
+ *   [ ✨ Auto arrange ] [ ↕ Arrange ] [ speed ] [ per-line fit ] [ ⤓ Pull ] [ ↻ Reset ]
  *
- * Built from the shared design-system primitives: a LiquidGlass pill (like the zoom control),
- * Material Symbols icons, and the StandardSlider (like the volume pill).
+ * Built from shared design-system primitives: a LiquidGlass pill, Material Symbols icons and
+ * StandardSliders (like the volume pill).
  *
- * The lane is a staging track: Smart arrange + the speed slider + dragging edit the staged
- * placement (and globalSpeed) WITHOUT moving subtitles. "Pull subtitles to narration" commits the
- * staged layout to the subtitle timings (undoable via onApplyTimings) and fires the real
- * "Làm mới thuyết minh" narration refresh. The speed slider also atempo's the audio on release.
+ * The lane is a staging track — everything here edits the staged placement / speeds WITHOUT moving
+ * subtitles, until "Pull subtitles to narration" commits them (undoable) and refreshes playback.
+ *  - Arrange: pack clips in order, allowing a small overlap. Placement only.
+ *  - Auto arrange: pick a smart global speed (so the narration fits the video window) AND arrange
+ *    AND turn on gentle per-line adaptive speed — the one-click "decide everything".
+ *  - Speed slider: manual global speed. Per-line fit: how much each clip may speed up on its own.
  *
- * globalSpeed + placementStarts are owned by the timeline (so the lane draw shares them).
+ * globalSpeed / placementStarts / perLineWeight are owned by the timeline (so the lane draw shares
+ * them); per-line effective speeds are resolved from the three together.
  */
 const NarrationLaneControls = ({
   narrationSegments,
@@ -32,21 +50,24 @@ const NarrationLaneControls = ({
   setGlobalSpeed = () => {},
   placementStarts = null,
   setPlacementStarts = () => {},
+  perLineWeight = 0,
+  setPerLineWeight = () => {},
 }) => {
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
-  const [isSpeedDragging, setIsSpeedDragging] = useState(false);
-  // The slider's onDragEnd fires after the final onChange, when `globalSpeed` is still the stale
-  // closure value — so commit the atempo from the latest value the slider reported, not the prop.
+  const [isSliderDragging, setIsSliderDragging] = useState(false);
+  // onDragEnd fires after the final onChange with the prop still at its stale closure value, so we
+  // commit audio from the latest values the sliders reported, not the props.
   const latestSpeedRef = useRef(globalSpeed);
+  const latestWeightRef = useRef(perLineWeight);
   // Last "is anything staged?" value seen while NOT dragging — frozen during a drag (see render).
   const stagedRef = useRef(false);
 
-  // Atempo every clip to the absolute factor (sourced from the immutable backup), then refresh.
-  const applySpeedToAudio = useCallback(async (factor) => {
+  // Atempo every clip from its immutable backup, each to its own factor, then refresh playback.
+  const applyAudioSpeeds = useCallback(async (speedForSeg) => {
     const items = narrationSegments
       .filter((s) => s.filename)
-      .map((s) => ({ filename: s.filename, normalizedStart: 0, normalizedEnd: 1, speedFactor: factor }));
+      .map((s) => ({ filename: s.filename, normalizedStart: 0, normalizedEnd: 1, speedFactor: speedForSeg(s) }));
     if (items.length === 0) return;
     setBusy(true);
     try {
@@ -61,7 +82,7 @@ const NarrationLaneControls = ({
       }
       if (typeof window.resetAlignedNarration === 'function') window.resetAlignedNarration();
       window.dispatchEvent(new CustomEvent('narration-speed-modified', { detail: { source: 'timeline-speed', timestamp: Date.now() } }));
-      // Regenerate the aligned narration so playback uses the new speed (same as the refresh button).
+      // Regenerate the aligned narration so playback uses the new speeds (same as the refresh button).
       window.dispatchEvent(new CustomEvent('request-narration-refresh', { detail: { source: 'timeline-speed', timestamp: Date.now() } }));
     } catch (e) {
       // non-fatal — leave the lane as-is on failure
@@ -70,46 +91,76 @@ const NarrationLaneControls = ({
     }
   }, [narrationSegments]);
 
-  // Live (per-tick) speed update while dragging — restages the lane length without touching audio.
+  // Apply the per-line effective speeds implied by a (placement, global speed, per-line weight).
+  const applyResolvedAudio = useCallback(async (starts, speed, weight) => {
+    const byId = new Map(resolvePlacements(narrationSegments, starts, speed, weight).map((p) => [p.id, p.speed]));
+    await applyAudioSpeeds((seg) => byId.get(seg.id) ?? (speed || 1));
+  }, [narrationSegments, applyAudioSpeeds]);
+
+  // Global speed slider: live restage while dragging, commit audio on release.
   const handleSpeedChange = useCallback((value) => {
     latestSpeedRef.current = value;
     setGlobalSpeed(value);
   }, [setGlobalSpeed]);
-
-  // On release, atempo the audio to the final value the slider reported.
   const handleSpeedCommit = useCallback(() => {
-    setIsSpeedDragging(false);
-    applySpeedToAudio(latestSpeedRef.current);
-  }, [applySpeedToAudio]);
+    setIsSliderDragging(false);
+    applyResolvedAudio(placementStarts, latestSpeedRef.current, perLineWeight);
+  }, [applyResolvedAudio, placementStarts, perLineWeight]);
 
-  // Smart arrange: stage a sequential, no-overlap placement (subtitles unchanged).
-  const handleSmartArrange = useCallback(() => {
+  // Per-line fit slider: how much each clip may speed up on its own to fit its slot.
+  const handleWeightChange = useCallback((value) => {
+    latestWeightRef.current = value;
+    setPerLineWeight(value);
+  }, [setPerLineWeight]);
+  const handleWeightCommit = useCallback(() => {
+    setIsSliderDragging(false);
+    applyResolvedAudio(placementStarts, globalSpeed, latestWeightRef.current);
+  }, [applyResolvedAudio, placementStarts, globalSpeed]);
+
+  // Arrange: stage a sequential placement (small allowed overlap) at the current speed. Placement only.
+  const handleArrange = useCallback(() => {
     if (!narrationSegments.length) return;
     setPlacementStarts(arrangePlacement(narrationSegments, globalSpeed));
   }, [narrationSegments, globalSpeed, setPlacementStarts]);
 
-  // Pull subtitles to narration: commit the staged placement to subtitle timing + refresh.
+  // Auto arrange: decide a smart global speed so the narration fits, arrange, and enable gentle
+  // per-line adaptive speed — the one-click "do everything".
+  const handleAutoArrange = useCallback(() => {
+    if (!narrationSegments.length) return;
+    const speed = computeAutoSpeed(narrationSegments, narrationWindow(lyrics, narrationSegments));
+    const starts = arrangePlacement(narrationSegments, speed);
+    latestSpeedRef.current = speed;
+    latestWeightRef.current = PER_LINE_WEIGHT_DEFAULT;
+    setGlobalSpeed(speed);
+    setPerLineWeight(PER_LINE_WEIGHT_DEFAULT);
+    setPlacementStarts(starts);
+    applyResolvedAudio(starts, speed, PER_LINE_WEIGHT_DEFAULT);
+  }, [narrationSegments, lyrics, setGlobalSpeed, setPerLineWeight, setPlacementStarts, applyResolvedAudio]);
+
+  // Pull subtitles to narration: commit the staged placement (per-line speeds included) + refresh.
   const handlePull = useCallback(() => {
     if (!narrationSegments.length || typeof onApplyTimings !== 'function') return;
-    onApplyTimings(placementToLyrics(lyrics, narrationSegments, placementStarts, globalSpeed));
+    onApplyTimings(placementToLyrics(lyrics, narrationSegments, placementStarts, globalSpeed, perLineWeight));
     setPlacementStarts(null); // subtitles now match the lane
     window.dispatchEvent(new CustomEvent('request-narration-refresh', { detail: { source: 'pull-subtitles', timestamp: Date.now() } }));
-  }, [lyrics, narrationSegments, placementStarts, globalSpeed, onApplyTimings, setPlacementStarts]);
+  }, [lyrics, narrationSegments, placementStarts, globalSpeed, perLineWeight, onApplyTimings, setPlacementStarts]);
 
   const handleReset = useCallback(() => {
     latestSpeedRef.current = 1;
+    latestWeightRef.current = 0;
     setGlobalSpeed(1);
+    setPerLineWeight(0);
     setPlacementStarts(null);
-    applySpeedToAudio(1);
-  }, [setGlobalSpeed, setPlacementStarts, applySpeedToAudio]);
+    applyResolvedAudio(null, 1, 0);
+  }, [setGlobalSpeed, setPerLineWeight, setPlacementStarts, applyResolvedAudio]);
 
   if (!narrationSegments.length) return null;
 
-  // Reset is shown only when there's something to undo (a staged placement or a non-natural speed).
-  // But while the slider is being dragged, freeze its visibility at the pre-drag value so the
-  // button doesn't pop in/out mid-drag (and reflow the toolbar) — it settles on release.
-  const liveStaged = (placementStarts && Object.keys(placementStarts).length > 0) || Math.abs(globalSpeed - 1) > 0.01;
-  if (!isSpeedDragging) stagedRef.current = liveStaged;
+  // Reset shows only when there's something to undo. Frozen while a slider is dragged so it doesn't
+  // pop in/out mid-drag (and reflow the toolbar) — it settles on release.
+  const liveStaged = (placementStarts && Object.keys(placementStarts).length > 0)
+    || Math.abs(globalSpeed - 1) > 0.01 || perLineWeight > 0.001;
+  if (!isSliderDragging) stagedRef.current = liveStaged;
   const showReset = stagedRef.current;
 
   return (
@@ -135,11 +186,22 @@ const NarrationLaneControls = ({
         <button
           type="button"
           className="narration-lane-btn"
-          onClick={handleSmartArrange}
-          title={t('timeline.smartArrangeTip', 'Arrange the narration clips on the lane sequentially with no overlap (subtitles unchanged until you pull)')}
+          onClick={handleAutoArrange}
+          disabled={busy}
+          title={t('timeline.autoArrangeTip', 'Pick a smart narration speed and arrange so it fits the video timing — does everything in one click')}
         >
           <span className="material-symbols-rounded" aria-hidden="true">auto_awesome</span>
-          {t('timeline.smartArrange', 'Smart arrange')}
+          {t('timeline.autoArrange', 'Auto arrange')}
+        </button>
+
+        <button
+          type="button"
+          className="narration-lane-btn"
+          onClick={handleArrange}
+          title={t('timeline.arrangeTip', 'Pack the clips on the lane in order, allowing a small overlap (no speed change)')}
+        >
+          <span className="material-symbols-rounded" aria-hidden="true">sort</span>
+          {t('timeline.arrange', 'Arrange')}
         </button>
 
         <span className="narration-lane-divider" aria-hidden="true" />
@@ -150,7 +212,7 @@ const NarrationLaneControls = ({
             className="narration-lane-speed-slider"
             value={globalSpeed}
             onChange={handleSpeedChange}
-            onDragStart={() => setIsSpeedDragging(true)}
+            onDragStart={() => setIsSliderDragging(true)}
             onDragEnd={handleSpeedCommit}
             min={SPEED_MIN}
             max={SPEED_MAX}
@@ -166,6 +228,28 @@ const NarrationLaneControls = ({
           <span className="narration-lane-speed__value">{busy ? '…' : formatSpeed(globalSpeed)}</span>
         </div>
 
+        <div className="narration-lane-speed" title={t('timeline.perLineFitTip', 'How much each clip may speed up on its own to fit its slot (small = gentle, keeps speech natural)')}>
+          <span className="material-symbols-rounded" aria-hidden="true">tune</span>
+          <StandardSlider
+            className="narration-lane-speed-slider"
+            value={perLineWeight}
+            onChange={handleWeightChange}
+            onDragStart={() => setIsSliderDragging(true)}
+            onDragEnd={handleWeightCommit}
+            min={0}
+            max={1}
+            step={0.05}
+            size="XSmall"
+            width="compact"
+            state={busy ? 'Disabled' : 'Enabled'}
+            showValueIndicator={false}
+            showValueBadge
+            valueBadgeFormatter={formatWeight}
+            ariaLabel={t('timeline.perLineFit', 'Per-line fit')}
+          />
+          <span className="narration-lane-speed__value">{formatWeight(perLineWeight)}</span>
+        </div>
+
         <span className="narration-lane-divider" aria-hidden="true" />
 
         <button
@@ -176,7 +260,7 @@ const NarrationLaneControls = ({
           title={t('timeline.pullSubtitlesTip', 'Move the subtitle timings to match the narration lane, then refresh the narration')}
         >
           <span className="material-symbols-rounded" aria-hidden="true">download</span>
-          {t('timeline.pullSubtitles', 'Pull subtitles')}
+          {t('timeline.pullSubtitles', 'Pull subtitles to narration')}
         </button>
 
         {showReset && (

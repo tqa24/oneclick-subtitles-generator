@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SERVER_URL } from '../../config';
-import { lyricKey, placementLength } from './narrationLaneActions';
+import { lyricKey, resolvePlacements } from './narrationLaneActions';
 import { getTimingConflictIds } from './utils/timelineConflicts';
 
 // The immutable backup sibling holds a clip's natural (un-edited) duration.
@@ -49,17 +49,13 @@ const buildBaseSegments = (lyrics, narrations, durations) => {
 };
 
 /**
- * Place base segments onto the timeline: apply per-clip start overrides + a global speed (which
- * scales each block's length), and flag clips whose overlap with a neighbour exceeds the conflict
- * threshold (the WHOLE block is highlighted, SGT-style). Returns draw-ready segments
- * ({ start, end, conflict, ... }).
+ * Place base segments onto the timeline: apply per-clip start overrides + a global speed and a
+ * per-line adaptive weight (resolvePlacements), then flag clips whose overlap with a neighbour
+ * exceeds the conflict threshold (whole block highlighted, SGT-style). Returns draw-ready segments
+ * ({ start, end, speed, conflict, ... }).
  */
-const placeSegments = (baseSegments, placementStarts, speed) => {
-  const placed = baseSegments.map((b) => {
-    const start = placementStarts && placementStarts[b.id] != null ? placementStarts[b.id] : b.start;
-    const end = start + placementLength(b.audioDuration, speed);
-    return { ...b, start, end };
-  });
+const placeSegments = (baseSegments, placementStarts, speed, weight) => {
+  const placed = resolvePlacements(baseSegments, placementStarts, speed, weight);
   const conflictIds = getTimingConflictIds(placed);
   placed.forEach((s) => { s.conflict = conflictIds.has(s.id); });
   return placed;
@@ -122,10 +118,10 @@ export const useNarrationTimelineData = (lyrics) => {
     [lyrics, durations, tick],
   );
 
-  // Stable: build the placed (draw/hit-test) segments for any placement + speed.
+  // Stable: build the placed (draw/hit-test) segments for any placement + speed + per-line weight.
   const getSegmentsFor = useCallback(
-    (lyricsArg, placementStarts = null, speed = 1) =>
-      placeSegments(buildBaseSegments(lyricsArg, readNarrations(), durationsRef.current), placementStarts, speed),
+    (lyricsArg, placementStarts = null, speed = 1, weight = 0) =>
+      placeSegments(buildBaseSegments(lyricsArg, readNarrations(), durationsRef.current), placementStarts, speed, weight),
     [],
   );
 

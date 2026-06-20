@@ -15,7 +15,7 @@ import { ClearOfflineSegmentsButton } from './timelineOverlays';
 import { useTimelineOfflineSegments } from './useTimelineOfflineSegments';
 import { useTimelineStreamingState } from './useTimelineStreamingState';
 import { useNarrationTimelineData } from './useNarrationTimelineData';
-import { useNarrationLaneDrag } from './useNarrationLaneDrag';
+import { useNarrationLaneState } from './useNarrationLaneState';
 import NarrationLaneControls from './NarrationLaneControls';
 import { useTimelineRenderEffects } from './useTimelineRenderEffects';
 import { useTimelineKeyboardShortcuts } from './useTimelineKeyboardShortcuts';
@@ -58,10 +58,6 @@ const TimelineVisualization = ({
     // never desync from the subtitle band after a retime.
     const { segments: narrationSegments, getSegmentsFor } = useNarrationTimelineData(lyrics);
     const [laneCursor, setLaneCursor] = useState(null);
-    // Narration-lane staging: a global speed (scales block length) + per-clip start overrides.
-    // These only affect the lane until the user commits with "Pull subtitles to narration".
-    const [globalSpeed, setGlobalSpeed] = useState(1);
-    const [placementStarts, setPlacementStarts] = useState(null);
 
     const durationRef = useRef(0);
 
@@ -255,17 +251,19 @@ const TimelineVisualization = ({
         }
     }, [actionBarRange, hiddenActionBarRange, selectedSegment, onSelectedRangeChange]);
 
-    // Narration-lane drag: grab a clip to retime its subtitle (move = shift, edge = resize).
-    const narrationDrag = useNarrationLaneDrag({
+    // Narration-lane staging state (global speed, per-clip placement, per-line weight) + lane drag.
+    const {
+        globalSpeed, setGlobalSpeed,
+        placementStarts, setPlacementStarts,
+        perLineWeight, setPerLineWeight,
+        drag: narrationDrag,
+    } = useNarrationLaneState({
         timelineRef,
         getTimeRange,
         duration,
         lyrics,
         getSegmentsFor,
         reserveBottom: videoSource ? 30 : 0,
-        placementStarts,
-        setPlacementStarts,
-        globalSpeed,
         setLaneCursor,
     });
 
@@ -335,7 +333,7 @@ const TimelineVisualization = ({
         };
 
         // Subtitle band = real lyrics; narration lane = staged placement + global speed.
-        const narrationForDraw = getSegmentsFor(lyrics, placementStarts, globalSpeed);
+        const narrationForDraw = getSegmentsFor(lyrics, placementStarts, globalSpeed, perLineWeight);
 
         // Draw the timeline
         drawTimeline(
@@ -359,7 +357,7 @@ const TimelineVisualization = ({
         );
 
 
-    }, [lyrics, placementStarts, globalSpeed, currentTime, duration, getTimeRange, panOffset, getVisibleRangeWithTempOffset, timeFormat, selectedSegment, isDraggingSegment, dragStartTime, dragCurrentTime, isProcessingSegment, animationTime, newSegments, actionBarRange, hiddenActionBarRange, offlineSegments, hoveredOfflineRange, retryingOfflineKeys, segmentProcessingStartTimes, getSegmentsFor, videoSource]);
+    }, [lyrics, placementStarts, globalSpeed, perLineWeight, currentTime, duration, getTimeRange, panOffset, getVisibleRangeWithTempOffset, timeFormat, selectedSegment, isDraggingSegment, dragStartTime, dragCurrentTime, isProcessingSegment, animationTime, newSegments, actionBarRange, hiddenActionBarRange, offlineSegments, hoveredOfflineRange, retryingOfflineKeys, segmentProcessingStartTimes, getSegmentsFor, videoSource]);
 
     // Render-coordination side effects (new-segment animation, resize, zoom,
     // timeline updates, playhead auto-scroll, unmount cleanup)
@@ -460,6 +458,8 @@ const TimelineVisualization = ({
                 setGlobalSpeed={setGlobalSpeed}
                 placementStarts={placementStarts}
                 setPlacementStarts={setPlacementStarts}
+                perLineWeight={perLineWeight}
+                setPerLineWeight={setPerLineWeight}
             />
             <ClearOfflineSegmentsButton
                 offlineSegments={offlineSegments}
