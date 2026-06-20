@@ -362,6 +362,17 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     createCheckpoint();
   }, [lyrics, createCheckpoint]);
 
+  // Bulk-apply new subtitle timings (used by the narration-lane smart arrange / drag). Undoable.
+  const applyTimings = (newLyrics) => {
+    if (!Array.isArray(newLyrics)) return;
+    setHistory(prevHistory => [...prevHistory, JSON.parse(JSON.stringify(lyrics))]);
+    setRedoStack([]);
+    setLyrics(newLyrics);
+    if (onUpdateLyrics) {
+      onUpdateLyrics(newLyrics);
+    }
+  };
+
   return {
     lyrics,
     isSticky,
@@ -393,6 +404,7 @@ export const useLyricsEditor = (initialLyrics, onUpdateLyrics) => {
     cancelRangeMove,
     updateSavedLyrics,
     captureStateBeforeMerge,
-    createCheckpoint
+    createCheckpoint,
+    applyTimings
   };
 };

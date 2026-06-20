@@ -11,5 +11,14 @@
   "clearOfflineSegments": "Dọn các phân đoạn offline",
   "retryFromCache": "Thử lại đoạn cắt này (tái sử dụng clip đã lưu)",
   "clearOfflineFirst": "Vui lòng dọn các phân đoạn offline trước để thoát chế độ này",
-  "offlineClearNotice": "Đã dọn phân đoạn offline trong giao diện. Tập tin sẽ được xóa nền và có thể còn lại một lúc do khóa hệ điều hành."
+  "offlineClearNotice": "Đã dọn phân đoạn offline trong giao diện. Tập tin sẽ được xóa nền và có thể còn lại một lúc do khóa hệ điều hành.",
+  "narrationLane": "Điều khiển làn thuyết minh",
+  "smartArrange": "Sắp xếp thông minh",
+  "smartArrangeTip": "Sắp xếp các clip thuyết minh trên làn lần lượt, không chồng lấn (phụ đề giữ nguyên cho đến khi bạn kéo vào)",
+  "narrationSpeed": "Tốc độ thuyết minh",
+  "narrationSpeedTip": "Tăng tốc toàn bộ âm thanh thuyết minh (áp dụng khi thả; 1.00× = tự nhiên)",
+  "pullSubtitles": "Kéo sub theo thuyết minh",
+  "pullSubtitlesTip": "Dời thời gian phụ đề khớp với làn thuyết minh, rồi làm mới thuyết minh",
+  "resetLane": "Đặt lại",
+  "resetLaneTip": "Khôi phục tốc độ tự nhiên và xóa cách sắp xếp đang dàn dựng"
 }

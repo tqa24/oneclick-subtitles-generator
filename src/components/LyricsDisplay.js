@@ -238,7 +238,8 @@ const LyricsDisplay = ({
     beginRangeMove,
     previewRangeMove,
     commitRangeMove,
-    cancelRangeMove
+    cancelRangeMove,
+    applyTimings
   } = useLyricsEditor(matchedLyrics, onUpdateLyrics);
 
   // Find current lyric index based on time
@@ -500,6 +501,7 @@ const LyricsDisplay = ({
           onCommitMoveRange={commitRangeMove}
           onCancelMoveRange={cancelRangeMove}
           onSelectedRangeChange={setSelectedRange}
+          onApplyTimings={applyTimings}
         />
       </div>
 

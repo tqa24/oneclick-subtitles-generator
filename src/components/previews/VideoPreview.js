@@ -1,9 +1,10 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LoadingIndicator from '../common/LoadingIndicator';
 import '../../styles/common/material-switch.css';
 import SubtitleSettings from '../SubtitleSettings';
 import VideoTopsideButtons from './VideoTopsideButtons';
+import { narrationRefreshHandler } from './narrationRefreshHandler';
 import VideoBottomControls from './VideoBottomControls';
 import SeekIndicator from './SeekIndicator';
 import SubtitleDisplay from './SubtitleDisplay';
@@ -216,6 +217,15 @@ const VideoPreview = ({ currentTime, setCurrentTime, setDuration, videoSource, f
 
   // Aligned-narration event wiring + audio cleanup on unmount.
   useNarrationRefreshEvents({ isRefreshingNarration, setIsRefreshingNarration });
+
+  // Let the timeline's "Pull subtitles to narration" trigger the SAME narration refresh as the
+  // top-left button. Wired here (VideoPreview is always mounted) rather than in the buttons, which
+  // unmount when the controls aren't hovered.
+  useEffect(() => {
+    const onRequest = () => narrationRefreshHandler({ videoRef, setIsRefreshingNarration, t });
+    window.addEventListener('request-narration-refresh', onRequest);
+    return () => window.removeEventListener('request-narration-refresh', onRequest);
+  }, [t]);
 
   // Handle downloading video with subtitles
   const handleDownloadWithSubtitles = createDownloadWithSubtitlesHandler({

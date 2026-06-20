@@ -11,5 +11,14 @@
   "clearOfflineSegments": "오프라인 구간 지우기",
   "retryFromCache": "이 클립 재시도(캐시된 클립 재사용)",
   "clearOfflineFirst": "이 모드에서 나가려면 먼저 오프라인 구간을 지워주세요",
-  "offlineClearNotice": "UI에서 오프라인 구간을 정리했습니다. 파일 삭제는 백그라운드에서 진행되며 OS 잠금으로 잠시 남아 있을 수 있어요."
+  "offlineClearNotice": "UI에서 오프라인 구간을 정리했습니다. 파일 삭제는 백그라운드에서 진행되며 OS 잠금으로 잠시 남아 있을 수 있어요.",
+  "narrationLane": "내레이션 레인 컨트롤",
+  "smartArrange": "스마트 정렬",
+  "smartArrangeTip": "내레이션 클립을 레인에서 겹치지 않게 순차적으로 배치합니다(가져오기 전까지 자막은 그대로)",
+  "narrationSpeed": "내레이션 속도",
+  "narrationSpeedTip": "내레이션 오디오 속도를 전체적으로 조절합니다(놓을 때 적용; 1.00× = 원본)",
+  "pullSubtitles": "자막을 내레이션에 맞추기",
+  "pullSubtitlesTip": "자막 타이밍을 내레이션 레인에 맞춘 뒤 내레이션을 새로 고칩니다",
+  "resetLane": "초기화",
+  "resetLaneTip": "원래 속도로 되돌리고 임시 배치를 지웁니다"
 }

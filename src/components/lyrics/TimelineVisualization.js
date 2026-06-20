@@ -14,6 +14,9 @@ import { ClearOfflineSegmentsButton } from './timelineOverlays';
 // Extracted timeline pieces
 import { useTimelineOfflineSegments } from './useTimelineOfflineSegments';
 import { useTimelineStreamingState } from './useTimelineStreamingState';
+import { useNarrationTimelineData } from './useNarrationTimelineData';
+import { useNarrationLaneDrag } from './useNarrationLaneDrag';
+import NarrationLaneControls from './NarrationLaneControls';
 import { useTimelineRenderEffects } from './useTimelineRenderEffects';
 import { useTimelineKeyboardShortcuts } from './useTimelineKeyboardShortcuts';
 import { useTimelinePointerInteraction } from './useTimelinePointerInteraction';
@@ -45,9 +48,20 @@ const TimelineVisualization = ({
     onPreviewMoveRange = null, // Update live move preview with delta seconds
     onCommitMoveRange = null, // Commit the live move on mouse up
     onCancelMoveRange = null, // Cancel live move preview
-    onSelectedRangeChange = null // Callback to notify parent of selected range changes
+    onSelectedRangeChange = null, // Callback to notify parent of selected range changes
+    onApplyTimings = null // Bulk-apply retimed subtitles (narration-lane smart arrange / drag)
 }) => {
     const { t } = useTranslation();
+
+    // Narration-lane segments. `narrationSegments` (memoized) drives the controls + smart-arrange
+    // handlers; `getSegmentsFor` rebuilds them from the exact lyrics being drawn so the lane can
+    // never desync from the subtitle band after a retime.
+    const { segments: narrationSegments, getSegmentsFor } = useNarrationTimelineData(lyrics);
+    const [laneCursor, setLaneCursor] = useState(null);
+    // Narration-lane staging: a global speed (scales block length) + per-clip start overrides.
+    // These only affect the lane until the user commits with "Pull subtitles to narration".
+    const [globalSpeed, setGlobalSpeed] = useState(1);
+    const [placementStarts, setPlacementStarts] = useState(null);
 
     const durationRef = useRef(0);
 
@@ -241,6 +255,20 @@ const TimelineVisualization = ({
         }
     }, [actionBarRange, hiddenActionBarRange, selectedSegment, onSelectedRangeChange]);
 
+    // Narration-lane drag: grab a clip to retime its subtitle (move = shift, edge = resize).
+    const narrationDrag = useNarrationLaneDrag({
+        timelineRef,
+        getTimeRange,
+        duration,
+        lyrics,
+        getSegmentsFor,
+        reserveBottom: videoSource ? 30 : 0,
+        placementStarts,
+        setPlacementStarts,
+        globalSpeed,
+        setLaneCursor,
+    });
+
     // Draw the timeline visualization with optimizations
     const renderTimeline = useCallback((tempPanOffset = null) => {
         const canvas = timelineRef.current;
@@ -306,6 +334,9 @@ const TimelineVisualization = ({
             processingRanges: combinedProcessingRanges
         };
 
+        // Subtitle band = real lyrics; narration lane = staged placement + global speed.
+        const narrationForDraw = getSegmentsFor(lyrics, placementStarts, globalSpeed);
+
         // Draw the timeline
         drawTimeline(
             canvas,
@@ -322,11 +353,13 @@ const TimelineVisualization = ({
             tempPanOffset !== null, // isActivePanning
             timeFormat,
             segmentData,
-            segmentProcessingStartTimes
+            segmentProcessingStartTimes,
+            narrationForDraw,
+            videoSource ? 30 : 0 // reserve the waveform overlay's bottom strip
         );
 
 
-    }, [lyrics, currentTime, duration, getTimeRange, panOffset, getVisibleRangeWithTempOffset, timeFormat, selectedSegment, isDraggingSegment, dragStartTime, dragCurrentTime, isProcessingSegment, animationTime, newSegments, actionBarRange, hiddenActionBarRange, offlineSegments, hoveredOfflineRange, retryingOfflineKeys, segmentProcessingStartTimes]);
+    }, [lyrics, placementStarts, globalSpeed, currentTime, duration, getTimeRange, panOffset, getVisibleRangeWithTempOffset, timeFormat, selectedSegment, isDraggingSegment, dragStartTime, dragCurrentTime, isProcessingSegment, animationTime, newSegments, actionBarRange, hiddenActionBarRange, offlineSegments, hoveredOfflineRange, retryingOfflineKeys, segmentProcessingStartTimes, getSegmentsFor, videoSource]);
 
     // Render-coordination side effects (new-segment animation, resize, zoom,
     // timeline updates, playhead auto-scroll, unmount cleanup)
@@ -358,6 +391,13 @@ const TimelineVisualization = ({
         debugCounter,
         autoScrollRef
     });
+
+    // Repaint when the narration lane changes — its segments arrive asynchronously (after the
+    // duration refetch that follows a retime), so they land after the lyrics-driven redraw.
+    useEffect(() => {
+        renderTimeline();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [narrationSegments]);
 
     // Keyboard shortcuts (Alt+S auto-scroll toggle, Ctrl+A select-all range)
     useTimelineKeyboardShortcuts({
@@ -412,6 +452,15 @@ const TimelineVisualization = ({
 
     return (
         <div className="timeline-container" style={{ position: 'relative' }}>
+            <NarrationLaneControls
+                narrationSegments={narrationSegments}
+                lyrics={lyrics}
+                onApplyTimings={onApplyTimings}
+                globalSpeed={globalSpeed}
+                setGlobalSpeed={setGlobalSpeed}
+                placementStarts={placementStarts}
+                setPlacementStarts={setPlacementStarts}
+            />
             <ClearOfflineSegmentsButton
                 offlineSegments={offlineSegments}
                 retryingOfflineKeys={retryingOfflineKeys}
@@ -472,16 +521,21 @@ const TimelineVisualization = ({
 
             <canvas
                 ref={timelineRef}
-                onMouseDown={handleMouseDown}
+                // Narration-lane drag gets first dibs on mouse-down (over a lane block); otherwise
+                // the existing seek/range-select handler runs.
+                onMouseDown={(e) => { if (!narrationDrag.onMouseDown(e)) handleMouseDown(e); }}
+                onMouseMove={narrationDrag.onHoverMove}
                 onTouchStart={handleTouchStart}
                 onContextMenu={handleContextMenu}
                 className="subtitle-timeline"
                 style={{
-                    cursor: isDraggingSegment
-                        ? 'ew-resize'
-                        : (onSegmentSelect && offlineSegments.length === 0)
-                            ? 'crosshair'
-                            : 'pointer',
+                    cursor: laneCursor
+                        ? laneCursor
+                        : isDraggingSegment
+                            ? 'ew-resize'
+                            : (onSegmentSelect && offlineSegments.length === 0)
+                                ? 'crosshair'
+                                : 'pointer',
                     touchAction: (onSegmentSelect && offlineSegments.length === 0) ? 'none' : 'auto' // Disable touch gestures only when selection is enabled
                 }}
             />

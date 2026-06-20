@@ -7,7 +7,8 @@ import { timeToX } from './TimelineCalculations';
 // Legacy segment optimization is no longer needed with simplified processing
 // import { optimizeSegments, clearUnusedSegments } from '../../../utils/colorfulSegmentsOptimizer';
 import { formatTime } from '../../../utils/timeFormatter';
-import { drawTimeMarkers, drawLyricSegments, drawPlayhead } from './timelineDrawingHelpers';
+import { drawTimeMarkers, drawLyricSegments, drawNarrationSegments, drawPlayhead } from './timelineDrawingHelpers';
+import { computeTimelineBands } from './timelineBands';
 
 /**
  * Draw the timeline visualization
@@ -32,7 +33,9 @@ export const drawTimeline = (
     isActivePanning,
     timeFormat,
     segmentData = null,
-    segmentProcessingStartTimes = null
+    segmentProcessingStartTimes = null,
+    narrationSegments = null, // optional narration-lane segments
+    reserveBottom = 0 // px reserved at the bottom (e.g. for the waveform overlay)
 ) => {
     if (!canvas) return;
 
@@ -84,6 +87,11 @@ export const drawTimeline = (
         timeFormat
     );
 
+    // Split the content area into a subtitle band (+ a narration band beneath it when present).
+    // Shared with the narration-lane hit-testing via computeTimelineBands.
+    const hasNarration = Array.isArray(narrationSegments) && narrationSegments.length > 0;
+    const { subtitleBand, narrationBand } = computeTimelineBands(displayHeight, reserveBottom, hasNarration);
+
     // Draw lyric segments with new segment animations
     drawLyricSegments(
         ctx,
@@ -96,8 +104,23 @@ export const drawTimeline = (
         isDark,
         isActivePanning,
         segmentData ? segmentData.newSegments : null,
-        segmentProcessingStartTimes
+        segmentProcessingStartTimes,
+        subtitleBand
     );
+
+    // Draw the narration lane beneath the subtitles
+    if (narrationBand) {
+        drawNarrationSegments(
+            ctx,
+            narrationSegments,
+            visibleStart,
+            visibleEnd,
+            visibleDuration,
+            displayWidth,
+            narrationBand,
+            isDark
+        );
+    }
 
     // Draw current time indicator
     drawPlayhead(

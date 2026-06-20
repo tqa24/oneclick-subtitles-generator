@@ -80,7 +80,8 @@ export const drawLyricSegments = (
     isDark,
     isActivePanning,
     newSegments = null,
-    segmentProcessingStartTimes = null
+    segmentProcessingStartTimes = null,
+    band = null // optional { top, height } — when set, draw within this vertical band
 ) => {
     // Minimum segment width - always show segments with at least 1px
     const minSegmentWidth = 1;
@@ -155,9 +156,12 @@ export const drawLyricSegments = (
         // Group segments by color for batch rendering
         const colorGroups = new Map();
 
-        // Reserve space at the top for time markers and labels (25px)
-        const timeMarkerSpace = 25;
-        const availableHeight = displayHeight - timeMarkerSpace;
+        // Vertical band the subtitle blocks occupy. Defaults to the area below the 25px time
+        // ruler; when a narration lane is shown, drawTimeline passes a smaller top band.
+        const bandTop = band ? band.top : 25;
+        const bandHeight = band ? band.height : displayHeight - 25;
+        const timeMarkerSpace = bandTop;
+        const availableHeight = bandHeight;
 
         // For long videos, use a more efficient rendering approach
         const isVeryLongVideo = duration > 7200; // 2 hours
@@ -362,6 +366,62 @@ export const drawLyricSegments = (
 
             ctx.restore();
         }
+    }
+};
+
+/**
+ * Draw the narration lane: each generated clip as a block from its subtitle start to
+ * start + audio length, within `band`. The part inside the subtitle window is green; any
+ * overrun tail past the subtitle's end is red, so timing mismatches are visible at a glance.
+ */
+export const drawNarrationSegments = (
+    ctx,
+    narrationSegments,
+    visibleStart,
+    visibleEnd,
+    visibleDuration,
+    displayWidth,
+    band,
+    isDark
+) => {
+    if (!Array.isArray(narrationSegments) || narrationSegments.length === 0 || !band) return;
+
+    const top = band.top;
+    const height = Math.max(4, band.height);
+    const pad = Math.min(3, height * 0.15);
+    const blockTop = top + pad;
+    const blockH = height - pad * 2;
+
+    const fitFill = isDark ? 'rgba(56, 178, 120, 0.65)' : 'rgba(34, 153, 102, 0.7)';
+    const fitStroke = isDark ? 'rgba(74, 222, 150, 0.9)' : 'rgba(25, 128, 85, 0.9)';
+    // Whole-block warning colour for clips that overlap a neighbour past the conflict threshold
+    // (SGT's #facc15 amber).
+    const conflictFill = isDark ? 'rgba(250, 204, 21, 0.55)' : 'rgba(214, 158, 10, 0.6)';
+    const conflictStroke = isDark ? 'rgba(250, 204, 21, 0.95)' : 'rgba(180, 130, 8, 0.95)';
+
+    // Faint lane background so an empty lane still reads as a track.
+    ctx.fillStyle = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+    ctx.fillRect(0, top, displayWidth, height);
+
+    const drawRect = (x0, x1, fill, stroke) => {
+        const x = Math.max(0, x0);
+        const w = Math.min(displayWidth, x1) - x;
+        if (w <= 0) return;
+        ctx.fillStyle = fill;
+        ctx.fillRect(x, blockTop, Math.max(1, w), blockH);
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x, blockTop, Math.max(1, w), blockH);
+    };
+
+    for (const seg of narrationSegments) {
+        if (seg.end < visibleStart || seg.start > visibleEnd) continue;
+        const startX = timeToX(seg.start, visibleStart, visibleDuration, displayWidth);
+        const endX = timeToX(seg.end, visibleStart, visibleDuration, displayWidth);
+        // Whole block: amber when it conflicts with a neighbour, green otherwise.
+        const fill = seg.conflict ? conflictFill : fitFill;
+        const stroke = seg.conflict ? conflictStroke : fitStroke;
+        drawRect(startX, endX, fill, stroke);
     }
 };
 

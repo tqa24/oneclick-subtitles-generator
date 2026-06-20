@@ -11,5 +11,14 @@
   "clearOfflineSegments": "Clear offline segments",
   "retryFromCache": "Retry this cut (reuse cached clip)",
   "clearOfflineFirst": "Please clear offline segments to exit this mode first",
-  "offlineClearNotice": "Cleared offline segments from UI. Files will be removed in background and may persist briefly due to OS locks."
+  "offlineClearNotice": "Cleared offline segments from UI. Files will be removed in background and may persist briefly due to OS locks.",
+  "narrationLane": "Narration lane controls",
+  "smartArrange": "Smart arrange",
+  "smartArrangeTip": "Arrange the narration clips on the lane sequentially with no overlap (subtitles unchanged until you pull)",
+  "narrationSpeed": "Narration speed",
+  "narrationSpeedTip": "Globally speed the narration audio (applies on release; 1.00× = natural)",
+  "pullSubtitles": "Pull subtitles to narration",
+  "pullSubtitlesTip": "Move the subtitle timings to match the narration lane, then refresh the narration",
+  "resetLane": "Reset",
+  "resetLaneTip": "Restore natural speed and clear the staged arrangement"
 }
