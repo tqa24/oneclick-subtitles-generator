@@ -3,10 +3,7 @@
  * Uses Gemini API to intelligently combine subtitle lines
  */
 
-import i18n from '../../i18n/i18n';
-
-// Translation function shorthand
-const t = (key, fallback) => i18n.t(key, fallback);
+import { fetchWithKeyRotation } from './withKeyRotation';
 
 // import { addResponseSchema } from '../../utils/schemaUtils'; // No longer needed if schema is removed
 
@@ -31,11 +28,6 @@ export const groupSubtitlesForNarration = async (subtitles, language = 'en', mod
   }
 
   try {
-    const apiKey = localStorage.getItem('gemini_api_key');
-    if (!apiKey) {
-      throw new Error(t('settings.geminiApiKeyRequired', 'Gemini API key not found'));
-    }
-
     const subtitleText = subtitles.map((sub, index) =>
       `ID: ${sub.subtitle_id || sub.id || (index + 1)}, Text: "${sub.text}"`
     ).join('\n');
@@ -157,16 +149,17 @@ DO NOT include any explanations, comments, or any other text in your response. R
     // REMOVED: requestData = addResponseSchema(requestData, createSubtitleGroupingSchema());
 
     console.log('Final requestData being sent to Gemini API (no schema):', JSON.stringify(requestData, null, 2));
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     console.log('Calling Gemini API for subtitle grouping (no schema)...');
 
     const responseData = await (async () => {
       try {
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', },
-          body: JSON.stringify(requestData)
-        });
+        const response = await fetchWithKeyRotation((apiKey) =>
+          fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', },
+            body: JSON.stringify(requestData)
+          })
+        );
 
         if (!response.ok) {
           const errorBodyText = await response.text();

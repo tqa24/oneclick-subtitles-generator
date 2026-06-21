@@ -6,6 +6,8 @@
 
 // Convert Blob to base64 string (without data: prefix) — shared helper.
 import { toBase64 as blobToBase64 } from '../../utils/fileUtils';
+// Route Gemini calls through the shared key-rotation wrapper (auto switch-on-429).
+import { fetchWithKeyRotation } from './withKeyRotation';
 
 // Load an image blob and return a resized JPEG base64 (to keep payloads small and consistent)
 const resizeImageBlobToJpegBase64 = async (blob, maxDim = 1024, quality = 0.92) => {
@@ -74,10 +76,6 @@ const prepareAlbumArt = async (albumArtUrl) => {
   return await resizeImageBlobToJpegBase64(blob);
 };
 
-const getApiKey = () => {
-  return localStorage.getItem('gemini_api_key') || localStorage.getItem('gemini_token') || '';
-};
-
 // Default templates (match BackgroundPromptEditor defaults) using raw strings to preserve ${...}
 const DEFAULT_PROMPT_ONE = 'song title: ${songName || \'Unknown Song\'}\n\n${lyrics}\n\n' +
   'generate one prompt to put in a image generator to describe the atmosphere/object of this song, ' +
@@ -104,9 +102,6 @@ const renderTemplate = (template, vars = {}) => {
 export async function generateBackgroundPrompt(lyrics, songName = 'Unknown Song') {
   if (!lyrics || !lyrics.trim()) throw new Error('Lyrics are required');
 
-  const apiKey = getApiKey();
-  if (!apiKey) throw new Error('Gemini API key not set. Please set it in settings.');
-
   const model = localStorage.getItem('background_prompt_model') || 'gemini-2.5-flash-lite';
 
   // Use user-customizable template from the Background Prompt Editor (localStorage),
@@ -128,12 +123,14 @@ export async function generateBackgroundPrompt(lyrics, songName = 'Unknown Song'
     }
   };
 
-  const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    }
+  const resp = await fetchWithKeyRotation((apiKey) =>
+    fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }
+    )
   );
 
   if (!resp.ok) {
@@ -151,9 +148,6 @@ export async function generateBackgroundPrompt(lyrics, songName = 'Unknown Song'
 export async function generateBackgroundImage(prompt, albumArtUrl) {
   if (!prompt || !prompt.trim()) throw new Error('Prompt is required');
   if (!albumArtUrl) throw new Error('Album art URL is required');
-
-  const apiKey = getApiKey();
-  if (!apiKey) throw new Error('Gemini API key not set. Please set it in settings.');
 
   const model = localStorage.getItem('background_image_model') || 'gemini-2.0-flash-preview-image-generation';
 
@@ -179,12 +173,14 @@ export async function generateBackgroundImage(prompt, albumArtUrl) {
     }
   };
 
-  const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    }
+  const resp = await fetchWithKeyRotation((apiKey) =>
+    fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }
+    )
   );
 
   if (!resp.ok) {

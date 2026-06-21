@@ -11,9 +11,7 @@ import { translateSubtitlesByChunks } from './translationChunkProcessor';
 import { processTranslationResponse } from './translationResponseParser';
 import { buildTranslationPrompt, buildRetryPrompt } from './translationPromptBuilder';
 import { buildTranslatedSubtitles } from './translationSubtitleBuilder';
-
-// Translation function shorthand
-const t = (key, fallback) => i18n.t(key, fallback);
+import { fetchWithKeyRotation } from './withKeyRotation';
 
 /**
  * Translate subtitles to different language(s) while preserving timing
@@ -145,15 +143,10 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.5
     const { requestId, signal } = createRequestController();
 
     try {
-        // Get API key from localStorage
-        const apiKey = localStorage.getItem('gemini_api_key');
-        if (!apiKey) {
-            throw new Error(t('settings.geminiApiKeyRequired', 'Gemini API key not found'));
-        }
-
+        // Build the API URL for the given key (key supplied by the rotation wrapper).
         // Use the model parameter passed to the function
         // This allows for model selection specific to translation
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+        const buildApiUrl = (apiKey) => `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
         // Create request data with structured output
         let requestData = {
@@ -179,14 +172,16 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.5
         requestData = addThinkingConfig(requestData, model);
 
 
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestData),
-            signal: signal
-        });
+        const response = await fetchWithKeyRotation((apiKey) =>
+            fetch(buildApiUrl(apiKey), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData),
+                signal: signal
+            })
+        );
 
         if (!response.ok) {
             const errorData = await response.json();
@@ -241,14 +236,16 @@ const translateSubtitles = async (subtitles, targetLanguage, model = 'gemini-2.5
                 // Always use structured output for retries too
                 const schemaRequestData = addResponseSchema(retryRequestData, createTranslationSchema(isMultiLanguage));
 
-                const retryResponse = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(schemaRequestData),
-                    signal: signal
-                });
+                const retryResponse = await fetchWithKeyRotation((apiKey) =>
+                    fetch(buildApiUrl(apiKey), {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(schemaRequestData),
+                        signal: signal
+                    })
+                );
 
                 if (!retryResponse.ok) {
                     throw new Error(`Retry failed with status ${retryResponse.status}`);

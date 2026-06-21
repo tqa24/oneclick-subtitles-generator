@@ -9,11 +9,40 @@ const GEMINI_KEYS_STORAGE = 'gemini_api_keys';
 const ACTIVE_KEY_INDEX_STORAGE = 'gemini_active_key_index';
 // Legacy single key storage name
 const LEGACY_KEY_STORAGE = 'gemini_api_key';
+// Persisted blacklist (key -> expiry timestamp), so cooldowns survive reloads AND can be read by the
+// Python narration server (synced via localStorage.json) to skip the same rate-limited keys.
+const BLACKLIST_STORAGE = 'gemini_blacklisted_keys';
 // Blacklist timeout in milliseconds (5 minutes)
 const BLACKLIST_TIMEOUT = 5 * 60 * 1000;
 
-// In-memory storage for blacklisted keys
+// In-memory mirror of the blacklist; hydrated from localStorage on import.
 const blacklistedKeys = new Map();
+
+/** Write the current blacklist to localStorage (best-effort; ignore quota/serialization errors). */
+const persistBlacklist = () => {
+  try {
+    const obj = {};
+    blacklistedKeys.forEach((expiry, key) => { obj[key] = expiry; });
+    localStorage.setItem(BLACKLIST_STORAGE, JSON.stringify(obj));
+  } catch (error) {
+    /* non-fatal */
+  }
+};
+
+/** Load the persisted blacklist, dropping any entries whose cooldown already elapsed. */
+const loadPersistedBlacklist = () => {
+  try {
+    const raw = localStorage.getItem(BLACKLIST_STORAGE);
+    if (!raw) return;
+    const obj = JSON.parse(raw) || {};
+    const now = Date.now();
+    Object.entries(obj).forEach(([key, expiry]) => {
+      if (typeof expiry === 'number' && expiry > now) blacklistedKeys.set(key, expiry);
+    });
+  } catch (error) {
+    /* ignore corrupt blacklist */
+  }
+};
 
 /**
  * Initialize the key manager
@@ -181,8 +210,9 @@ export const blacklistKey = (key) => {
   if (!key) return;
   
   blacklistedKeys.set(key, Date.now() + BLACKLIST_TIMEOUT);
+  persistBlacklist();
   console.warn(`Blacklisted Gemini API key for ${BLACKLIST_TIMEOUT/1000} seconds`);
-  
+
   // If this was the active key, rotate to the next one
   if (key === getCurrentKey()) {
     rotateToNextKey();
@@ -203,6 +233,7 @@ export const isKeyBlacklisted = (key) => {
   if (Date.now() > expiryTime) {
     // Blacklist period expired, remove from blacklist
     blacklistedKeys.delete(key);
+    persistBlacklist();
     return false;
   }
   
@@ -234,6 +265,7 @@ export const rotateToNextKey = () => {
     newIndex = 0;
     // Clear all blacklisted keys if we've gone through all of them
     blacklistedKeys.clear();
+    persistBlacklist();
   }
   
   setActiveKeyIndex(newIndex);
@@ -262,3 +294,4 @@ export const getNextAvailableKey = () => {
 
 // Initialize the key manager when this module is imported
 initKeyManager();
+loadPersistedBlacklist();

@@ -4,14 +4,12 @@
  * prompt, the response schema, and the log/abort labels).
  */
 
-import i18n from '../../i18n/i18n';
 import { getLanguageCode } from '../../utils/languageUtils';
 import { addResponseSchema } from '../../utils/schemaUtils';
 import { addThinkingConfig } from '../../utils/thinkingBudgetUtils';
 import { createRequestController, removeRequestController } from './requestManagement';
 import { processStructuredJsonResponse, processTextResponse } from './responseProcessingService';
-
-const t = (key, fallback) => i18n.t(key, fallback);
+import { fetchWithKeyRotation } from './withKeyRotation';
 
 /**
  * Resolve the processing language from localStorage.
@@ -49,12 +47,6 @@ export const runGeminiDocumentRequest = async ({
   const { requestId, signal } = createRequestController();
 
   try {
-    const apiKey = localStorage.getItem('gemini_api_key');
-    if (!apiKey) {
-      throw new Error(t('settings.geminiApiKeyRequired', 'Gemini API key not found'));
-    }
-
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     const language = resolveProcessingLanguage();
 
     const documentPrompt = customPrompt
@@ -78,12 +70,14 @@ export const runGeminiDocumentRequest = async ({
     requestData = addResponseSchema(requestData, createSchema());
     requestData = addThinkingConfig(requestData, model);
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestData),
-      signal,
-    });
+    const response = await fetchWithKeyRotation((apiKey) =>
+      fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData),
+        signal,
+      })
+    );
 
     if (!response.ok) {
       const errorData = await response.json();

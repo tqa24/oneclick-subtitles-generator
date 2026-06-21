@@ -3,7 +3,8 @@
  * Handles streaming responses from Gemini API with real-time subtitle processing
  */
 
-import { getNextAvailableKey } from './keyManager';
+import { getNextAvailableKey, blacklistKey } from './keyManager';
+import { isRateLimitError } from './isRateLimitError';
 import { autoSplitSubtitles } from '../../utils/subtitle/splitUtils';
 import { createRequestController, removeRequestController } from './requestManagement';
 import i18n from '../../i18n/i18n';
@@ -137,6 +138,11 @@ export const streamGeminiContent = async (file, fileUri, options = {}, onChunk, 
       removeRequestController(requestId);
       const errorData = await response.text();
       console.error('[StreamingService] Error response body:', errorData);
+      // On a rate-limit/quota, cool this key so the NEXT request rotates to another (a half-streamed
+      // response can't be transparently retried, so we don't retry in-place here).
+      if (isRateLimitError(response)) {
+        blacklistKey(geminiApiKey);
+      }
       throw new Error(`Gemini API error: ${response.status} - ${errorData}`);
     }
 

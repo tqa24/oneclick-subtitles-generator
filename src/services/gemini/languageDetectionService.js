@@ -4,9 +4,7 @@
 
 import { createLanguageDetectionSchema, addResponseSchema } from '../../utils/schemaUtils';
 import i18n from '../../i18n/i18n';
-
-// Translation function shorthand
-const t = (key, fallback) => i18n.t(key, fallback);
+import { fetchWithKeyRotation } from './withKeyRotation';
 
 /**
  * Detect language of text using Gemini API
@@ -27,12 +25,6 @@ export const detectSubtitleLanguage = async (subtitles, source = 'original', mod
     }
 
     try {
-        // Get API key from localStorage
-        const apiKey = localStorage.getItem('gemini_api_key');
-        if (!apiKey) {
-            throw new Error(t('settings.geminiApiKeyRequired', 'Gemini API key not found'));
-        }
-
         // Take the first 3 subtitles for language detection
         const sampleSubtitles = subtitles.slice(0, 3);
         const sampleText = sampleSubtitles.map(subtitle => subtitle.text).join('\n');
@@ -75,14 +67,15 @@ ${sampleText}
         }));
 
         // Call the Gemini API
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestData)
-        });
+        const response = await fetchWithKeyRotation((apiKey) =>
+            fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            })
+        );
 
         if (!response.ok) {
             const errorData = await response.json();

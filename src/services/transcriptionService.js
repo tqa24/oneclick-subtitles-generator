@@ -3,6 +3,7 @@
  */
 
 import { toBase64 } from '../utils/fileUtils';
+import { fetchWithKeyRotation } from './gemini/withKeyRotation';
 
 // blobToBase64 is the shared toBase64 helper; kept as a named export for existing call sites.
 export const blobToBase64 = toBase64;
@@ -90,27 +91,18 @@ export const transcribeAudio = async (audioBlob) => {
 
 
 
-    // Get API key dynamically from localStorage
-    const geminiApiKey = localStorage.getItem('gemini_api_key');
-
-    // Check if API key is available
-    if (!geminiApiKey) {
-      console.error('Gemini API key is missing. Please set it in the settings.');
-      throw new Error('Gemini API key is missing. Please go to Settings > API Keys to set your Gemini API key.');
-    }
-
-
-
-    // Call Gemini API
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${requestData.model}:generateContent?key=${geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData)
-      }
+    // Call Gemini API (key rotation handles key selection and auto-switch on 429)
+    const response = await fetchWithKeyRotation((apiKey) =>
+      fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${requestData.model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData)
+        }
+      )
     );
 
     console.timeLog('transcribeAudio', 'Received response from Gemini API');

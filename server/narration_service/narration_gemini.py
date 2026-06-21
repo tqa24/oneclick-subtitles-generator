@@ -11,6 +11,29 @@ _failed_api_keys = {}
 # Blacklist duration in seconds (5 minutes)
 _BLACKLIST_DURATION = 5 * 60
 
+def _get_shared_blacklist():
+    """Read the browser-shared key blacklist (key -> expiry epoch seconds) from localStorage.json,
+    so a key the frontend rate-limited is also skipped here. JS stores expiry in milliseconds."""
+    blacklist = {}
+    try:
+        localStorage_path = os.path.join(APP_ROOT_DIR, 'localStorage.json')
+        if not os.path.exists(localStorage_path):
+            return blacklist
+        with open(localStorage_path, 'r', encoding='utf-8') as f:
+            raw = json.load(f).get('gemini_blacklisted_keys')
+        if not raw:
+            return blacklist
+        obj = json.loads(raw) if isinstance(raw, str) else raw
+        if isinstance(obj, dict):
+            for key, expiry_ms in obj.items():
+                try:
+                    blacklist[key] = float(expiry_ms) / 1000.0  # ms -> seconds
+                except (TypeError, ValueError):
+                    pass
+    except Exception as e:
+        logger.error(f"Error reading shared Gemini key blacklist: {e}")
+    return blacklist
+
 def get_gemini_api_key():
     """Get Gemini API key from various sources with failover support"""
     # Get all available keys
@@ -20,12 +43,21 @@ def get_gemini_api_key():
         logger.warning("No Gemini API keys found in any source.")
         return None
 
-    # Filter out recently failed keys
+    # Filter out keys that are cooling down — either locally (this process) or per the blacklist
+    # shared from the browser, so the two processes agree on which keys are exhausted.
     current_time = time.time()
-    valid_keys = [key for key in all_keys if key not in _failed_api_keys or
-                 current_time > _failed_api_keys[key]]
+    shared_blacklist = _get_shared_blacklist()
 
-    # If all keys are blacklisted but we have keys, clear the blacklist and use them anyway
+    def _is_blacklisted(key):
+        if key in _failed_api_keys and current_time <= _failed_api_keys[key]:
+            return True
+        if key in shared_blacklist and current_time <= shared_blacklist[key]:
+            return True
+        return False
+
+    valid_keys = [key for key in all_keys if not _is_blacklisted(key)]
+
+    # If all keys are blacklisted but we have keys, clear the local blacklist and use them anyway
     if not valid_keys and all_keys:
         logger.warning("All Gemini API keys are blacklisted. Clearing blacklist and retrying.")
         _failed_api_keys.clear()
