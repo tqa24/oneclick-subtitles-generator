@@ -11,6 +11,15 @@ IF "%PROJECT_PATH:~-1%"=="\" SET "PROJECT_PATH=%PROJECT_PATH:~0,-1%"
 SET "LAST_CHOICE_FILE=%SCRIPT_DIR%last_choice.tmp"
 SET "PREREQ_FLAG_FILE=%SCRIPT_DIR%prereqs_installed.flag"
 
+:: --- Self-update settings ---
+:: Bump SELF_VERSION to match the release tag whenever you cut a NEW .bat release.
+:: On a fresh launch the installer compares this to the latest GitHub release and, if
+:: newer, offers to download + swap itself in place so users never re-download manually.
+SET "SELF_VERSION=2.5"
+SET "SELFBAT=%~f0"
+SET "OSG_REPO=nganlinh4/oneclick-subtitles-generator"
+SET "NEWBAT=%SCRIPT_DIR%OSG_installer_Windows.new.bat"
+
 :: --- Fixed Settings (Bilingual Menu) ---
 SET "MENU_LABEL=MainMenuVI"
 SET "PROMPT_CHOICE=Enter your choice (Nhap lua chon cua ban) (1-5): "
@@ -21,6 +30,26 @@ TITLE %TITLE_TEXT%
 :: --- Check for Administrator Privileges ---
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[?] Checking administrator privileges (Kiem tra quyen quan tri)...' -ForegroundColor Yellow; if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')) { Write-Host ''; Write-Host '[ERROR] Administrator privileges required (Can quyen quan tri).' -ForegroundColor Red; Write-Host '[INFO] Requesting administrator privileges (Yeu cau quyen quan tri)...' -ForegroundColor Blue; Write-Host ''; Start-Process '%~f0' -Verb RunAs; exit 1 } else { Write-Host '[OK] Administrator privileges confirmed (Da xac nhan quyen quan tri).' -ForegroundColor Green; Write-Host '' }"
 IF %ERRORLEVEL% NEQ 0 EXIT /B
+
+:: --- Self-update: on a fresh launch, offer to update the installer file itself ---
+:: Flat/GOTO style (no nested blocks) so batch paren-parsing stays safe. Any failure or
+:: no-internet falls straight through to the normal menu. Skipped during the error
+:: auto-restart (LAST_CHOICE_FILE present) so a mid-install retry never swaps the script.
+IF EXIST "%LAST_CHOICE_FILE%" GOTO SkipSelfUpdate
+DEL "%TEMP%\osg_latest.txt" >nul 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r=Invoke-RestMethod -Uri 'https://api.github.com/repos/%OSG_REPO%/releases/latest' -Headers @{'User-Agent'='OSG-Installer'} -TimeoutSec 8; $l=($r.tag_name).TrimStart('v'); if([version]$l -gt [version]'%SELF_VERSION%'){ Out-File -InputObject $r.tag_name -FilePath ($env:TEMP + '\osg_latest.txt') -Encoding ascii } } catch {}"
+IF NOT EXIST "%TEMP%\osg_latest.txt" GOTO SkipSelfUpdate
+SET "LATEST_TAG="
+SET /P "LATEST_TAG="<"%TEMP%\osg_latest.txt"
+DEL "%TEMP%\osg_latest.txt" >nul 2>&1
+IF NOT DEFINED LATEST_TAG GOTO SkipSelfUpdate
+ECHO.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ('[UPDATE] A newer installer %LATEST_TAG% is available (you have v%SELF_VERSION%) / Co ban cai dat moi %LATEST_TAG% (ban dang dung v%SELF_VERSION%).') -ForegroundColor Cyan"
+SET "DO_UPDATE=Y"
+SET /P "DO_UPDATE=Update the installer now? Cap nhat trinh cai dat ngay? (Y/n): "
+IF /I "%DO_UPDATE%"=="n" GOTO SkipSelfUpdate
+GOTO SelfUpdate
+:SkipSelfUpdate
 
 :: Check if we have a saved choice from previous error
 IF EXIST "%LAST_CHOICE_FILE%" (
@@ -42,6 +71,26 @@ IF EXIST "%LAST_CHOICE_FILE%" (
     )
 )
 
+GOTO %MENU_LABEL%
+
+:: =============================================================================
+:: SELF-UPDATE: download the latest installer, swap this file in place, relaunch
+:: =============================================================================
+:SelfUpdate
+ECHO.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[UPDATE] Downloading the new installer (Dang tai trinh cai dat moi)...' -ForegroundColor Yellow; try { Invoke-WebRequest -Uri 'https://github.com/%OSG_REPO%/releases/latest/download/OSG_installer_Windows.bat' -OutFile '%NEWBAT%' -UseBasicParsing -TimeoutSec 120 } catch { exit 1 }"
+IF %ERRORLEVEL% NEQ 0 GOTO SelfUpdateFail
+:: Validate the download before trusting it (exists, non-trivial size, real OSG installer).
+powershell -NoProfile -ExecutionPolicy Bypass -Command "if((Test-Path '%NEWBAT%') -and ((Get-Item '%NEWBAT%').Length -gt 5000) -and (Select-String -Path '%NEWBAT%' -Pattern 'PROJECT_FOLDER_NAME' -Quiet)){ exit 0 } else { exit 1 }"
+IF %ERRORLEVEL% NEQ 0 GOTO SelfUpdateFail
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[UPDATE] Applying update and restarting (Dang cap nhat va khoi dong lai)...' -ForegroundColor Green"
+:: Hand off to a detached PowerShell: wait for this script to exit, swap the file, relaunch.
+start "" powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "Start-Sleep -Seconds 2; try { Copy-Item -LiteralPath '%NEWBAT%' -Destination '%SELFBAT%' -Force } catch {}; Remove-Item -LiteralPath '%NEWBAT%' -Force -ErrorAction SilentlyContinue; Start-Process -FilePath '%SELFBAT%'"
+EXIT /B
+
+:SelfUpdateFail
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[WARN] Update failed; continuing with the current installer (Cap nhat that bai; tiep tuc).' -ForegroundColor Yellow"
+IF EXIST "%NEWBAT%" DEL "%NEWBAT%" >nul 2>&1
 GOTO %MENU_LABEL%
 
 :: =============================================================================
