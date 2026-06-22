@@ -24,7 +24,7 @@ async function copyVenv() {
     // Check if source .venv exists
     if (!fs.existsSync(VENV_SOURCE)) {
         logger.error(`.venv not found at ${VENV_SOURCE}`);
-        logger.info('Please run: npm run setup:narration:uv');
+        logger.info('Please run: node setup-narration.js');
         process.exit(1);
     }
 
@@ -86,7 +86,7 @@ async function copyVenv() {
     } catch (error) {
         logger.error('Package verification failed');
         logger.info('Required packages: flask, uvicorn, torch');
-        logger.info('Run: npm run setup:narration:uv');
+        logger.info('Run: node setup-narration.js');
         process.exit(1);
     }
 

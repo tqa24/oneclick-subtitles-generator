@@ -1,0 +1,33 @@
+{
+  "intro": "음성 복제 및 로컬 전사 엔진은 필요할 때 설치됩니다 — 엔진당 한 번 약 3 GB GPU 다운로드. 필요한 것만 설치하세요.",
+  "download": "다운로드",
+  "start": "시작",
+  "stop": "중지",
+  "included": "포함됨",
+  "installing": "설치 중…",
+  "starting": "시작 중…",
+  "stopping": "중지 중…",
+  "uninstalling": "제거 중…",
+  "cancel": "취소",
+  "uninstall": "제거",
+  "uninstallAll": "모두 제거",
+  "confirmUninstall": "제거할까요?",
+  "confirmUninstallAll": "모든 엔진을 제거할까요?",
+  "electronManaged": "데스크톱 앱에는 이 엔진들이 포함되어 있습니다. 다운로드는 앱 패키지가 관리합니다.",
+  "error": {
+    "installFailed": "설치를 시작할 수 없습니다",
+    "startFailed": "엔진을 시작할 수 없습니다",
+    "stopFailed": "엔진을 중지할 수 없습니다",
+    "uninstallFailed": "제거 실패"
+  },
+  "kind": {
+    "voice-cloning": "음성 복제",
+    "transcription": "전사"
+  },
+  "state": {
+    "not-installed": "설치 안 됨",
+    "installed-stopped": "설치됨",
+    "included": "포함됨",
+    "ready": "실행 중"
+  }
+}

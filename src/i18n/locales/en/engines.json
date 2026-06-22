@@ -1,0 +1,33 @@
+{
+  "intro": "Voice-cloning and local transcription engines install on demand — a one-time ~3 GB GPU download per engine. Install only what you need.",
+  "download": "Download",
+  "start": "Start",
+  "stop": "Stop",
+  "included": "Included",
+  "installing": "Installing…",
+  "starting": "Starting…",
+  "stopping": "Stopping…",
+  "uninstalling": "Uninstalling…",
+  "cancel": "Cancel",
+  "uninstall": "Uninstall",
+  "uninstallAll": "Uninstall all",
+  "confirmUninstall": "Uninstall?",
+  "confirmUninstallAll": "Uninstall all engines?",
+  "electronManaged": "The desktop app includes these engines. Downloads are managed by the app package.",
+  "error": {
+    "installFailed": "Install failed to start",
+    "startFailed": "Engine failed to start",
+    "stopFailed": "Engine failed to stop",
+    "uninstallFailed": "Uninstall failed"
+  },
+  "kind": {
+    "voice-cloning": "Voice cloning",
+    "transcription": "Transcription"
+  },
+  "state": {
+    "not-installed": "Not installed",
+    "installed-stopped": "Installed",
+    "included": "Included",
+    "ready": "Running"
+  }
+}

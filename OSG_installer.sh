@@ -318,16 +318,16 @@ show_menu() {
     echo -e "\033[93mVui long chon mot tuy chon:\033[0m"
     echo
     echo -e "\033[92m\033[40mCAI DAT / THIET LAP:\033[0m"
-    echo -e "\033[97m  1. Install OSG (Full version with Voice Cloning)\033[0m"
-    echo -e "\033[96m     (Gemini AI + F5-TTS + Chatterbox + Video Rendering)\033[0m"
-    echo -e "\033[93m     (Luu y: Se ton nhieu dung luong luu tru hon)\033[0m"
-    echo -e "\033[97m  2. Install OSG Lite (Standard version)\033[0m"
-    echo -e "\033[96m     (Gemini AI + Video Rendering, no Voice Cloning)\033[0m"
+    echo -e "\033[97m  1. Install OSG (Recommended)\033[0m"
+    echo -e "\033[96m     (Gemini AI + Video Rendering + on-demand local engines)\033[0m"
+    echo -e "\033[93m     (Voice and transcription engines install later from Settings > Tools)\033[0m"
+    echo -e "\033[97m  2. Install OSG dependencies only\033[0m"
+    echo -e "\033[96m     (Use if the Python base setup is already complete)\033[0m"
     echo
     echo -e "\033[94m\033[40mBAO TRI / SU DUNG:\033[0m"
     echo -e "\033[97m  3. Cap nhat Ung dung (Update)\033[0m"
-    echo -e "\033[97m  4. Run OSG Lite (Standard mode)\033[0m"
-    echo -e "\033[97m  5. Run OSG (Full mode with Voice Cloning)\033[0m"
+    echo -e "\033[97m  4. Run OSG\033[0m"
+    echo -e "\033[97m  5. Run OSG (engines managed from Settings > Tools)\033[0m"
     echo
     echo -e "\033[91m\033[40mGO CAI DAT:\033[0m"
     echo -e "\033[97m  6. Go cai dat Ung dung (Uninstall)\033[0m"
@@ -358,7 +358,7 @@ show_menu() {
 install_with_narration() {
     echo
     echo "======================================================"
-    colored_echo "[SETUP] Install OSG (Full Version with Voice Cloning)"
+    colored_echo "[SETUP] Install OSG (Recommended)"
     echo "======================================================"
     echo
 
@@ -411,7 +411,8 @@ install_with_narration() {
 
     echo
     colored_echo "[OK] Installation completed successfully!"
-    colored_echo "[START] Launching application with voice cloning features..."
+    colored_echo "[START] Launching application..."
+    colored_echo "[INFO] Install or start local engines from Settings > Tools."
     colored_echo "[INFO] Press Ctrl+C to stop the application."
     echo
     if [[ "$GPU_TYPE" == "nvidia" ]]; then
@@ -427,7 +428,7 @@ install_with_narration() {
     fi
 
     echo "Press Ctrl+C in this window to stop the application later."
-    npm run dev:cuda
+    npm run dev
 
     show_menu
 }
@@ -435,7 +436,7 @@ install_with_narration() {
 install_without_narration() {
     echo
     echo "======================================================"
-    colored_echo "[SETUP] Install OSG Lite (Standard Version)"
+    colored_echo "[SETUP] Install OSG dependencies only"
     echo "======================================================"
     echo
 
@@ -558,7 +559,7 @@ run_app() {
     fi
 
     if [ ! -d "node_modules" ]; then
-        echo "ERROR: node_modules not found. Please install dependencies first (option 1, 2, or 6)."
+        echo "ERROR: node_modules not found. Please install dependencies first (option 1 or 2)."
         read -p "Press Enter to continue..."
         show_menu
         return
@@ -577,7 +578,7 @@ run_app() {
 }
 
 run_app_cuda() {
-    echo "*** Option 5: Run Application with Voice Cloning (F5-TTS + Chatterbox) ***"
+    echo "*** Option 5: Run Application (engines managed from Settings > Tools) ***"
 
     # Check if we're in the right directory
     check_repo_structure
@@ -594,22 +595,11 @@ run_app_cuda() {
         return
     fi
 
-    if [ ! -d ".venv" ]; then
-        echo "ERROR: Voice Cloning features not installed. Please use option 1 to install with narration features."
-        read -p "Press Enter to continue..."
-        show_menu
-        return
-    fi
-
-    if [ ! -d "chatterbox/chatterbox" ]; then
-        echo "WARNING: Chatterbox not found. Some voice cloning features may not be available."
-        echo "Consider reinstalling with option 1 for full functionality."
-    fi
-
     # Detect GPU type
     detect_gpu_type
 
-    echo "Starting application with voice cloning (using npm run dev:cuda)..."
+    echo "Starting application (using npm run dev)..."
+    echo "Install or start voice/transcription engines from Settings > Tools."
     if [[ "$GPU_TYPE" == "nvidia" ]]; then
         echo "[INFO] NVIDIA GPU detected, using CUDA acceleration."
     elif [[ "$GPU_TYPE" == "apple" ]]; then
@@ -623,9 +613,9 @@ run_app_cuda() {
     fi
 
     echo "Press Ctrl+C in this window to stop the application later."
-    npm run dev:cuda
+    npm run dev
     if [ $? -ne 0 ]; then
-        echo "ERROR: Failed to start application using 'npm run dev:cuda'. Check messages above."
+        echo "ERROR: Failed to start application using 'npm run dev'. Check messages above."
         error_occurred
         return
     fi

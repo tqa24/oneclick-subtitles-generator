@@ -253,7 +253,7 @@ router.use("/", async (req, res, next) => {
     return res.status(503).json({
       success: false,
       error:
-        "Narration service is not available. Please use npm run dev:cuda to start with Python narration service.",
+        "Narration service is not available. Install or start F5-TTS from Settings > Tools.",
     });
   }
 

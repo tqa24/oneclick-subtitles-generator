@@ -65,7 +65,7 @@ const NarrationMethodSelection = ({
                 </span>
                 {t('narration.f5ttsMethod', 'F5-TTS')}
                 {!isF5Available && (
-                  <HelpIcon className="method-help-icon" title={t('narration.f5ttsUnavailable', '(Unavailable - Run with npm run dev:cuda)')} />
+                  <HelpIcon className="method-help-icon" title={t('narration.f5ttsUnavailable', '(Unavailable - install in Settings > Tools)')} />
                 )}
               </label>
             </div>
@@ -88,7 +88,7 @@ const NarrationMethodSelection = ({
                 </span>
                 {t('narration.chatterboxMethod', 'Chatterbox')}
                 {!isChatterboxAvailable && (
-                  <HelpIcon className="method-help-icon" title={t('narration.chatterboxUnavailable', '(Unavailable - Run with npm run dev:cuda)')} />
+                  <HelpIcon className="method-help-icon" title={t('narration.chatterboxUnavailable', '(Unavailable - install in Settings > Tools)')} />
                 )}
               </label>
             </div>

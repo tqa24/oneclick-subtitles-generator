@@ -1,9 +1,9 @@
 {
   "appTitle": "Trình Tạo Phụ Đề One-Click",
-  "appTitleFull": "OSG (bản Full)",
-  "appTitleLite": "OSG (bản Lite)",
-  "versionFull": "bản Full",
-  "versionLite": "bản Lite",
+  "appTitleFull": "OSG (bản local)",
+  "appTitleLite": "OSG (bản local)",
+  "versionFull": "bản local",
+  "versionLite": "bản local",
   "versionVercel": "bản Vercel",
   "vercelLimited": "nhiều tính năng sẽ hạn chế",
   "appLogoAlt": "Logo Trình Tạo Phụ Đề One-Click",

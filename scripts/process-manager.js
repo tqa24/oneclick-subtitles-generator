@@ -1,6 +1,6 @@
 /**
  * Shared child-process tracking, tree-killing shutdown, and readiness gating
- * for the OSG launchers (scripts/start-all.js for `dev:cuda`, dev-server.js for `dev`).
+ * for the OSG launchers (scripts/start-all.js and dev-server.js for `dev`).
  *
  * WHY: both launchers spawn services with shell:true. On Windows the immediate child
  * is cmd.exe/npm.cmd; the things that actually hold ports 3030-3038 and GPU VRAM are

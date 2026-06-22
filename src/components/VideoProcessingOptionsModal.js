@@ -49,7 +49,6 @@ const VideoProcessingOptionsModal = ({
         modalRef,
         contentRef,
         languagesRef,
-        isFullVersion,
         isVercelMode,
         parakeetAvailable,
         method,
@@ -119,7 +118,7 @@ const VideoProcessingOptionsModal = ({
     if (!isOpen) return null;
 
     // Parakeet availability gates the Parakeet panel and the Start button.
-    const parakeetDisabled = !isFullVersion || !parakeetAvailable;
+    const parakeetDisabled = !parakeetAvailable;
 
     return ReactDOM.createPortal(
         <>
@@ -154,7 +153,6 @@ const VideoProcessingOptionsModal = ({
                                     </span>
                                 </h3>
                                 <VideoProcessingModalMethodSelector
-                                    isFullVersion={isFullVersion}
                                     isVercelMode={isVercelMode}
                                     parakeetAvailable={parakeetAvailable}
                                     method={method}
@@ -183,7 +181,6 @@ const VideoProcessingOptionsModal = ({
                                         setParakeetPreserveSentences={setParakeetPreserveSentences}
                                         selectedSegment={selectedSegment}
                                         parakeetDisabled={parakeetDisabled}
-                                        isFullVersion={isFullVersion}
                                     />
                                 ) : (
                                     <VideoProcessingModalGeminiPanel

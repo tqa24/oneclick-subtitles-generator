@@ -40,6 +40,7 @@ import consolidation from './consolidation.json';
 import processing from './processing.json';
 import waveform from './waveform.json';
 import autoFlow from './autoFlow.json';
+import engines from './engines.json';
 
 // Combine all translations
 const koTranslations = {
@@ -82,7 +83,8 @@ const koTranslations = {
   consolidation,
   processing,
   waveform,
-  autoFlow
+  autoFlow,
+  engines
 };
 
 export default koTranslations;

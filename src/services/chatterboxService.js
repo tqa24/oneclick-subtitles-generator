@@ -51,7 +51,7 @@ const checkServerChatterboxStatus = async () => {
       shouldBeRunning: chatterboxRunning,
       message: chatterboxRunning ?
         'Chatterbox service should be running' :
-        'Chatterbox service not started (use npm run dev:cuda)'
+        'Chatterbox service is not running. Start it from Settings > Tools.'
     };
   } catch (error) {
     if (error.name === 'AbortError') {
@@ -168,7 +168,7 @@ export const wakeUpChatterboxService = async () => {
     if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
       return {
         success: false,
-        message: 'Chatterbox API is not running. Please start the service with "npm run dev:cuda".'
+        message: 'Chatterbox API is not running. Start it from Settings > Tools.'
       };
     }
 
@@ -215,7 +215,7 @@ export const checkChatterboxAvailability = async (maxAttempts = 5, delayMs = 200
     if (!serverStatus.shouldBeRunning) {
       return {
         available: false,
-        message: serverStatus.message || 'Chatterbox service not started (use npm run dev:cuda)'
+        message: serverStatus.message || 'Chatterbox service is not running. Start it from Settings > Tools.'
       };
     }
   }

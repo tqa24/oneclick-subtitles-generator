@@ -9,40 +9,26 @@ const checkChatterboxAvailability = async () => {
   try {
     const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:3031';
 
-    const response = await fetch(`${API_BASE_URL}/api/startup-mode`, {
+    // Chatterbox is available when its own engine is running (per-engine status), regardless of how
+    // the app was started.
+    const response = await fetch(`${API_BASE_URL}/api/engines/status`, {
       mode: 'cors',
       credentials: 'include',
-      headers: {
-        'Accept': 'application/json'
-      }
+      headers: { 'Accept': 'application/json' }
     });
 
     if (!response.ok) {
-      return {
-        available: false,
-        message: "SERVICE_UNAVAILABLE" // Will be translated by frontend (was a hardcoded Vietnamese string)
-      };
+      return { available: false, message: "SERVICE_UNAVAILABLE" }; // translated by frontend
     }
 
-    const startupData = await response.json();
-
-    // Chatterbox is available if the server was started with npm run dev:cuda
-    if (startupData.isDevCuda) {
-      return {
-        available: true
-      };
-    } else {
-      return {
-        available: false,
-        message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
-      };
+    const data = await response.json();
+    const chatterbox = data.engines && data.engines.chatterbox;
+    if (chatterbox && chatterbox.state === 'ready') {
+      return { available: true };
     }
-
+    return { available: false, message: "SERVICE_UNAVAILABLE" };
   } catch (error) {
-    return {
-      available: false,
-      message: "SERVICE_UNAVAILABLE" // Will be translated by frontend
-    };
+    return { available: false, message: "SERVICE_UNAVAILABLE" };
   }
 };
 
@@ -89,14 +75,14 @@ const useAvailabilityCheck = ({
         if (!f5Status.available && narrationMethod === 'f5tts' && f5Status.message) {
           // Translate service unavailable message if needed
           const errorMessage = f5Status.message === 'SERVICE_UNAVAILABLE'
-            ? t('narration.serviceUnavailableMessage', 'Please run the application with npm run dev:cuda (OSG Full) to use the Voice Cloning feature. If already running with npm run dev:cuda (OSG Full), please wait about 1 minute for it to be ready.')
+            ? t('narration.serviceUnavailableMessage', 'Install or start the voice cloning engine from Settings > Tools. If it just started, wait about 1 minute for it to become ready.')
             : f5Status.message;
           setError(errorMessage);
         }
         else if (!chatterboxStatus.available && narrationMethod === 'chatterbox' && chatterboxStatus.message) {
           // Translate service unavailable message if needed
           const errorMessage = chatterboxStatus.message === 'SERVICE_UNAVAILABLE'
-            ? t('narration.serviceUnavailableMessage', 'Please run the application with npm run dev:cuda (OSG Full) to use the Voice Cloning feature. If already running with npm run dev:cuda (OSG Full), please wait about 1 minute for it to be ready.')
+            ? t('narration.serviceUnavailableMessage', 'Install or start the voice cloning engine from Settings > Tools. If it just started, wait about 1 minute for it to become ready.')
             : chatterboxStatus.message;
           setError(errorMessage);
         }
@@ -110,12 +96,12 @@ const useAvailabilityCheck = ({
         // Set error based on current method
         if (narrationMethod === 'f5tts') {
           setIsAvailable(false);
-          setError(t('narration.serviceUnavailableMessage', 'Please run the application with npm run dev:cuda (OSG Full) to use the Voice Cloning feature. If already running with npm run dev:cuda (OSG Full), please wait about 1 minute for it to be ready.'));
+          setError(t('narration.serviceUnavailableMessage', 'Install or start the voice cloning engine from Settings > Tools. If it just started, wait about 1 minute for it to become ready.'));
         }
         else if (narrationMethod === 'chatterbox') {
-          // Set Chatterbox as unavailable when not running with dev:cuda
+          // Set Chatterbox as unavailable when the engine is not running.
           setIsChatterboxAvailable(false);
-          setError(t('narration.serviceUnavailableMessage', 'Please run the application with npm run dev:cuda (OSG Full) to use the Voice Cloning feature. If already running with npm run dev:cuda (OSG Full), please wait about 1 minute for it to be ready.'));
+          setError(t('narration.serviceUnavailableMessage', 'Install or start the voice cloning engine from Settings > Tools. If it just started, wait about 1 minute for it to become ready.'));
         }
         else {
           // For Gemini and other methods, don't set global errors - specific errors will be shown when using the features

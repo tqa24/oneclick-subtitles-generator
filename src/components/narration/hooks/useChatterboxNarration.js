@@ -233,7 +233,7 @@ const useChatterboxNarration = ({
         // Try to wake up and connect - the wake-up endpoint will handle model loading
         const availability = await checkChatterboxAvailability(3, 2000, true); // 3 attempts with 2 second timeout each, with wake-up
         if (!availability.available) {
-          throw new Error(availability.message || t('narration.chatterboxUnavailableMessage', 'Chatterbox API is not available. Please start the Chatterbox service using "npm run dev:cuda".'));
+          throw new Error(availability.message || t('narration.chatterboxUnavailableMessage', 'Chatterbox is not running. Install or start it from Settings > Tools.'));
         }
       }
 
@@ -404,7 +404,7 @@ const useChatterboxNarration = ({
         setGenerationStatus(t('narration.chatterboxWarmingUp', 'Warming up narration server for first-time use...'));
         const availability = await checkChatterboxAvailability(3, 2000, true);
         if (!availability.available) {
-          throw new Error(availability.message || t('narration.chatterboxUnavailableMessage', 'Chatterbox API is not available. Please start the Chatterbox service using "npm run dev:cuda".'));
+          throw new Error(availability.message || t('narration.chatterboxUnavailableMessage', 'Chatterbox is not running. Install or start it from Settings > Tools.'));
         }
       }
 
@@ -457,7 +457,7 @@ const useChatterboxNarration = ({
         setGenerationStatus(t('narration.chatterboxWarmingUp', 'Warming up narration server for first-time use...'));
         const availability = await checkChatterboxAvailability(3, 2000, true);
         if (!availability.available) {
-          throw new Error(availability.message || t('narration.chatterboxUnavailableMessage', 'Chatterbox API is not available. Please start the Chatterbox service using "npm run dev:cuda".'));
+          throw new Error(availability.message || t('narration.chatterboxUnavailableMessage', 'Chatterbox is not running. Install or start it from Settings > Tools.'));
         }
       }
 

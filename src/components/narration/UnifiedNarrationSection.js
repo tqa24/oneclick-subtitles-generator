@@ -178,7 +178,7 @@ const UnifiedNarrationSection = ({
             <span className="material-symbols-rounded" style={{ fontSize: '24px' }}>warning</span>
           </div>
           <div className="message">
-            {t('narration.allServicesUnavailableMessage', "All narration services are unavailable. For F5-TTS and Chatterbox, please run with npm run dev:cuda. For Gemini, please check your API key in settings.")}
+            {t('narration.allServicesUnavailableMessage', "All narration services are unavailable. Install or start F5-TTS or Chatterbox from Settings > Tools. For Gemini, check your API key in settings.")}
           </div>
         </div>
       </div>

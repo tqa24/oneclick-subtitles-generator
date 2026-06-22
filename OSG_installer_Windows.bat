@@ -13,7 +13,7 @@ SET "PREREQ_FLAG_FILE=%SCRIPT_DIR%prereqs_installed.flag"
 
 :: --- Fixed Settings (Bilingual Menu) ---
 SET "MENU_LABEL=MainMenuVI"
-SET "PROMPT_CHOICE=Enter your choice (Nhap lua chon cua ban) (1-7): "
+SET "PROMPT_CHOICE=Enter your choice (Nhap lua chon cua ban) (1-5): "
 SET "TITLE_TEXT=OneClick Subtitle Generator Manager (Quan Ly Trinh Tao Phu De OneClick)"
 
 TITLE %TITLE_TEXT%
@@ -55,13 +55,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ('     ' + [c
 ECHO.
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '%TITLE_TEXT%') -ForegroundColor White -BackgroundColor DarkBlue; Write-Host ([char]0x2551 + ' Location (Vi tri): %SCRIPT_DIR%                                             ') -ForegroundColor Gray; Write-Host ([char]0x2551 + ' Project Folder (Thu muc Du an): %PROJECT_FOLDER_NAME%                       ') -ForegroundColor Gray; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77) -ForegroundColor Cyan; Write-Host 'Please choose an option (Vui long chon mot tuy chon):' -ForegroundColor Yellow"
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'INSTALLATION / SETUP (CAI DAT / THIET LAP):' -ForegroundColor Green -BackgroundColor Black; Write-Host '  1. Install OSG (Full version with Voice Cloning) (Cai dat OSG (Phien ban day du voi Nhan ban giong noi))' -ForegroundColor White; Write-Host '     (Gemini AI + F5-TTS + Chatterbox + Video Rendering)' -ForegroundColor Cyan; Write-Host '     (Note: Will use more storage space) (Luu y: Se ton nhieu dung luong luu tru hon)' -ForegroundColor Yellow; Write-Host '  2. Install OSG Lite (Standard version) (Cai dat OSG Lite (Phien ban tieu chuan))' -ForegroundColor White; Write-Host '     (Gemini AI + Video Rendering, no Voice Cloning) (Gemini AI + Render Video, khong co Nhan ban giong noi)' -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'INSTALLATION / SETUP (CAI DAT / THIET LAP):' -ForegroundColor Green -BackgroundColor Black; Write-Host '  1. Install OSG (Cai dat OSG)' -ForegroundColor White; Write-Host '     (Gemini AI + Video Rendering. Voice cloning & local transcription engines install on demand inside the app.)' -ForegroundColor Cyan; Write-Host '     (Engine nhan ban giong noi & nhan dang cai theo nhu cau trong ung dung.)' -ForegroundColor Cyan"
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'MAINTENANCE / USAGE (BAO TRI / SU DUNG):' -ForegroundColor Blue -BackgroundColor Black; Write-Host '  3. Update Application (Cap nhat Ung dung)' -ForegroundColor White; Write-Host '  4. Run OSG Lite (Standard mode) (Chay OSG Lite (Che do tieu chuan))' -ForegroundColor White; Write-Host '  5. Run OSG (Full mode with Voice Cloning) (Chay OSG (Che do day du voi Nhan ban giong noi))' -ForegroundColor White"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'MAINTENANCE / USAGE (BAO TRI / SU DUNG):' -ForegroundColor Blue -BackgroundColor Black; Write-Host '  2. Update Application (Cap nhat Ung dung)' -ForegroundColor White; Write-Host '  3. Run OSG (Chay OSG)' -ForegroundColor White"
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'UNINSTALL (GO CAI DAT):' -ForegroundColor Red -BackgroundColor Black; Write-Host '  6. Uninstall Application (Go cai dat Ung dung)' -ForegroundColor White"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'UNINSTALL (GO CAI DAT):' -ForegroundColor Red -BackgroundColor Black; Write-Host '  4. Uninstall Application (Go cai dat Ung dung)' -ForegroundColor White"
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  7. Exit (Thoat)' -ForegroundColor Gray; Write-Host (([char]0x2550).ToString() * 77) -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  5. Exit (Thoat)' -ForegroundColor Gray; Write-Host (([char]0x2550).ToString() * 77) -ForegroundColor Cyan"
 ECHO.
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '%PROMPT_CHOICE%' -ForegroundColor Yellow -NoNewline"
 SET /P "CHOICE="
@@ -72,15 +72,12 @@ IF NOT "%CHOICE%"=="" SET CHOICE=%CHOICE:~0,1%
 
 :: Save choice before processing (for auto-restart on error - only for installation options)
 IF "%CHOICE%"=="1" (ECHO 1) >"%LAST_CHOICE_FILE%"
-IF "%CHOICE%"=="2" (ECHO 2) >"%LAST_CHOICE_FILE%"
 
 IF "%CHOICE%"=="1" GOTO InstallNarration
-IF "%CHOICE%"=="2" GOTO InstallNoNarration
-IF "%CHOICE%"=="3" GOTO UpdateApp
-IF "%CHOICE%"=="4" GOTO RunApp
-IF "%CHOICE%"=="5" GOTO RunAppCUDA
-IF "%CHOICE%"=="6" GOTO UninstallApp
-IF "%CHOICE%"=="7" GOTO ExitScript
+IF "%CHOICE%"=="2" GOTO UpdateApp
+IF "%CHOICE%"=="3" GOTO RunApp
+IF "%CHOICE%"=="4" GOTO UninstallApp
+IF "%CHOICE%"=="5" GOTO ExitScript
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Invalid choice. Please try again (Lua chon khong hop le. Vui long thu lai).' -ForegroundColor Yellow"
 TIMEOUT /T 2 /NOBREAK > NUL
@@ -91,7 +88,7 @@ GOTO %MENU_LABEL%
 REM ==============================================================================
 :InstallNarration
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77 + [char]0x2557) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                   [SETUP] Install OSG (Full Version)                        ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkGreen; Write-Host ([char]0x2551 + '                        with Voice Cloning                                   ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkGreen; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77 + [char]0x255D) -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77 + [char]0x2557) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                            [SETUP] Install OSG                              ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkGreen; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77 + [char]0x255D) -ForegroundColor Cyan"
 ECHO.
 
 CALL :InstallPrerequisites
@@ -142,68 +139,7 @@ IF %ERRORLEVEL% NEQ 0 (
 
 ECHO.
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Installation completed successfully (Cai dat hoan tat thanh cong)!' -ForegroundColor Green"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[START] Launching application with voice cloning features (Khoi chay ung dung voi tinh nang nhan ban giong noi)...' -ForegroundColor Magenta"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Press Ctrl+C to stop the application (Nhan Ctrl+C de dung ung dung).' -ForegroundColor Blue"
-ECHO.
-CALL npm run dev:cuda
-POPD
-GOTO %MENU_LABEL%
-
-REM ==============================================================================
-:InstallNoNarration
-ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77 + [char]0x2557) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                    [SETUP] Install OSG Lite (Standard)                      ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkBlue; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77 + [char]0x255D) -ForegroundColor Cyan"
-ECHO.
-
-CALL :InstallPrerequisites
-IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
-
-:: Clear saved choice after successful prerequisite installation
-IF EXIST "%LAST_CHOICE_FILE%" DEL "%LAST_CHOICE_FILE%" >nul 2>&1
-
-CALL :CleanInstall "%PROJECT_PATH%"
-IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
-
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Downloading application (Tai ung dung)...' -ForegroundColor Cyan"
-git clone %GIT_REPO_URL% "%PROJECT_PATH%"
-IF %ERRORLEVEL% NEQ 0 (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment (Khoi dong lai de cap nhat moi truong)...' -ForegroundColor Blue"
-    GOTO ErrorOccurred
-)
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Application downloaded successfully (Tai ung dung thanh cong).' -ForegroundColor Green"
-
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Changing to project directory (Chuyen den thu muc du an)...' -ForegroundColor Cyan"
-PUSHD "%PROJECT_PATH%"
-IF %ERRORLEVEL% NEQ 0 (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment (Khoi dong lai de cap nhat moi truong)...' -ForegroundColor Blue"
-    POPD
-    GOTO ErrorOccurred
-)
-
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Configuring npm workspaces for optimal performance (Cau hinh npm workspaces de hieu suat toi uu)...' -ForegroundColor Cyan"
-CALL node setup-workspaces.js
-IF %ERRORLEVEL% NEQ 0 (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[WARN] Workspace setup had issues, continuing with standard install (Cau hinh workspace gap van de, tiep tuc voi cai dat tieu chuan)...' -ForegroundColor Yellow"
-)
-
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Installing dependencies... (takes long time) (Cai dat phu thuoc... mat thoi gian dai)' -ForegroundColor Cyan"
-CALL npm install
-IF %ERRORLEVEL% NEQ 0 (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment (Khoi dong lai de cap nhat moi truong)...' -ForegroundColor Blue"
-    POPD
-    GOTO ErrorOccurred
-)
-
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Finalizing installation (Hoan thien cai dat)...' -ForegroundColor Cyan"
-CALL npm run install:yt-dlp
-IF %ERRORLEVEL% NEQ 0 (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[WARN] YouTube downloader installation had issues.' -ForegroundColor Yellow"
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] You can fix this later with ''npm run install:yt-dlp''.' -ForegroundColor Blue"
-)
-
-ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Installation completed successfully (Cai dat hoan tat thanh cong)!' -ForegroundColor Green"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[START] Launching application (Khoi chay ung dung)...' -ForegroundColor Magenta"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[START] Launching OSG. Voice cloning & transcription engines install on demand in Settings (Khoi chay OSG. Engine cai theo nhu cau trong Cai dat)...' -ForegroundColor Magenta"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Press Ctrl+C to stop the application (Nhan Ctrl+C de dung ung dung).' -ForegroundColor Blue"
 ECHO.
 CALL npm run dev
@@ -212,7 +148,7 @@ GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :UpdateApp
-ECHO *** Option 3: Update Application ***
+ECHO *** Option 2: Update Application ***
 IF NOT EXIST "%PROJECT_PATH%\.git" (
     ECHO ERROR: Project folder not found or not a git repository.
     ECHO Please use one of the Install options first.
@@ -265,7 +201,7 @@ GOTO MainMenuVI
 
 REM ==============================================================================
 :RunApp
-ECHO *** Option 4: Run Application ***
+ECHO *** Option 3: Run Application ***
 IF NOT EXIST "%PROJECT_PATH%\package.json" (
     ECHO ERROR: Project folder or package.json not found.
     ECHO Please use one of the Install options first.
@@ -295,41 +231,8 @@ PAUSE
 GOTO MainMenuVI
 
 REM ==============================================================================
-:RunAppCUDA
-ECHO *** Option 5: Run App with Voice Cloning ***
-ECHO *** (F5-TTS + Chatterbox Narration) ***
-IF NOT EXIST "%PROJECT_PATH%\package.json" (
-    ECHO ERROR: Project folder or package.json not found.
-    ECHO Please use one of the Install options first.
-    PAUSE
-    GOTO MainMenuVI
-)
-
-ECHO Changing directory to "%PROJECT_PATH%"
-PUSHD "%PROJECT_PATH%"
-IF %ERRORLEVEL% NEQ 0 (
-    ECHO ERROR: Failed to change directory to project folder.
-    PAUSE
-    GOTO MainMenuVI
-)
-
-ECHO Starting application with Voice Cloning (using npm run dev:cuda)...
-ECHO Note: GPU will be used if available, otherwise will run on CPU.
-ECHO Press Ctrl+C in this window to stop the application later.
-CALL npm run dev:cuda
-IF %ERRORLEVEL% NEQ 0 (
-    ECHO ERROR: Failed to start application. Check messages above.
-    POPD
-    PAUSE
-    GOTO MainMenuVI
-)
-POPD
-PAUSE
-GOTO MainMenuVI
-
-REM ==============================================================================
 :UninstallApp
-ECHO *** Option 6: Uninstall Application ***
+ECHO *** Option 4: Uninstall Application ***
 IF NOT EXIST "%PROJECT_PATH%" (
     ECHO INFO: Project folder not found.
     ECHO Application may not be installed.

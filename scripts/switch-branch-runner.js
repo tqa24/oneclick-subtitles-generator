@@ -6,13 +6,13 @@
 const { exec } = require('child_process');
 
 const branch = process.argv[2];
-if (!branch) {
-  console.error('Branch name required');
+const allowedBranches = new Set(['main', 'old_version']);
+if (!branch || !allowedBranches.has(branch)) {
+  console.error('Valid branch name required');
   process.exit(1);
 }
 
-const isFullVersion = process.env.START_PYTHON_SERVER === 'true';
-const runCommand = isFullVersion ? 'npm run dev:cuda' : 'npm run dev';
+const runCommand = 'npm run dev';
 
 function run(cmd, opts = {}) {
   return new Promise((resolve, reject) => {

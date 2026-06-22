@@ -29,6 +29,7 @@ const downloadOnlyRoutes = require('./server/routes/downloadOnlyRoutes');
 const downloadManagementRoutes = require('./server/routes/downloadManagementRoutes');
 const diagnosticsRoutes = require('./server/routes/diagnostics');
 const parakeetRoutes = require('./server/routes/parakeetRoutes');
+const engineRoutes = require('./server/routes/engineRoutes');
 const { scanModels } = require('./server/utils/scan-models');
 
 // Initialize Express app
@@ -349,10 +350,11 @@ app.get('/api/health', (req, res) => {
   res.json(healthStatus);
 });
 
-// Startup mode endpoint - tells frontend which command was used to start the server
+// Startup mode endpoint - reports the hosting context (Electron / Vercel / npm start).
+// Heavy-engine availability is NO LONGER a global flag here — it's reported per-engine via
+// GET /api/engines/status.
 app.get('/api/startup-mode', (req, res) => {
-  // Detect how this process was started
-  const lifecycle = process.env.npm_lifecycle_event; // e.g., 'start', 'dev', 'dev:cuda'
+  const lifecycle = process.env.npm_lifecycle_event; // e.g., 'start', 'dev'
 
   // Check for packaged Electron environment - multiple detection methods
   const isElectron =
@@ -362,32 +364,11 @@ app.get('/api/startup-mode', (req, res) => {
     process.execPath.includes('One-Click Subtitles Generator') ||
     process.execPath.includes('subtitles-generator');
 
-  // In packaged Electron app, we ALWAYS act as "Full Version" (dev:cuda equivalent)
-  // because we bundle the Python environment.
-  const isDevCuda = isElectron ? true : (process.env.START_PYTHON_SERVER === 'true');
-
   const isVercel = process.env.VERCEL === '1';
-  // Only consider it "start" mode if it's explicitly npm start or Vercel, not just production mode
+  // "start" mode = explicitly npm start or Vercel (no local backend features), not just production.
   const isStart = lifecycle === 'start' || isVercel;
 
-  // Build a human-friendly command string
-  let command;
-  if (isElectron) {
-    command = 'electron app (OSG Full)';
-  } else if (lifecycle) {
-    command = lifecycle === 'start' ? 'npm start' : `npm run ${lifecycle}`;
-  } else {
-    command = isDevCuda ? 'npm run dev:cuda' : 'npm run dev';
-  }
-
-  const startupMode = {
-    isDevCuda,
-    isStart,
-    isElectron,
-    command
-  };
-
-  res.json(startupMode);
+  res.json({ isElectron: !!isElectron, isVercel, isStart });
 });
 
 // Endpoint to save localStorage data for server-side use
@@ -438,6 +419,7 @@ app.use('/api/narration', narrationRoutes);
 app.use('/api/test', testAudioRoute);
 app.use('/api/diagnostics', diagnosticsRoutes);
 app.use('/api', parakeetRoutes);
+app.use('/api', engineRoutes);
 
 // Simple model scanning endpoint - no Python bullshit!
 app.post('/api/scan-models', async (req, res) => {
@@ -490,11 +472,19 @@ app.get('/api/git-branch', (req, res) => {
 // Git branch switching endpoint
 app.post('/api/switch-branch', express.json(), async (req, res) => {
   const { branch } = req.body;
+  const allowedBranches = new Set(['main', 'old_version']);
 
   if (!branch) {
     return res.status(400).json({
       success: false,
       error: 'Branch name is required'
+    });
+  }
+
+  if (!allowedBranches.has(branch)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid branch name'
     });
   }
 

@@ -40,6 +40,9 @@ const CHATTERBOX_REF = process.env.CHATTERBOX_REF || '65b18437192794391a0308a8f7
 const YTDLP_COOKIE_PLUGIN_REF = process.env.YTDLP_COOKIE_PLUGIN_REF || '3a95f2d7c0f7086a88da6870cc69587434b60cc5';
 const NARRATION_CONSTRAINTS_FILE = path.join(__dirname, 'narration-constraints.txt');
 const NARRATION_COMPAT_PACKAGE_SPECS = ['protobuf>=4.25.8,<7'];
+// ⚠️ KEEP IN SYNC with server/engines/torchProfile.js (the canonical copy used by the on-demand
+// per-engine installers) and update-narration-packages.js. This copy drives the legacy/Electron-
+// bundle venv build only. Bump torch pins in all three together.
 const BLACKWELL_GPU_REGEX = /\b(BLACKWELL|RTX 5090|RTX 5080|RTX 5070|RTX 5060|RTX 5050)\b/i;
 const TORCH_PROFILES = {
     NVIDIA_CU121: {
@@ -1281,50 +1284,9 @@ print('✅ Verification completed (with warnings if any shown above)')
     // --- 9. Removed: Script generation for narration service ---
     // The generation of run-narration-service-uv.bat and run-app-with-narration-uv.bat has been removed
 
-    // --- 10. Update package.json ---
-    logger.progress('Finalizing installation configuration');
-    try {
-        const packageJsonPath = path.join(__dirname, 'package.json');
-        let packageJsonContent;
-        try {
-            packageJsonContent = fs.readFileSync(packageJsonPath, 'utf8');
-        } catch (readError) {
-            if (readError.code === 'ENOENT') {
-                logger.warning(`package.json not found at ${packageJsonPath}. Skipping update.`);
-            } else {
-                console.error(`❌ Error reading package.json at ${packageJsonPath}: ${readError.message}`);
-                console.log('   Skipping package.json update.');
-                throw readError;
-            }
-        }
-
-        if (packageJsonContent) {
-            const packageJson = JSON.parse(packageJsonContent);
-            if (!packageJson.scripts) {
-                packageJson.scripts = {};
-            }
-            const setupScriptName = path.basename(__filename);
-
-            // Update existing or add new scripts for uv-based setup
-            packageJson.scripts['python:start:uv'] = `uv run --python .venv -- python server/narrationApp.py`;
-            packageJson.scripts['setup:narration:uv'] = `node ${setupScriptName}`;
-
-            // Ensure dev:cuda is properly configured (used by OSG_installer_Windows.bat)
-            if (!packageJson.scripts['dev:cuda']) {
-                packageJson.scripts['dev:cuda'] = `cross-env START_PYTHON_SERVER=true concurrently --names "FRONTEND,SERVER" --prefix-colors "cyan,green" --prefix "[{name}]" "npm run start --silent" "npm run server:start"`;
-            }
-
-            // Remove old/unused scripts to avoid confusion
-            delete packageJson.scripts['python:start:cuda:uv'];
-            delete packageJson.scripts['dev:cuda:uv'];
-            delete packageJson.scripts['dev:uv'];
-
-            fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\n');
-            logger.success('Installation configuration completed');
-        }
-    } catch (error) {
-        logger.error(`Error updating package.json: ${error.message}`);
-    }
+    // --- 10. Removed: package.json self-rewrite ---
+    // This step used to rewrite package.json at install time. The
+    // committed scripts are now the single source of truth, so nothing is rewritten here.
 
     // --- 11. Final Service Verification ---
     logger.progress('Performing final system check');
@@ -1804,20 +1766,20 @@ except Exception as e:
     logger.info('   - Dependencies installed with proper version management');
 
     logger.newLine();
-    logger.info('🚀 To run the application with ALL narration services:');
+    logger.info('🚀 To run the application:');
     logger.info('   1. Ensure `uv` and `npm` are in your PATH');
-    logger.info('   2. Run: npm run dev:cuda');
-    logger.info('   This starts F5-TTS (port 3035) + Chatterbox API (port 3036) + Frontend (port 3030)');
+    logger.info('   2. Run: npm run dev');
+    logger.info('   Local voice and transcription engines are managed from Settings > Tools.');
 
     logger.newLine();
     logger.info('💡 Other useful commands:');
     logger.info('   - Just narration service: npm run python:start:uv');
-    logger.info('   - Re-run setup: npm run setup:narration:uv');
+    logger.info('   - Re-run setup: node setup-narration.js');
 
     logger.newLine();
     logger.info('💡 To force a specific GPU type:');
     logger.info('   Set FORCE_GPU_VENDOR environment variable (NVIDIA, AMD, INTEL, APPLE, CPU)');
-    logger.info('   Example: set FORCE_GPU_VENDOR=CPU && npm run setup:narration:uv');
+    logger.info('   Example: set FORCE_GPU_VENDOR=CPU && node setup-narration.js');
 }
 
 // --- Run Setup ---

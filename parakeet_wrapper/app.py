@@ -99,7 +99,7 @@ def _select_providers():
         logger.warning(f"Could not query onnxruntime providers: {e}")
         return None
     preferred = [
-        "CUDAExecutionProvider",   # onnxruntime-gpu (NVIDIA / dev:cuda)
+        "CUDAExecutionProvider",   # onnxruntime-gpu (NVIDIA)
         "DmlExecutionProvider",    # onnxruntime-directml (Windows AMD/Intel)
         "CoreMLExecutionProvider", # macOS
         "CPUExecutionProvider",    # always-present fallback

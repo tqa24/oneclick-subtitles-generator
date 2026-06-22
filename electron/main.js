@@ -544,7 +544,7 @@ function startService(serviceConfig) {
         PORT: port.toString(),
         NODE_ENV: 'production',
         ELECTRON_RUN_AS_NODE: '1', // FORCE: Run as Node, not Electron app
-        // Mirror dev:cuda behavior so narration + chatterbox can start
+        // Let Electron manage bundled Python services instead of the web engine manager.
         START_PYTHON_SERVER: 'false', // Let Electron manage python services
         DEV_SERVER_MANAGED: 'true',
         ELECTRON_MANAGES_PYTHON: 'true',

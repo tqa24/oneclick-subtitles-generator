@@ -182,7 +182,7 @@ const F5TTSNarrationSection = ({
         cancelGeneration={cancelGeneration}
         subtitleSource={subtitleSource}
         isServiceAvailable={isAvailable}
-        serviceUnavailableMessage={t('narration.serviceUnavailableMessage', 'Vui lòng chạy ứng dụng bằng npm run dev:cuda để dùng chức năng Thuyết minh. Nếu đã chạy bằng npm run dev:cuda, vui lòng đợi khoảng 1 phút sẽ dùng được.')}
+        serviceUnavailableMessage={t('narration.serviceUnavailableMessage', 'Install or start F5-TTS from Settings > Tools. If it just started, wait about 1 minute for it to become ready.')}
         narrationMethod="f5tts"
       />
 

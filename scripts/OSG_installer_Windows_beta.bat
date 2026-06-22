@@ -12,7 +12,7 @@ SET "LAST_CHOICE_FILE=%SCRIPT_DIR%last_choice.tmp"
 
 :: --- Fixed Settings (Vietnamese Menu) ---
 SET "MENU_LABEL=MainMenuVI"
-SET "PROMPT_CHOICE=Nhap lua chon cua ban (1-7): "
+SET "PROMPT_CHOICE=Nhap lua chon cua ban (1-5): "
 SET "TITLE_TEXT=Quan Ly Trinh Tao Phu De OneClick (BETA)"
 
 TITLE %TITLE_TEXT%
@@ -54,13 +54,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ('     ' + [c
 ECHO.
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                     %TITLE_TEXT%                      ') -ForegroundColor White -BackgroundColor DarkBlue; Write-Host ([char]0x2551 + ' Vi tri (Location): %SCRIPT_DIR%                                             ') -ForegroundColor Gray; Write-Host ([char]0x2551 + ' Thu muc Du an (Project Folder): %PROJECT_FOLDER_NAME%                       ') -ForegroundColor Gray; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77) -ForegroundColor Cyan; Write-Host 'Vui long chon mot tuy chon:' -ForegroundColor Yellow"
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'CAI DAT / THIET LAP:' -ForegroundColor Green -BackgroundColor Black; Write-Host '  1. Cai dat (Thuyet minh thong thuong + Long tieng nhan ban giong noi)' -ForegroundColor White; Write-Host '     (Install with Gemini + F5-TTS + Chatterbox Narration)' -ForegroundColor Cyan; Write-Host '     (Luu y: Se ton nhieu dung luong luu tru hon, tren Windows chi ho tro GPU cua NVIDIA va Intel)' -ForegroundColor Yellow; Write-Host '  2. Cai dat (Thuyet minh thong thuong) (Install with Gemini Narration)' -ForegroundColor White"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'CAI DAT / THIET LAP:' -ForegroundColor Green -BackgroundColor Black; Write-Host '  1. Cai dat OSG (Install OSG)' -ForegroundColor White; Write-Host '     (Gemini + Render Video. Engine giong noi & nhan dang cai theo nhu cau trong ung dung.)' -ForegroundColor Cyan"
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'BAO TRI / SU DUNG:' -ForegroundColor Blue -BackgroundColor Black; Write-Host '  3. Cap nhat Ung dung (Update)' -ForegroundColor White; Write-Host '  4. Chay Ung dung (Run App)' -ForegroundColor White; Write-Host '  5. Chay Ung dung voi Nhan ban giong noi (Run App with F5-TTS + Chatterbox Narration)' -ForegroundColor White"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'BAO TRI / SU DUNG:' -ForegroundColor Blue -BackgroundColor Black; Write-Host '  2. Cap nhat Ung dung (Update)' -ForegroundColor White; Write-Host '  3. Chay Ung dung (Run OSG)' -ForegroundColor White"
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'GO CAI DAT:' -ForegroundColor Red -BackgroundColor Black; Write-Host '  6. Go cai dat Ung dung (Uninstall)' -ForegroundColor White"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host 'GO CAI DAT:' -ForegroundColor Red -BackgroundColor Black; Write-Host '  4. Go cai dat Ung dung (Uninstall)' -ForegroundColor White"
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  7. Thoat (Exit)' -ForegroundColor Gray; Write-Host (([char]0x2550).ToString() * 77) -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '  5. Thoat (Exit)' -ForegroundColor Gray; Write-Host (([char]0x2550).ToString() * 77) -ForegroundColor Cyan"
 ECHO.
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '%PROMPT_CHOICE%' -ForegroundColor Yellow -NoNewline"
 SET /P "CHOICE="
@@ -71,18 +71,12 @@ IF NOT "%CHOICE%"=="" SET CHOICE=%CHOICE:~0,1%
 
 :: Save choice before processing (for auto-restart on error)
 IF "%CHOICE%"=="1" (ECHO 1) >"%LAST_CHOICE_FILE%"
-IF "%CHOICE%"=="2" (ECHO 2) >"%LAST_CHOICE_FILE%"
-IF "%CHOICE%"=="3" (ECHO 3) >"%LAST_CHOICE_FILE%"
-IF "%CHOICE%"=="4" (ECHO 4) >"%LAST_CHOICE_FILE%"
-IF "%CHOICE%"=="5" (ECHO 5) >"%LAST_CHOICE_FILE%"
 
 IF "%CHOICE%"=="1" GOTO InstallNarration
-IF "%CHOICE%"=="2" GOTO InstallNoNarration
-IF "%CHOICE%"=="3" GOTO UpdateApp
-IF "%CHOICE%"=="4" GOTO RunApp
-IF "%CHOICE%"=="5" GOTO RunAppCUDA
-IF "%CHOICE%"=="6" GOTO UninstallApp
-IF "%CHOICE%"=="7" GOTO ExitScript
+IF "%CHOICE%"=="2" GOTO UpdateApp
+IF "%CHOICE%"=="3" GOTO RunApp
+IF "%CHOICE%"=="4" GOTO UninstallApp
+IF "%CHOICE%"=="5" GOTO ExitScript
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Lua chon khong hop le. Vui long thu lai.' -ForegroundColor Yellow"
 TIMEOUT /T 2 /NOBREAK > NUL
@@ -93,7 +87,7 @@ GOTO %MENU_LABEL%
 REM ==============================================================================
 :InstallNarration
 ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77 + [char]0x2557) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                   [SETUP] Option 1: Full Installation                       ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkGreen; Write-Host ([char]0x2551 + '                        with Voice Cloning                                   ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkGreen; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77 + [char]0x255D) -ForegroundColor Cyan"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77 + [char]0x2557) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                        [SETUP] Option 1: Install OSG                        ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkGreen; Write-Host ([char]0x2551 + '                          Engines install on demand                          ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkGreen; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77 + [char]0x255D) -ForegroundColor Cyan"
 ECHO.
 
 CALL :InstallPrerequisites
@@ -141,68 +135,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Install
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[START] Launching application with voice cloning features...' -ForegroundColor Magenta"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Press Ctrl+C to stop the application.' -ForegroundColor Blue"
 ECHO.
-CALL npm run dev:cuda
-POPD
-GOTO %MENU_LABEL%
-
-REM ==============================================================================
-:InstallNoNarration
-ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host ([char]0x2554 + ([char]0x2550).ToString() * 77 + [char]0x2557) -ForegroundColor Cyan; Write-Host ([char]0x2551 + '                   [SETUP] Option 2: Standard Installation                   ' + [char]0x2551) -ForegroundColor White -BackgroundColor DarkBlue; Write-Host ([char]0x255A + ([char]0x2550).ToString() * 77 + [char]0x255D) -ForegroundColor Cyan"
-ECHO.
-
-CALL :InstallPrerequisites
-IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
-
-:: Clear saved choice after successful prerequisite installation
-IF EXIST "%LAST_CHOICE_FILE%" DEL "%LAST_CHOICE_FILE%" >nul 2>&1
-
-CALL :CleanInstall "%PROJECT_PATH%"
-IF %ERRORLEVEL% NEQ 0 GOTO ErrorOccurred
-
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Downloading application (BETA - Preview Branch)...' -ForegroundColor Cyan"
-git clone -b preview %GIT_REPO_URL% "%PROJECT_PATH%" >nul 2>&1
-IF %ERRORLEVEL% NEQ 0 (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment...' -ForegroundColor Blue"
-    GOTO ErrorOccurred
-)
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Application (BETA) downloaded successfully.' -ForegroundColor Green"
-
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Changing to project directory...' -ForegroundColor Cyan"
-PUSHD "%PROJECT_PATH%"
-IF %ERRORLEVEL% NEQ 0 (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment...' -ForegroundColor Blue"
-    POPD
-    GOTO ErrorOccurred
-)
-
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Installing dependencies... (takes long time)' -ForegroundColor Cyan"
-CALL npm install >nul 2>&1
-IF %ERRORLEVEL% NEQ 0 (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[RESTART] Restarting to refresh environment...' -ForegroundColor Blue"
-    POPD
-    GOTO ErrorOccurred
-)
-
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[SETUP] Finalizing installation...' -ForegroundColor Cyan"
-CALL npm run install:yt-dlp >nul 2>&1
-IF %ERRORLEVEL% NEQ 0 (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[WARN] YouTube downloader installation had issues.' -ForegroundColor Yellow"
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] You can fix this later with ''npm run install:yt-dlp''.' -ForegroundColor Blue"
-)
-
-ECHO.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[OK] Installation completed successfully!' -ForegroundColor Green"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[START] Launching application...' -ForegroundColor Magenta"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Write-Host '[INFO] Press Ctrl+C to stop the application.' -ForegroundColor Blue"
-ECHO.
 CALL npm run dev
 POPD
 GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :UpdateApp
-ECHO *** Tuy chon 3: Cap nhat Ung dung (Option 3: Update) ***
+ECHO *** Tuy chon 2: Cap nhat Ung dung (Option 2: Update) ***
 IF NOT EXIST "%PROJECT_PATH%\.git" (
     ECHO LOI: Thu muc du an "%PROJECT_PATH%" khong tim thay hoac khong phai la kho git.
     ECHO Vui long su dung mot trong cac tuy chon Cai dat truoc.
@@ -252,7 +191,7 @@ GOTO %MENU_LABEL%
 
 REM ==============================================================================
 :RunApp
-ECHO *** Tuy chon 4: Chay Ung dung (Option 4: Run App) ***
+ECHO *** Tuy chon 3: Chay Ung dung (Option 3: Run App) ***
 IF NOT EXIST "%PROJECT_PATH%\package.json" (
     ECHO LOI: Thu muc du an "%PROJECT_PATH%" hoac package.json khong tim thay.
     ECHO Vui long su dung mot trong cac tuy chon Cai dat truoc.
@@ -279,37 +218,8 @@ POPD
 GOTO %MENU_LABEL%
 
 REM ==============================================================================
-:RunAppCUDA
-ECHO *** Tuy chon 5: Chay Ung dung voi Nhan ban giong noi (Option 5: Run App with F5-TTS + Chatterbox Narration) ***
-IF NOT EXIST "%PROJECT_PATH%\package.json" (
-    ECHO LOI: Thu muc du an "%PROJECT_PATH%" hoac package.json khong tim thay.
-    ECHO Vui long su dung mot trong cac tuy chon Cai dat truoc.
-    GOTO ErrorOccurred
-)
-
-ECHO Changing directory to "%PROJECT_PATH%"
-PUSHD "%PROJECT_PATH%"
-IF %ERRORLEVEL% NEQ 0 (
-    ECHO ERROR: Failed to change directory to project folder.
-    POPD
-    GOTO ErrorOccurred
-)
-
-ECHO Dang khoi chay ung dung voi CUDA (using npm run dev:cuda)...
-ECHO Luu y: Yeu cau GPU NVIDIA tuong thich va CUDA Toolkit da duoc cai dat.
-ECHO Nhan Ctrl+C trong cua so nay de dung ung dung sau.
-CALL npm run dev:cuda
-IF %ERRORLEVEL% NEQ 0 (
-    ECHO ERROR: Failed to start application using 'npm run dev:cuda'. Check messages above.
-    POPD
-    GOTO ErrorOccurred
-)
-POPD
-GOTO %MENU_LABEL%
-
-REM ==============================================================================
 :UninstallApp
-ECHO *** Tuy chon 6: Go cai dat Ung dung (Option 6: Uninstall) ***
+ECHO *** Tuy chon 4: Go cai dat Ung dung (Option 4: Uninstall) ***
 IF NOT EXIST "%PROJECT_PATH%" (
     ECHO THONG TIN: Thu muc du an "%PROJECT_PATH%" khong tim thay. Ung dung co the chua duoc cai dat.
     GOTO ErrorOccurred

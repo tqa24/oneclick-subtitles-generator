@@ -5,7 +5,8 @@
 const path = require('path');
 
 // Import narration service configuration
-const { NARRATION_PORT } = require('../startNarrationService');
+const { PORTS } = require('../config');
+const NARRATION_PORT = PORTS.NARRATION;
 
 // Import cleanup function
 const {

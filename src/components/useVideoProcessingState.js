@@ -39,8 +39,11 @@ const useVideoProcessingState = ({
 }) => {
     const { t } = useTranslation();
 
-    // Full (CUDA) vs Lite vs Vercel startup mode (seeded + synced from localStorage)
-    const { isFullVersion, isVercelMode } = useStartupMode();
+    // Vercel vs local startup mode (seeded + synced from localStorage)
+    const { isVercelMode } = useStartupMode();
+
+    // Per-engine Parakeet availability — replaces the old global Full-version gate.
+    const { available: parakeetAvailable } = useParakeetAvailability();
 
     // Processing method: 'new' (Files API), 'old' (inline), 'nvidia-parakeet'
     const [method, setMethod] = useState(() => {
@@ -80,12 +83,12 @@ const useVideoProcessingState = ({
     // Smooth modal height transitions (refs + content-change/open effects)
     const { modalRef, contentRef } = useModalHeight(isOpen, method);
 
-    // Prevent Parakeet selection in Lite mode
+    // Reset to the default method if Parakeet isn't available.
     useEffect(() => {
-        if (!isFullVersion && method === 'nvidia-parakeet') {
+        if (!parakeetAvailable && method === 'nvidia-parakeet') {
             setMethod('new');
         }
-    }, [isFullVersion]);
+    }, [parakeetAvailable]);
 
     // Prevent old method selection in Vercel mode
     useEffect(() => {
@@ -93,9 +96,6 @@ const useVideoProcessingState = ({
             setMethod('new');
         }
     }, [isVercelMode]);
-
-    // Parakeet dynamic availability (health check)
-    const { available: parakeetAvailable } = useParakeetAvailability({ retries: 6, intervalMs: 2500 });
 
     // Processing options state with localStorage persistence
     const [fps, setFps] = useState(() => {
@@ -499,7 +499,6 @@ const useVideoProcessingState = ({
         contentRef,
         languagesRef,
         // mode flags
-        isFullVersion,
         isVercelMode,
         parakeetAvailable,
         method,

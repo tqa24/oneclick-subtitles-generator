@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { useEngineStatus } from '../hooks/useEngineStatus';
 import CloseButton from './common/CloseButton';
 import newDarkImg from '../assets/transcription-methods/new_dark.png';
 import newLightImg from '../assets/transcription-methods/new_light.png';
@@ -21,16 +22,11 @@ const TranscriptionMethodSelectionOverlay = ({ isOpen, onMethodSelect, onClose, 
     });
 
     // Version detection state
-    const [isVercelMode, setIsVercelMode] = useState(() => {
+    const [isVercelMode] = useState(() => {
         return typeof window !== 'undefined' && window.location.hostname.includes('vercel.app');
     });
-    const [isFullVersion, setIsFullVersion] = useState(() => {
-        try {
-            return localStorage.getItem('is_full_version') === 'true';
-        } catch {
-            return false;
-        }
-    });
+    // Per-engine Parakeet availability (replaces the old is_full_version gate).
+    const { isReady } = useEngineStatus();
 
     // Update theme detection
     useEffect(() => {
@@ -51,21 +47,9 @@ const TranscriptionMethodSelectionOverlay = ({ isOpen, onMethodSelect, onClose, 
         return () => observer.disconnect();
     }, []);
 
-    // Listen for version changes
-    useEffect(() => {
-        const handleStorageChange = (e) => {
-            if (e.key === 'is_full_version') {
-                setIsFullVersion(e.newValue === 'true');
-            }
-        };
-
-        window.addEventListener('storage', handleStorageChange);
-        return () => window.removeEventListener('storage', handleStorageChange);
-    }, []);
-
     const methods = React.useMemo(() => {
-        // Determine which methods are disabled based on version
-        const isParakeetDisabled = !isFullVersion; // Disabled in Lite and Vercel modes
+        // Determine which methods are disabled based on per-engine availability
+        const isParakeetDisabled = !isReady('parakeet'); // Disabled when the Parakeet engine isn't running
         const isOldMethodDisabled = isVercelMode; // Disabled only in Vercel mode
 
         return [
@@ -98,7 +82,7 @@ const TranscriptionMethodSelectionOverlay = ({ isOpen, onMethodSelect, onClose, 
                 disabled: true
             }
         ];
-    }, [isDarkTheme, t, isFullVersion, isVercelMode]);
+    }, [isDarkTheme, t, isReady, isVercelMode]);
 
     const handleMethodClick = (method) => {
         if (method.disabled) return; // Prevent clicks on disabled methods

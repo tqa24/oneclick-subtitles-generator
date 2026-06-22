@@ -40,7 +40,7 @@ const generateNarration = async (req, res) => {
 
       return res.status(503).json({
         success: false,
-        error: 'Narration service is not available. Please use npm run dev:cuda to start with Python narration service.'
+        error: 'Narration service is not available. Install or start F5-TTS from Settings > Tools.'
       });
     }
 
@@ -63,7 +63,7 @@ const generateNarration = async (req, res) => {
       // Removed error logging
       return res.status(503).json({
         success: false,
-        error: `Error connecting to narration service: ${error.message}. Please restart the application with npm run dev:cuda.`
+        error: `Error connecting to narration service: ${error.message}. Please start F5-TTS from Settings > Tools.`
       });
     }
   } catch (error) {

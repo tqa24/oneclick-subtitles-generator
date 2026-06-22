@@ -6,13 +6,11 @@
 
 // Import configuration
 const { PORTS, PORT } = require('./server/config');
-const { NARRATION_PORT, CHATTERBOX_PORT } = require('./server/startNarrationService');
+const NARRATION_PORT = PORTS.NARRATION;
+const CHATTERBOX_PORT = PORTS.CHATTERBOX;
 
 // Import Express app
 const mainApp = require('./app');
-
-// Import narration service
-const { startNarrationService } = require('./server/startNarrationService');
 
 // Import WebSocket progress tracking
 const { initializeProgressWebSocket } = require('./server/services/shared/progressWebSocket');
@@ -41,55 +39,23 @@ async function initializeServer() {
   console.log('✅ Server initialization complete');
 }
 
-// Start the narration services only if running with dev:cuda
-let narrationProcesses;
+// Warm-start any heavy engines that are already installed (per-engine). This replaces the old
+// Heavy-engine availability is reported per-engine via
+// /api/engines/status, and the in-app engine UI installs/starts more on demand. Electron manages
+// its own bundled Python (separate track).
+const engineManager = require('./server/engines/engineManager');
 
-// Check if we're running with npm run dev:cuda by looking at the environment variable
-const isDevCuda = process.env.START_PYTHON_SERVER === 'true';
-
-if (isDevCuda && process.env.ELECTRON_MANAGES_PYTHON !== 'true') {
-  console.log('🚀 Starting narration services (F5-TTS + Chatterbox)...');
-
-  try {
-    narrationProcesses = startNarrationService();
-
-    if (narrationProcesses) {
-      // Set the narration services as running in the app
-      mainApp.set('narrationServiceRunning', true);
-      mainApp.set('narrationActualPort', NARRATION_PORT);
-      mainApp.set('chatterboxServiceRunning', narrationProcesses.chatterboxProcess !== null);
-      mainApp.set('chatterboxActualPort', CHATTERBOX_PORT);
-
-      console.log('✅ Narration services startup completed');
-      console.log(`📍 F5-TTS service: http://localhost:${NARRATION_PORT}`);
-      console.log(`📍 Chatterbox service: http://localhost:${CHATTERBOX_PORT}`);
-    } else {
-      throw new Error('Failed to start narration services');
-    }
-  } catch (error) {
-    console.error('❌ Failed to start narration services:', error);
-
-    // Set the narration services as not running in the app
-    mainApp.set('narrationServiceRunning', false);
-    mainApp.set('narrationActualPort', null);
-    mainApp.set('chatterboxServiceRunning', false);
-    mainApp.set('chatterboxActualPort', null);
-  }
-} else if (process.env.ELECTRON_MANAGES_PYTHON === 'true') {
+if (process.env.ELECTRON_MANAGES_PYTHON === 'true') {
   console.log('ℹ️  Python services managed by Electron parent process.');
-  // Set the services as running since Electron started them
   mainApp.set('narrationServiceRunning', true);
   mainApp.set('narrationActualPort', NARRATION_PORT);
   mainApp.set('chatterboxServiceRunning', true);
   mainApp.set('chatterboxActualPort', CHATTERBOX_PORT);
 } else {
-  console.log('ℹ️  Running without narration services (use npm run dev:cuda for full functionality)');
-
-  // Set the narration services as not running in the app
-  mainApp.set('narrationServiceRunning', false);
-  mainApp.set('narrationActualPort', null);
-  mainApp.set('chatterboxServiceRunning', false);
-  mainApp.set('chatterboxActualPort', null);
+  console.log('🚀 Warm-starting installed heavy engines...');
+  engineManager.warmStart().catch((e) => console.error('❌ Engine warm-start failed:', e.message));
+  mainApp.set('narrationActualPort', NARRATION_PORT);
+  mainApp.set('chatterboxActualPort', CHATTERBOX_PORT);
 }
 
 // Start the server with initialization
@@ -154,15 +120,13 @@ async function shutdownServer(signal) {
     const server = await serverPromise;
     await new Promise((resolve) => server.close(resolve));
 
-    // Tree-kill the REAL python/uvicorn narration workers. narrationProcess.kill() would only signal
-    // the `uv` launcher, leaving the worker holding ports 3035/3036 and GPU VRAM (the zombie problem).
-    if (narrationProcesses && (narrationProcesses.narrationProcess || narrationProcesses.chatterboxProcess)) {
-      console.log('🔄 Stopping narration services (F5-TTS + Chatterbox)...');
-      try {
-        await killProcessesOnPorts([NARRATION_PORT, CHATTERBOX_PORT]);
-      } catch (e) {
-        console.warn('Could not fully stop narration services:', e.message);
-      }
+    // Tree-kill the REAL python/uvicorn engine workers on every engine port. kill() on the `uv`
+    // launcher alone would leave the worker holding the port + GPU VRAM (the zombie problem).
+    console.log('🔄 Stopping heavy engine services...');
+    try {
+      await killProcessesOnPorts([NARRATION_PORT, CHATTERBOX_PORT, require('./server/config').PORTS.PARAKEET]);
+    } catch (e) {
+      console.warn('Could not fully stop engine services:', e.message);
     }
 
     console.log('✅ Server shutdown complete');

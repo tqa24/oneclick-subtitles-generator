@@ -1,9 +1,9 @@
 {
   "appTitle": "원클릭 자막 생성기",
-  "appTitleFull": "OSG (풀 버전)",
-  "appTitleLite": "OSG (라이트 버전)",
-  "versionFull": "풀 버전",
-  "versionLite": "라이트 버전",
+  "appTitleFull": "OSG (로컬 앱)",
+  "appTitleLite": "OSG (로컬 앱)",
+  "versionFull": "로컬 앱",
+  "versionLite": "로컬 앱",
   "versionVercel": "Vercel 버전",
   "vercelLimited": "많은 기능이 제한됩니다",
   "appLogoAlt": "원클릭 자막 생성기 로고",

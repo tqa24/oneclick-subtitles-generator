@@ -1,0 +1,281 @@
+/* On-demand heavy-engine install panel (Settings → Tools). */
+
+.engines-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Intro on the left, "Uninstall all" on the right. */
+.engines-panel__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.engines-panel__intro {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: var(--md-body-small-size, 13px);
+  color: var(--md-on-surface-variant);
+  line-height: 1.5;
+}
+
+.engines-panel__uninstall-all {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-pill, 9999px);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  font-size: var(--md-label-medium-size, 12px);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--md-duration-short4, 0.15s) var(--md-easing-standard, ease), border-color var(--md-duration-short4, 0.15s) var(--md-easing-standard, ease);
+}
+
+.engines-panel__uninstall-all:hover {
+  color: var(--md-error, #d9534f);
+  border-color: var(--md-error, #d9534f);
+}
+
+.engines-panel__uninstall-all .material-symbols-rounded { font-size: 18px; }
+
+.engines-panel__confirm-all {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.engine-card {
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-medium, 12px);
+  background: var(--md-surface-1);
+  transition: border-color var(--md-duration-short4, 0.15s) var(--md-easing-standard, ease);
+}
+
+.engine-card:hover { border-color: var(--md-outline); }
+
+.engine-card--ready {
+  border-color: color-mix(in srgb, var(--success-color, #2e9e6a) 40%, var(--md-outline-variant));
+}
+
+.engine-card--included {
+  border-color: color-mix(in srgb, var(--md-primary) 28%, var(--md-outline-variant));
+}
+
+/* The whole card is one centered row: icon, growing info column, fixed-width action slot. */
+.engine-card__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+}
+
+.engine-card__icon {
+  flex: 0 0 auto;
+  font-size: 24px;
+  color: var(--md-on-surface-variant);
+}
+
+.engine-card--ready .engine-card__icon { color: var(--success-color, #2e9e6a); }
+.engine-card--included .engine-card__icon { color: var(--md-primary); }
+
+.engine-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.engine-card__label {
+  font-weight: 600;
+  font-size: var(--md-body-medium-size, 14px);
+  color: var(--md-on-surface);
+}
+
+.engine-card__sub {
+  font-size: var(--md-label-small-size, 11px);
+  color: var(--md-on-surface-variant);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.engine-card--ready .engine-card__sub { color: var(--success-color, #2e9e6a); }
+
+.engine-card__sub--log { font-family: 'JetBrains Mono', monospace; }
+
+/* Fixed action column keeps every card's button (or progress bar) aligned on the right. */
+.engine-card__action {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 170px;
+}
+
+/* Give the install row (spinner + wavy + cancel) a bit more room than a plain button. */
+.engine-card--busy .engine-card__action { min-width: 210px; }
+
+.engine-card__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 16px;
+  border: none;
+  border-radius: var(--md-shape-pill, 9999px);
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+  font-weight: 600;
+  font-size: var(--md-label-large-size, 13px);
+  cursor: pointer;
+  transition: filter var(--md-duration-medium2, 0.2s) var(--md-easing-standard, ease);
+}
+
+.engine-card__btn:hover { filter: brightness(1.05); }
+
+.engine-card__btn .material-symbols-rounded { font-size: 18px; }
+
+.engine-card__btn--ghost {
+  background: transparent;
+  color: var(--md-on-surface);
+  border: 1px solid var(--md-outline-variant);
+}
+
+.engine-card__btn--ghost:hover {
+  filter: none;
+  background: var(--md-surface-variant);
+}
+
+.engine-card__btn--danger {
+  background: var(--md-error, #d9534f);
+  color: var(--md-on-error, #fff);
+}
+
+/* Small circular icon button (trash / confirm / cancel), sits beside the primary action. */
+.engine-card__icon-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-shape-pill, 9999px);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+  transition: background var(--md-duration-short4, 0.15s) var(--md-easing-standard, ease), color var(--md-duration-short4, 0.15s) var(--md-easing-standard, ease), border-color var(--md-duration-short4, 0.15s) var(--md-easing-standard, ease);
+}
+
+.engine-card__icon-btn:hover {
+  background: var(--md-surface-variant);
+  color: var(--md-error, #d9534f);
+  border-color: var(--md-error, #d9534f);
+}
+
+.engine-card__icon-btn .material-symbols-rounded { font-size: 18px; }
+
+.engine-card__icon-btn--danger {
+  background: var(--md-error, #d9534f);
+  border-color: var(--md-error, #d9534f);
+  color: var(--md-on-error, #fff);
+}
+
+.engine-card__icon-btn--danger:hover {
+  filter: brightness(1.05);
+  background: var(--md-error, #d9534f);
+  color: var(--md-on-error, #fff);
+}
+
+/* Inline "Uninstall?" confirmation in the action slot. */
+.engine-card__confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.engine-card__confirm-text {
+  font-size: var(--md-label-medium-size, 12px);
+  font-weight: 600;
+  color: var(--md-on-surface-variant);
+  white-space: nowrap;
+}
+
+.engine-card__managed {
+  font-size: var(--md-label-large-size, 13px);
+  font-weight: 600;
+  color: var(--md-on-surface-variant);
+}
+
+/* While installing: spinner + wavy progress bar (shared Material 3 components) + Cancel. */
+.engine-card__installing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+/* The wavy canvas fills the space between the spinner and Cancel. */
+.engine-card__wavy {
+  flex: 1 1 auto;
+  min-width: 48px;
+  display: flex;
+  align-items: center;
+}
+
+/* Transient transitions: spinner + label (Starting… / Stopping… / Uninstalling…). */
+.engine-card__loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.engine-card__loading-text {
+  font-size: var(--md-label-large-size, 13px);
+  font-weight: 600;
+  color: var(--md-on-surface-variant);
+  white-space: nowrap;
+}
+
+.engine-card__cancel {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--md-shape-pill, 9999px);
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+  transition: background var(--md-duration-short4, 0.15s) var(--md-easing-standard, ease), color var(--md-duration-short4, 0.15s) var(--md-easing-standard, ease);
+}
+
+.engine-card__cancel:hover {
+  background: var(--md-surface-variant);
+  color: var(--md-error, #d9534f);
+}
+
+.engine-card__cancel .material-symbols-rounded { font-size: 18px; }
+
+.engine-card__error {
+  margin: -4px 16px 12px;
+  font-size: var(--md-label-small-size, 11px);
+  color: var(--md-error, #d9534f);
+  white-space: pre-wrap;
+}

@@ -39,6 +39,7 @@ import consolidation from './consolidation.json';
 import processing from './processing.json';
 import waveform from './waveform.json';
 import autoFlow from './autoFlow.json';
+import engines from './engines.json';
 
 const vi = {
   common,
@@ -81,7 +82,8 @@ const vi = {
   consolidation,
   processing,
   waveform,
-  autoFlow
+  autoFlow,
+  engines
 };
 
 export default vi;

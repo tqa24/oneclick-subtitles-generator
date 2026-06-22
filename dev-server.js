@@ -26,7 +26,7 @@ const commands = [
   { name: 'SERVER', cmd: 'npm', args: ['run', 'server:start'], cwd: '.' },
   { name: 'RENDERER', cmd: 'npm', args: ['run', 'video-renderer:start'], cwd: '.' },
   { name: 'MIDI', cmd: 'npm', args: ['run', 'dev', '--silent'], cwd: './promptdj-midi' }
-  // PARAKEET service removed for lite version - only runs with dev:cuda
+  // Heavy Python engines are started on demand from Settings > Tools.
 ];
 
 // Function to prefix output with colored service name (only the prefix is colored)

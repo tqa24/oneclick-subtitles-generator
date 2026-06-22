@@ -17,8 +17,7 @@ const ParakeetProcessingOptions = ({
     parakeetPreserveSentences,
     setParakeetPreserveSentences,
     selectedSegment,
-    parakeetDisabled,
-    isFullVersion
+    parakeetDisabled
 }) => {
     const { t } = useTranslation();
 
@@ -235,10 +234,7 @@ const ParakeetProcessingOptions = ({
             {parakeetDisabled && (
                 <div className="parakeet-disabled-overlay">
                     <div className="parakeet-disabled-message">
-                        {!isFullVersion
-                            ? t('processing.parakeetRequiresFullVersion', 'Parakeet requires OSG Full version')
-                            : t('processing.parakeetServiceUnavailable', 'Parakeet service is not available')
-                        }
+                        {t('processing.parakeetServiceUnavailable', 'Parakeet service is not available')}
                     </div>
                 </div>
             )}

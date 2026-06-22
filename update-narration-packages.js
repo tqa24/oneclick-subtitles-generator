@@ -22,6 +22,8 @@ const isWindows = os.platform() === 'win32';
 const venvBinDir = isWindows ? 'Scripts' : 'bin';
 const NARRATION_CONSTRAINTS_FILE = path.join(__dirname, 'narration-constraints.txt');
 const NARRATION_COMPAT_PACKAGE_SPECS = ['protobuf>=4.25.8,<7'];
+// ⚠️ KEEP IN SYNC with server/engines/torchProfile.js (the canonical copy used by the on-demand
+// per-engine installers) and setup-narration.js. Bump torch pins in all three together.
 const BLACKWELL_GPU_REGEX = /\b(BLACKWELL|RTX 5090|RTX 5080|RTX 5070|RTX 5060|RTX 5050)\b/i;
 const TORCH_PROFILES = {
   NVIDIA_CU121: {
@@ -245,7 +247,7 @@ function executeWithRetry(command, options = {}, maxRetries = 3) {
 logger.checking('virtual environment');
 if (!fs.existsSync(VENV_DIR)) {
   logger.warning('Virtual environment not found. Narration packages update skipped.');
-  logger.info('Run setup-narration.js first to set up the environment.');
+  logger.info('Install the base environment first with: node install-base.js');
   process.exit(0);
 }
 
@@ -274,7 +276,7 @@ print("f5-tts:", md.version("f5-tts"))
     logger.info('Restart the application and rerun the maintenance step to verify imports');
   } else {
     logger.warning(`F5-TTS maintenance failed: ${error.message}`);
-    logger.info('Run node setup-narration.js to reinstall the repo-pinned narration stack if this persists.');
+    logger.info('Reinstall or repair F5-TTS from Settings > Tools if this persists.');
   }
 }
 
@@ -304,7 +306,7 @@ logger.newLine();
 logger.success('Narration packages maintenance completed!');
 logger.info('F5-TTS and Chatterbox runtimes were checked without pulling unpinned upstream upgrades.');
 logger.info('If packages were in use, restart the application to apply any pending repairs.');
-logger.info('If you need to install them initially, run: npm run setup:narration:uv');
+logger.info('If you need to install them initially, use Settings > Tools.');
 
 // Safeguard: Ensure PyTorch versions remain compatible
 logger.checking('PyTorch version compatibility');

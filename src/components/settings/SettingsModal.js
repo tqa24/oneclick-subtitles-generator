@@ -14,6 +14,7 @@ import PromptsTab from './tabs/PromptsTab';
 import CacheTab from './tabs/CacheTab';
 import AboutTab from './tabs/AboutTab';
 import ModelManagementTab from './ModelManagementTab';
+import EnginesPanel from '../engines/EnginesPanel';
 
 // Import icons
 import { ApiKeyIcon, ProcessingIcon, PromptIcon, CacheIcon, AboutIcon, ModelIcon } from './icons/TabIcons';
@@ -267,6 +268,13 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
               {t('settings.modelManagement', 'Narration Models')}
             </button>
             <button
+              className={`settings-tab ${activeTab === 'tools' ? 'active' : ''}`}
+              onClick={() => setActiveTab('tools')}
+            >
+              <span className="material-symbols-rounded" style={{ fontSize: 20 }}>build</span>
+              {t('settings.tools', 'Tools')}
+            </button>
+            <button
               className={`settings-tab ${activeTab === 'about' ? 'active' : ''}`}
               onClick={() => {
                 // Select a random background when clicking on the About tab
@@ -437,6 +445,11 @@ const SettingsModal = ({ onClose, onSave, apiKeysSet, setApiKeysSet }) => {
           {/* Model Management Tab Content */}
           <div key="settings-tab-model-management" className={`settings-tab-content ${activeTab === 'model-management' ? 'active' : ''} settings-tab-content-slide-${animationDirection}`}>
             <ModelManagementTab activeTab={activeTab} />
+          </div>
+
+          {/* Tools Tab Content (on-demand engines) */}
+          <div key="settings-tab-tools" className={`settings-tab-content ${activeTab === 'tools' ? 'active' : ''} settings-tab-content-slide-${animationDirection}`}>
+            <EnginesPanel />
           </div>
 
           {/* About Tab Content */}

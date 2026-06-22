@@ -100,7 +100,7 @@ function displayCorsConfigSummary() {
   console.log('   • server/config/cors_config.py (Python services)');
   
   console.log('\n🚀 To test CORS configuration:');
-  console.log('   1. Start all services: npm run dev:cuda');
+  console.log('   1. Start the app: npm run dev');
   console.log('   2. Check health endpoints:');
   console.log(`      • http://localhost:${PORTS.BACKEND}/api/health`);
   console.log(`      • http://localhost:${PORTS.VIDEO_RENDERER}/health`);

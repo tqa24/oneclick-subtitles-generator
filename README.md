@@ -148,26 +148,22 @@ Here are some screenshots showcasing the application's current features:
 
 A comprehensive web application for auto-subtitling videos and audio, translating SRT files, generating AI narration with voice cloning, creating background images and music, and rendering professional subtitled videos. Designed for content creators, educators, and general users who need high-quality subtitle generation and video production capabilities.
 
-## Installation Options Comparison
+## What's included
 
-Choose the right version for your needs:
+There's **one OSG** — no Lite/Full split. The base install is small, and the heavy voice-cloning and local transcription engines (F5-TTS, Chatterbox, NVIDIA Parakeet) install **on demand from inside the app** (Settings → Voice & transcription engines) — a one-time ~3 GB GPU download per engine, so you only download what you use. The only variant is whether you run OSG **locally** or on a **hosted/Vercel** deployment (no local backend → no rendering, downloads, or local engines).
 
-| Feature | OSG Lite | OSG Full | OSG Vercel |
-|---------|----------|------------|------------|
-| **AI Subtitle Generation** | ✅ Gemini AI transcription | ✅ Gemini + Parakeet AI transcription | ✅ Gemini AI transcription |
-| **Video Sources** | ✅ YouTube, Douyin/TikTok, 1000+ platforms + Upload | ✅ YouTube, Douyin/TikTok, 1000+ platforms + Upload | Upload only |
-| **Subtitle Editor** | ✅ Visual timeline, waveform, real-time preview | ✅ Visual timeline, waveform, real-time preview | ✅ Visual timeline, waveform, real-time preview |
-| **Translation** | ✅ Multi-language with context awareness | ✅ Multi-language with context awareness | ✅ Multi-language with context awareness |
-| **Video Rendering** | ✅ GPU-accelerated with Remotion | ✅ GPU-accelerated with Remotion | ❌ Not available |
-| **Background Music Generation** | ✅ AI music with Lyria | ✅ AI music with Lyria | ✅ AI music with Lyria |
-| **Basic TTS** | ✅ Gemini Live API, Edge TTS, Google TTS | ✅ Gemini Live API, Edge TTS, Google TTS | ❌ Not available |
-| **Voice Cloning** | ❌ Not included | ✅ F5-TTS, Chatterbox | ❌ Not available |
-| **Project Folder Size** | ~2-3 GB | ~8-12 GB | N/A (hosted) |
-| **GPU Requirements** | Any GPU for video rendering | GPU accelerated voice cloning (CPU fallback available) | None (no rendering) |
-
-### 💡 **Recommendation:**
-- **Choose OSG Lite** if you need fast subtitle generation and video rendering without voice cloning
-- **Choose OSG (Full)** if you need advanced voice cloning and narration capabilities
+| Feature | OSG (local) | OSG Vercel (hosted) |
+|---------|-------------|---------------------|
+| **AI Subtitle Generation** | ✅ Gemini, + on-demand NVIDIA Parakeet (local ASR) | ✅ Gemini AI transcription |
+| **Video Sources** | ✅ YouTube, Douyin/TikTok, 1000+ platforms + Upload | Upload only |
+| **Subtitle Editor** | ✅ Visual timeline, waveform, real-time preview | ✅ Visual timeline, waveform, real-time preview |
+| **Translation** | ✅ Multi-language with context awareness | ✅ Multi-language with context awareness |
+| **Video Rendering** | ✅ GPU-accelerated with Remotion | ❌ Not available |
+| **Background Music Generation** | ✅ AI music with Lyria | ✅ AI music with Lyria |
+| **Basic TTS** | ✅ Gemini Live API, Edge TTS, Google TTS | ❌ Not available |
+| **Voice Cloning** | ✅ F5-TTS, Chatterbox (install on demand) | ❌ Not available |
+| **Install size** | ~2-3 GB base (+ ~3 GB per heavy engine you install) | N/A (hosted) |
+| **GPU Requirements** | Any GPU for rendering; GPU recommended for voice/Parakeet (CPU fallback) | None |
 
 ## Quick Installation Guide
 
@@ -213,7 +209,7 @@ Choose the right version for your needs:
 
 ### 🤖 AI-Powered Subtitle Generation
 - **Google Gemini AI**: Uses latest Gemini 2.5 models (Flash, Pro) for accurate transcription
-- **NVIDIA Parakeet (local, optional)**: On-device ASR for fast, private transcription when running OSG Full. Choose the "NVIDIA Parakeet" method in the subtitle generation dialog. Unified with the same lifecycle, retries, and progress UI as Gemini.
+- **NVIDIA Parakeet (local, optional)**: On-device ASR for fast, private transcription once its engine is installed (Settings → Voice & transcription engines). Choose the "NVIDIA Parakeet" method in the subtitle generation dialog. Unified with the same lifecycle, retries, and progress UI as Gemini.
 - **Multi-language support**: Generate subtitles in multiple languages with high accuracy
 - **Parallel processing**: Handles long videos (15+ minutes) with intelligent segmentation
 - **Custom prompts**: Configurable transcription prompts for specialized content
@@ -275,7 +271,7 @@ Choose the right version for your needs:
 ### 2. **Generate AI Subtitles**
   - Choose your preferred engine:
     - Gemini (cloud) for convenience and strong accuracy
-    - NVIDIA Parakeet (local) for on-device, privacy-friendly transcription (requires OSG Full)
+    - NVIDIA Parakeet (local) for on-device, privacy-friendly transcription (install on demand)
   - Pick your Gemini model (2.5 Flash/Pro recommended) or Parakeet strategy (sentence/word/char)
    - Configure custom prompts for specialized content
    - Click "Generate timed subtitles" and monitor progress
@@ -324,7 +320,7 @@ Choose the right version for your needs:
 Access settings via the gear icon in the top-right corner:
 - **API Keys**: Gemini (required), YouTube (optional for search)
 - **AI Models**: Choose between Gemini 2.5 Flash, Pro, or experimental models
-- **Processing Method**: Switch between Gemini (cloud) and NVIDIA Parakeet (local ASR, OSG Full)
+- **Processing Method**: Switch between Gemini (cloud) and NVIDIA Parakeet (local ASR, install on demand)
 - **Languages**: English, Vietnamese, Korean interface support
 - **Video Processing**: Segment duration, quality preferences, cookie management
 - **TTS Engines**: F5-TTS, Chatterbox, Gemini Live API, Edge TTS, or Google TTS selection

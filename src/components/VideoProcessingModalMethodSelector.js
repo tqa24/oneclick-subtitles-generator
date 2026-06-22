@@ -13,7 +13,6 @@ import specialStarIcon from '../assets/specialStar.svg';
  * old method in Vercel mode). Pure: all state lives in the parent.
  */
 const VideoProcessingModalMethodSelector = ({
-    isFullVersion,
     isVercelMode,
     parakeetAvailable,
     method,
@@ -23,14 +22,12 @@ const VideoProcessingModalMethodSelector = ({
 }) => {
     const { t } = useTranslation();
 
-    // Build method options, disabling Parakeet when not in Full mode and old method when in Vercel mode
-    const parakeetDisabled = !isFullVersion || !parakeetAvailable;
+    // Build method options, disabling Parakeet when its engine isn't available and old method in Vercel mode
+    const parakeetDisabled = !parakeetAvailable;
     const oldMethodDisabled = isVercelMode;
-    const parakeetLabel = !isFullVersion
-        ? t('processing.methodNvidiaParakeetDisabled', 'Nvidia Parakeet (please run OSG Full)')
-        : (!parakeetAvailable
-            ? t('processing.methodNvidiaParakeetStarting', 'Nvidia Parakeet (starting up...)')
-            : t('processing.methodNvidiaParakeet', 'Nvidia Parakeet (local)'));
+    const parakeetLabel = !parakeetAvailable
+        ? t('processing.methodNvidiaParakeetStarting', 'Nvidia Parakeet (starting up...)')
+        : t('processing.methodNvidiaParakeet', 'Nvidia Parakeet (local)');
     const oldMethodLabel = isVercelMode
         ? `${t('processing.methodOldOption', 'Gemini: Old Method')} (not available in Vercel version)`
         : t('processing.methodOldOption', 'Gemini: Old Method');

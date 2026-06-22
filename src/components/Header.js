@@ -15,7 +15,6 @@ const Header = ({ onSettingsClick }) => {
   const [settingsOpenCount, setSettingsOpenCount] = useState(0); // Track how many times settings have been opened
   const [updateAvailable, setUpdateAvailable] = useState(false);
 
-  const [isFullVersion, setIsFullVersion] = useState(false); // Track if running in full mode
   const [isVercelMode, setIsVercelMode] = useState(false); // Track if running via npm start (Vercel)
   const [currentBranch, setCurrentBranch] = useState('main'); // Track current branch
   const [startupModeDetected, setStartupModeDetected] = useState(false); // Track if startup mode detection is complete
@@ -202,32 +201,25 @@ const Header = ({ onSettingsClick }) => {
 
         if (response.ok) {
           const startupData = await response.json();
-          const isFull = !!startupData.isDevCuda;
-          setIsFullVersion(isFull);
-          const isStart = !!(startupData.isStart || (typeof startupData.command === 'string' && startupData.command.toLowerCase().includes('npm start')));
+          const isStart = !!(startupData.isStart || startupData.isVercel);
           setIsVercelMode(isStart);
           try {
             localStorage.setItem('backend_available', 'true');
-            localStorage.setItem('is_full_version', isFull ? 'true' : 'false');
             localStorage.setItem('is_vercel_mode', isStart ? 'true' : 'false');
           } catch {}
         } else {
           // Server responded but not OK (e.g., 404) => treat as missing backend
-          setIsFullVersion(false);
           setIsVercelMode(true);
           try {
             localStorage.setItem('backend_available', 'false');
-            localStorage.setItem('is_full_version', 'false');
             localStorage.setItem('is_vercel_mode', 'true');
           } catch {}
         }
       } catch (error) {
         // If we can't contact the server at all, assume Vercel (npm start) mode
-        setIsFullVersion(false);
         setIsVercelMode(true);
         try {
           localStorage.setItem('backend_available', 'false');
-          localStorage.setItem('is_full_version', 'false');
           localStorage.setItem('is_vercel_mode', 'true');
         } catch {}
       } finally {
@@ -472,12 +464,9 @@ const Header = ({ onSettingsClick }) => {
       <div className="header-title-container">
         <h1 className="header-title">
           <span className="osg-main">OSG</span>
-          {startupModeDetected && (
+          {startupModeDetected && isVercelMode && (
             <span className="osg-version">
-              {isVercelMode
-                ? ` (${t('header.versionVercel')})`
-                : (isFullVersion ? ` (${t('header.versionFull')})` : ` (${t('header.versionLite')})`)
-              }
+              {` (${t('header.versionVercel')})`}
             </span>
           )}
         </h1>
