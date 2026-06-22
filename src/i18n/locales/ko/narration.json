@@ -1,4 +1,9 @@
 {
+  "gttsUnavailable": "(사용 불가)",
+  "edgeTTSUnavailable": "(사용 불가)",
+  "f5ttsUnavailable": "(사용 불가 — 설정 → 엔진에서 설치)",
+  "f5ttsMethod": "F5-TTS",
+  "noResults": "다운로드할 나레이션 결과가 없습니다",
   "title": "나레이션 생성",
   "description": "음성 복제 나레이션 생성 (F5-TTS 또는 Chatterbox, 출력과 같은 언어의 참조 음성을 사용하세요), 또는 Gemini (8개 음성, 29개 언어, 선명한 음질), Edge TTS 또는 Google TTS로 자막 나레이션을 생성합니다.",
   "referenceAudio": "레퍼런스 오디오",

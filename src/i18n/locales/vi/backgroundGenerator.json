@@ -34,6 +34,7 @@
   "helperMessage": "Bạn có thể sử dụng lời bài hát và ảnh bìa album tùy chỉnh ở đây hoặc nhấn \"Thêm phụ đề\" và lấy từ Genius",
   "upcomingFeatures": "Hiện tại Google đã xoá hoàn toàn 2 mô hình native image khỏi free tier!",
   "error": {
+    "quotaExceeded": "Đã vượt hạn mức. Kiểm tra gói và thanh toán của bạn.",
     "rateLimited": "Vượt quá giới hạn. Vui lòng chờ và thử lại.",
     "unauthorized": "Không được phép: API key không hợp lệ hoặc thiếu.",
     "forbidden": "Bị từ chối truy cập. Kiểm tra thanh toán/hạn ngạch hoặc quyền truy cập model.",

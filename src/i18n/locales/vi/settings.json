@@ -1,4 +1,6 @@
 {
+  "modelManagement.deleteFromCacheInfo": "Các tệp mô hình cũng sẽ bị xóa khỏi thư mục cache Hugging Face để giải phóng dung lượng. Điều này ảnh hưởng tới kho: {{repoId}}",
+  "default": "Mặc định",
   "title": "Cài đặt",
   "appearance": "Giao diện",
   "showGeminiEffects": "Hiển thị hiệu ứng sao Gemini",

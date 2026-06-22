@@ -1,4 +1,6 @@
 {
+  "modelManagement.deleteFromCacheInfo": "디스크 공간 확보를 위해 모델 파일이 Hugging Face 캐시 디렉터리에서도 삭제됩니다. 영향을 받는 저장소: {{repoId}}",
+  "default": "기본값",
   "title": "설정",
   "appearance": "모양",
   "apiKeys": "API 키",

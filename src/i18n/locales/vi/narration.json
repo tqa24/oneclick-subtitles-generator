@@ -1,4 +1,6 @@
 {
+  "f5ttsMethod": "F5-TTS",
+  "noResults": "Không có kết quả thuyết minh để tải về",
   "title": "Tạo thuyết minh",
   "description": "Tạo lồng tiếng nhân bản giọng (F5-TTS hoặc Chatterbox, vui lòng dùng giọng tham chiếu cùng ngôn ngữ với đầu ra), hoặc thuyết minh bằng Gemini (8 giọng, 29 ngôn ngữ, chất lượng âm thanh rõ), Edge TTS hoặc Google TTS cho phụ đề.",
   "referenceAudio": "Văn bản tham chiếu",
