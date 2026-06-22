@@ -184,7 +184,7 @@ const VideoQualityModal = ({
   const handleConfirm = async () => {
     if (selectedOption === 'redownload') {
       if (!selectedQuality) {
-        alert('Please select a quality to download');
+        alert(t('videoQuality.selectQualityToDownload', 'Please select a quality to download'));
         return;
       }
 

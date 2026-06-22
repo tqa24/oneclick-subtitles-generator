@@ -116,7 +116,7 @@ const VideoTopsideButtons = ({
                 }}
               >
                 <div
-                  title="Gemini chỉ xử lý 1FPS dù gửi video có FPS cao, bấm nút để xem thêm, vui lòng chọn Render Video để có chất lượng + FPS tốt nhất"
+                  title={t('preview.geminiFpsTooltip', 'Gemini only processes video at 1 FPS even if you send a higher-FPS video — click the button for more. Choose Render Video for the best quality + FPS.')}
                   style={{
                     width: "100%",
                     height: "100%",

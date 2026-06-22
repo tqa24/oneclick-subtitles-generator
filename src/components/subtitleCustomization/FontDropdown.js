@@ -93,7 +93,7 @@ const FontDropdown = ({ value, onChange, className }) => {
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Search fonts..."
+              placeholder={t('fontModal.searchFonts', 'Search fonts...')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="font-search-input"

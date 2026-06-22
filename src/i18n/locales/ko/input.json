@@ -19,5 +19,7 @@
   "uploadingFile": "파일 업로드 중...",
   "uploadProgress": "업로드 진행률: {{progress}}%",
   "uploadComplete": "업로드 완료!",
-  "uploadFailed": "업로드 실패: {{error}}"
+  "uploadFailed": "업로드 실패: {{error}}",
+  "analyzingVideo": "영상 내용을 분석하는 중...",
+  "preparingVideoAnalysis": "분석을 위해 영상을 준비하는 중..."
 }

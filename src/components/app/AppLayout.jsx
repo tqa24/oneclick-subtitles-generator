@@ -284,16 +284,16 @@ const AppLayout = ({
       let hint = '';
       if (isFailedToFetch) {
         if (String(actualVideoUrl || '').startsWith('blob:')) {
-          hint = 'The temporary video blob may have been revoked or expired. Try re-adding the video.';
+          hint = t('videoRendering.hintBlobRevoked', 'The temporary video blob may have been revoked or expired. Try re-adding the video.');
         } else if (typeof window !== 'undefined' && window.location?.protocol === 'https:' && (String(actualVideoUrl || '').startsWith('http:') || (data?.url && String(data.url).startsWith('http:')))) {
-          hint = 'Blocked mixed content: page is HTTPS but the video/API is HTTP. Use HTTPS for the API/video or run the app over HTTP.';
+          hint = t('videoRendering.hintMixedContent', 'Blocked mixed content: page is HTTPS but the video/API is HTTP. Use HTTPS for the API/video or run the app over HTTP.');
         } else if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-          hint = 'You appear to be offline.';
+          hint = t('videoRendering.hintOffline', 'You appear to be offline.');
         } else {
-          hint = 'Network/CORS issue. Check the Network tab for the failing request and the server logs.';
+          hint = t('videoRendering.hintNetworkCors', 'Network/CORS issue. Check the Network tab for the failing request and the server logs.');
         }
       }
-      alert(`Error: ${error?.message}${hint ? `\n\nHint: ${hint}` : ''}`);
+      alert(`${t('videoRendering.errorPrefix', 'Error: {{message}}', { message: error?.message })}${hint ? `\n\n${t('videoRendering.hintLabel', 'Hint')}: ${hint}` : ''}`);
     }
   };
 

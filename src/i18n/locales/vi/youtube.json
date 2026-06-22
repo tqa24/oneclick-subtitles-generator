@@ -8,5 +8,6 @@
   "noOAuth": "Vui lòng xác thực với YouTube trong cài đặt trước.",
   "authError": "Yêu cầu xác thực YouTube. Vui lòng thiết lập OAuth trong cài đặt.",
   "downloadVideoOnly": "Tải xuống video",
-  "recentVideos": "Video gần đây"
+  "recentVideos": "Video gần đây",
+  "recentSearches": "Tìm kiếm gần đây"
 }

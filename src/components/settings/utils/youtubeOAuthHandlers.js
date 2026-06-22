@@ -1,4 +1,5 @@
 import { getAuthUrl, hasValidTokens, clearOAuthData } from '../../../services/youtubeApiService';
+import i18n from '../../../i18n/i18n';
 
 // Store client credentials (mirrors youtubeApiService storage)
 export const storeClientCredentials = (clientId, clientSecret) => {
@@ -34,20 +35,20 @@ export const handleOAuthAuthentication = (youtubeClientId, youtubeClientSecret, 
 
       // Check if popup was blocked
       if (!authWindow || authWindow.closed || typeof authWindow.closed === 'undefined') {
-        alert('Popup blocked! Please allow popups for this site and try again.');
+        alert(i18n.t('settings.youtubeOAuth.popupBlocked', 'Popup blocked! Please allow popups for this site and try again.'));
         window.removeEventListener('message', messageListener);
       }
     } else {
-      alert('Failed to generate authorization URL. Please check your client credentials.');
+      alert(i18n.t('settings.youtubeOAuth.urlGenFailed', 'Failed to generate authorization URL. Please check your client credentials.'));
     }
   } else {
-    alert('Please enter both Client ID and Client Secret.');
+    alert(i18n.t('settings.youtubeOAuth.missingCredentials', 'Please enter both Client ID and Client Secret.'));
   }
 };
 
 // Handle clearing OAuth data
 export const handleClearOAuth = (setIsAuthenticated) => {
-  if (window.confirm('Are you sure you want to clear your YouTube OAuth credentials? You will need to authenticate again to use YouTube search.')) {
+  if (window.confirm(i18n.t('settings.youtubeOAuth.confirmClear', 'Are you sure you want to clear your YouTube OAuth credentials? You will need to authenticate again to use YouTube search.'))) {
     clearOAuthData();
     setIsAuthenticated(false);
   }

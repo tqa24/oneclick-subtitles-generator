@@ -1,4 +1,5 @@
 import React from 'react';
+import i18n from '../i18n/i18n';
 
 /**
  * Top-level error boundary: a single unhandled render error degrades to a recoverable message
@@ -48,9 +49,9 @@ class ErrorBoundary extends React.Component {
           gap: '1rem',
         }}
       >
-        <h2 style={{ margin: 0 }}>Something went wrong</h2>
+        <h2 style={{ margin: 0 }}>{i18n.t('errors.somethingWentWrong', 'Something went wrong')}</h2>
         <p style={{ maxWidth: 480, opacity: 0.8 }}>
-          The interface hit an unexpected error. Reloading usually fixes it.
+          {i18n.t('errors.unexpectedErrorReload', 'The interface hit an unexpected error. Reloading usually fixes it.')}
         </p>
         <pre
           style={{
@@ -79,7 +80,7 @@ class ErrorBoundary extends React.Component {
             color: '#fff',
           }}
         >
-          Reload
+          {i18n.t('common.reload', 'Reload')}
         </button>
       </div>
     );

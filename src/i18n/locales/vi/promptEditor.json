@@ -35,5 +35,7 @@
   "songNameVarDesc": "Tên bài hát (bắt buộc, không thể xóa)",
   "promptVarDesc": "Mô tả đã tạo (bắt buộc, không thể xóa)",
   "promptModelLabel": "Mô hình cho \"Tạo lệnh\"",
-  "imageModelLabel": "Mô hình tạo hình ảnh"
+  "imageModelLabel": "Mô hình tạo hình ảnh",
+  "selectImageModel": "Chọn mô hình ảnh",
+  "selectModel": "Chọn mô hình"
 }

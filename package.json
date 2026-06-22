@@ -24,6 +24,7 @@
     "generate:version": "node scripts/generate-version.js",
     "test": "react-scripts test",
     "test:server": "node --test \"server/**/*.test.js\"",
+    "check:i18n": "node scripts/check-i18n.js",
     "eject": "react-scripts eject",
     "server": "node server.js",
     "server:start": "node server.js",

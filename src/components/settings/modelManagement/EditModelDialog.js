@@ -78,7 +78,7 @@ const EditModelDialog = ({
             padding: '0 16px',
             boxSizing: 'border-box'
           }}
-          placeholder="Model Name"
+          placeholder={t('settings.modelManagement.modelNamePlaceholder', 'Model Name')}
         />
       </div>
 

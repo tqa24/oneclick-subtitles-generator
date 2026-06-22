@@ -48,5 +48,6 @@
     "noImageReturned": "이미지가 반환되지 않았습니다. 다시 시도하거나 프롬프트를 단순화하세요.",
     "noPromptReturned": "프롬프트가 반환되지 않았습니다. 잠시 후 다시 시도하세요.",
     "network": "네트워크 오류입니다. 연결을 확인하고 다시 시도하세요."
-  }
+  },
+  "errorSavingPrompts": "프롬프트 저장 오류: {{message}}"
 }

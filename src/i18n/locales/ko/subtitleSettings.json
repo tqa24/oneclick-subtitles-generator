@@ -54,5 +54,7 @@
     "saveCurrentSettings": "현재 설정을 프리셋으로 저장",
     "noChangesToSave": "저장할 변경사항 없음",
     "saveError": "사용자 정의 프리셋 저장 실패."
-  }
+  },
+  "presetNamePlaceholder": "프리셋 이름",
+  "selectLanguage": "언어 선택"
 }

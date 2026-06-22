@@ -40,6 +40,8 @@ import processing from './processing.json';
 import waveform from './waveform.json';
 import autoFlow from './autoFlow.json';
 import engines from './engines.json';
+import streaming from './streaming.json';
+import presetButtons from './presetButtons.json';
 
 const vi = {
   common,
@@ -83,7 +85,9 @@ const vi = {
   processing,
   waveform,
   autoFlow,
-  engines
+  engines,
+  streaming,
+  presetButtons
 };
 
 export default vi;

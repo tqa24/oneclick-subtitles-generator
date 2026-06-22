@@ -1,0 +1,6 @@
+{
+  "noTranslatedSubtitles": "번역된 자막이 없습니다",
+  "renderError": "자막 렌더링 오류: {{error}}",
+  "rendering": "자막을 넣어 영상을 렌더링하는 중...",
+  "noSubtitlesToRender": "렌더링할 자막이 없습니다"
+}

@@ -41,6 +41,9 @@ import processing from './processing.json';
 import waveform from './waveform.json';
 import autoFlow from './autoFlow.json';
 import engines from './engines.json';
+import streaming from './streaming.json';
+import presetButtons from './presetButtons.json';
+import videoPreview from './videoPreview.json';
 
 // Combine all translations
 const enTranslations = {
@@ -84,7 +87,10 @@ const enTranslations = {
   processing,
   waveform,
   autoFlow,
-  engines
+  engines,
+  streaming,
+  presetButtons,
+  videoPreview
 };
 
 export default enTranslations;

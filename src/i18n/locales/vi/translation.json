@@ -110,12 +110,22 @@
     "complete": "Dịch hàng loạt hoàn thành: {{success}}/{{total}} tệp được xử lý thành công",
     "completeWithMain": "Tệp hàng loạt hoàn thành: {{success}}/{{bulkTotal}} tệp hàng loạt đã xử lý, tệp chính tiếp theo ({{current}}/{{total}} tổng)",
     "downloadAll": "Tải xuống tất cả",
-    "downloadZip": "Tải xuống ZIP"
+    "downloadZip": "Tải xuống ZIP",
+    "error": "Lỗi khi dịch hàng loạt: {{message}}"
   },
   "warningDeleted": "Bạn đã xóa một phụ đề. Bản dịch có thể đã lỗi thời. Vui lòng dịch lại.",
   "warningEdited": "Bạn đã chỉnh sửa văn bản của phụ đề gốc. Bản dịch có thể đã lỗi thời. Vui lòng dịch lại.",
   "warningInserted": "Bạn đã chèn một phụ đề mới. Bản dịch có thể đã lỗi thời. Vui lòng dịch lại.",
   "warningMerged": "Bạn đã gộp các phụ đề. Bản dịch có thể đã lỗi thời. Vui lòng dịch lại.",
   "warningSplit": "Bạn đã tách phụ đề. Bản dịch có thể đã lỗi thời. Vui lòng dịch lại.",
-  "fromCache": "Đã tải từ bộ nhớ cache"
+  "fromCache": "Đã tải từ bộ nhớ cache",
+  "closeBracketPlaceholder": "Dấu ngoặc đóng",
+  "emptyResult": "Bản dịch không trả về kết quả",
+  "loadedFromCache": "Đã tải bản dịch từ bộ nhớ cache",
+  "openBracketPlaceholder": "Dấu ngoặc mở",
+  "subtitle": "Phụ đề",
+  "subtitleList": "Danh sách phụ đề",
+  "subtitleNumber": "Số phụ đề",
+  "subtitleText": "Nội dung phụ đề",
+  "timeRange": "Khoảng thời gian"
 }

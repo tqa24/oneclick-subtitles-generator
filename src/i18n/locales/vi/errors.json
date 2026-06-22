@@ -29,5 +29,17 @@
   "processingCancelled": "Người dùng đã hủy quá trình xử lý",
   "allRequestsAborted": "Tất cả các yêu cầu đã bị hủy",
   "parakeetApiError": "Lỗi API Parakeet: {{status}} {{errorText}}",
-  "invalidSegmentSelection": "Lựa chọn phân đoạn không hợp lệ"
+  "invalidSegmentSelection": "Lựa chọn phân đoạn không hợp lệ",
+  "invalidSrtFormat": "Định dạng SRT không hợp lệ hoặc tập tin trống",
+  "noValidInput": "Không có tập tin đầu vào hợp lệ. Vui lòng thử lại hoặc dùng video khác.",
+  "processingFailed": "Xử lý thất bại",
+  "retryFailed": "Thử lại thất bại",
+  "segmentRetryDeprecated": "Thử lại theo đoạn không còn được hỗ trợ. Vui lòng dùng quy trình mới: tải video lên và chọn các đoạn trên dòng thời gian để xử lý.",
+  "segmentRetryFailed": "Không thể thử lại đoạn {{segmentNumber}}",
+  "somethingWentWrong": "Đã xảy ra lỗi",
+  "srtParsingFailed": "Không thể đọc tệp SRT: {{message}}",
+  "unexpectedErrorReload": "Giao diện gặp lỗi không mong muốn. Tải lại thường sẽ khắc phục được.",
+  "videoDownloadFailed": "Tải video thất bại",
+  "videoPreparationFailed": "Chuẩn bị video thất bại: {{message}}",
+  "videoProcessingFailed": "Xử lý video thất bại: {{message}}"
 }

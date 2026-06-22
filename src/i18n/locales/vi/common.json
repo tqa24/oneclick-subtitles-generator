@@ -29,5 +29,16 @@
   },
   "toastHistory": "Lịch sử thông báo",
   "showToastHistory": "Hiển thị lịch sử thông báo",
-  "hideToastHistory": "Ẩn lịch sử thông báo"
+  "hideToastHistory": "Ẩn lịch sử thông báo",
+  "disabled": "Đã tắt trong khi dịch",
+  "done": "Xong",
+  "history": "Lịch sử",
+  "reload": "Tải lại",
+  "resize": "Đổi chiều cao",
+  "selectModel": "Chọn mô hình",
+  "selectOption": "Chọn tùy chọn...",
+  "slider": "Thanh trượt",
+  "sliderEnd": "Điểm cuối thanh trượt",
+  "sliderStart": "Điểm đầu thanh trượt",
+  "to": "đến"
 }

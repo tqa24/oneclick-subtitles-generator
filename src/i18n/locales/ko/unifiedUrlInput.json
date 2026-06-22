@@ -10,5 +10,8 @@
   "videoId": "비디오 ID:",
   "downloadOnly": "다운로드만",
   "hundredsMoreWebsites": "...그리고 수백 개의 웹사이트 더!",
-  "viewAllSupportedSites": "지원되는 모든 사이트 보기"
+  "viewAllSupportedSites": "지원되는 모든 사이트 보기",
+  "downloadCompleted": "다운로드 완료! 파일이 저장되었습니다: {{file}}",
+  "downloadFailed": "다운로드 실패: {{message}}",
+  "downloading": "다운로드 중..."
 }

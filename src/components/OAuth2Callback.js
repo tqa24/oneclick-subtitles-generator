@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { exchangeCodeForTokens } from '../services/googleAuthService';
 import '../styles/oauth-callback.css';
 
 const OAuth2Callback = () => {
-  const [status, setStatus] = useState('Processing authentication...');
+  const { t } = useTranslation();
+  const [status, setStatus] = useState(t('settings.youtubeOAuth.processing', 'Processing authentication...'));
+  const [isFailed, setIsFailed] = useState(false);
 
   useEffect(() => {
     const processAuthCode = async () => {
@@ -13,14 +16,14 @@ const OAuth2Callback = () => {
         const code = urlParams.get('code');
 
         if (!code) {
-          setStatus('Error: No authorization code received');
+          setStatus(t('settings.youtubeOAuth.noCode', 'Error: No authorization code received'));
           return;
         }
 
         // Exchange code for tokens
         await exchangeCodeForTokens(code);
 
-        setStatus('Authentication successful! Redirecting...');
+        setStatus(t('settings.youtubeOAuth.success', 'Authentication successful! Redirecting...'));
 
         // Redirect back to the main page
         setTimeout(() => {
@@ -28,24 +31,25 @@ const OAuth2Callback = () => {
         }, 2000);
       } catch (error) {
         console.error('OAuth callback error:', error);
-        setStatus(`Authentication failed: ${error.message}`);
+        setStatus(t('settings.youtubeOAuth.failed', 'Authentication failed: {{message}}', { message: error.message }));
+        setIsFailed(true);
       }
     };
 
     processAuthCode();
-  }, []);
+  }, [t]);
 
   return (
     <div className="oauth-callback-container">
       <div className="oauth-callback-content">
-        <h2>YouTube Authentication</h2>
+        <h2>{t('settings.youtubeOAuth.authTitle', 'YouTube Authentication')}</h2>
         <p>{status}</p>
-        {status.includes('failed') && (
+        {isFailed && (
           <button
             onClick={() => window.location.href = '/'}
             className="primary-button"
           >
-            Return to Application
+            {t('settings.youtubeOAuth.returnToApp', 'Return to Application')}
           </button>
         )}
       </div>

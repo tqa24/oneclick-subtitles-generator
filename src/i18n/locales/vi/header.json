@@ -18,5 +18,6 @@
   "tryNewVersionTooltip": "Đừng lo, hoàn toàn có thể quay lại phiên bản cũ",
   "oldVersionTooltip": "Quay lại phiên bản cũ",
   "switchingVersions": "Đang chuyển phiên bản...",
-  "reloadingPage": "Đang tải lại ứng dụng..."
+  "reloadingPage": "Đang tải lại ứng dụng...",
+  "autoGenerateTooltip": "Tạo phụ đề hoàn toàn tự động kèm phân tích và thiết lập tối ưu"
 }

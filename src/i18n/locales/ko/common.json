@@ -30,5 +30,15 @@
   },
   "toastHistory": "알림 기록",
   "showToastHistory": "알림 기록 표시",
-  "hideToastHistory": "알림 기록 숨기기"
+  "hideToastHistory": "알림 기록 숨기기",
+  "disabled": "번역 중에는 사용할 수 없습니다",
+  "history": "기록",
+  "reload": "새로고침",
+  "resize": "높이 조절",
+  "selectModel": "모델 선택",
+  "selectOption": "옵션 선택...",
+  "slider": "슬라이더",
+  "sliderEnd": "슬라이더 끝",
+  "sliderStart": "슬라이더 시작",
+  "to": "~"
 }

@@ -43,6 +43,8 @@
     "cancel": "취소",
     "downloading": "다운로드 중...",
     "cancelDownload": "다운로드 취소",
-    "cancelled": "다운로드 취소됨"
-  }
+    "cancelled": "다운로드 취소됨",
+    "download": "다운로드"
+  },
+  "summarizeExplanation": "핵심 내용과 주요 정보를 원문의 약 1/3 분량으로 간결하게 요약합니다."
 }

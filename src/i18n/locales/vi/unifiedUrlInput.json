@@ -10,5 +10,8 @@
   "videoId": "ID Video:",
   "downloadOnly": "Chỉ tải xuống",
   "hundredsMoreWebsites": "...và hàng trăm trang web khác!",
-  "viewAllSupportedSites": "Nhấp để xem tất cả các trang được hỗ trợ"
+  "viewAllSupportedSites": "Nhấp để xem tất cả các trang được hỗ trợ",
+  "downloadCompleted": "Tải xuống hoàn tất! Đã lưu tệp: {{file}}",
+  "downloadFailed": "Tải xuống thất bại: {{message}}",
+  "downloading": "Đang tải xuống..."
 }

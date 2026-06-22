@@ -48,5 +48,6 @@
     "noImageReturned": "Không có hình ảnh được trả về. Hãy thử lại hoặc đơn giản hóa prompt.",
     "noPromptReturned": "Không có prompt được trả về. Vui lòng thử lại sau.",
     "network": "Lỗi mạng. Kiểm tra kết nối và thử lại."
-  }
+  },
+  "errorSavingPrompts": "Lỗi khi lưu prompt: {{message}}"
 }

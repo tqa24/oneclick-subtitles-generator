@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 
 const PresetNamingModal = ({ isOpen, onClose, onSave, currentCustomization }) => {
+  const { t } = useTranslation();
   const [presetName, setPresetName] = useState('');
 
   const handleSave = () => {
@@ -43,7 +45,7 @@ const PresetNamingModal = ({ isOpen, onClose, onSave, currentCustomization }) =>
             value={presetName}
             onChange={(e) => setPresetName(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Preset name"
+            placeholder={t('subtitleSettings.presetNamePlaceholder', 'Preset name')}
             className="preset-title-input"
             autoFocus
           />
@@ -52,14 +54,14 @@ const PresetNamingModal = ({ isOpen, onClose, onSave, currentCustomization }) =>
               className="cancel-preset-btn"
               onClick={handleCancel}
             >
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </button>
             <button
               className="save-preset-btn"
               onClick={handleSave}
               disabled={!presetName.trim()}
             >
-              Save
+              {t('common.save', 'Save')}
             </button>
           </div>
         </div>

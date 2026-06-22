@@ -6,5 +6,7 @@
   "minutes": "phút",
   "splittingText": "Đang chia văn bản thành các phần {{duration}} phút",
   "splitComplete": "Đã chia văn bản thành {{chunks}} phần",
-  "processingComplete": "Hoàn thành xử lý tất cả {{count}} phần"
+  "processingComplete": "Hoàn thành xử lý tất cả {{count}} phần",
+  "error": "Lỗi khi xử lý tài liệu: {{message}}",
+  "processingChunk": "Đang xử lý phần {{current}}/{{total}}"
 }

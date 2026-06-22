@@ -64,8 +64,7 @@
   "selectResolution": "해상도 선택",
   "selectModel": "모델 선택",
   "selectPreset": "프리셋 선택",
-  "gemini20Warning": "Gemini 2.0 모델 은 높은 검열 수준을 가지고 있으며 \"안전하지 않은 콘텐츠\" 오류에 취약합니다."
-  ,
+  "gemini20Warning": "Gemini 2.0 모델 은 높은 검열 수준을 가지고 있으며 \"안전하지 않은 콘텐츠\" 오류에 취약합니다.",
   "inlineExtractionHelp": "전체 비디오에는 기존 방법을 우선 사용하고, 특정 세그먼트를 <strong>다시 생성</strong>해야 할 때는 새로운 방법을 사용하세요",
   "inlineExtractionLabel": "비디오를 로컬에서 자른 후 Gemini로 전송",
   "methodLabel": "방법",
@@ -121,5 +120,10 @@
   "processingProgress": "처리 중... ({{chunks}}개 청크, {{subtitles}}개 자막 발견됨)",
   "processingComplete": "처리 완료! {{count}}개 자막이 생성되었습니다.",
   "processingInterrupted": "처리 중단됨. {{count}}개 자막이 저장되었습니다.",
-  "changeTranscriptionMethodRetryLocked": "이전 Gemini 방법의 재시도 모드에서는 방법을 변경할 수 없습니다"
-  }
+  "changeTranscriptionMethodRetryLocked": "이전 Gemini 방법의 재시도 모드에서는 방법을 변경할 수 없습니다",
+  "changeTranscriptionMethod": "전사 방법 변경",
+  "extractingSegment": "선택한 구간을 로컬에서 추출하는 중...",
+  "parakeetServiceUnavailable": "Parakeet 서비스를 사용할 수 없습니다",
+  "processingSegment": "선택한 구간을 처리하는 중 (업로드한 파일 재사용)...",
+  "sendingToGemini": "추출한 구간을 Gemini로 보내는 중..."
+}

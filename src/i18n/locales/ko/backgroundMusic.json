@@ -11,6 +11,6 @@
   "noDevices": "장치를 찾을 수 없습니다",
   "startRecording": "녹음 시작",
   "stopRecording": "녹음 중지",
-  "downloadRecording": "녹음 파일 다운로드"
+  "downloadRecording": "녹음 파일 다운로드",
+  "midi": "MIDI"
 }
-

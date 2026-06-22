@@ -116,7 +116,7 @@ const BackgroundPromptEditor = ({ isOpen, onClose }) => {
       onClose();
     } catch (error) {
       console.error('Error saving prompts to localStorage:', error);
-      alert(`Error saving prompts: ${error.message}`);
+      alert(t('backgroundGenerator.errorSavingPrompts', 'Error saving prompts: {{message}}', { message: error.message }));
     } finally {
       setIsSaving(false);
     }

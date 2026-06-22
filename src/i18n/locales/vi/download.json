@@ -33,6 +33,7 @@
     "cancel": "Hủy",
     "downloading": "Đang tải xuống...",
     "cancelDownload": "Hủy tải xuống",
-    "cancelled": "Đã hủy tải xuống"
+    "cancelled": "Đã hủy tải xuống",
+    "download": "Tải xuống"
   }
 }

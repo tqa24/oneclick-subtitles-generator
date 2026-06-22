@@ -120,5 +120,10 @@
   "processingProgress": "Đang xử lý... ({{chunks}} chunk, {{subtitles}} phụ đề tìm thấy)",
   "processingComplete": "Xử lý hoàn tất! Đã tạo {{count}} phụ đề.",
   "processingInterrupted": "Xử lý bị gián đoạn. Đã lưu {{count}} phụ đề.",
-  "changeTranscriptionMethodRetryLocked": "Không thể đổi phương pháp trong chế độ thử lại của phương pháp Gemini cũ"
+  "changeTranscriptionMethodRetryLocked": "Không thể đổi phương pháp trong chế độ thử lại của phương pháp Gemini cũ",
+  "changeTranscriptionMethod": "Đổi phương thức phiên âm",
+  "extractingSegment": "Đang trích xuất đoạn đã chọn trên máy...",
+  "parakeetServiceUnavailable": "Dịch vụ Parakeet không khả dụng",
+  "processingSegment": "Đang xử lý đoạn đã chọn (dùng lại tệp đã tải lên)...",
+  "sendingToGemini": "Đang gửi đoạn đã trích xuất đến Gemini..."
 }

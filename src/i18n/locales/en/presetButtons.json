@@ -1,0 +1,8 @@
+{
+  "deleteCustomPreset": "Delete custom preset",
+  "saveError": "Failed to save custom preset.",
+  "saveCurrentAsPreset": "Save current settings as custom preset",
+  "noChanges": "No changes to save",
+  "saving": "Saving...",
+  "saveAsPreset": "Save as Preset"
+}

@@ -10,5 +10,9 @@
   "audioExtractionError": "Không thể trích xuất âm thanh từ video. Vui lòng thử lại.",
   "refreshNarration": "Làm mới thuyết minh",
   "refreshingNarration": "Đang làm mới thuyết minh...",
-  "extractFrame": "Trích xuất khung hình"
+  "extractFrame": "Trích xuất khung hình",
+  "geminiFpsTooltip": "Gemini chỉ xử lý video ở 1 FPS ngay cả khi bạn gửi video có FPS cao hơn — nhấn nút để biết thêm. Chọn Kết xuất video để có chất lượng và FPS tốt nhất.",
+  "noSubtitles": "Không có phụ đề để hiển thị.",
+  "videoError": "Lỗi khi tải video: ${err.message}",
+  "videoNotSupported": "Trình duyệt của bạn không hỗ trợ thẻ video."
 }

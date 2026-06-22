@@ -59,5 +59,7 @@
     "saveCurrentSettings": "Lưu cài đặt hiện tại làm preset",
     "noChangesToSave": "Không có thay đổi để lưu",
     "saveError": "Không thể lưu preset tùy chỉnh."
-  }
+  },
+  "presetNamePlaceholder": "Tên preset",
+  "selectLanguage": "Chọn ngôn ngữ"
 }

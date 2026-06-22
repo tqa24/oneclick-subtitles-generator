@@ -1,17 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 
 import '../../styles/common/CustomDropdown.css';
 
-const CustomDropdown = ({ 
-  value, 
-  onChange, 
-  options = [], 
-  placeholder = 'Select option...', 
+const CustomDropdown = ({
+  value,
+  onChange,
+  options = [],
+  placeholder,
   disabled = false,
   className = '',
   style = {}
 }) => {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t('common.selectOption', 'Select option...');
   const selectableOptionsCount = options.filter(o => !o.disabled).length;
   const isEffectivelyDisabled = disabled || selectableOptionsCount <= 1;
 
@@ -413,7 +416,7 @@ const CustomDropdown = ({
         style={isOpen ? { boxShadow: 'none', borderColor: 'transparent' } : undefined}
       >
         <span className={`dropdown-value ${isOpen ? 'morphing-open' : ''}`}>
-          {selectedOption ? selectedOption.label : placeholder}
+          {selectedOption ? selectedOption.label : resolvedPlaceholder}
         </span>
         <DropdownChevron mode={getChevronModeFromIndex(value, options)} />
       </button>

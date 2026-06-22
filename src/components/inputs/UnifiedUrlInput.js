@@ -263,13 +263,13 @@ const UnifiedUrlInput = ({ setSelectedVideo, selectedVideo, className }) => {
       } catch (downloadError) {
         console.error('[UnifiedUrlInput] Error downloading file:', downloadError);
         // Show user a message instead of navigating
-        alert(`Download completed! File saved as: ${extractDouyinVideoId(selectedVideo.url)}.mp4`);
+        alert(t('unifiedUrlInput.downloadCompleted', 'Download completed! File saved as: {{file}}', { file: `${extractDouyinVideoId(selectedVideo.url)}.mp4` }));
       }
     } catch (error) {
       console.error('Error downloading Douyin video:', error);
       setIsDouyinDownloading(false);
       setDouyinDownloadProgress(0);
-      alert(`Download failed: ${error.message}`);
+      alert(t('unifiedUrlInput.downloadFailed', 'Download failed: {{message}}', { message: error.message }));
     }
   };
 

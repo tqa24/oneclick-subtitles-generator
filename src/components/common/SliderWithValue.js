@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import StandardSlider from './StandardSlider';
 
 /**
@@ -23,6 +24,7 @@ export default function SliderWithValue({
   state,
   ...sliderProps
 }) {
+  const { t } = useTranslation();
   const globalDefault = (typeof window !== 'undefined' && window.SLIDER_DEFAULTS && sliderProps.id && Object.prototype.hasOwnProperty.call(window.SLIDER_DEFAULTS, sliderProps.id))
     ? window.SLIDER_DEFAULTS[sliderProps.id]
     : undefined;
@@ -51,12 +53,12 @@ export default function SliderWithValue({
         className={className}
         {...sliderProps}
       />
-      <div className="slider-value-display" title="Reset to default">
+      <div className="slider-value-display" title={t('common.resetToDefaults', 'Reset to default')}>
         {formatValue(value)}
         <button
           type="button"
           className="slider-reset-btn"
-          aria-label="Reset to default"
+          aria-label={t('common.resetToDefaults', 'Reset to default')}
           onClick={handleReset}
         >
           <span className="material-symbols-rounded" style={{ fontSize: '14px', fontVariationSettings: "'FILL' 0, 'wght' 300, 'GRAD' 200, 'opsz' 24" }}>refresh</span>
