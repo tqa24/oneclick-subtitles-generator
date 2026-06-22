@@ -187,17 +187,34 @@ function killProcess(pid, processName = 'Unknown') {
  * block a real bind. On Windows, Node (libuv) does not set SO_REUSEADDR for servers, so this mirrors an
  * exclusive bind closely.
  */
-function canBindPort(port, host = '0.0.0.0') {
+function tryBind(port, host) {
   return new Promise((resolve) => {
     const tester = net.createServer();
-    tester.once('error', () => resolve(false));
-    tester.once('listening', () => tester.close(() => resolve(true)));
+    tester.once('error', (err) => resolve(err && err.code ? err.code : 'ERR'));
+    tester.once('listening', () => tester.close(() => resolve(null)));
     try {
       tester.listen(port, host);
-    } catch (_) {
-      resolve(false);
+    } catch (err) {
+      resolve(err && err.code ? err.code : 'ERR');
     }
   });
+}
+
+/**
+ * A port is only truly free if it's bindable on BOTH IPv4 (0.0.0.0) and IPv6 (::).
+ *
+ * Windows sockets are IPv6-only by default, so a stale server sitting on [::]:port leaves
+ * 0.0.0.0:port bindable (and vice-versa). Our dev servers bind `::` (Node's default with no host),
+ * so checking only 0.0.0.0 — as this used to — reports "free" while an IPv6 holder is still there,
+ * the cleanup skips killing it, and the next bind hits EADDRINUSE. That family mismatch is the
+ * long-standing "ports already free" → EADDRINUSE bug. A family that's merely unavailable on this
+ * host (no IPv6 stack → EADDRNOTAVAIL / EAFNOSUPPORT) is NOT a conflict and is ignored.
+ */
+async function canBindPort(port) {
+  for (const host of ['0.0.0.0', '::']) {
+    if ((await tryBind(port, host)) === 'EADDRINUSE') return false;
+  }
+  return true;
 }
 
 /**
